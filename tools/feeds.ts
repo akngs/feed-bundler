@@ -9,9 +9,14 @@ export type FeedDef = {
   urls: string[]
 }
 
-export async function fetchFeed(url: string): Promise<Parser.Output> {
-  const parser = new Parser()
-  return await parser.parseURL(url)
+export async function fetchFeed(url: string): Promise<Parser.Output | null> {
+  try {
+    const parser = new Parser()
+    return await parser.parseURL(url)
+  } catch (e) {
+    console.log(e)
+    return null
+  }
 }
 
 export async function aggregateFeeds(
@@ -25,7 +30,7 @@ export async function aggregateFeeds(
   const tasks = def.urls.map((url) => limiter.schedule(fetchFeed, url))
 
   // fetch all feeds
-  const feeds = await Promise.all(tasks)
+  const feeds = (await Promise.all(tasks)).filter((feed) => !!feed) as Parser.Output[]
 
   // merge and sort items
   const items: Parser.Item[] = []
