@@ -4,10 +4,580 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Mon, 14 Dec 2020 12:29:01 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 14 Dec 2020 18:20:30 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from tensorflow: TensorFlow 2.4.0]]></title>
+            <link>https://github.com/tensorflow/tensorflow/releases/tag/v2.4.0</link>
+            <guid>https://github.com/tensorflow/tensorflow/releases/tag/v2.4.0</guid>
+            <pubDate>Mon, 14 Dec 2020 18:16:52 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Release 2.4.0</h1>
+<h2>Major Features and Improvements</h2>
+<ul>
+<li>
+<p><code>tf.distribute</code> introduces experimental support for asynchronous training of models via the <a href="https://www.tensorflow.org/api_docs/python/tf/distribute/experimental/ParameterServerStrategy" rel="nofollow"><code>tf.distribute.experimental.ParameterServerStrategy</code></a> API. Please see the <a href="https://www.tensorflow.org/tutorials/distribute/parameter_server_training" rel="nofollow">tutorial</a> to learn more.</p>
+</li>
+<li>
+<p><a href="https://www.tensorflow.org/api_docs/python/tf/distribute/MultiWorkerMirroredStrategy" rel="nofollow"><code>MultiWorkerMirroredStrategy</code></a> is now a stable API and is no longer considered experimental. Some of the major improvements involve handling peer failure and many bug fixes. Please check out the detailed tutorial on <a href="https://www.tensorflow.org/tutorials/distribute/multi_worker_with_keras" rel="nofollow">Multi-worker training with Keras</a>.</p>
+</li>
+<li>
+<p>Introduces experimental support for a new module named <a href="https://www.tensorflow.org/api_docs/python/tf/experimental/numpy" rel="nofollow"><code>tf.experimental.numpy</code></a> which is a NumPy-compatible API for writing TF programs. See the <a href="https://www.tensorflow.org/guide/tf_numpy" rel="nofollow">detailed guide</a> to learn more. Additional details below.</p>
+</li>
+<li>
+<p>Adds Support for<br>
+<a href="https://blogs.nvidia.com/blog/2020/05/14/tensorfloat-32-precision-format/" rel="nofollow">TensorFloat-32</a> on Ampere based GPUs. TensorFloat-32, or TF32 for short, is a math mode for NVIDIA Ampere based GPUs and is enabled by default.</p>
+</li>
+<li>
+<p>A major refactoring of the internals of the Keras Functional API has been completed, that should improve the reliability, stability, and performance of constructing Functional models.</p>
+</li>
+<li>
+<p>Keras mixed precision API <a href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision?version=nightly" rel="nofollow"><code>tf.keras.mixed_precision</code></a> is no longer experimental and allows the use of 16-bit floating point formats during training, improving performance by up to 3x on GPUs and 60% on TPUs. Please see below for additional details.</p>
+</li>
+<li>
+<p>TensorFlow Profiler now supports profiling <code>MultiWorkerMirroredStrategy</code> and tracing multiple workers using the <a href="https://www.tensorflow.org/guide/profiler#profiling_apis" rel="nofollow">sampling mode API</a>.</p>
+</li>
+<li>
+<p>TFLite Profiler for Android is available. See the detailed <a href="https://www.tensorflow.org/lite/performance/measurement#trace_tensorflow_lite_internals_in_android" rel="nofollow">guide</a> to learn more.</p>
+</li>
+<li>
+<p>TensorFlow pip packages are now built with CUDA11 and cuDNN 8.0.2.</p>
+</li>
+</ul>
+<h2>Breaking Changes</h2>
+<ul>
+<li>
+<p>TF Core:</p>
+<ul>
+<li>Certain float32 ops run in lower precsion on Ampere based GPUs, including  matmuls and convolutions, due to the use of <a href="https://blogs.nvidia.com/blog/2020/05/14/tensorfloat-32-precision-format/" rel="nofollow">TensorFloat-32</a>. Specifically, inputs to such ops are rounded from 23 bits of precision to 10<br>
+bits of precision. This is unlikely to cause issues in practice for deep learning models. In some cases, TensorFloat-32 is also used for complex64 ops.<br>
+TensorFloat-32 can be disabled by running <code>tf.config.experimental.enable_tensor_float_32_execution(False)</code>.</li>
+<li>The byte layout for string tensors across the C-API has been updated to match TF Core/C++; i.e., a contiguous array of <code>tensorflow::tstring</code>/<code>TF_TString</code>s.</li>
+<li>C-API functions <code>TF_StringDecode</code>, <code>TF_StringEncode</code>, and <code>TF_StringEncodedSize</code> are no longer relevant and have been removed; see <code>core/platform/ctstring.h</code> for  string access/modification in C.</li>
+<li><code>tensorflow.python</code>, <code>tensorflow.core</code> and <code>tensorflow.compiler</code> modules are now hidden. These modules are not part of TensorFlow public API.</li>
+<li><code>tf.raw_ops.Max</code> and <code>tf.raw_ops.Min</code> no longer accept inputs of type <code>tf.complex64</code> or <code>tf.complex128</code>, because the behavior of these ops is not well defined for complex types.</li>
+<li>XLA:CPU and XLA:GPU devices are no longer registered by default. Use <code>TF_XLA_FLAGS=--tf_xla_enable_xla_devices</code> if you really need them, but this flag will eventually be removed in subsequent releases.</li>
+</ul>
+</li>
+<li>
+<p><code>tf.keras</code>:</p>
+<ul>
+<li>The <code>steps_per_execution</code> argument in <code>model.compile()</code> is no longer experimental; if you were passing <code>experimental_steps_per_execution</code>, rename it to <code>steps_per_execution</code> in your code. This argument controls the number of batches to run during each <code>tf.function</code> call when calling <code>model.fit()</code>. Running multiple batches inside a single <code>tf.function</code> call can greatly improve performance on TPUs or small models with a large Python overhead.</li>
+<li>A <strong>major refactoring</strong> of the internals of the Keras Functional API may affect code that<br>
+is relying on certain internal details:
+<ul>
+<li>Code that uses <code>isinstance(x, tf.Tensor)</code> instead of <code>tf.is_tensor</code> when checking Keras symbolic inputs/outputs should switch to using <code>tf.is_tensor</code>.</li>
+<li>Code that is overly dependent on the exact names attached to symbolic tensors (e.g. assumes there will be ":0" at the end of the inputs, treats names as unique identifiers instead of using <code>tensor.ref()</code>, etc.) may break.</li>
+<li>Code that uses full path for <code>get_concrete_function</code> to trace Keras symbolic inputs directly should switch to building matching <code>tf.TensorSpec</code>s directly and tracing the <code>TensorSpec</code> objects.</li>
+<li>Code that relies on the exact number and names of the op layers that TensorFlow operations  were converted into may have changed.</li>
+<li>Code that uses <code>tf.map_fn</code>/<code>tf.cond</code>/<code>tf.while_loop</code>/control flow as op layers and  happens to work before TF 2.4. These will explicitly be unsupported now. Converting these ops to Functional API op layers was unreliable before TF 2.4, and prone to erroring incomprehensibly  or being silently buggy.</li>
+<li>Code that directly asserts on a Keras symbolic value in cases where ops like <code>tf.rank</code> used to  return a static or symbolic value depending on if the input had a fully static shape or not. Now these ops always return symbolic values.</li>
+<li>Code already susceptible to leaking tensors outside of graphs becomes slightly more likely to do so now.</li>
+<li>Code that tries directly getting gradients with respect to symbolic Keras inputs/outputs. Use <code>GradientTape</code> on the actual Tensors passed to the already-constructed model instead.</li>
+<li>Code that requires very tricky shape manipulation via converted op layers in order to work, where the Keras symbolic shape inference proves insufficient.</li>
+<li>Code that tries manually walking a <code>tf.keras.Model</code> layer by layer and assumes layers only ever have one positional argument. This assumption doesn't hold       true before TF 2.4 either, but is more likely to cause issues now.</li>
+<li>Code that manually enters <code>keras.backend.get_graph()</code> before building a functional model is no longer needed.</li>
+<li>Start enforcing input shape assumptions when calling Functional API Keras models. This may potentially break some users, in case there is a mismatch             between the shape used when creating <code>Input</code> objects in a Functional model, and the shape of the data passed to that model. You can fix this mismatch by         either calling the model with correctly-shaped data, or by relaxing <code>Input</code> shape assumptions (note that you can pass shapes with <code>None</code> entries for axes<br>
+that are meant to be dynamic). You can also disable the input checking entirely by setting <code>model.input_spec = None</code>.</li>
+</ul>
+</li>
+<li>Several changes have been made to <code>tf.keras.mixed_precision.experimental</code>. Note that it is now recommended to use the non-experimental          <code>tf.keras.mixed_precision</code> API.</li>
+<li><code>AutoCastVariable.dtype</code> now refers to the actual variable dtype, not the dtype it will be casted to.</li>
+<li>When mixed precision is enabled, <code>tf.keras.layers.Embedding</code> now outputs a float16 or bfloat16 tensor instead of a float32 tensor.</li>
+<li>The property <code>tf.keras.mixed_precision.experimental.LossScaleOptimizer.loss_scale</code> is now a tensor, not a <code>LossScale</code> object. This means to get a loss scale      of a <code>LossScaleOptimizer</code> as a tensor, you must now call <code>opt.loss_scale</code>instead of <code>opt.loss_scale()</code>.</li>
+<li>The property <code>should_cast_variables</code> has been removed from <code>tf.keras.mixed_precision.experimental.Policy</code></li>
+<li>When passing a <code>tf.mixed_precision.experimental.DynamicLossScale</code> to <code>tf.keras.mixed_precision.experimental.LossScaleOptimizer</code>, the <code>DynamicLossScale</code>'s        multiplier must be 2.</li>
+<li>When passing a <code>tf.mixed_precision.experimental.DynamicLossScale</code> to <code>tf.keras.mixed_precision.experimental.LossScaleOptimizer</code>, the weights of<br>
+the <code>DynanmicLossScale</code> are copied into the <code>LossScaleOptimizer</code> instead of being reused. This means modifying the weights of the <code>DynamicLossScale</code> will no      longer affect the weights of the LossScaleOptimizer, and vice versa.</li>
+<li>The global policy can no longer be set to a non-floating point policy in <code>tf.keras.mixed_precision.experimental.set_policy</code></li>
+<li>In <code>Layer.call</code>, <code>AutoCastVariable</code>s will no longer be casted within <code>MirroredStrategy.run</code> or <code>ReplicaContext.merge_call</code>. This is because a thread local        variable is used to determine whether <code>AutoCastVariable</code>s are casted, and those two functions run with a different thread. Note this only applies if one of      these two functions is called within <code>Layer.call</code>; if one of those two functions calls <code>Layer.call</code>, <code>AutoCastVariable</code>s will still be casted.</li>
+</ul>
+</li>
+<li>
+<p><code>tf.data</code>:</p>
+<ul>
+<li><code>tf.data.experimental.service.DispatchServer</code> now takes a config tuple instead of individual arguments. Usages should be updated to      <code>tf.data.experimental.service.DispatchServer(dispatcher_config)</code>.</li>
+<li><code>tf.data.experimental.service.WorkerServer</code> now takes a config tuple instead of individual arguments. Usages should be updated to  <code>tf.data.experimental.service.WorkerServer(worker_config)</code>.</li>
+</ul>
+</li>
+<li>
+<p><code>tf.distribute</code>:</p>
+<ul>
+<li>Removes <code>tf.distribute.Strategy.experimental_make_numpy_dataset</code>. Please use <code>tf.data.Dataset.from_tensor_slices</code> instead.</li>
+<li>Renames <code>experimental_hints</code> in <code>tf.distribute.StrategyExtended.reduce_to</code>, <code>tf.distribute.StrategyExtended.batch_reduce_to</code>,      <code>tf.distribute.ReplicaContext.all_reduce</code> to <code>options</code>.</li>
+<li>Renames <code>tf.distribute.experimental.CollectiveHints</code> to <code>tf.distribute.experimental.CommunicationOptions</code>.</li>
+<li>Renames <code>tf.distribute.experimental.CollectiveCommunication</code> to <code>tf.distribute.experimental.CommunicationImplementation</code>.</li>
+<li>Renames <code>tf.distribute.Strategy.experimental_distribute_datasets_from_function</code> to <code>distribute_datasets_from_function</code> as it is no longer experimental.</li>
+<li>Removes <code>tf.distribute.Strategy.experimental_run_v2</code> method, which was deprecated in TF 2.2.</li>
+</ul>
+</li>
+<li>
+<p><code>tf.lite</code>:</p>
+<ul>
+<li><code>tf.quantization.quantize_and_dequantize_v2</code> has been introduced, which updates the gradient definition for quantization which is outside the range<br>
+to be 0. To simulate the V1 the behavior of <code>tf.quantization.quantize_and_dequantize(...)</code> use             <code>tf.grad_pass_through(tf.quantization.quantize_and_dequantize_v2)(...)</code>.</li>
+</ul>
+</li>
+<li>
+<p>Building TensorFlow:</p>
+<ul>
+<li>Windows platform builds: TensorFlow on Windows under MSVC is now built with <code>--copt=/experimental:preprocessor --host_copt=/experimental:preprocessor</code> (see <code>.bazelrc</code> for more details). Builds including TensorFlow may fail with unexpected syntax errors if these flags are absent. See also <a href="https://groups.google.com/a/tensorflow.org/g/build/c/LbAw8RILvTg/m/ttnuhYU2BgAJ" rel="nofollow">this thread on SIG Build</a>.</li>
+</ul>
+</li>
+</ul>
+<h2>Known Caveats</h2>
+<ul>
+<li><code>tf.keras.mixed_precision</code>
+<ul>
+<li>When using mixed precision, calling <code>RMSprop.apply_gradients</code> or <code>Nadam.apply_gradients</code> outside a <code>tf.function</code> does not work and will raise the                 AttributeError "Tensor.op is meaningless when eager execution is enabled". See this <a href="https://github.com/tensorflow/tensorflow/issues/45536" data-hovercard-type="issue" data-hovercard-url="/tensorflow/tensorflow/issues/45536/hovercard">issue</a> for           details and a workaround.</li>
+</ul>
+</li>
+</ul>
+<h2>Bug Fixes and Other Changes</h2>
+<h3>TF Core:</h3>
+<ul>
+<li>Introduces experimental support for a new module named <a href="https://www.tensorflow.org/api_docs/python/tf/experimental/numpy" rel="nofollow"><code>tf.experimental.numpy</code></a>, which<br>
+is a NumPy-compatible API for writing TF programs. This module provides class <code>ndarray</code>, which mimics the <code>ndarray</code> class in NumPy, and wraps an immutable       <code>tf.Tensor</code> under the hood. A subset of NumPy functions (e.g. <code>numpy.add</code>) are provided. Their inter-operation with TF facilities is seamless in most cases.<br>
+See <a href="https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/ops/numpy_ops/README.md">tensorflow/python/ops/numpy_ops/README.md</a><br>
+for details of what operations are supported and what are the differences from NumPy.</li>
+<li><code>tf.types.experimental.TensorLike</code> is a new <code>Union</code> type that can be used as type annotation for variables representing a Tensor or a value<br>
+that can be converted to Tensor by <code>tf.convert_to_tensor</code>.</li>
+<li>Calling ops with a python constants or numpy values is now consistent with tf.convert_to_tensor behavior. This avoids operations like<br>
+tf.reshape truncating inputs such as from int64 to int32.</li>
+<li>Adds <code>tf.sparse.map_values</code> to apply a function to the <code>.value</code>s of <code>SparseTensor</code> arguments.</li>
+<li>The Python bitwise operators for <code>Tensor</code> (<code>__and__</code>, <code>__or__</code>, <code>__xor__</code> and <code>__invert__</code> now support non-<code>bool</code> arguments and apply<br>
+the corresponding bitwise ops. <code>bool</code> arguments continue to be supported and dispatch to logical ops. This brings them more in line with<br>
+Python and NumPy behavior.</li>
+<li>Adds <code>tf.SparseTensor.with_values</code>. This returns a new SparseTensor with the same sparsity pattern, but with new provided values. It is<br>
+similar to the <code>with_values</code> function of <code>RaggedTensor</code>.</li>
+<li>Adds <code>StatelessCase</code> op, and uses it if none of case branches has stateful ops.</li>
+<li>Adds <code>tf.config.experimental.get_memory_usage</code> to return total memory usage of the device.</li>
+<li>Adds gradients for <code>RaggedTensorToVariant</code> and <code>RaggedTensorFromVariant</code>.</li>
+<li>Improve shape inference of nested function calls by supporting constant folding across Arg nodes which makes more static values available to shape               inference functions.</li>
+<li><code>tf.debugging</code>:
+<ul>
+<li><code>tf.debugging.assert_shapes()</code> now works on <code>SparseTensor</code>s (Fixes <a href="https://github.com/tensorflow/tensorflow/issues/36268" data-hovercard-type="issue" data-hovercard-url="/tensorflow/tensorflow/issues/36268/hovercard">#36268</a>).</li>
+</ul>
+</li>
+<li>GPU
+<ul>
+<li>Adds Support for <a href="https://blogs.nvidia.com/blog/2020/05/14/tensorfloat-32-precision-format/" rel="nofollow">TensorFloat-32</a> on Ampere based GPUs.<br>
+TensorFloat-32, or TF32 for short, is a math mode for NVIDIA Ampere based GPUs which causes certain float32 ops, such as matrix<br>
+multiplications and convolutions, to run much faster on Ampere GPUs but with reduced precision. This reduced precision has not been found<br>
+to effect convergence quality of deep learning models in practice. TensorFloat-32 is enabled by default, but can be disabled with                 <code>tf.config.experimental.enable_tensor_float_32_execution</code>.</li>
+</ul>
+</li>
+<li><code>tf.math</code>:
+<ul>
+<li>Adds <code>tf.math.erfcinv</code>, the inverse to <code>tf.math.erfc</code>.</li>
+</ul>
+</li>
+<li><code>tf.nn</code>:
+<ul>
+<li><code>tf.nn.max_pool2d</code> now supports explicit padding.</li>
+</ul>
+</li>
+<li><code>tf.image</code>:
+<ul>
+<li>Adds deterministic <code>tf.image.stateless_random_*</code> functions for each <code>tf.image.random_*</code> function. Added a new op <code>stateless_sample_distorted_bounding_box</code>       which is a deterministic version of <code>sample_distorted_bounding_box</code> op. Given the same seed, these stateless functions/ops produce the same results               independent of how many times the function is called, and independent of global seed settings.</li>
+<li>Adds deterministic <code>tf.image.resize</code> backprop CUDA kernels for <code>method=ResizeMethod.BILINEAR</code> (the default method). Enable by setting the environment             variable <code>TF_DETERMINISTIC_OPS</code> to <code>"true"</code> or <code>"1"</code>.</li>
+</ul>
+</li>
+<li><code>tf.print</code>:
+<ul>
+<li>Bug fix in <code>tf.print()</code> with <code>OrderedDict</code> where if an <code>OrderedDict</code> didn't have the keys sorted, the keys and values were not being printed<br>
+in accordance with their correct mapping.</li>
+</ul>
+</li>
+<li><code>tf.train.Checkpoint</code>:
+<ul>
+<li>Now accepts a <code>root</code> argument in the initialization, which generates a checkpoint with a root object. This allows users to create a <code>Checkpoint</code> object that     is compatible with Keras <code>model.save_weights()</code> and <code>model.load_weights</code>. The checkpoint is also compatible with the checkpoint saved in the <code>variables/</code>         folder in the SavedModel.</li>
+<li>When restoring, <code>save_path</code> can be a path to a SavedModel. The function will automatically find the checkpoint in the SavedModel.</li>
+</ul>
+</li>
+</ul>
+<h3><code>tf.data</code>:</h3>
+<ul>
+<li>Adds new <code>tf.data.experimental.service.register_dataset</code> and <code>tf.data.experimental.service.from_dataset_id</code> APIs to enable one<br>
+process to register a dataset with the tf.data service, and another process to consume data from the dataset.</li>
+<li>Adds support for dispatcher fault tolerance. To enable fault tolerance, configure a <code>work_dir</code> when running your dispatcher server and set<br>
+<code>dispatcher_fault_tolerance=True</code>. The dispatcher will store its state to <code>work_dir</code>, so that on restart it can continue from its previous<br>
+state after restart.</li>
+<li>Adds support for sharing dataset graphs via shared filesystem instead of over RPC. This reduces load on the dispatcher, improving performance<br>
+of distributing datasets. For this to work, the dispatcher's <code>work_dir</code> must be accessible from workers. If the worker fails to read from the<br>
+<code>work_dir</code>, it falls back to using RPC for dataset graph transfer.</li>
+<li>Adds support for a new "distributed_epoch" processing mode. This processing mode distributes a dataset across all tf.data workers,<br>
+instead of having each worker process the full dataset. See <a href="https://www.tensorflow.org/api_docs/python/tf/data/experimental/service#understand_processing_mode" rel="nofollow">the tf.data service docs</a> to learn more.</li>
+<li>Adds optional <code>exclude_cols</code> parameter to CsvDataset. This parameter is the complement of <code>select_cols</code>; at most one of these should be specified.</li>
+<li>We have implemented an optimization which reorders data-discarding transformations such as <code>take</code> and <code>shard</code> to happen earlier in the dataset when it is           safe to do so. The optimization can be disabled via the <code>experimental_optimization.reorder_data_discarding_ops</code> dataset option.</li>
+<li><code>tf.data.Options</code> were previously immutable and can now be overridden.</li>
+<li><code>tf.data.Dataset.from_generator</code> now supports Ragged and Sparse tensors with a new <code>output_signature</code> argument, which allows <code>from_generator</code> to<br>
+produce any type describable by a <code>tf.TypeSpec</code>.</li>
+<li><code>tf.data.experimental.AUTOTUNE</code> is now available in the core API as <code>tf.data.AUTOTUNE</code>.</li>
+</ul>
+<h3><code>tf.distribute</code>:</h3>
+<ul>
+<li>Introduces experimental support for asynchronous training of models via <code>tf.distribute.experimental.ParameterServerStrategy</code>:
+<ul>
+<li>Replaces the existing <code>tf.distribute.experimental.ParameterServerStrategy</code> symbol with a new class that is for parameter server training in TF2. Usage of<br>
+the old symbol, usually with Estimator API, should be <strong>replaced</strong> with [<code>tf.compat.v1.distribute.experimental.ParameterServerStrategy</code>].</li>
+<li>Added <code>tf.distribute.experimental.coordinator.*</code> namespace, including the main API <code>ClusterCoordinator</code> for coordinating the training cluster, the related data structure <code>RemoteValue</code> and <code>PerWorkerValue</code>.</li>
+</ul>
+</li>
+<li><code>MultiWorkerMirroredStrategy</code>](<a href="https://www.tensorflow.org/api_docs/python/tf/distribute/MultiWorkerMirroredStrategy" rel="nofollow">https://www.tensorflow.org/api_docs/python/tf/distribute/MultiWorkerMirroredStrategy</a>) is now a stable API and is no longer considered experimental. Some of the major improvements involve handling peer failure and many bug fixes. Please check out the detailed tutorial on<br>
+<a href="https://www.tensorflow.org/tutorials/distribute/multi_worker_with_keras" rel="nofollow">Multi-worer training with Keras</a>.</li>
+<li>Adds <code>tf.distribute.Strategy.gather</code> and <code>tf.distribute.ReplicaContext.all_gather</code> APIs to support gathering dense distributed values.</li>
+<li>Fixes various issues with saving a distributed model.</li>
+</ul>
+<h3><code>tf.keras</code>:</h3>
+<ul>
+<li>Improvements from the Functional API refactoring:
+<ul>
+<li>Functional model construction does not need to maintain a global workspace graph, removing memory leaks especially when building many<br>
+models or very large models.</li>
+<li>Functional model construction should be ~8-10% faster on average.</li>
+<li>Functional models can now contain non-symbolic values in their call inputs inside of the first positional argument.</li>
+<li>Several classes of TF ops that were not reliably converted to Keras layers during functional API construction should now work, e.g.<br>
+<code>tf.image.ssim_multiscale</code></li>
+<li>Error messages when Functional API construction goes wrong (and when ops cannot be converted to Keras layers automatically) should be<br>
+clearer and easier to understand.</li>
+</ul>
+</li>
+<li><code>Optimizer.minimize</code> can now accept a loss <code>Tensor</code> and a <code>GradientTape</code> as an alternative to accepting a <code>callable</code> loss.</li>
+<li>Adds <code>beta</code> hyperparameter to <a href="https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Ftrl" rel="nofollow">FTRL</a> optimizer classes (Keras and others) to match <a href="https://research.google.com/pubs/archive/41159.pdf" rel="nofollow">FTRL paper</a>.</li>
+<li><code>Optimizer.__init__</code> now accepts a <code>gradient_aggregator</code> to allow for customization of how gradients are aggregated across devices, as well as <code>gradients_transformers</code> to allow for custom gradient transformations (such as gradient clipping).</li>
+<li>Improvements to Keras preprocessing layers:
+<ul>
+<li>TextVectorization can now accept a vocabulary list or file as an init arg.</li>
+<li>Normalization can now accept mean and variance values as init args.</li>
+</ul>
+</li>
+<li>In <code>Attention</code> and <code>AdditiveAttention</code> layers, the <code>call()</code> method now accepts a <code>return_attention_scores</code> argument. When set to<br>
+True, the layer returns the attention scores as an additional output argument.</li>
+<li>Adds <code>tf.metrics.log_cosh</code> and <code>tf.metrics.logcosh</code> API entrypoints with the same implementation as their <code>tf.losses</code> equivalent.</li>
+<li>For Keras model, the individual call of <code>Model.evaluate</code> uses no cached data for evaluation, while <code>Model.fit</code> uses cached data when <code>validation_data</code> arg is provided for better performance.</li>
+<li>Adds a <code>save_traces</code> argument to <code>model.save</code>/ <code>tf.keras.models.save_model</code> which determines whether the SavedModel format stores the Keras model/layer call     functions. The traced functions allow Keras to revive custom models and layers without the original class definition, but if this isn't required the tracing     can be disabled with the added option.</li>
+<li>The <code>tf.keras.mixed_precision</code> API is now non-experimental. The non-experimental API differs from the experimental API in several ways.
+<ul>
+<li><code>tf.keras.mixed_precision.Policy</code> no longer takes in a <code>tf.mixed_precision.experimental.LossScale</code> in the constructor, and no longer has a <code>LossScale</code>           associated with it. Instead, <code>Model.compile</code> will automatically wrap the optimizer with a <code>LossScaleOptimizer</code> using dynamic loss scaling if <code>Policy.name</code>       is "mixed_float16".</li>
+<li><code>tf.keras.mixed_precision.LossScaleOptimizer</code>'s constructor takes in different arguments. In particular, it no longer takes in a <code>LossScale</code>, and there is       no longer a <code>LossScale</code> associated with the <code>LossScaleOptimizer</code>. Instead, <code>LossScaleOptimizer</code> directly implements fixed or dynamic loss scaling. See the       documentation of <a href="https://www.tensorflow.org/api_docs/python/tf/keras/mixed_precision/experimental/LossScaleOptimizer?version=nightly" rel="nofollow"><code>tf.keras.mixed_precision.experimental.LossScaleOptimizer</code></a> for details on the differences between the       experimental <code>LossScaleOptimizer</code> and the new non-experimental <code>LossScaleOptimizer</code>.</li>
+<li><code>tf.mixed_precision.experimental.LossScale</code> and its subclasses are deprecated, as all of its functionality now exists within                      <code>tf.keras.mixed_precision.LossScaleOptimizer</code></li>
+</ul>
+</li>
+</ul>
+<h3><code>tf.lite</code>:</h3>
+<ul>
+<li><code>TFLiteConverter</code>:
+<ul>
+<li>Support optional flags <code>inference_input_type</code> and <code>inference_output_type</code> for full integer quantized models. This allows users to modify the model input         and output type to integer types (<code>tf.int8</code>, <code>tf.uint8</code>) instead of defaulting to float type (<code>tf.float32</code>).</li>
+</ul>
+</li>
+<li>NNAPI
+<ul>
+<li>Adds NNAPI Delegation support for requantization use cases by converting the operation into a dequantize-quantize pair.</li>
+<li>Removes deprecated <code>Interpreter.setUseNNAPI(boolean)</code> Java API. Use <code>Interpreter.Options.setUseNNAPI</code> instead.</li>
+<li>Deprecates <code>Interpreter::UseNNAPI(bool)</code> C++ API. Use <code>NnApiDelegate()</code> and related delegate configuration methods directly.</li>
+<li>Deprecates <code>Interpreter::SetAllowFp16PrecisionForFp32(bool)</code> C++ API. Prefer controlling this via delegate options, e.g. <code>tflite::StatefulNnApiDelegate::Options::allow_fp16' or </code>TfLiteGpuDelegateOptionsV2::is_precision_loss_allowed`.</li>
+</ul>
+</li>
+<li>GPU
+<ul>
+<li>GPU acceleration now supports quantized models by default</li>
+</ul>
+</li>
+<li><code>DynamicBuffer::AddJoinedString()</code> will now add a separator if the first string to be joined is empty.</li>
+<li>Adds support for cumulative sum (cumsum), both as builtin op and MLIR conversion.</li>
+</ul>
+<h3><code>TensorRT</code></h3>
+<ul>
+<li>Issues a warning when the <code>session_config</code> parameter for the TF1 converter is used or the <code>rewrite_config_template</code> field in the TF2<br>
+converter parameter object is used.</li>
+</ul>
+<h3>TPU Enhancements:</h3>
+<ul>
+<li>Adds support for the <code>beta</code> parameter of the FTRL optimizer for TPU embeddings. Users of other TensorFlow platforms can implement equivalent<br>
+behavior by adjusting the <code>l2</code> parameter.</li>
+</ul>
+<h3>XLA Support:</h3>
+<ul>
+<li>xla.experimental.compile is deprecated, use <code>tf.function(experimental_compile=True)</code> instead.</li>
+<li>Adds <code>tf.function.experimental_get_compiler_ir</code> which returns compiler IR (currently 'hlo' and 'optimized_hlo') for given input for given function.</li>
+</ul>
+<h3>Security:</h3>
+<ul>
+<li>Fixes an undefined behavior causing a segfault in <code>tf.raw_ops.Switch</code>, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15190" rel="nofollow">CVE-2020-15190</a>)</li>
+<li>Fixes three vulnerabilities in conversion to DLPack format
+<ul>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15191" rel="nofollow">CVE-2020-15191</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15192" rel="nofollow">CVE-2020-15192</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15193" rel="nofollow">CVE-2020-15193</a></li>
+</ul>
+</li>
+<li>Fixes two vulnerabilities in <code>SparseFillEmptyRowsGrad</code>
+<ul>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15194" rel="nofollow">CVE-2020-15194</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15195" rel="nofollow">CVE-2020-15195</a></li>
+</ul>
+</li>
+<li>Fixes several vulnerabilities in <code>RaggedCountSparseOutput</code> and <code>SparseCountSparseOutput</code> operations
+<ul>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15196" rel="nofollow">CVE-2020-15196</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15197" rel="nofollow">CVE-2020-15197</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15198" rel="nofollow">CVE-2020-15198</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15199" rel="nofollow">CVE-2020-15199</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15200" rel="nofollow">CVE-2020-15200</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15201" rel="nofollow">CVE-2020-15201</a></li>
+</ul>
+</li>
+<li>Fixes an integer truncation vulnerability in code using the work sharder API, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15202" rel="nofollow">CVE-2020-15202</a>)</li>
+<li>Fixes a format string vulnerability in <code>tf.strings.as_string</code>, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15203" rel="nofollow">CVE-2020-15203</a>)</li>
+<li>Fixes segfault raised by calling session-only ops in eager mode, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15204" rel="nofollow">CVE-2020-15204</a>)</li>
+<li>Fixes data leak and potential ASLR violation from <code>tf.raw_ops.StringNGrams</code>, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15205" rel="nofollow">CVE-2020-15205</a>)</li>
+<li>Fixes segfaults caused by incomplete <code>SavedModel</code> validation, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15206" rel="nofollow">CVE-2020-15206</a>)</li>
+<li>Fixes a data corruption due to a bug in negative indexing support in TFLite, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15207" rel="nofollow">CVE-2020-15207</a>)</li>
+<li>Fixes a data corruption due to dimension mismatch in TFLite, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15208" rel="nofollow">CVE-2020-15208</a>)</li>
+<li>Fixes several vulnerabilities in TFLite saved model format
+<ul>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15209" rel="nofollow">CVE-2020-15209</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15210" rel="nofollow">CVE-2020-15210</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15211" rel="nofollow">CVE-2020-15211</a></li>
+</ul>
+</li>
+<li>Fixes several vulnerabilities in TFLite implementation of segment sum
+<ul>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15212" rel="nofollow">CVE-2020-15212</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15213" rel="nofollow">CVE-2020-15213</a>,</li>
+<li><a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15214" rel="nofollow">CVE-2020-15214</a></li>
+</ul>
+</li>
+<li>Fixes a segfault in <code>tf.quantization.quantize_and_dequantize</code>, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15265" rel="nofollow">CVE-2020-15265</a>)</li>
+<li>Fixes an undefined behavior float cast causing a crash, (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-15266" rel="nofollow">CVE-2020-15266</a>)</li>
+<li>Fixes a lack of validation in <code>tf.raw_ops.DataFormatVecPermute</code> and <code>tf.raw_ops.DataFormatDimMap</code> which can cause uninitialized memory access, read outside bounds of arrays, data corruption and segmentation faults (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-26267" rel="nofollow">CVE-2020-26267</a>)</li>
+<li>Fixes a crash caused by writing to read only memory region (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-26268" rel="nofollow">CVE-2020-26268</a>)</li>
+<li>Fixes a heap out of bounds access in filesystem globbing implementation (<a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-26269" rel="nofollow">CVE-2020-26269</a>)</li>
+</ul>
+<h3>Other:</h3>
+<ul>
+<li>We have replaced uses of "whitelist" and "blacklist" with "allowlist" and "denylist" where possible. Please see <a href="https://developers.google.com/style/word-list#blacklist" rel="nofollow">this list</a> for more context.</li>
+<li>Adds <code>tf.config.experimental.mlir_bridge_rollout</code> which will help us rollout the new MLIR TPU bridge.</li>
+<li>Adds <code>tf.experimental.register_filesystem_plugin</code> to load modular filesystem plugins from Python</li>
+</ul>
+<h2>Thanks to our Contributors</h2>
+<p>This release contains contributions from many people at Google as well as the following external contributors:</p>
+<p>8bitmp3, aaa.jq, Abhineet Choudhary, Abolfazl Shahbazi, acxz, Adam Hillier, Adrian Garcia Badaracco, Ag Ramesh, ahmedsabie, Alan Anderson, Alexander Grund, Alexandre Lissy, Alexey Ivanov, Amedeo Cavallo, anencore94, Aniket Kumar Singh, Anthony Platanios, Ashwin Phadke, Balint Cristian, Basit Ayantunde, bbbboom, Ben Barsdell, Benjamin Chetioui, Benjamin Peterson, bhack, Bhanu Prakash Bandaru Venkata, Biagio Montaruli, Brent M. Spell, bubblebooy, bzhao, cfRod, Cheng Chen, Cheng(Kit) Chen, Chris Tessum, Christian, chuanqiw, codeadmin_peritiae, COTASPAR, CuiYifeng, danielknobe, danielyou0230, dannyfriar, daria, DarrenZhang01, Denisa Roberts, dependabot[bot], Deven Desai, Dmitry Volodin, Dmitry Zakharov, drebain, Duncan Riach, Eduard Feicho, Ehsan Toosi, Elena Zhelezina, emlaprise2358, Eugene Kuznetsov, Evaderan-Lab, Evgeniy Polyakov, Fausto Morales, Felix Johnny, fo40225, Frederic Bastien, Fredrik Knutsson, fsx950223, Gaurav Singh, Gauri1 Deshpande, George Grzegorz Pawelczak, gerbauz, Gianluca Baratti, Giorgio Arena, Gmc2, Guozhong Zhuang, Hannes Achleitner, Harirai, HarisWang, Harsh188, hedgehog91, Hemal Mamtora, Hideto Ueno, Hugh Ku, Ian Beauregard, Ilya Persky, jacco, Jakub Beránek, Jan Jongboom, Javier Montalt Tordera, Jens Elofsson, Jerry Shih, jerryyin, jgehw, Jinjing Zhou, jma, jmsmdy, Johan Nordström, John Poole, Jonah Kohn, Jonathan Dekhtiar, jpodivin, Jung Daun, Kai Katsumata, Kaixi Hou, Kamil Rakoczy, Kaustubh Maske Patil, Kazuaki Ishizaki, Kedar Sovani, Koan-Sin Tan, Koki Ibukuro, Krzysztof Laskowski, Kushagra Sharma, Kushan Ahmadian, Lakshay Tokas, Leicong Li, levinxo, Lukas Geiger, Maderator, Mahmoud Abuzaina, Mao Yunfei, Marius Brehler, markf, Martin Hwasser, Martin Kubovčík, Matt Conley, Matthias, mazharul, mdfaijul, Michael137, MichelBr, Mikhail Startsev, Milan Straka, Ml-0, Myung-Hyun Kim, Måns Nilsson, Nathan Luehr, ngc92, nikochiko, Niranjan Hasabnis, nyagato_00, Oceania2018, Oleg Guba, Ongun Kanat, OscarVanL, Patrik Laurell, Paul Tanger, Peter Sobot, Phil Pearl, PlusPlusUltra, Poedator, Prasad Nikam, Rahul-Kamat, Rajeshwar Reddy T, redwrasse, Rickard, Robert Szczepanski, Rohan Lekhwani, Sam Holt, Sami Kama, Samuel Holt, Sandeep Giri, sboshin, Sean Settle, settle, Sharada Shiddibhavi, Shawn Presser, ShengYang1, Shi,Guangyong, Shuxiang Gao, Sicong Li, Sidong-Wei, Srihari Humbarwadi, Srinivasan Narayanamoorthy, Steenu Johnson, Steven Clarkson, stjohnso98, Tamas Bela Feher, Tamas Nyiri, Tarandeep Singh, Teng Lu, Thibaut Goetghebuer-Planchon, Tim Bradley, Tomasz Strejczek, Tongzhou Wang, Torsten Rudolf, Trent Lo, Ty Mick, Tzu-Wei Sung, Varghese, Jojimon, Vignesh Kothapalli, Vishakha Agrawal, Vividha, Vladimir Menshakov, Vladimir Silyaev, VoVAllen, Võ Văn Nghĩa, wondertx, xiaohong1031, Xiaoming (Jason) Cui, Xinan Jiang, Yair Ehrenwald, Yasir Modak, Yasuhiro Matsumoto, Yimei Sun, Yiwen Li, Yixing, Yoav Ramon, Yong Tang, Yong Wu, yuanbopeng, Yunmo Koo, Zhangqiang, Zhou Peng, ZhuBaohe, zilinzhu, zmx</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-575]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-575</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-575</guid>
+            <pubDate>Mon, 14 Dec 2020 17:39:10 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: electron v12.0.0-beta.10]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v12.0.0-beta.10</link>
+            <guid>https://github.com/electron/electron/releases/tag/v12.0.0-beta.10</guid>
+            <pubDate>Mon, 14 Dec 2020 17:02:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Note: This is a beta release.  Please file new issues for any bugs you find in it.</p>
+<p>This release is published to npm under the beta tag and can be installed via <code>npm install electron@beta</code>, or <code>npm install electron@12.0.0-beta.10</code>.</p>
+<h1>Release Notes for v12.0.0-beta.10</h1>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from dgraph: Dgraph v20.11.0-rc5]]></title>
+            <link>https://github.com/dgraph-io/dgraph/releases/tag/v20.11.0-rc5</link>
+            <guid>https://github.com/dgraph-io/dgraph/releases/tag/v20.11.0-rc5</guid>
+            <pubDate>Mon, 14 Dec 2020 16:44:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/6b953b56265f5dea8777b691eac04de53522d295/hovercard" href="https://github.com/dgraph-io/dgraph/commit/6b953b56265f5dea8777b691eac04de53522d295"><tt>6b953b5</tt></a> fix(GraphQL): fix internal Aliases name generation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="751974289" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7009" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7009/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7009">#7009</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="766114866" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7132" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7132/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7132">#7132</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/098480ff98c8b1d26dd4d49aa459d11753321cf0/hovercard" href="https://github.com/dgraph-io/dgraph/commit/098480ff98c8b1d26dd4d49aa459d11753321cf0"><tt>098480f</tt></a> fix(raftwal): unmarshal snapshot onto zerosnapshot instead of membershipState (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="765215208" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7125" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7125/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7125">#7125</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="765981158" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7128" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7128/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7128">#7128</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/8b8b0adc549c4c382c16942889f0cdfe414ba894/hovercard" href="https://github.com/dgraph-io/dgraph/commit/8b8b0adc549c4c382c16942889f0cdfe414ba894"><tt>8b8b0ad</tt></a> Fix(GraphQL): Fix Aggregate queries on empty data<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/61ff62f9a93987ded56bb4cfe823bcb6ed0f5132/hovercard" href="https://github.com/dgraph-io/dgraph/commit/61ff62f9a93987ded56bb4cfe823bcb6ed0f5132"><tt>61ff62f</tt></a> fix(GraphQL): Correctly apply order for root auth query (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="762063764" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7117" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7117/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7117">#7117</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/e2d93def5d3ae9f888cd443f4b32b8cb7502f4a5/hovercard" href="https://github.com/dgraph-io/dgraph/commit/e2d93def5d3ae9f888cd443f4b32b8cb7502f4a5"><tt>e2d93de</tt></a> perf(GraphQL): Part-4: Child auth queries are derived from auth filtered parents (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761445557" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7111" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7111/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7111">#7111</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/004ca03fd2f15a4d5e9cdd7526c8d450407d00da/hovercard" href="https://github.com/dgraph-io/dgraph/commit/004ca03fd2f15a4d5e9cdd7526c8d450407d00da"><tt>004ca03</tt></a> Fix(bulk): Correctly append all the slices of cbuf while reduce phase (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761374247" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7110" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7110/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7110">#7110</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/2894f6b0f4d6ed15f4d7c837828366c683f72a83/hovercard" href="https://github.com/dgraph-io/dgraph/commit/2894f6b0f4d6ed15f4d7c837828366c683f72a83"><tt>2894f6b</tt></a> chore(GC): Increase discard ratio from 0.7 to 0.9 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761603314" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7114" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7114/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7114">#7114</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/2e5499f93d43ed2b52d261d697db0392477a4d86/hovercard" href="https://github.com/dgraph-io/dgraph/commit/2e5499f93d43ed2b52d261d697db0392477a4d86"><tt>2e5499f</tt></a> [BREAKING] Fix(OOM): Don’t unmarshal pb.Proposals until we need them (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="757223760" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7059" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7059/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7059">#7059</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/7f12eee0f8d2595752906609b78ac09bc7552153/hovercard" href="https://github.com/dgraph-io/dgraph/commit/7f12eee0f8d2595752906609b78ac09bc7552153"><tt>7f12eee</tt></a> Fix(GraphQL): Add support for repeatitive fields in aggregate query (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760336271" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7094" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7094/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7094">#7094</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/67abf955fd6aeeb0097eabc89244df35ee41ed00/hovercard" href="https://github.com/dgraph-io/dgraph/commit/67abf955fd6aeeb0097eabc89244df35ee41ed00"><tt>67abf95</tt></a> perf(GraphQL): Part-3: Filter child auth queries as early as possible (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761192455" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7107" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7107/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7107">#7107</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/9baa3c708e14d6e9326b52f05d7c250ec063491b/hovercard" href="https://github.com/dgraph-io/dgraph/commit/9baa3c708e14d6e9326b52f05d7c250ec063491b"><tt>9baa3c7</tt></a> perf(GraphQL): Part-2: Remove unnecessary dgraph.uid : uid selections for auth queries (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761130993" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7105" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7105/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7105">#7105</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/c03c32766f460d20a219e97711bb7ea84e54d965/hovercard" href="https://github.com/dgraph-io/dgraph/commit/c03c32766f460d20a219e97711bb7ea84e54d965"><tt>c03c327</tt></a> fix(GraphQL): don’t update cacheMb if not specified by user (GRAPHQL-888) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761024419" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7103" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7103/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7103">#7103</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/504237086c837dc25023ec400852492f8b7637b2/hovercard" href="https://github.com/dgraph-io/dgraph/commit/504237086c837dc25023ec400852492f8b7637b2"><tt>5042370</tt></a> perf(GraphQL): Part-1: Pagination for root user query is applied at root auth query (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760990929" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7100" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7100/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7100">#7100</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/843fe1f2c203150286727ed2f12061031cadd1fd/hovercard" href="https://github.com/dgraph-io/dgraph/commit/843fe1f2c203150286727ed2f12061031cadd1fd"><tt>843fe1f</tt></a> feat(tablet): add uncompressed size to pb.Tablet (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760526023" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7095" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7095/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7095">#7095</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/5efdfbfde16fc4e8266a60a5770906e01fd10d73/hovercard" href="https://github.com/dgraph-io/dgraph/commit/5efdfbfde16fc4e8266a60a5770906e01fd10d73"><tt>5efdfbf</tt></a> Fix(Zero): Fix how Zero snapshots and purge works (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760759496" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7096" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7096/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7096">#7096</a>)<br>
+<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/73b36d4eccdcafa226612aaf3862a57d450963d8/hovercard" href="https://github.com/dgraph-io/dgraph/commit/73b36d4eccdcafa226612aaf3862a57d450963d8"><tt>73b36d4</tt></a> [docs] added backup policy (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="759524135" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7084" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7084/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7084">#7084</a>)</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-572]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-572</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-572</guid>
+            <pubDate>Mon, 14 Dec 2020 16:05:58 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-571]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-571</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-571</guid>
+            <pubDate>Mon, 14 Dec 2020 16:04:20 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-569]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-569</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-569</guid>
+            <pubDate>Mon, 14 Dec 2020 15:48:23 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-568]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-568</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-568</guid>
+            <pubDate>Mon, 14 Dec 2020 15:01:12 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from xstate: @xstate/inspect@0.3.0]]></title>
+            <link>https://github.com/davidkpiano/xstate/releases/tag/%40xstate%2Finspect%400.3.0</link>
+            <guid>https://github.com/davidkpiano/xstate/releases/tag/%40xstate%2Finspect%400.3.0</guid>
+            <pubDate>Mon, 14 Dec 2020 14:33:45 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Minor Changes</h3>
+<ul>
+<li><a href="https://github.com/davidkpiano/xstate/commit/a473205d214563033cd250094d2344113755bd8b"><code>a473205d</code></a> <a href="https://github.com/davidkpiano/xstate/pull/1699" data-hovercard-type="pull_request" data-hovercard-url="/davidkpiano/xstate/pull/1699/hovercard">#1699</a> Thanks <a href="https://github.com/davidkpiano">@davidkpiano</a>! - The <code>@xstate/inspect</code> tool now uses <a href="https://www.npmjs.com/package/fast-safe-stringify" rel="nofollow"><code>fast-safe-stringify</code></a> for internal JSON stringification of machines, states, and events when regular <code>JSON.stringify()</code> fails (e.g., due to circular structures).</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: v13.0.0-nightly.20201214]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v13.0.0-nightly.20201214</link>
+            <guid>https://github.com/electron/electron/releases/tag/v13.0.0-nightly.20201214</guid>
+            <pubDate>Mon, 14 Dec 2020 14:33:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v13.0.0-nightly.20201214</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-559]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-559</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-559</guid>
+            <pubDate>Mon, 14 Dec 2020 13:38:34 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 8.7.220.30]]></title>
+            <link>https://github.com/v8/v8/releases/tag/8.7.220.30</link>
+            <guid>https://github.com/v8/v8/releases/tag/8.7.220.30</guid>
+            <pubDate>Mon, 14 Dec 2020 13:20:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>TBR=<a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a></p>
+<p>Change-Id: Id10c0b136dbbc977d475d98f257d533e489a8faa<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/2589633" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/2589633</a><br>
+Reviewed-by: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/branch-heads/8.7@{#61}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0d81cd72688512abcbe1601015baee390c484a6a/hovercard" href="https://github.com/v8/v8/commit/0d81cd72688512abcbe1601015baee390c484a6a"><tt>0d81cd7</tt></a>-refs/heads/8.7.220@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/942c2ef85caef00fcf02517d049f05e9a3d4b440/hovercard" href="https://github.com/v8/v8/commit/942c2ef85caef00fcf02517d049f05e9a3d4b440"><tt>942c2ef</tt></a>-refs/heads/master@{#70196}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jekyll: v4.2.0]]></title>
+            <link>https://github.com/jekyll/jekyll/releases/tag/v4.2.0</link>
+            <guid>https://github.com/jekyll/jekyll/releases/tag/v4.2.0</guid>
+            <pubDate>Mon, 14 Dec 2020 12:32:03 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Minor Enhancements</h3>
+<ul>
+<li>Warn on command-line with permalink conflict (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="679347557" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8342" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8342/hovercard" href="https://github.com/jekyll/jekyll/pull/8342">#8342</a>)</li>
+<li>Supress warning issued for redirect pages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="680092701" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8347" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8347/hovercard" href="https://github.com/jekyll/jekyll/pull/8347">#8347</a>)</li>
+<li>Enhance detection of conflicting destination URLs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="737712591" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8459" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8459/hovercard" href="https://github.com/jekyll/jekyll/pull/8459">#8459</a>)</li>
+<li>Add <code>:post_convert</code> hook to modify HTML content before layout (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="691897379" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8368" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8368/hovercard" href="https://github.com/jekyll/jekyll/pull/8368">#8368</a>)</li>
+<li>Allow triggering <code>:post_convert</code> events atomically (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="740531747" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8465" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8465/hovercard" href="https://github.com/jekyll/jekyll/pull/8465">#8465</a>)</li>
+<li>Debug reading Page and Layout objects (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="595156881" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8100" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8100/hovercard" href="https://github.com/jekyll/jekyll/pull/8100">#8100</a>)</li>
+<li>Do not reset <code>site.url</code> to <code>http://localhost:4000</code> by default (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="361125706" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/7253" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/7253/hovercard" href="https://github.com/jekyll/jekyll/pull/7253">#7253</a>)</li>
+<li>Add custom debug strings for Jekyll objects (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="743992113" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8473" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8473/hovercard" href="https://github.com/jekyll/jekyll/pull/8473">#8473</a>)</li>
+<li>Debug reading data files in a site (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="751426043" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8481" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8481/hovercard" href="https://github.com/jekyll/jekyll/pull/8481">#8481</a>)</li>
+</ul>
+<h3>Bug Fixes</h3>
+<ul>
+<li>Replace nested conditional with guard clauses (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="653952790" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8294" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8294/hovercard" href="https://github.com/jekyll/jekyll/pull/8294">#8294</a>)</li>
+<li>Fix: security bump (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="680323384" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8349" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8349/hovercard" href="https://github.com/jekyll/jekyll/pull/8349">#8349</a>)</li>
+<li>Fix path matching regex in post_url Liquid tag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="695052557" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8375" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8375/hovercard" href="https://github.com/jekyll/jekyll/pull/8375">#8375</a>)</li>
+<li>Enable <code>Performance/ChainArrayAllocation</code> cop (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="705076172" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8404" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8404/hovercard" href="https://github.com/jekyll/jekyll/pull/8404">#8404</a>)</li>
+<li>Enable Lint/NoReturnInBeginEndBlocks Cop (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="736934798" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8457" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8457/hovercard" href="https://github.com/jekyll/jekyll/pull/8457">#8457</a>)</li>
+<li>Generate items from <code>site.include</code> list only once (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="738884033" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8463" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8463/hovercard" href="https://github.com/jekyll/jekyll/pull/8463">#8463</a>)</li>
+<li>Explicitly return nil after site process phase (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="743905858" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8472" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8472/hovercard" href="https://github.com/jekyll/jekyll/pull/8472">#8472</a>)</li>
+</ul>
+<h3>Optimization Fixes</h3>
+<ul>
+<li>Implement custom delegators for drop methods (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="619629671" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8183" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8183/hovercard" href="https://github.com/jekyll/jekyll/pull/8183">#8183</a>)</li>
+<li>Handle <code>nil</code> argument to <code>Jekyll.sanitized_path</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="709770791" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8415" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8415/hovercard" href="https://github.com/jekyll/jekyll/pull/8415">#8415</a>)</li>
+<li>Cache <code>Jekyll.sanitized_path</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="714913222" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8424" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8424/hovercard" href="https://github.com/jekyll/jekyll/pull/8424">#8424</a>)</li>
+<li>Memoize array of drop getter method names (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="712941890" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8421" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8421/hovercard" href="https://github.com/jekyll/jekyll/pull/8421">#8421</a>)</li>
+<li>Reduce string allocations from the <code>link</code> tag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="699167994" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8387" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8387/hovercard" href="https://github.com/jekyll/jekyll/pull/8387">#8387</a>)</li>
+<li>Optimize parsing of parameters in <code>include</code> tag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="621515536" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8192" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8192/hovercard" href="https://github.com/jekyll/jekyll/pull/8192">#8192</a>)</li>
+<li>Stash documents <code>write?</code> attribute in a variable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="701061210" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8389" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8389/hovercard" href="https://github.com/jekyll/jekyll/pull/8389">#8389</a>)</li>
+<li>Reduce string allocations from generating doc URLs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="702630637" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8392" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8392/hovercard" href="https://github.com/jekyll/jekyll/pull/8392">#8392</a>)</li>
+<li>Check if site is in incremental mode optimally (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="704573707" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8401" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8401/hovercard" href="https://github.com/jekyll/jekyll/pull/8401">#8401</a>)</li>
+<li>Utilize flexibility of <code>Site#in_dest_dir</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="705054887" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8403" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8403/hovercard" href="https://github.com/jekyll/jekyll/pull/8403">#8403</a>)</li>
+<li>Reduce allocations from rendering item as liquid (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="705549365" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8406" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8406/hovercard" href="https://github.com/jekyll/jekyll/pull/8406">#8406</a>)</li>
+<li>Compute relative_path of pages using PathManager (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="708361022" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8408" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8408/hovercard" href="https://github.com/jekyll/jekyll/pull/8408">#8408</a>)</li>
+<li>Reduce allocation from <code>normalize_whitespace</code> filter (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="704414725" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8400" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8400/hovercard" href="https://github.com/jekyll/jekyll/pull/8400">#8400</a>)</li>
+<li>Use <code>Regexp#match?</code> when <code>MatchData</code> is not required (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="717287286" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8427" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8427/hovercard" href="https://github.com/jekyll/jekyll/pull/8427">#8427</a>)</li>
+<li>Check default front matter scope against symbols (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="702926055" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8393" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8393/hovercard" href="https://github.com/jekyll/jekyll/pull/8393">#8393</a>)</li>
+<li>Stash frequently used <code>Drop</code> setter keys for reuse (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="702955110" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8394" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8394/hovercard" href="https://github.com/jekyll/jekyll/pull/8394">#8394</a>)</li>
+<li>Memoize defaults computed for Convertibles (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="734036445" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8451" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8451/hovercard" href="https://github.com/jekyll/jekyll/pull/8451">#8451</a>)</li>
+<li>Reduce array allocations from merging categories (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="735949148" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8453" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8453/hovercard" href="https://github.com/jekyll/jekyll/pull/8453">#8453</a>)</li>
+<li>Memoize destination of pages, documents and staticfiles (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="737191021" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8458" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8458/hovercard" href="https://github.com/jekyll/jekyll/pull/8458">#8458</a>)</li>
+<li>Reduce allocations from computing item property (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="752963389" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8485" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8485/hovercard" href="https://github.com/jekyll/jekyll/pull/8485">#8485</a>)</li>
+<li>Optimize <code>Page#dir</code> with a private method (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="753687384" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8489" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8489/hovercard" href="https://github.com/jekyll/jekyll/pull/8489">#8489</a>)</li>
+<li>Stash attribute hash for Liquid computed for pages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="757232904" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8497" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8497/hovercard" href="https://github.com/jekyll/jekyll/pull/8497">#8497</a>)</li>
+</ul>
+<h3>Development Fixes</h3>
+<ul>
+<li>Update cucumber gem to version 4.1 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="650583007" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8278" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8278/hovercard" href="https://github.com/jekyll/jekyll/pull/8278">#8278</a>)</li>
+<li>Move permalink styles data to constant (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="651039174" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8282" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8282/hovercard" href="https://github.com/jekyll/jekyll/pull/8282">#8282</a>)</li>
+<li>Update rubocop gem to 0.87.1 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="652142924" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8287" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8287/hovercard" href="https://github.com/jekyll/jekyll/pull/8287">#8287</a>)</li>
+<li>Update RuboCop to-do file (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="654566572" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8296" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8296/hovercard" href="https://github.com/jekyll/jekyll/pull/8296">#8296</a>)</li>
+<li>Fix <code>rake console</code> generating LoadError (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="664164001" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8312" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8312/hovercard" href="https://github.com/jekyll/jekyll/pull/8312">#8312</a>)</li>
+<li>Configure Performance cops (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="692954619" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8369" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8369/hovercard" href="https://github.com/jekyll/jekyll/pull/8369">#8369</a>)</li>
+<li>Update rubocop gem to 0.90.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="665716302" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8313" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8313/hovercard" href="https://github.com/jekyll/jekyll/pull/8313">#8313</a>)</li>
+<li>Refactor <code>Jekyll::Utils::Platforms</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="358415631" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/7236" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/7236/hovercard" href="https://github.com/jekyll/jekyll/pull/7236">#7236</a>)</li>
+<li>Bump RuboCop to v0.91.x (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="702603590" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8391" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8391/hovercard" href="https://github.com/jekyll/jekyll/pull/8391">#8391</a>)</li>
+<li>Add workflow to build and profile third-party repo (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="703537526" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8398" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8398/hovercard" href="https://github.com/jekyll/jekyll/pull/8398">#8398</a>)</li>
+<li>Bump RuboCop to v0.92.x</li>
+<li>Update cucumber gem version to 5.1.2 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="709342217" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8413" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8413/hovercard" href="https://github.com/jekyll/jekyll/pull/8413">#8413</a>)</li>
+<li>Fix test suite compatibility with JRuby (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="710274090" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8418" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8418/hovercard" href="https://github.com/jekyll/jekyll/pull/8418">#8418</a>)</li>
+<li>chore(deps): bump Rubocop to 0.93.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="717459690" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8430" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8430/hovercard" href="https://github.com/jekyll/jekyll/pull/8430">#8430</a>)</li>
+<li>Use Ruby 2.7.1 in GitHub Actions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="727598327" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8444" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8444/hovercard" href="https://github.com/jekyll/jekyll/pull/8444">#8444</a>)</li>
+<li>Test that Liquid expressions are not deeply evaled (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="653457891" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8292" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8292/hovercard" href="https://github.com/jekyll/jekyll/pull/8292">#8292</a>)</li>
+<li>Test rendering arbitrary Liquid variables by default (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="390298457" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/7414" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/7414/hovercard" href="https://github.com/jekyll/jekyll/pull/7414">#7414</a>)</li>
+<li>Migrate TravisCI jobs to GitHub Actions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="755154454" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8492" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8492/hovercard" href="https://github.com/jekyll/jekyll/pull/8492">#8492</a>)</li>
+</ul>
+<h3>Documentation</h3>
+<ul>
+<li>Update pointer to special permalink variables for collections (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="648351761" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8274" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8274/hovercard" href="https://github.com/jekyll/jekyll/pull/8274">#8274</a>)</li>
+<li>Fix special treatment for 'page 1' in docs of pagination (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="632581059" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8230" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8230/hovercard" href="https://github.com/jekyll/jekyll/pull/8230">#8230</a>)</li>
+<li>Add Formcake to forms section (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="651201783" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8283" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8283/hovercard" href="https://github.com/jekyll/jekyll/pull/8283">#8283</a>)</li>
+<li>Add a note on the rendering process in the docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="653432585" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8291" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8291/hovercard" href="https://github.com/jekyll/jekyll/pull/8291">#8291</a>)</li>
+<li>Add refactoring type to PULL_REQUEST_TEMPLATE (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="654588646" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8297" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8297/hovercard" href="https://github.com/jekyll/jekyll/pull/8297">#8297</a>)</li>
+<li>Update resources.md (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="508544548" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/7864" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/7864/hovercard" href="https://github.com/jekyll/jekyll/pull/7864">#7864</a>)</li>
+<li>Extra apostrophes in an URL (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="667987434" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8319" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8319/hovercard" href="https://github.com/jekyll/jekyll/pull/8319">#8319</a>)</li>
+<li>Clarify target of subordinate clause (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="668071960" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8320" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8320/hovercard" href="https://github.com/jekyll/jekyll/pull/8320">#8320</a>)</li>
+<li>Cherry-pick commits from conflicting branch <code>docs-40</code></li>
+<li>Update documentation on third party site (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="683999697" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8352" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8352/hovercard" href="https://github.com/jekyll/jekyll/pull/8352">#8352</a>)</li>
+<li>Update default.md with info requested in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="666353064" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8314" data-hovercard-type="issue" data-hovercard-url="/jekyll/jekyll/issues/8314/hovercard" href="https://github.com/jekyll/jekyll/issues/8314">#8314</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="684642855" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8353" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8353/hovercard" href="https://github.com/jekyll/jekyll/pull/8353">#8353</a>)</li>
+<li>Clarify description of <code>safe</code> option (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="684739186" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8354" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8354/hovercard" href="https://github.com/jekyll/jekyll/pull/8354">#8354</a>)</li>
+<li>Simplifying the Git post-receive hook-example (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="687366543" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8358" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8358/hovercard" href="https://github.com/jekyll/jekyll/pull/8358">#8358</a>)</li>
+<li>Add missing doc for build and serve commands (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="688601811" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8365" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8365/hovercard" href="https://github.com/jekyll/jekyll/pull/8365">#8365</a>)</li>
+<li>Docs Review: Getting Started (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="694091202" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8372" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8372/hovercard" href="https://github.com/jekyll/jekyll/pull/8372">#8372</a>)</li>
+<li>Add note about rebooting system after installation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="687435909" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8359" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8359/hovercard" href="https://github.com/jekyll/jekyll/pull/8359">#8359</a>)</li>
+<li>Use data file to render table at <code>/docs/configuration/options/#global-configuration</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="695283582" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8377" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8377/hovercard" href="https://github.com/jekyll/jekyll/pull/8377">#8377</a>)</li>
+<li>Use data file(s) to render table(s) at <code>/docs/configuration/options/</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="696035187" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8380" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8380/hovercard" href="https://github.com/jekyll/jekyll/pull/8380">#8380</a>)</li>
+<li>Improve maintainability of config option data (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="696525573" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8383" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8383/hovercard" href="https://github.com/jekyll/jekyll/pull/8383">#8383</a>)</li>
+<li>Remove CircleCI v1 docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="708559236" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8410" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8410/hovercard" href="https://github.com/jekyll/jekyll/pull/8410">#8410</a>)</li>
+<li>Remove <code>NOKOGIRI_USE_SYSTEM_LIBRARIES</code> from Travis CI docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="708553299" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8409" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8409/hovercard" href="https://github.com/jekyll/jekyll/pull/8409">#8409</a>)</li>
+<li>Add links to all Jekyll themes on GitHub tagged with #jekyll-theme (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="729733382" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8447" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8447/hovercard" href="https://github.com/jekyll/jekyll/pull/8447">#8447</a>)</li>
+<li>Document initializing project Gemfile from scratch (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="732395668" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8450" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8450/hovercard" href="https://github.com/jekyll/jekyll/pull/8450">#8450</a>)</li>
+<li>Document installation of additional dependencies for installing Jekyll on Fedora (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="736848372" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8456" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8456/hovercard" href="https://github.com/jekyll/jekyll/pull/8456">#8456</a>)</li>
+<li>Improve documentation on Hooks in Jekyll (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="740945337" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8467" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8467/hovercard" href="https://github.com/jekyll/jekyll/pull/8467">#8467</a>)</li>
+<li>Build docs site with GitHub Actions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="623400483" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8201" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8201/hovercard" href="https://github.com/jekyll/jekyll/pull/8201">#8201</a>)</li>
+<li>Add link to Assets page from <code>_sass</code> section in <code>_docs/structure.md</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="752971835" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8486" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8486/hovercard" href="https://github.com/jekyll/jekyll/pull/8486">#8486</a>)</li>
+</ul>
+<h3>Site Enhancements</h3>
+<ul>
+<li>Fix rendering of <em>showcase</em> images (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="758042060" data-permission-text="Title is private" data-url="https://github.com/jekyll/jekyll/issues/8504" data-hovercard-type="pull_request" data-hovercard-url="/jekyll/jekyll/pull/8504/hovercard" href="https://github.com/jekyll/jekyll/pull/8504">#8504</a>)</li>
+</ul>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-550]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-550</link>
@@ -23,13 +593,6 @@
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.4.30-M1-104]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-104</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-104</guid>
-            <pubDate>Mon, 14 Dec 2020 11:40:05 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-529]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-529</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-529</guid>
@@ -37,24 +600,10 @@
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.4.30-M1-103]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-103</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-103</guid>
-            <pubDate>Mon, 14 Dec 2020 08:43:06 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-528]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-528</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-528</guid>
             <pubDate>Mon, 14 Dec 2020 07:48:40 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.4.30-M1-102]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-102</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-102</guid>
-            <pubDate>Mon, 14 Dec 2020 07:46:05 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
@@ -172,20 +721,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li>Gradient Accumulation + Mixed Precision shows artificially high training loss (<a href="https://github.com/fastai/fastai/issues/3048" data-hovercard-type="issue" data-hovercard-url="/fastai/fastai/issues/3048/hovercard">#3048</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.4.30-M1-101]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-101</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.4.30-M1-101</guid>
-            <pubDate>Sun, 13 Dec 2020 17:28:48 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-518]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-518</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-518</guid>
-            <pubDate>Sun, 13 Dec 2020 17:25:21 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from husky: v4.3.6]]></title>
@@ -469,13 +1004,6 @@ raising TypeError.</p>
 <ul>
 <li>Update react-popper-tooltip and @popperjs/core for react17 (<a href="https://github.com/storybookjs/storybook/pull/13434" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/13434/hovercard">#13434</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.0-dev-500]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-500</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.0-dev-500</guid>
-            <pubDate>Sat, 12 Dec 2020 11:31:01 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from xgboost: Release 1.3.0 stable]]></title>
@@ -1169,72 +1697,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li>Updated Chromium to 87.0.4280.88. <a href="https://github.com/electron/electron/pull/26817" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/26817/hovercard">#26817</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from dgraph: Dgraph v20.11.0-rc4]]></title>
-            <link>https://github.com/dgraph-io/dgraph/releases/tag/v20.11.0-rc4</link>
-            <guid>https://github.com/dgraph-io/dgraph/releases/tag/v20.11.0-rc4</guid>
-            <pubDate>Fri, 11 Dec 2020 18:08:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/8b8b0adc549c4c382c16942889f0cdfe414ba894/hovercard" href="https://github.com/dgraph-io/dgraph/commit/8b8b0adc549c4c382c16942889f0cdfe414ba894"><tt>8b8b0ad</tt></a> Fix(GraphQL): Fix Aggregate queries on empty data<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/61ff62f9a93987ded56bb4cfe823bcb6ed0f5132/hovercard" href="https://github.com/dgraph-io/dgraph/commit/61ff62f9a93987ded56bb4cfe823bcb6ed0f5132"><tt>61ff62f</tt></a> fix(GraphQL): Correctly apply order for root auth query (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="762063764" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7117" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7117/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7117">#7117</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/e2d93def5d3ae9f888cd443f4b32b8cb7502f4a5/hovercard" href="https://github.com/dgraph-io/dgraph/commit/e2d93def5d3ae9f888cd443f4b32b8cb7502f4a5"><tt>e2d93de</tt></a> perf(GraphQL): Part-4: Child auth queries are derived from auth filtered parents (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761445557" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7111" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7111/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7111">#7111</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/004ca03fd2f15a4d5e9cdd7526c8d450407d00da/hovercard" href="https://github.com/dgraph-io/dgraph/commit/004ca03fd2f15a4d5e9cdd7526c8d450407d00da"><tt>004ca03</tt></a> Fix(bulk): Correctly append all the slices of cbuf while reduce phase (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761374247" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7110" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7110/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7110">#7110</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/2894f6b0f4d6ed15f4d7c837828366c683f72a83/hovercard" href="https://github.com/dgraph-io/dgraph/commit/2894f6b0f4d6ed15f4d7c837828366c683f72a83"><tt>2894f6b</tt></a> chore(GC): Increase discard ratio from 0.7 to 0.9 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761603314" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7114" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7114/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7114">#7114</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/2e5499f93d43ed2b52d261d697db0392477a4d86/hovercard" href="https://github.com/dgraph-io/dgraph/commit/2e5499f93d43ed2b52d261d697db0392477a4d86"><tt>2e5499f</tt></a> [BREAKING] Fix(OOM): Don't unmarshal pb.Proposals until we need them (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="757223760" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7059" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7059/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7059">#7059</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/7f12eee0f8d2595752906609b78ac09bc7552153/hovercard" href="https://github.com/dgraph-io/dgraph/commit/7f12eee0f8d2595752906609b78ac09bc7552153"><tt>7f12eee</tt></a> Fix(GraphQL): Add support for repeatitive fields in aggregate query (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760336271" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7094" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7094/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7094">#7094</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/67abf955fd6aeeb0097eabc89244df35ee41ed00/hovercard" href="https://github.com/dgraph-io/dgraph/commit/67abf955fd6aeeb0097eabc89244df35ee41ed00"><tt>67abf95</tt></a> perf(GraphQL): Part-3: Filter child auth queries as early as possible (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761192455" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7107" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7107/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7107">#7107</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/9baa3c708e14d6e9326b52f05d7c250ec063491b/hovercard" href="https://github.com/dgraph-io/dgraph/commit/9baa3c708e14d6e9326b52f05d7c250ec063491b"><tt>9baa3c7</tt></a> perf(GraphQL): Part-2: Remove unnecessary dgraph.uid : uid selections for auth queries (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761130993" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7105" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7105/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7105">#7105</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/c03c32766f460d20a219e97711bb7ea84e54d965/hovercard" href="https://github.com/dgraph-io/dgraph/commit/c03c32766f460d20a219e97711bb7ea84e54d965"><tt>c03c327</tt></a> fix(GraphQL): don't update cacheMb if not specified by user (GRAPHQL-888) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761024419" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7103" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7103/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7103">#7103</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/504237086c837dc25023ec400852492f8b7637b2/hovercard" href="https://github.com/dgraph-io/dgraph/commit/504237086c837dc25023ec400852492f8b7637b2"><tt>5042370</tt></a> perf(GraphQL): Part-1: Pagination for root user query is applied at root auth query (GRAPHQL-854) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760990929" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7100" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7100/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7100">#7100</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/843fe1f2c203150286727ed2f12061031cadd1fd/hovercard" href="https://github.com/dgraph-io/dgraph/commit/843fe1f2c203150286727ed2f12061031cadd1fd"><tt>843fe1f</tt></a> feat(tablet): add uncompressed size to pb.Tablet (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760526023" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7095" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7095/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7095">#7095</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/5efdfbfde16fc4e8266a60a5770906e01fd10d73/hovercard" href="https://github.com/dgraph-io/dgraph/commit/5efdfbfde16fc4e8266a60a5770906e01fd10d73"><tt>5efdfbf</tt></a> Fix(Zero): Fix how Zero snapshots and purge works (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760759496" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7096" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7096/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7096">#7096</a>)<br>
-<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/dgraph-io/dgraph/commit/73b36d4eccdcafa226612aaf3862a57d450963d8/hovercard" href="https://github.com/dgraph-io/dgraph/commit/73b36d4eccdcafa226612aaf3862a57d450963d8"><tt>73b36d4</tt></a> [docs] added backup policy (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="759524135" data-permission-text="Title is private" data-url="https://github.com/dgraph-io/dgraph/issues/7084" data-hovercard-type="pull_request" data-hovercard-url="/dgraph-io/dgraph/pull/7084/hovercard" href="https://github.com/dgraph-io/dgraph/pull/7084">#7084</a>)</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 8.9.138]]></title>
-            <link>https://github.com/v8/v8/releases/tag/8.9.138</link>
-            <guid>https://github.com/v8/v8/releases/tag/8.9.138</guid>
-            <pubDate>Fri, 11 Dec 2020 16:48:15 GMT</pubDate>
-            <content:encoded><![CDATA[<p>TBR=<a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a></p>
-<p>Change-Id: I3f51877f867ce6e7772e52d23a86d61cdcda117b<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/2587195" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/2587195</a><br>
-Reviewed-by: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/8.9.138@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8ffbf0d2993c332f728b3227e815fa825a4e4c94/hovercard" href="https://github.com/v8/v8/commit/8ffbf0d2993c332f728b3227e815fa825a4e4c94"><tt>8ffbf0d</tt></a>-refs/heads/master@{#71716}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 8.9.137]]></title>
-            <link>https://github.com/v8/v8/releases/tag/8.9.137</link>
-            <guid>https://github.com/v8/v8/releases/tag/8.9.137</guid>
-            <pubDate>Fri, 11 Dec 2020 15:48:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>TBR=<a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a></p>
-<p>Change-Id: I83d38af75dbf14e84a384c90a8cb107ee7554094<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/2587152" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/2587152</a><br>
-Reviewed-by: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/8.9.137@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/fcfd4b11bd960f4f29eead44ea63f74b24a104ac/hovercard" href="https://github.com/v8/v8/commit/fcfd4b11bd960f4f29eead44ea63f74b24a104ac"><tt>fcfd4b1</tt></a>-refs/heads/master@{#71711}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cdk: v2.0.0-alpha.0]]></title>
-            <link>https://github.com/aws/aws-cdk/releases/tag/v2.0.0-alpha.0</link>
-            <guid>https://github.com/aws/aws-cdk/releases/tag/v2.0.0-alpha.0</guid>
-            <pubDate>Fri, 11 Dec 2020 14:33:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: add CHANGELOG entry for 2.0.0-alpha.0 (<a class="issue-link js-issue-link" href="https://github.com/aws/aws-cdk/pull/12013">#12013</a>)</p>
-
-<p>Keep the text simple. Calling out the list of changes is not important
-<br />for the first release. Subsequent releases will carry the standard
-<br />format of features and bug fixes.</p>
-
-<p>----</p>
-
-<p>*By submitting this pull request, I confirm that my contribution is made under the terms of the Apache-2.0 license*</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v13.0.0-nightly.20201211]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v13.0.0-nightly.20201211</link>
-            <guid>https://github.com/electron/electron/releases/tag/v13.0.0-nightly.20201211</guid>
-            <pubDate>Fri, 11 Dec 2020 14:32:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v13.0.0-nightly.20201211</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
