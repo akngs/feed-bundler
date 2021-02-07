@@ -4,10 +4,582 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 06 Feb 2021 18:22:30 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 07 Feb 2021 00:51:55 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from scala: Scala 2.13.0]]></title>
+            <link>https://github.com/scala/scala/releases/tag/v2.13.0</link>
+            <guid>https://github.com/scala/scala/releases/tag/v2.13.0</guid>
+            <pubDate>Sat, 06 Feb 2021 21:23:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>We are delighted to announce the availability of Scala 2.13.0!</p>
+<h2>Release summary</h2>
+<p>2.13 improves Scala in the following areas:</p>
+<ul>
+<li><strong>Collections</strong>: Standard library collections have been overhauled for simplicity, performance, and safety. This is the centerpiece of the release.</li>
+<li><strong>Standard library</strong>: <code>Future</code> is faster and more robust. Elsewhere, useful classes and methods have been added.</li>
+<li><strong>Language</strong>: Literal types, partial unification, by-name implicits, more.</li>
+<li><strong>Compiler</strong>: 5-10% faster, deterministic output, improved optimizer.</li>
+</ul>
+<p>To learn more, read on.</p>
+<h2>Collections redesign</h2>
+<p>Standard library collections have been overhauled for simplicity, performance, and safety.</p>
+<p>This is the centerpiece of the release.</p>
+<p>Most ordinary code that used the old collections will continue to work as-is, except as detailed below.</p>
+<p>The most important collections changes are:</p>
+<ul>
+<li><strong>Simpler method signatures</strong>
+<ul>
+<li>No more <code>CanBuildFrom</code>. Transformation methods no longer take an implicit <code>CanBuildFrom</code> parameter.</li>
+<li>The resulting library is easier to understand (in code, Scaladoc, and IDE code completion).</li>
+<li>It also makes user code compile faster.</li>
+<li>A new <code>BuildFrom</code> implicit is used in a handful of places that need it.</li>
+</ul>
+</li>
+<li><strong>Simpler type hierarchy</strong>
+<ul>
+<li>No more <code>Traversable</code> and <code>TraversableOnce</code>.
+<ul>
+<li>They remain only as deprecated aliases for <code>Iterable</code> and <code>IterableOnce</code>.</li>
+</ul>
+</li>
+<li>Parallel collections are now a <a href="https://github.com/scala/scala-parallel-collections">separate module</a>.
+<ul>
+<li>As a result, <code>GenSeq</code>, <code>GenTraversableOnce</code>, et al are gone.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Immutable <code>scala.Seq</code></strong>
+<ul>
+<li><code>Seq</code> is now an alias for <code>collection.immutable.Seq</code>
+<ul>
+<li>Before, it was an alias for the possibly-mutable <code>collection.Seq</code>.</li>
+</ul>
+</li>
+<li>This also changes the type of varargs in methods and pattern matches.</li>
+<li>Arrays passed as varargs are defensively copied. (<a href="https://github.com/scala/scala/pull/6970" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6970/hovercard">#6970</a>)</li>
+</ul>
+</li>
+<li><strong>Simplified views that work</strong>
+<ul>
+<li><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/View.html" rel="nofollow"><code>collection.View</code></a>s have been vastly simplified and should now work reliably.</li>
+</ul>
+</li>
+<li><strong>Alphanumeric method names</strong>
+<ul>
+<li>All symbolic operators are now just aliases for descriptive alphanumeric method names.</li>
+<li>Examples: <code>++</code> (alias for <code>concat</code>), <code>+:</code> (alias for <code>prepended</code>), <code>:+</code> (alias for <code>appended</code>), and so on.</li>
+</ul>
+</li>
+<li><strong>New, faster <code>HashMap/Set</code> implementations</strong>
+<ul>
+<li>Both immutable (<a href="https://github.com/scala/scala/commit/d5ae93e1b35fac4002cfbffff9ec741356549e08">d5ae93e</a>) and mutable (<a href="https://github.com/scala/scala/pull/7348" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7348/hovercard">#7348</a>) versions were completely replaced.</li>
+<li>They substantially outperform the old implementations in most scenarios.</li>
+<li>The mutable versions now perform on par with the Java standard library's implementations.</li>
+</ul>
+</li>
+<li><strong>New concrete collections</strong>
+<ul>
+<li><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/LazyList.html" rel="nofollow"><code>immutable.LazyList</code></a> replaces <code>immutable.Stream</code>. <code>Stream</code> had different laziness behavior and is now deprecated. (<a href="https://github.com/scala/scala/pull/7558" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7558/hovercard">#7558</a>, <a href="https://github.com/scala/scala/pull/7000" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7000/hovercard">#7000</a>)</li>
+<li><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/ArraySeq.html" rel="nofollow"><code>immutable.ArraySeq</code></a> is an immutable wrapper for an array; there is also a <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/mutable/ArraySeq.html" rel="nofollow">mutable version</a></li>
+<li><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/mutable/CollisionProofHashMap.html" rel="nofollow"><code>mutable.CollisionProofHashMap</code></a> guards against denial-of-service attacks (<a href="https://github.com/scala/scala/pull/7633" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7633/hovercard">#7633</a>)</li>
+<li><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/mutable/ArrayDeque.html" rel="nofollow"><code>mutable.ArrayDeque</code></a> is a double-ended queue that internally uses a resizable circular buffer (<a href="https://github.com/scala/collection-strawman/pull/490" data-hovercard-type="pull_request" data-hovercard-url="/scala/collection-strawman/pull/490/hovercard">scala/collection-strawman#490</a>)</li>
+<li><strong><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/mutable/Stack.html" rel="nofollow"><code>mutable.Stack</code></a> was reimplemented (and undeprecated)</strong>
+<ul>
+<li>In 2.12, both immutable and mutable <code>Stack</code>s were<code> List</code>-based and deprecated.</li>
+<li>2.13 adds a brand-new <code>mutable.Stack</code> backed by an <code>ArrayDeque</code>.</li>
+<li><code>immutable.Stack</code> was removed.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>New abstract collection type <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/SeqMap.html" rel="nofollow"><code>SeqMap</code></a></strong>
+<ul>
+<li><a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/SeqMap.html" rel="nofollow"><code>immutable.SeqMap</code></a> provides immutable maps that maintain insertion order. (<a href="https://github.com/scala/scala/pull/7954" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7954/hovercard">#7954</a>)</li>
+<li>Implementations: <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/VectorMap.html" rel="nofollow"><code>VectorMap</code></a> (<a href="https://github.com/scala/scala/pull/6854" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6854/hovercard">#6854</a>) and <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/TreeSeqMap.html" rel="nofollow"><code>TreeSeqMap</code></a> (<a href="https://github.com/scala/scala/pull/7146" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7146/hovercard">#7146</a>) (in addition to the already existing <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/ListMap.html" rel="nofollow"><code>ListMap</code></a>).</li>
+</ul>
+</li>
+</ul>
+<p>Additional collections changes:</p>
+<ul>
+<li><strong>New <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/Iterable.html#to%5BC1%5D(factory:scala.collection.Factory%5BA,C1%5D):C1" rel="nofollow"><code>to(Collection)</code></a> method</strong>
+<ul>
+<li>Replaces old <code>to[Collection]</code> method.</li>
+<li>The argument is the companion object of the desired collection type, for example <code>.to(Vector)</code>.</li>
+<li>The API change enables support for all collection types (including <code>Map</code>, <code>BitSet</code>, et al).</li>
+</ul>
+</li>
+<li><strong>No more <code>collection.breakOut</code></strong>
+<ul>
+<li>It required <code>CanBuildFrom</code>, which no longer exists.</li>
+<li>To avoid constructing intermediate collections, use <code>.view</code> and <code>.to(Collection)</code> instead.</li>
+</ul>
+</li>
+<li><strong><code>List</code> and <code>Vector</code> are safer</strong>
+<ul>
+<li>They now offer safe publication under the Java Memory Model, using <code>releaseFence</code> (<a href="https://github.com/scala/scala/pull/6425" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6425/hovercard">#6425</a>)</li>
+</ul>
+</li>
+<li><strong>Added in-place operations on mutable collections</strong>
+<ul>
+<li><code>filterInPlace</code>, <code>mapInPlace</code>, <code>flatMapInPlace</code>, and others.</li>
+<li>These methods update the original collection in-place, rather than creating a new collection to hold the results.</li>
+</ul>
+</li>
+<li><strong>Java interop has moved</strong>
+<ul>
+<li>Extension methods for Scala are now in <a href="https://www.scala-lang.org/api/2.13.0/scala/jdk/index.html" rel="nofollow"><code>scala.jdk</code></a></li>
+<li>Explicit converters for Java are in <a href="https://www.scala-lang.org/api/2.13.0/scala/jdk/javaapi/index.html" rel="nofollow"><code>scala.jdk.javaapi</code></a></li>
+<li>The reorganization centralizes all to-and-from-Java converters, including both collection and non-collection types, in a single package.</li>
+<li>Added <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/Stepper.html" rel="nofollow"><code>Stepper</code></a>, which is like <code>Iterator</code> but supports efficient unboxed iteration, Java interop. (<a href="https://github.com/scala/scala/pull/7458" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7458/hovercard">#7458</a>)</li>
+</ul>
+</li>
+<li><strong>Collection serialization has changed</strong>
+<ul>
+<li>Collections now use the serialization proxy pattern uniformly whenever possible. (<a href="https://github.com/scala/scala/pull/6676" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6676/hovercard">#6676</a>, <a href="https://github.com/scala/scala/pull/7624" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7624/hovercard">#7624</a>, <a href="https://github.com/scala/scala-dev/issues/562#issuecomment-427545324" data-hovercard-type="issue" data-hovercard-url="/scala/scala-dev/issues/562/hovercard">scala-dev#562</a>, <a href="https://github.com/sbt/sbt/issues/89" data-hovercard-type="issue" data-hovercard-url="/sbt/sbt/issues/89/hovercard">sbt/sbt#89</a>)</li>
+<li>In some classloading environments, notably sbt's non-forked test execution, code changes may be needed.</li>
+</ul>
+</li>
+<li><strong>Added <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/IterableFactory.html#unfold%5BA,S%5D(init:S)(f:S=%3EOption%5B(A,S)%5D):CC%5BA%5D" rel="nofollow"><code>.unfold</code></a></strong>
+<ul>
+<li>This allows constructing a collection or iterator from an initial element and a repeated <code>Option</code>-returning operation, terminating on <code>None</code>.</li>
+<li>This was added collection companion objects and to <code>Iterator</code> (<a href="https://github.com/scala/scala/pull/6851" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6851/hovercard">#6851</a>)</li>
+</ul>
+</li>
+<li><strong>Added <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/Seq.html#lengthIs:scala.collection.IterableOps.SizeCompareOps" rel="nofollow"><code>.lengthIs</code></a>/<a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/Iterable.html#sizeIs:scala.collection.IterableOps.SizeCompareOps" rel="nofollow"><code>.sizeIs</code></a> and <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/Iterable.html#sizeCompare(otherSize:Int):Int" rel="nofollow"><code>.sizeCompare</code></a></strong>
+<ul>
+<li>These allow fluent size comparisons without traversing the whole collection (<a href="https://github.com/scala/scala/pull/6950" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6950/hovercard">#6950</a>, <a href="https://github.com/scala/scala/pull/6758" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6758/hovercard">#6758</a>)</li>
+<li>Examples: <code>xs.sizeIs &lt; 10</code>, <code>xs.sizeIs == 2</code></li>
+</ul>
+</li>
+<li><strong>Error-prone <code>Map</code> methods deprecated</strong>
+<ul>
+<li>Deprecated <code>.filterKeys</code> and <code>.mapValues</code> (<a href="https://github.com/scala/scala/pull/7014" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7014/hovercard">#7014</a>)</li>
+<li>Instead, use the new methods of the same names on <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/MapView.html" rel="nofollow"><code>MapView</code></a> (e.g. <code>.view.filterKeys</code>)</li>
+</ul>
+</li>
+<li><strong>Added <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/Iterable.html#lazyZip%5BB%5D(that:Iterable%5BB%5D):scala.collection.LazyZip2%5BA,B,Iterable.this.type%5D" rel="nofollow"><code>.lazyZip</code></a></strong>
+<ul>
+<li>Together with <code>.zip</code> on views, this replaces <code>.zipped</code> (now deprecated). (<a href="https://github.com/scala/collection-strawman/pull/223" data-hovercard-type="pull_request" data-hovercard-url="/scala/collection-strawman/pull/223/hovercard">scala/collection-strawman#223</a>)</li>
+</ul>
+</li>
+<li><strong>Added <code>.tapEach</code> method</strong>
+<ul>
+<li>This allows inserting side-effects in a chain of method calls on a collection or view. (<a href="https://github.com/scala/scala/pull/7124" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7124/hovercard">#7124</a>)</li>
+</ul>
+</li>
+<li><strong>Added <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/immutable/Map.html#updatedWith%5BV1%3E:V%5D(key:K)(remappingFunction:Option%5BV%5D=%3EOption%5BV1%5D):CC%5BK,V1%5D" rel="nofollow"><code>.updatedWith</code></a> and <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/mutable/Map.html#updateWith(key:K)(remappingFunction:Option%5BV%5D=%3EOption%5BV%5D):Option%5BV%5D" rel="nofollow"><code>updateWith</code></a> methods to <code>Map</code>s</strong>
+<ul>
+<li><code>updatedWith</code> is on <code>immutable.Map</code>, <code>updateWith</code> is on <code>mutable.Map</code>. (<a href="https://github.com/scala/scala/pull/7320" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7320/hovercard">#7320</a>, <a href="https://github.com/scala/scala/pull/7517" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7517/hovercard">#7517</a>)</li>
+<li>These methods allow modifying a map entry based on its current value.</li>
+</ul>
+</li>
+<li><strong>Added <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/IterableOnceOps.html#maxOption%5BB%3E:A%5D(implicitord:scala.math.Ordering%5BB%5D):Option%5BA%5D" rel="nofollow"><code>.maxOption</code></a>, <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/IterableOnceOps.html#minOption%5BB%3E:A%5D(implicitord:scala.math.Ordering%5BB%5D):Option%5BA%5D" rel="nofollow"><code>.minOption</code></a>, <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/IterableOnceOps.html#maxByOption%5BB%5D(f:A=%3EB)(implicitcmp:scala.math.Ordering%5BB%5D):Option%5BA%5D" rel="nofollow"><code>.maxByOption</code></a>, <a href="https://www.scala-lang.org/api/2.13.0/scala/collection/IterableOnceOps.html#minByOption%5BB%5D(f:A=%3EB)(implicitcmp:scala.math.Ordering%5BB%5D):Option%5BA%5D" rel="nofollow"><code>.minByOption</code></a></strong>
+<ul>
+<li>These methods safely handle the empty case. (<a href="https://github.com/scala/scala/pull/6574" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6574/hovercard">#6574</a>)</li>
+</ul>
+</li>
+<li><strong>Deprecated symbolic methods with multiple arguments</strong>
+<ul>
+<li>Such methods may be disallowed entirely in a future Scala. (<a href="https://github.com/scala/scala/pull/6719" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6719/hovercard">#6719</a>)</li>
+</ul>
+</li>
+<li><strong>Adding custom collections and operations works very differently</strong>
+<ul>
+<li>See documentation links below.</li>
+</ul>
+</li>
+</ul>
+<p>To learn more about the new APIs and how to adapt your code, consult:</p>
+<ul>
+<li><a href="https://docs.scala-lang.org/overviews/collections-2.13/introduction.html" rel="nofollow">Scala 2.13's Collections</a>
+<ul>
+<li>Intro for newcomers. Skip if the collections from Scala 2.12 and earlier are already familiar to you.</li>
+</ul>
+</li>
+<li><a href="https://docs.scala-lang.org/overviews/core/architecture-of-scala-213-collections.html" rel="nofollow">The Architecture of Scala 2.13 Collections</a></li>
+<li><a href="https://docs.scala-lang.org/overviews/core/custom-collections.html" rel="nofollow">Implementing Custom Collections (Scala 2.13)</a></li>
+<li><a href="https://docs.scala-lang.org/overviews/core/custom-collection-operations.html" rel="nofollow">Adding Custom Collection Operations (Scala 2.13)</a></li>
+<li><a href="https://docs.scala-lang.org/overviews/core/collections-migration-213.html" rel="nofollow">Migrating a Project to 2.13's Collections</a>.
+<ul>
+<li>This document describes the main changes for collection users that migrate to Scala 2.13 and shows how to cross-build on Scala 2.11/12/13.</li>
+</ul>
+</li>
+<li><a href="https://github.com/scala/scala-collection-compat">scala-collection-compat</a>
+<ul>
+<li>This new module provides shims for cross-building on Scala 2.11/12/13.</li>
+<li>It also provides two sets of Scalafix rewrites: one for cross-building, one for moving to 2.13 only.</li>
+</ul>
+</li>
+</ul>
+<p>We welcome assistance in continuing to expand and improve these documents.</p>
+<h2>Concurrency</h2>
+<p>Futures were internally redesigned, with these goals:</p>
+<ul>
+<li>provide expected behavior under a broader set of failure conditions</li>
+<li>provide a foundation for increased performance</li>
+<li>support more robust applications</li>
+</ul>
+<p>Details:</p>
+<ul>
+<li>Updated and revised our <a href="https://www.scala-lang.org/api/2.13.0/scala/concurrent/Future.html" rel="nofollow"><code>Future</code></a> and <a href="https://www.scala-lang.org/api/2.13.0/scala/concurrent/Promise.html" rel="nofollow"><code>Promise</code></a> implementation. (<a href="https://github.com/scala/scala/pull/6610" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6610/hovercard">#6610</a>, <a href="https://github.com/scala/scala/pull/7663" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7663/hovercard">#7663</a>)
+<ul>
+<li>Among other changes, handling of <code>InterruptedException</code> and <code>RejectedExecutionException</code> is improved.</li>
+</ul>
+</li>
+<li>Made the global <code>ExecutionContext</code> “batched”. (<a href="https://github.com/scala/scala/pull/7470" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7470/hovercard">#7470</a>)
+<ul>
+<li>(This change was reverted in Scala 2.13.4. The batched executor is available for opt-in, but will no longer be the default. See the <a href="https://github.com/scala/scala/releases/tag/v2.13.4">2.13.4 release notes</a>.)</li>
+</ul>
+</li>
+<li>Added synchronous ("parasitic") <code>ExecutionContext</code>. (<a href="https://github.com/scala/scala/pull/7784" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7784/hovercard">#7784</a>)</li>
+</ul>
+<h2>Standard library: additions</h2>
+<ul>
+<li><strong>Integrated Java interop</strong> (<a href="https://github.com/scala/scala/pull/7987" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7987/hovercard">#7987</a>)
+<ul>
+<li>The old <code>scala-java8-compat</code> module is now part of the standard library. (<a href="https://github.com/scala/scala/pull/7458" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7458/hovercard">#7458</a>)</li>
+<li>This provides converters for options, function types and Java streams.</li>
+<li>(As mentioned above, collection converters such as <code>JavaConverters</code> were moved to fit into the new scheme.)</li>
+</ul>
+</li>
+<li><strong>new: <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/util/Using$.html" rel="nofollow"><code>scala.util.Using</code></a></strong>
+<ul>
+<li>This uses the loan pattern to provide a simple form of automatic resource management. (<a href="https://github.com/scala/scala/pull/6907" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6907/hovercard">#6907</a>, <a href="https://github.com/scala/scala/pull/7468" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7468/hovercard">#7468</a>)</li>
+</ul>
+</li>
+<li><strong>new: use <code>s</code> interpolator in pattern matches</strong>
+<ul>
+<li>Provides a simple string matcher as the dual of the simple string interpolator. (<a href="https://github.com/scala/scala/pull/7387" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7387/hovercard">#7387</a>)</li>
+<li>Example: <code>val s"$day-$month-$year" = "11-June-2019"</code></li>
+</ul>
+</li>
+<li><strong>new: <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/util/ChainingOps.html#pipe%5BB%5D(f:A=%3EB):B" rel="nofollow"><code>pipe</code></a> and <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/util/ChainingOps.html#tap%5BU%5D(f:A=%3EU):A" rel="nofollow"><code>tap</code></a></strong>
+<ul>
+<li>These chaining operations are available via <code>import scala.util.chaining._</code>. (<a href="https://github.com/scala/scala/pull/7007" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7007/hovercard">#7007</a>)</li>
+<li>Example: <code>3.pipe(_ * 5)</code> evaluates to 15</li>
+<li>Example: <code>9.tap(println)</code> first prints 9, then returns it</li>
+</ul>
+</li>
+<li><strong>new: <code>.toIntOption</code>, et al</strong>
+<ul>
+<li>These new extension methods on <code>String</code> are provided by <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/StringOps.html" rel="nofollow">StringOps</a>.</li>
+<li>They parse literals and efficiently reject invalid input without throwing exceptions. (<a href="https://github.com/scala/scala/pull/6538" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6538/hovercard">#6538</a>)</li>
+<li>Examples: <code>"12".toIntOption</code> =&gt; <code>Some(12)</code>, <code>"12.3".toIntOption</code> =&gt; <code>None</code>, <code>"12.3".toDoubleOption</code> =&gt; <code>Some(12.3)</code></li>
+</ul>
+</li>
+<li><strong>new: named <code>Product</code> elements</strong>
+<ul>
+<li>Case classes and other <code>Product</code>s now have <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/Product.html#productElementNames:Iterator%5BString%5D" rel="nofollow"><code>productElementNames</code></a> and <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/Product.html#productElementName(n:Int):String" rel="nofollow"><code>productElementName</code></a> methods. (<a href="https://github.com/scala/scala/pull/6972" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6972/hovercard">#6972</a>)</li>
+</ul>
+</li>
+<li><strong>new: <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/util/Left.html#withRight%5BB1%3E:B%5D:scala.util.Either%5BA,B1%5D" rel="nofollow"><code>.withRight</code></a>, <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/util/Right.html#withLeft%5BA1%3E:A%5D:scala.util.Either%5BA1,B%5D" rel="nofollow"><code>.withLeft</code></a></strong>
+<ul>
+<li>These methods on <code>Left</code> and <code>Right</code> allow upcasting the other type parameter (<a href="https://github.com/scala/scala/pull/7011" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7011/hovercard">#7011</a>, <a href="https://github.com/scala/scala/pull/7080" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7080/hovercard">#7080</a>)</li>
+<li>Example: <code>Left(3).withRight[String]</code> has type <code>Either[Int, String]</code> without having to write <code>Int</code></li>
+</ul>
+</li>
+<li><strong>new: <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/math/Ordering$$Double$$TotalOrdering.html" rel="nofollow"><code>Ordering.Double.TotalOrdering</code></a>, <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/math/Ordering$$Float$$TotalOrdering.html" rel="nofollow"><code>Ordering.Float.TotalOrdering</code></a></strong>
+<ul>
+<li>The old orderings remain available at: <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/math/Ordering$$Double$$IeeeOrdering.html" rel="nofollow"><code>Ordering.Double.IeeeOrdering</code></a>, <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/math/Ordering$$Float$$IeeeOrdering.html" rel="nofollow"><code>Ordering.Float.IeeeOrdering</code></a></li>
+<li>Example: <code>List(2.0, 1.0).sorted</code> now warns unless you import or pass an ordering. (<a href="https://github.com/scala/scala/pull/6410" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6410/hovercard">#6410</a>)</li>
+</ul>
+</li>
+<li><strong>new: converters between functions and extractors</strong>
+<ul>
+<li>New methods provide conversions among optional <code>Function</code>s, <code>PartialFunction</code>s and extractor objects. (<a href="https://github.com/scala/scala/pull/7111" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7111/hovercard">#7111</a>)</li>
+</ul>
+</li>
+<li><strong>new: <code>@unused</code> annotation</strong>
+<ul>
+<li>This annotation is useful for suppressing warnings under <code>-Xlint</code>. (<a href="https://github.com/scala/scala/pull/7623" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7623/hovercard">#7623</a>)</li>
+</ul>
+</li>
+</ul>
+<h2>Standard library: changes</h2>
+<ul>
+<li><strong>Library fits in <a href="http://openjdk.java.net/jeps/161" rel="nofollow">compact1 profile</a></strong>
+<ul>
+<li>This reduces deployment footprint for Scala applications. (<a href="https://github.com/scala/scala/pull/6164" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6164/hovercard">#6164</a>, <a href="https://github.com/scala/bug/issues/10559" data-hovercard-type="issue" data-hovercard-url="/scala/bug/issues/10559/hovercard">scala/bug#10559</a>)</li>
+</ul>
+</li>
+<li><strong><a href="https://scala-lang.org/files/archive/api/2.13.0/scala/Option.html" rel="nofollow"><code>Option</code></a> extends <a href="https://scala-lang.org/files/archive/api/2.13.0/scala/collection/IterableOnce.html" rel="nofollow"><code>IterableOnce</code></a></strong>
+<ul>
+<li>This improves type inference when calling an overloaded <code>flatMap</code>. (<a href="https://github.com/scala/scala/pull/8038" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/8038/hovercard">#8038</a>)</li>
+</ul>
+</li>
+<li>Undeprecate <code>linesIterator</code> to avoid conflict with JDK 11's <code>String.lines</code> (<a href="https://github.com/scala/scala/pull/7269" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7269/hovercard">#7269</a>)</li>
+<li><code>PartialFunction</code> now overloads <code>andThen</code>. (<a href="https://github.com/scala/scala/pull/7263" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7263/hovercard">#7263</a>)</li>
+<li>Replaced <code>Cloneable</code>/<code>Serializable</code> traits with type aliases (<a href="https://github.com/scala/scala/pull/6729" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6729/hovercard">#6729</a>)</li>
+<li><code>ControlThrowable</code> never suppresses (<a href="https://github.com/scala/scala/pull/7413" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7413/hovercard">#7413</a>)</li>
+<li><code>BigDecimal</code>'s handling of <code>MathContext</code>s has changed (<a href="https://github.com/scala/scala/pull/6884" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6884/hovercard">#6884</a>)</li>
+</ul>
+<h2>Standard library: deprecations and removals</h2>
+<p>Not a complete list, only the deprecations users are likeliest to encounter.</p>
+<ul>
+<li>String-building using <code>+</code> with a non-<code>String</code> type on the left (aka <code>any2stringadd</code>) is deprecated. (<a href="https://github.com/scala/scala/pull/6315" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6315/hovercard">#6315</a>, <a href="https://github.com/scala/scala/pull/6755" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6755/hovercard">#6755</a>)</li>
+<li><a href="https://scala-lang.org/files/archive/api/2.13.0/scala/PartialFunction$.html#fromFunction%5BA,B%5D(f:A=%3EB):PartialFunction%5BA,B%5D" rel="nofollow"><code>PartialFunction.fromFunction</code></a> replaces <code>PartialFunction.apply</code> (<a href="https://github.com/scala/scala/pull/6703" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6703/hovercard">#6703</a>)</li>
+<li>Right projections on <code>Either</code> are deprecated. (<a href="https://github.com/scala/scala/pull/6682" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6682/hovercard">#6682</a>, <a href="https://github.com/scala/scala/pull/8012" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/8012/hovercard">#8012</a>)</li>
+<li>Deprecated <code>@usecase</code> Scaladoc tag. (<a href="https://github.com/scala/scala/pull/7462" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7462/hovercard">#7462</a>)</li>
+<li>Deprecated universal <code>Equiv</code>. (<a href="https://github.com/scala/scala/pull/7414" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7414/hovercard">#7414</a>)</li>
+<li>The following modules are no longer included in the distribution: <a href="https://github.com/scala/scala-xml">scala-xml</a>, <a href="https://github.com/scala/scala-parser-combinators">scala-parser-combinators</a>, <a href="https://github.com/scala/scala-swing">scala-swing</a>.
+<ul>
+<li>They are community-maintained and published to Maven Central.</li>
+</ul>
+</li>
+<li>Assorted deprecated methods and classes throughout the standard library have been removed entirely.</li>
+</ul>
+<h2>Language changes</h2>
+<p>2.13 is primarily a library release, not a language/compiler release. Regardless, some language changes are included:</p>
+<p>Features:</p>
+<ul>
+<li><strong>Literal types</strong>
+<ul>
+<li>Literals (for strings, integers, and so on) now have associated literal types. (<a href="https://github.com/scala/scala/pull/5310" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/5310/hovercard">#5310</a>)</li>
+<li>See the original proposal, <a href="https://docs.scala-lang.org/sips/42.type.html" rel="nofollow">SIP-23</a>, for motivation and details.</li>
+<li>The compiler will provide instances of a new typeclass <code>scala.ValueOf[T]</code> for all singleton types <code>T</code>.</li>
+<li>A <code>Singleton</code> upper bound prevents widening (e.g. <code>T &lt;: Int with Singleton</code>).</li>
+<li>The value of a singleton type can be accessed by calling method <code>valueOf[T]</code>. Example: <code>val one: 1 = valueOf[1]</code></li>
+</ul>
+</li>
+<li><strong>Partial unification on by default</strong>
+<ul>
+<li>Improves type constructor inference, fixes <a href="https://github.com/scala/bug/issues/2712" data-hovercard-type="issue" data-hovercard-url="/scala/bug/issues/2712/hovercard">SI-2712</a>.</li>
+<li>We recommend this [great explanation of this feature] (<a href="https://gist.github.com/djspiewak/7a81a395c461fd3a09a6941d4cd040f2">https://gist.github.com/djspiewak/7a81a395c461fd3a09a6941d4cd040f2</a>).</li>
+<li>This feature is no longer considered experimental (<a href="https://github.com/scala/scala/pull/5102" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/5102/hovercard">#5102</a>)</li>
+<li>The compiler no longer accepts <code>-Ypartial-unification</code>.</li>
+</ul>
+</li>
+<li><strong>By-name implicits with recursive dictionaries</strong>
+<ul>
+<li>This extends by-name method arguments to support implicit (not just explicit) parameters.</li>
+<li>This enables implicit search to construct recursive values.</li>
+<li>The flagship use-case is typeclass derivation.</li>
+<li>Details: see the <a href="https://docs.scala-lang.org/sips/byname-implicits.html" rel="nofollow">by-name implicits SIP</a>, <a href="https://github.com/scala/scala/pull/6050" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6050/hovercard">#6050</a>, <a href="https://github.com/scala/scala/pull/7368" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7368/hovercard">#7368</a></li>
+</ul>
+</li>
+<li><strong>Underscores in numeric literals</strong>
+<ul>
+<li>Underscores can now be used as a spacer. (<a href="https://github.com/scala/scala/pull/6989" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6989/hovercard">#6989</a>)</li>
+<li>Example: <code>1_000_000</code></li>
+</ul>
+</li>
+</ul>
+<p>Experimental features:</p>
+<ul>
+<li><strong>Macro annotations</strong>
+<ul>
+<li>There is no more <a href="https://github.com/scalamacros/paradise">"macro paradise" compiler plugin</a> for 2.13.</li>
+<li>Instead, <a href="https://docs.scala-lang.org/overviews/macros/annotations.html" rel="nofollow">macro annotations</a> are handled directly by the compiler.</li>
+<li>Macro annotations are enabled with the <code>-Ymacro-annotations</code> flag. <a href="https://github.com/scala/scala/pull/6606" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6606/hovercard">#6606</a></li>
+<li>Macro annotations remain experimental.</li>
+</ul>
+</li>
+</ul>
+<p>Deprecations:</p>
+<ul>
+<li><strong>Procedure syntax deprecated</strong>
+<ul>
+<li>Deprecated: <code>def m() { ... }</code>) <a href="https://github.com/scala/scala/pull/6325" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6325/hovercard">#6325</a></li>
+<li>Use instead: <code>def m(): Unit = { ... }</code></li>
+</ul>
+</li>
+<li><strong>View bounds deprecated</strong>
+<ul>
+<li>Deprecated: <code>A &lt;% B</code> (<a href="https://github.com/scala/scala/pull/6500" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6500/hovercard">#6500</a>)</li>
+<li>Use instead: <code>(implicit ev: A =&gt; B)</code></li>
+</ul>
+</li>
+<li><strong>Symbol literals deprecated</strong>
+<ul>
+<li>Symbols themselves remain supported, only the single-quote syntax is deprecated. (<a href="https://github.com/scala/scala/pull/7395" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7395/hovercard">#7395</a>)</li>
+<li>Library designers may wish to change their APIs to use <code>String</code> instead.</li>
+<li>Deprecated: <code>'foo</code></li>
+<li>Use instead: <code>Symbol("foo")</code></li>
+</ul>
+</li>
+<li><strong>Unicode arrows deprecated</strong>
+<ul>
+<li>In particular, the single arrow operators had the wrong precedence. (<a href="https://github.com/scala/scala/pull/7540" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7540/hovercard">#7540</a>)</li>
+<li>Deprecated: <code>⇒</code>, <code>→</code>, <code>←</code></li>
+<li>Use instead: <code>=&gt;</code>, <code>-&gt;</code>, <code>&lt;-</code></li>
+</ul>
+</li>
+<li><strong><code>postfixOps</code> syntax disabled by default</strong>
+<ul>
+<li>The syntax, already deprecated in 2.12, causes an error in 2.13 unless the feature is explicitly enabled. (<a href="https://github.com/scala/scala/pull/6831" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6831/hovercard">#6831</a>)</li>
+<li>Error: <code>xs size</code></li>
+<li>Use instead: <code>xs.size</code></li>
+</ul>
+</li>
+</ul>
+<p>Adjustments:</p>
+<ul>
+<li>Imports, including wildcard imports, now shadow locally defined identifiers. (<a href="https://github.com/scala/scala/pull/6589" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6589/hovercard">#6589</a>)</li>
+<li>Underscore is no longer a legal identifier unless backquoted (<a href="https://github.com/scala/bug/issues/10384" data-hovercard-type="issue" data-hovercard-url="/scala/bug/issues/10384/hovercard">bug#10384</a>)
+<ul>
+<li><code>val _ =</code> is now a pattern match (and discards the value without incurring a warning)</li>
+<li><code>implicit val _ =</code> is also now a pattern match (and is useless, because it no longer adds to implicit scope)</li>
+</ul>
+</li>
+<li>Don't assume unsound type for ident/literal patterns. (<a href="https://github.com/scala/scala/pull/6502" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6502/hovercard">#6502</a>)
+<ul>
+<li>Matches of the form <code>case x@N</code> involve calling <code>equals</code>, so it was unsound to type <code>x</code> as <code>N.type</code>.</li>
+<li>Consider rewriting as <code>case x:N.type</code>.</li>
+</ul>
+</li>
+<li>Make extractor patterns null safe. (<a href="https://github.com/scala/scala/pull/6485" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6485/hovercard">#6485</a>)
+<ul>
+<li><code>null</code> is treated as no match.</li>
+</ul>
+</li>
+<li>Better typing for overloaded higher-order methods (<a href="https://github.com/scala/scala/pull/6871" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6871/hovercard">#6871</a>, <a href="https://github.com/scala/scala/pull/7631" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7631/hovercard">#7631</a>)
+<ul>
+<li>This change was a key enabler for the new collections design.</li>
+</ul>
+</li>
+<li>Rework unification of <code>Object</code> and <code>Any</code> in Java/Scala interop (<a href="https://github.com/scala/scala/pull/7966" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7966/hovercard">#7966</a>)</li>
+<li>Name-based pattern matching has changed to enable immutable <code>Seq</code> matches (<a href="https://github.com/scala/scala/pull/7068" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7068/hovercard">#7068</a>)</li>
+<li>Automatic eta-expansion of zero-argument methods is no longer deprecated (<a href="https://github.com/scala/scala/pull/7660" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7660/hovercard">#7660</a>)</li>
+<li>Improve binary stability of extension methods (<a href="https://github.com/scala/scala/pull/7896" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7896/hovercard">#7896</a>)</li>
+<li>Macros must now have explicit return types (<a href="https://github.com/scala/scala/pull/6942" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6942/hovercard">#6942</a>)</li>
+<li>Mixin fields with trait setters are no longer JVM final (<a href="https://github.com/scala/scala/pull/7028" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7028/hovercard">#7028</a>)
+<ul>
+<li>In addition, <code>object</code> fields are now static (<a href="https://github.com/scala/scala/pull/7270" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7270/hovercard">#7270</a>)</li>
+</ul>
+</li>
+<li>Support <code>implicitNotFound</code> on parameters (<a href="https://github.com/scala/scala/pull/6340" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6340/hovercard">#6340</a>)</li>
+<li>Disallow repeated parameters except in method signatures (<a href="https://github.com/scala/scala/pull/7399" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7399/hovercard">#7399</a>)</li>
+<li>Value-discard warnings can be suppressed via type ascription to <code>Unit</code>. (<a href="https://github.com/scala/scala/pull/7563" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7563/hovercard">#7563</a>)</li>
+<li><code>x op ()</code> now parses as <code>x.op(())</code> not <code>x.op()</code> (<a href="https://github.com/scala/scala/pull/7684" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7684/hovercard">#7684</a>)</li>
+</ul>
+<h2>Compiler</h2>
+<ul>
+<li><strong>Deterministic, reproducible compilation</strong>
+<ul>
+<li>The compiler generates identical output for identical input in more cases, for reproducible builds. (<a href="https://github.com/scala/scala-dev/issues/405" data-hovercard-type="issue" data-hovercard-url="/scala/scala-dev/issues/405/hovercard">scala-dev#405</a>)</li>
+</ul>
+</li>
+<li><strong>Optimizer improvements</strong>
+<ul>
+<li>Operations on collections and arrays are now optimized more, including improved inlining. (<a href="https://github.com/scala/scala/pull/7133" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7133/hovercard">#7133</a>)</li>
+</ul>
+</li>
+</ul>
+<p>And:</p>
+<ul>
+<li>Scaladoc supports setting canonical URLs (<a href="https://github.com/scala/scala/pull/7834" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7834/hovercard">#7834</a>)
+<ul>
+<li>This helps search engines identify the most relevant/recent version of a page when several versions are available.</li>
+</ul>
+</li>
+<li>Compiler suggests possible corrections for unrecognized identifiers (<a href="https://github.com/scala/scala/pull/6711" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6711/hovercard">#6711</a>)
+<ul>
+<li>Example: <code>List(1).sizzle</code> =&gt; <code>value sizzle is not a member of List[Int], did you mean size?</code></li>
+</ul>
+</li>
+<li>Added <code>-Yimports</code> for custom preamble imports. (<a href="https://github.com/scala/scala/pull/6764" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6764/hovercard">#6764</a>)
+<ul>
+<li>Example: <code>-Yimports:x,y,z</code> means x, y, and z are root imports of the form: <code>import x._ { import y._ { import z._ { ... } } }</code></li>
+</ul>
+</li>
+<li>The scala-compiler JAR no longer depends on scala-xml (<a href="https://github.com/scala/scala/pull/6436" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6436/hovercard">#6436</a>)</li>
+</ul>
+<p>Plus, changes to compiler options:</p>
+<ul>
+<li>Partition options by function: <code>-V</code> for verbose, <code>-W</code> for warnings
+<ul>
+<li>In general, the old flags still exist as aliases. (<a href="https://github.com/scala/scala/pull/7908" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7908/hovercard">#7908</a>)</li>
+<li>Exceptions (breaking changes) include:
+<ul>
+<li>Replaced <code>-warn-option</code> with <code>-Woption</code>.</li>
+<li>Replaced <code>-Xprint:all</code> with <code>-Vprint:_</code></li>
+</ul>
+</li>
+<li><code>-Werror</code> is now recommended over <code>-Xfatal-warnings</code>.</li>
+</ul>
+</li>
+<li>Promoted <code>-deprecation</code> to <code>-Xlint:deprecation</code> (<a href="https://github.com/scala/scala/pull/7714" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7714/hovercard">#7714</a>)</li>
+<li>Deprecated <code>-Xfuture</code> (<a href="https://github.com/scala/scala/pull/7328" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7328/hovercard">#7328</a>)
+<ul>
+<li>Instead, use e.g. <code>-Xsource:2.14</code></li>
+</ul>
+</li>
+<li>Removed <code>-Yno-adapted-args</code>
+<ul>
+<li>The removal remains under discussion at <a href="https://github.com/scala/bug/issues/11110" data-hovercard-type="issue" data-hovercard-url="/scala/bug/issues/11110/hovercard">scala/bug#11110</a>.</li>
+</ul>
+</li>
+<li>Removed <code>-Xmax-classfile-length</code>
+<ul>
+<li>It's hard-coded to 240 now (<a href="https://github.com/scala/scala/pull/7497" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7497/hovercard">#7497</a>)</li>
+</ul>
+</li>
+</ul>
+<h2>Scripting, environment, and integrations</h2>
+<ul>
+<li>The script runner (<code>scala Script.scala</code>) no longer uses the <code>fsc</code> compilation daemon by default. (<a href="https://github.com/scala/scala/pull/6747" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6747/hovercard">#6747</a>)
+<ul>
+<li>The daemon was not reliable and will likely be removed entirely from a future release.</li>
+</ul>
+</li>
+<li><a href="https://openjdk.java.net/jeps/293" rel="nofollow">JEP 293</a> style long command-line options are now supported (<a href="https://github.com/scala/scala/pull/6499" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6499/hovercard">#6499</a>)</li>
+<li>The REPL has undergone an internal refactoring to enable future improvements. (<a href="https://github.com/scala/scala/pull/7384" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/7384/hovercard">#7384</a>)</li>
+<li>Ant support is no longer bundled. (<a href="https://github.com/scala/scala/pull/6255" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6255/hovercard">#6255</a>)</li>
+</ul>
+<h2>Compiler performance</h2>
+<p>We invested heavily in compiler speedups during the 2.13 cycle, but most of that work actually already landed in the 2.12.x series, with more to come in 2.12.9.</p>
+<p>In addition, compiler performance in 2.13 is 5-10% better compared to 2.12, thanks mainly to the new collections.  See <a href="https://scala-ci.typesafe.com/grafana/dashboard/db/scala-benchmark?orgId=1&amp;from=1522695946912&amp;to=1526380271494&amp;var-branch=2.12.x&amp;var-branch=2.13.x&amp;var-source=All&amp;var-bench=HotScalacBenchmark.compile&amp;var-host=scalabench@scalabench@" rel="nofollow">performance graph</a>.</p>
+<p>Also, certain kinds of code now compile much faster because the compiler aggressively prunes polymorphic implicits during search (<a href="https://github.com/scala/scala/pull/6580" data-hovercard-type="pull_request" data-hovercard-url="/scala/scala/pull/6580/hovercard">#6580</a>).</p>
+<h2>Migration</h2>
+<p>Upgrading from 2.12? Enable <code>-Xmigration</code> while upgrading to request migration advice from the compiler.</p>
+<h2>Compatibility</h2>
+<p>Like Scala 2.12, the 2.13 series targets Java 8, minimum.  Both 2.12 and 2.13 also work on later JDKs such as JDK 11; see our <a href="https://docs.scala-lang.org/overviews/jdk-compatibility/overview.html" rel="nofollow">JDK Compatibility Guide</a>.</p>
+<p>Although Scala 2.11, 2.12, and 2.13 are mostly source compatible to facilitate cross-building, they are not <em>binary</em> compatible.  This allows us to keep improving the Scala compiler and standard library.</p>
+<p>All 2.13.x releases will be fully binary compatible with 2.13.0, in according with <a href="http://docs.scala-lang.org/overviews/core/binary-compatibility-of-scala-releases.html" rel="nofollow">the policy</a> we have followed since 2.10.</p>
+<p>Projects built with <a href="http://www.scala-sbt.org/download.html" rel="nofollow">sbt</a> must use at least sbt 1.2.8 (or 0.13.18) to use Scala 2.13.  To move to 2.13, bump the <code>scalaVersion</code> setting in your existing project. </p>
+<p>Scala also works with <a href="http://docs.scala-lang.org/tutorials/scala-with-maven.html" rel="nofollow">Maven</a>, <a href="https://docs.gradle.org/current/userguide/scala_plugin.html" rel="nofollow">Gradle</a>, and other build tools.</p>
+<h2>Obtaining Scala</h2>
+<p>Scala releases are available through a variety of channels, including (but not limited to):</p>
+<ul>
+<li>Bump the <code>scalaVersion</code> setting in your sbt-based project</li>
+<li>Download a distribution from <a href="http://scala-lang.org/download/2.13.0.html" rel="nofollow">scala-lang.org</a></li>
+<li>Obtain JARs via <a href="http://search.maven.org/#search%7Cga%7C1%7Cg%3A%22org.scala-lang%22%20AND%20v%3A%222.13.0%22" rel="nofollow">Maven Central</a></li>
+<li>Certain package managers (such as homebrew and SDKMAN) offer Scala.</li>
+</ul>
+<h2>Reporting bugs</h2>
+<p>Please file any bugs you encounter on <a href="https://github.com/scala/bug/issues">our issue tracker</a>.  If you aren't yet sure something is a bug, ask on <a href="https://users.scala-lang.org" rel="nofollow">users.scala-lang.org</a>.</p>
+<h2>Contributors</h2>
+<p>A big thank you to everyone who's helped improve Scala by reporting bugs, improving our documentation, kindly helping others on forums and at meetups, and submitting and reviewing pull requests! You are all magnificent.</p>
+
+<p>Scala 2.13.0 is the result of merging over 1500 pull requests.</p>
+<p>The pull request queue is managed by the Scala team at Lightbend: <a href="https://github.com/adriaanm">Adriaan Moors</a>, <a href="https://github.com/lrytz">Lukas Rytz</a>, <a href="https://github.com/retronym">Jason Zaugg</a>, <a href="https://github.com/SethTisue">Seth Tisue</a>, <a href="https://github.com/szeiger">Stefan Zeiger</a>, <a href="https://github.com/eed3si9n">Eugene Yokota</a>.</p>
+<p>Thanks to <a href="https://www.lightbend.com/scala" rel="nofollow">Lightbend</a> for their continued sponsorship of the Scala core team’s efforts. Lightbend offers <a href="https://www.lightbend.com/lightbend-platform-subscription" rel="nofollow">commercial support</a> for Scala.</p>
+
+<p>The new collections API was developed in fruitful collaboration with the Scala Center, with major contributions from the community.</p>
+<p>This release was brought to you by 162 contributors, according to <code>git shortlog -sn --no-merges 2.13.x ^2.12.x ^e2a211c</code>. Thank you Julien Richard-Foy, Lukas Rytz, Jason Zaugg, A. P. Marki, Stefan Zeiger, Kenji Yoshida, Adriaan Moors, Josh Lemer, NthPortal, Miles Sabin, Diego E. Alonso-Blas, Seth Tisue, Guillaume Martres, Marcelo Cenerino, Dale Wijnand, Odd Möller, Martin Odersky, Allan Renucci, Georgi Krastev, Eugene Yokota, Harrison Houghton, Martijn Hoekstra, Viktor Klang, Aaron S. Hawley, Ólafur Páll Geirsson, Rex Kerr, hepin1989, Philippus Baalman, Matthew de Detrich, Isaac Levy, exoego, Greg Methvin, Jasper Moeys, Sébastien Doeraene, wholock, Aggelos Biboudis, yui-knk, Matthias Sperl, Xavier Fernández Salas, Ethan Pronovost, Janek Bogucki, awibisono, BuildTools, Mike Skells, Jimin Hsieh, Jonathan Frawley, Xavier GUIHOT, Chris Phelps, chanyong.moon, Cong Zhao, Enno Runne, LPTK, Pathikrit Bhowmick, Yuval Dagan, Li Haoyi, Guillaume Massé, Christopher Hunt, Kamil Kloch, Marco Zühlke, Danila Matveev, Juliusz Sompolski,杨博 (Yang Bo), Masaru Nomura, Benjamin Kurczyk, Vince, taku0, Arnout Engelen, Tim Ruhland, Nicolas Stucki, Nicolas Rinaudo, Stephen Nancekivell, ashwin, Kobenko Mikhail, Song Kun, Anthony Tjuatja, k.bigwheel, ke-to, kelebra, mcintdan, mmocentre, psilospore, roman, svatsan, texasbruce, tim-zh, valydia, veera venky,虎鸣, Adianto Wibisono, Alden Torres, Alejandro Sellero, Alessandro Buggin, Alex Glukhovtsev, Alex Levenson, Alexey-NM, Anatolii, Andrei Baidarov, Andriy Plokhotnyuk, Bakhytzhan Karabalin, Benni, Callum Turnbull, Chris Birchall, Chujie Zeng, Cody Allen, Daniel Dietrich, Daniel Moss, Daniel Slapman, David Barri, David Hoepelman, Denis Buzdalov, Denys Shabalin, Dhanesh, Dhanesh Arole, Edin Dudojević, Eugene Platonov, Faiz Halde, Gabriel Claramunt, Heikki Vesalainen, Iaroslav Zeigerman, Jack Koenig, Jean Michel Rouly, Jeff Brower, Jeff Shaw, Josh, Kazuhiro Sera, Kentaro Tokutomi, Lionel Parreaux, Magnolia.K, Martin Duhem, Michael Steindorfer, Nafer Sanabria, Narek Asadorian, Oleksii Tkachuk, Oscar Boykin, PJ Fanning, Paolo Giarrusso, Pap Lőrinc, Pavel Petlinsky, Peter Fraenkel, Philip, Piotr Kukielka, Qiang Sima, Rob Norris, Robin Stephenson, Rui Gonçalves, Ruud Welling, Ryan McDougall, ShankarShastri, Simão Martins, Sperl Matthias, Sujeet Kausallya Gholap, Uttej Guduru, Vincent de Haan, Vladimir Parfinenko, Vlastimil Dort, Yang Bo, Zizheng Tai, ccjoywang, esarbe, howtonotwin, jvican.</p>
+<h2>Conclusion</h2>
+<p>We again thank our contributors and the entire Scala community.</p>
+<p>May you find Scala 2.13 a joy to code in!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from julia: v1.6.0-rc1]]></title>
+            <link>https://github.com/JuliaLang/julia/releases/tag/v1.6.0-rc1</link>
+            <guid>https://github.com/JuliaLang/julia/releases/tag/v1.6.0-rc1</guid>
+            <pubDate>Sat, 06 Feb 2021 20:21:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This is the first release candidate for Julia v1.6.0.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from postcss: 8.2.5]]></title>
+            <link>https://github.com/postcss/postcss/releases/tag/8.2.5</link>
+            <guid>https://github.com/postcss/postcss/releases/tag/8.2.5</guid>
+            <pubDate>Sat, 06 Feb 2021 18:57:10 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>Fixed escaped characters handling in <code>list.split</code> (by <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/nex3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nex3">@nex3</a>).</li>
+</ul>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.5.20-dev-372]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.20-dev-372</link>
@@ -298,16 +870,6 @@ installations.</p>
             <content:encoded><![CDATA[<p>Version 2021.02.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from xstate: @xstate/immer@0.2.0]]></title>
-            <link>https://github.com/davidkpiano/xstate/releases/tag/%40xstate%2Fimmer%400.2.0</link>
-            <guid>https://github.com/davidkpiano/xstate/releases/tag/%40xstate%2Fimmer%400.2.0</guid>
-            <pubDate>Fri, 05 Feb 2021 19:19:39 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Minor Changes</h3>
-<ul>
-<li><a href="https://github.com/davidkpiano/xstate/commit/63a270a0dc2337e88ca607d4e6bc5c85fb8b6618"><code>63a270a0</code></a> <a href="https://github.com/davidkpiano/xstate/pull/1908" data-hovercard-type="pull_request" data-hovercard-url="/davidkpiano/xstate/pull/1908/hovercard">#1908</a> Thanks <a href="https://github.com/davidkpiano">@davidkpiano</a>! - Peer dependency range on <a href="https://immerjs.github.io/immer/docs/introduction" rel="nofollow"><code>immer</code></a> changed to <code>^8.0.1</code>.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from xstate: xstate@4.16.1]]></title>
             <link>https://github.com/davidkpiano/xstate/releases/tag/xstate%404.16.1</link>
             <guid>https://github.com/davidkpiano/xstate/releases/tag/xstate%404.16.1</guid>
@@ -315,6 +877,16 @@ installations.</p>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
 <li><a href="https://github.com/davidkpiano/xstate/commit/af6b7c70015db29d84f79dfd29ea0dc221b8f3e6"><code>af6b7c70</code></a> <a href="https://github.com/davidkpiano/xstate/pull/1865" data-hovercard-type="pull_request" data-hovercard-url="/davidkpiano/xstate/pull/1865/hovercard">#1865</a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - Improved <code>.matches(value)</code> inference for typestates containing union types as values.</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from xstate: @xstate/immer@0.2.0]]></title>
+            <link>https://github.com/davidkpiano/xstate/releases/tag/%40xstate%2Fimmer%400.2.0</link>
+            <guid>https://github.com/davidkpiano/xstate/releases/tag/%40xstate%2Fimmer%400.2.0</guid>
+            <pubDate>Fri, 05 Feb 2021 19:19:39 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Minor Changes</h3>
+<ul>
+<li><a href="https://github.com/davidkpiano/xstate/commit/63a270a0dc2337e88ca607d4e6bc5c85fb8b6618"><code>63a270a0</code></a> <a href="https://github.com/davidkpiano/xstate/pull/1908" data-hovercard-type="pull_request" data-hovercard-url="/davidkpiano/xstate/pull/1908/hovercard">#1908</a> Thanks <a href="https://github.com/davidkpiano">@davidkpiano</a>! - Peer dependency range on <a href="https://immerjs.github.io/immer/docs/introduction" rel="nofollow"><code>immer</code></a> changed to <code>^8.0.1</code>.</li>
 </ul>]]></content:encoded>
         </item>
         <item>
@@ -695,13 +1267,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@3.0.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.0.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.0.0-next.0</guid>
-            <pubDate>Fri, 05 Feb 2021 12:01:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@3.0.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby@3.0.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%403.0.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%403.0.0-next.0</guid>
@@ -709,11 +1274,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby@3.0.0-next.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@3.0.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.0.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.0.0-next.0</guid>
-            <pubDate>Fri, 05 Feb 2021 12:01:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-xml@3.0.0-next.0</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@3.0.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.0.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.0.0-next.0</guid>
+            <pubDate>Fri, 05 Feb 2021 12:01:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@3.0.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@3.0.0-next.0]]></title>
@@ -723,18 +1288,18 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@3.0.0-next.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@3.0.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%403.0.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%403.0.0-next.0</guid>
-            <pubDate>Fri, 05 Feb 2021 12:01:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-remark@3.0.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@3.0.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%403.0.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%403.0.0-next.0</guid>
             <pubDate>Fri, 05 Feb 2021 12:01:21 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-sharp@3.0.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@3.0.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.0.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.0.0-next.0</guid>
+            <pubDate>Fri, 05 Feb 2021 12:01:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@3.0.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@3.0.0-next.0]]></title>
@@ -749,6 +1314,13 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%403.0.0-next.0</guid>
             <pubDate>Fri, 05 Feb 2021 12:01:21 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-sqip@3.0.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@3.0.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%403.0.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%403.0.0-next.0</guid>
+            <pubDate>Fri, 05 Feb 2021 12:01:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@3.0.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.5.20-dev-332]]></title>
@@ -1887,289 +2459,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li><strong>iam:</strong> cannot use the same Role for multiple Config Rules (<a href="https://github.com/aws/aws-cdk/issues/12724" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/12724/hovercard">#12724</a>) (<a href="https://github.com/aws/aws-cdk/commit/2f6521a1d8670b2653f7dee281309351181cf918">2f6521a</a>), closes <a href="https://github.com/aws/aws-cdk/issues/12714" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/12714/hovercard">#12714</a></li>
 <li><strong>lambda:</strong> codeguru profiler not set up for Node runtime (<a href="https://github.com/aws/aws-cdk/issues/12712" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/12712/hovercard">#12712</a>) (<a href="https://github.com/aws/aws-cdk/commit/59db763e7d05d68fd85b6fd37246d69d4670d7d5">59db763</a>), closes <a href="https://github.com/aws/aws-cdk/issues/12624" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/12624/hovercard">#12624</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from angular: 11.2.0-rc.0]]></title>
-            <link>https://github.com/angular/angular/releases/tag/11.2.0-rc.0</link>
-            <guid>https://github.com/angular/angular/releases/tag/11.2.0-rc.0</guid>
-            <pubDate>Wed, 03 Feb 2021 23:38:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>release: cut the v11.2.0-rc.0 release</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: [flutter_releases] Flutter 1.26.0-17.2.pre Beta Framework Cherrypicks…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/1.26.0-17.2.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/1.26.0-17.2.pre</guid>
-            <pubDate>Wed, 03 Feb 2021 23:33:39 GMT</pubDate>
-            <content:encoded><![CDATA[<p>… (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="799882097" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/75303" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/75303/hovercard" href="https://github.com/flutter/flutter/pull/75303">#75303</a>)</p>
-<ul>
-<li>
-<p>Only show devtools deep links for render overflow errors (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="796252968" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74916" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/74916/hovercard" href="https://github.com/flutter/flutter/pull/74916">#74916</a>)</p>
-</li>
-<li>
-<p>Add fixes for nullOk changes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="795636192" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74866" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/74866/hovercard" href="https://github.com/flutter/flutter/pull/74866">#74866</a>)</p>
-</li>
-<li>
-<p>[flutter_tools] delete old directories when unzipping ontop of them (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="795275750" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74818" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/74818/hovercard" href="https://github.com/flutter/flutter/pull/74818">#74818</a>)</p>
-</li>
-</ul>
-<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="794695651" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74772" data-hovercard-type="issue" data-hovercard-url="/flutter/flutter/issues/74772/hovercard" href="https://github.com/flutter/flutter/issues/74772">#74772</a></p>
-<p>stale files from previous SDKs were getting left in the cache, confusing the analyzer.</p>
-<ul>
-<li>
-<p>Make flutter create --smaple null-safe (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="795467188" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74844" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/74844/hovercard" href="https://github.com/flutter/flutter/pull/74844">#74844</a>)</p>
-</li>
-<li>
-<p>Suppress 'Info: Compiling without sound null safety' message when building flutter_tools (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="794441531" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74740" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/74740/hovercard" href="https://github.com/flutter/flutter/pull/74740">#74740</a>)</p>
-</li>
-</ul>
-<p>The CFE now logs to stdout by default when compiling a program which has<br>
-non-null-safe dependencies. Since flutter_tools has not yet migrated, we<br>
-need to suppress this message when compiling the tool.</p>
-<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="790519438" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/74366" data-hovercard-type="issue" data-hovercard-url="/flutter/flutter/issues/74366/hovercard" href="https://github.com/flutter/flutter/issues/74366">#74366</a></p>
-<ul>
-<li>
-<p>Split tools_tests subshards into separate shards to support sub-sub-sharding (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="797274082" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/75033" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/75033/hovercard" href="https://github.com/flutter/flutter/pull/75033">#75033</a>)</p>
-</li>
-<li>
-<p>Adopt tool_test shard builders (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="798725016" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/75171" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/75171/hovercard" href="https://github.com/flutter/flutter/pull/75171">#75171</a>)</p>
-</li>
-<li>
-<p>Adopt subshard naming convention in build_tests (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="798817549" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/75179" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/75179/hovercard" href="https://github.com/flutter/flutter/pull/75179">#75179</a>)</p>
-</li>
-<li>
-<p>Mark tool_integration_tests not flaky (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="799627050" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/75273" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/75273/hovercard" href="https://github.com/flutter/flutter/pull/75273">#75273</a>)</p>
-</li>
-<li>
-<p>roll flutter/plugins to ToT to fix analysis error</p>
-</li>
-<li>
-<p>update engine hash</p>
-</li>
-</ul>
-<p>Co-authored-by: Kenzie Schmoll <a href="mailto:43759233+kenzieschmoll@users.noreply.github.com">43759233+kenzieschmoll@users.noreply.github.com</a><br>
-Co-authored-by: Kate Lovett <a href="mailto:katelovett@google.com">katelovett@google.com</a><br>
-Co-authored-by: Jonah Williams <a href="mailto:jonahwilliams@google.com">jonahwilliams@google.com</a><br>
-Co-authored-by: Michael Goderbauer <a href="mailto:goderbauer@google.com">goderbauer@google.com</a><br>
-Co-authored-by: Ben Konyi <a href="mailto:bkonyi@google.com">bkonyi@google.com</a><br>
-Co-authored-by: Jenn Magder <a href="mailto:magder@google.com">magder@google.com</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from angular: 11.2.0-next.1]]></title>
-            <link>https://github.com/angular/angular/releases/tag/11.2.0-next.1</link>
-            <guid>https://github.com/angular/angular/releases/tag/11.2.0-next.1</guid>
-            <pubDate>Wed, 03 Feb 2021 22:40:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>release: cut the v11.2.0-next.1 release</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from angular: 11.1.2]]></title>
-            <link>https://github.com/angular/angular/releases/tag/11.1.2</link>
-            <guid>https://github.com/angular/angular/releases/tag/11.1.2</guid>
-            <pubDate>Wed, 03 Feb 2021 22:01:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>release: cut the v11.1.2 release</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v10.0.7-canary.3]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v10.0.7-canary.3</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v10.0.7-canary.3</guid>
-            <pubDate>Wed, 03 Feb 2021 20:47:27 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Add webpack type to ncc bundle: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="799456614" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/21785" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/21785/hovercard" href="https://github.com/vercel/next.js/pull/21785">#21785</a></li>
-<li>Rename package build scripts to dev: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="798298536" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/21743" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/21743/hovercard" href="https://github.com/vercel/next.js/pull/21743">#21743</a></li>
-<li>Add version for stats: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="800653743" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/21823" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/21823/hovercard" href="https://github.com/vercel/next.js/pull/21823">#21823</a></li>
-</ul>
-<h3>Example Changes</h3>
-<ul>
-<li>Return a number from sort compare function: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="798855591" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/21763" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/21763/hovercard" href="https://github.com/vercel/next.js/pull/21763">#21763</a></li>
-<li>fix: send url to gtm.pageview: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="798371441" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/21747" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/21747/hovercard" href="https://github.com/vercel/next.js/pull/21747">#21747</a></li>
-<li>Remove dotenv from Relay example.: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="800544386" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/21814" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/21814/hovercard" href="https://github.com/vercel/next.js/pull/21814">#21814</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/giraffesyo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/giraffesyo">@giraffesyo</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/balazsorban44/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/balazsorban44">@balazsorban44</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/guybedford/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/guybedford">@guybedford</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/leerob/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/leerob">@leerob</a>, and <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.19.1]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.19.1</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.19.1</guid>
-            <pubDate>Wed, 03 Feb 2021 19:09:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.19.1 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: v4.0.2]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/v4.0.2</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/v4.0.2</guid>
-            <pubDate>Wed, 03 Feb 2021 19:06:38 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>4.0.2 (2021-02-03)</h2>
-<p>v4.0.2 is a maintenance release that includes minor bug fixes and documentation updates.</p>
-<h4><g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji> New Feature</h4>
-<ul>
-<li><code>react-scripts</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/8986" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/8986/hovercard">#8986</a> Add support for new BUILD_PATH advanced configuration variable (<a href="https://github.com/ajhyndman">@ajhyndman</a>)</li>
-</ul>
-</li>
-</ul>
-<h4><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Bug Fix</h4>
-<ul>
-<li><code>react-scripts</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10170" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10170/hovercard">#10170</a> Add opt-out for eslint-webpack-plugin (<a href="https://github.com/mrmckeb">@mrmckeb</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/9872" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/9872/hovercard">#9872</a> fix(react-scripts): add missing peer dependency react and update react-refresh-webpack-plugin (<a href="https://github.com/merceyz">@merceyz</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/9964" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/9964/hovercard">#9964</a> Add TypeScript 4.x as peerDependency to react-scripts (<a href="https://github.com/sheepsteak">@sheepsteak</a>)</li>
-</ul>
-</li>
-</ul>
-<h4><g-emoji class="g-emoji" alias="nail_care" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f485.png">💅</g-emoji> Enhancement</h4>
-<ul>
-<li><code>react-scripts</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/9977" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/9977/hovercard">#9977</a> Move ESLint cache file into node_modules (<a href="https://github.com/ehsankhfr">@ehsankhfr</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/9569" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/9569/hovercard">#9569</a> Improve vendor chunk names in development (<a href="https://github.com/jrr">@jrr</a>)</li>
-</ul>
-</li>
-</ul>
-<h4><g-emoji class="g-emoji" alias="memo" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4dd.png">📝</g-emoji> Documentation</h4>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/9473" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/9473/hovercard">#9473</a> docs: add missing override options for Jest config (<a href="https://github.com/tobiasbueschel">@tobiasbueschel</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/10314" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10314/hovercard">#10314</a> Update using-the-public-folder.md (<a href="https://github.com/Avivhdr">@Avivhdr</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/10214" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10214/hovercard">#10214</a> Remove references to Node 8 (<a href="https://github.com/ianschmitz">@ianschmitz</a>)</li>
-</ul>
-<h4><g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji> Internal</h4>
-<ul>
-<li><code>react-scripts</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10027" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10027/hovercard">#10027</a> appTsConfig immutability handling by immer (<a href="https://github.com/josezone">@josezone</a>)</li>
-</ul>
-</li>
-<li><code>create-react-app</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10217" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10217/hovercard">#10217</a> Fix CI tests (<a href="https://github.com/ianschmitz">@ianschmitz</a>)</li>
-</ul>
-</li>
-<li><code>react-dev-utils</code>, <code>react-error-overlay</code>, <code>react-scripts</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10091" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10091/hovercard">#10091</a> Recovered some integration tests (<a href="https://github.com/maxsbelt">@maxsbelt</a>)</li>
-</ul>
-</li>
-</ul>
-<h4><g-emoji class="g-emoji" alias="hammer" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f528.png">🔨</g-emoji> Underlying Tools</h4>
-<ul>
-<li><code>react-scripts</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10216" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10216/hovercard">#10216</a> Revert "Update postcss packages" (<a href="https://github.com/ianschmitz">@ianschmitz</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/9988" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/9988/hovercard">#9988</a> Upgrade sass-loader (<a href="https://github.com/ehsankhfr">@ehsankhfr</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/10003" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10003/hovercard">#10003</a> Update postcss packages (<a href="https://github.com/raix">@raix</a>)</li>
-<li><a href="https://github.com/facebook/create-react-app/pull/10213" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10213/hovercard">#10213</a> Upgrade @svgr/webpack to fix build error (<a href="https://github.com/jabranr">@jabranr</a>)</li>
-</ul>
-</li>
-<li><code>react-dev-utils</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10198" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10198/hovercard">#10198</a> remove chalk from formatWebpackMessages (<a href="https://github.com/jasonwilliams">@jasonwilliams</a>)</li>
-</ul>
-</li>
-<li><code>cra-template-typescript</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10141" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10141/hovercard">#10141</a> chore: bump typescript version (<a href="https://github.com/trainto">@trainto</a>)</li>
-</ul>
-</li>
-<li><code>cra-template-typescript</code>, <code>cra-template</code>
-<ul>
-<li><a href="https://github.com/facebook/create-react-app/pull/10143" data-hovercard-type="pull_request" data-hovercard-url="/facebook/create-react-app/pull/10143/hovercard">#10143</a> chore: bump web-vital dependency version (<a href="https://github.com/sahilpurav">@sahilpurav</a>)</li>
-</ul>
-</li>
-</ul>
-<h4>Committers: 15</h4>
-<ul>
-<li>Andrew Hyndman (<a href="https://github.com/ajhyndman">@ajhyndman</a>)</li>
-<li>Aviv Hadar (<a href="https://github.com/Avivhdr">@Avivhdr</a>)</li>
-<li>Brody McKee (<a href="https://github.com/mrmckeb">@mrmckeb</a>)</li>
-<li>Chris Shepherd (<a href="https://github.com/sheepsteak">@sheepsteak</a>)</li>
-<li>EhsanKhaki (<a href="https://github.com/ehsankhfr">@ehsankhfr</a>)</li>
-<li>Hakjoon Sim (<a href="https://github.com/trainto">@trainto</a>)</li>
-<li>Ian Schmitz (<a href="https://github.com/ianschmitz">@ianschmitz</a>)</li>
-<li>Jabran Rafique<g-emoji class="g-emoji" alias="zap" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a1.png">⚡️</g-emoji> (<a href="https://github.com/jabranr">@jabranr</a>)</li>
-<li>Jason Williams (<a href="https://github.com/jasonwilliams">@jasonwilliams</a>)</li>
-<li>John Ruble (<a href="https://github.com/jrr">@jrr</a>)</li>
-<li>Kristoffer K. (<a href="https://github.com/merceyz">@merceyz</a>)</li>
-<li>Morten N.O. Nørgaard Henriksen (<a href="https://github.com/raix">@raix</a>)</li>
-<li>Sahil Purav (<a href="https://github.com/sahilpurav">@sahilpurav</a>)</li>
-<li>Sergey Makarov (<a href="https://github.com/maxsbelt">@maxsbelt</a>)</li>
-<li>Tobias Büschel (<a href="https://github.com/tobiasbueschel">@tobiasbueschel</a>)</li>
-<li>mad-jose (<a href="https://github.com/josezone">@josezone</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: react-error-overlay@6.0.9]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/react-error-overlay%406.0.9</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/react-error-overlay%406.0.9</guid>
-            <pubDate>Wed, 03 Feb 2021 18:57:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>react-error-overlay@6.0.9</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: react-dev-utils@11.0.2]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/react-dev-utils%4011.0.2</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/react-dev-utils%4011.0.2</guid>
-            <pubDate>Wed, 03 Feb 2021 18:57:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>react-dev-utils@11.0.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: create-react-app@4.0.2]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/create-react-app%404.0.2</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/create-react-app%404.0.2</guid>
-            <pubDate>Wed, 03 Feb 2021 18:57:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>create-react-app@4.0.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: cra-template@1.1.2]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/cra-template%401.1.2</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/cra-template%401.1.2</guid>
-            <pubDate>Wed, 03 Feb 2021 18:57:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cra-template@1.1.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: cra-template-typescript@1.1.2]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/cra-template-typescript%401.1.2</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/cra-template-typescript%401.1.2</guid>
-            <pubDate>Wed, 03 Feb 2021 18:57:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cra-template-typescript@1.1.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from create-react-app: react-scripts@4.0.2]]></title>
-            <link>https://github.com/facebook/create-react-app/releases/tag/react-scripts%404.0.2</link>
-            <guid>https://github.com/facebook/create-react-app/releases/tag/react-scripts%404.0.2</guid>
-            <pubDate>Wed, 03 Feb 2021 18:57:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>react-scripts@4.0.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from strapi: v3.4.6]]></title>
-            <link>https://github.com/strapi/strapi/releases/tag/v3.4.6</link>
-            <guid>https://github.com/strapi/strapi/releases/tag/v3.4.6</guid>
-            <pubDate>Wed, 03 Feb 2021 18:34:29 GMT</pubDate>
-            <content:encoded><![CDATA[<h3><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Bug fix</h3>
-<ul>
-<li>[core:framework] Bug: Erroneous error if there is a database configuration for a custom session middleware storage provider. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="728333030" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/8457" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/8457/hovercard" href="https://github.com/strapi/strapi/pull/8457">#8457</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/taylor-work/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/taylor-work">@taylor-work</a></li>
-<li>[core:framework] Fix sanitize removing polymorphic relations (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="800556584" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9310" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9310/hovercard" href="https://github.com/strapi/strapi/pull/9310">#9310</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/alexandrebodin/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexandrebodin">@alexandrebodin</a></li>
-<li>[plugin:content-manager] Fix idsToOmit (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="800326725" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9306" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9306/hovercard" href="https://github.com/strapi/strapi/pull/9306">#9306</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/soupette/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/soupette">@soupette</a></li>
-<li>[plugin:graphql] Fix some many many perf issues in graphQL (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="798711130" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9286" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9286/hovercard" href="https://github.com/strapi/strapi/pull/9286">#9286</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/alexandrebodin/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexandrebodin">@alexandrebodin</a></li>
-</ul>
-<h3><g-emoji class="g-emoji" alias="nail_care" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f485.png">💅</g-emoji> Enhancement</h3>
-<ul>
-<li>[admin] Improve front end development (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="799205574" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9293" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9293/hovercard" href="https://github.com/strapi/strapi/pull/9293">#9293</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/soupette/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/soupette">@soupette</a></li>
-<li>[admin] fix typo "to access to" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="799931240" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9303" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9303/hovercard" href="https://github.com/strapi/strapi/pull/9303">#9303</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bglidwell/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bglidwell">@bglidwell</a></li>
-<li>[core:cli] Update target.js: Change assignment of "ok" in "isValidTarget" function (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="729460594" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/8477" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/8477/hovercard" href="https://github.com/strapi/strapi/pull/8477">#8477</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/florianmarkusse/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/florianmarkusse">@florianmarkusse</a></li>
-<li>[core:framework] Fix undefined filter value (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="730361784" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/8490" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/8490/hovercard" href="https://github.com/strapi/strapi/pull/8490">#8490</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/MattieBelt/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MattieBelt">@MattieBelt</a></li>
-<li>[core:tooling] Update .npmignore files (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="761324127" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/8865" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/8865/hovercard" href="https://github.com/strapi/strapi/pull/8865">#8865</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/jorrit/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jorrit">@jorrit</a></li>
-<li>[documentation] Use https:// in package.json and README.md files (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="794344620" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9227" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9227/hovercard" href="https://github.com/strapi/strapi/pull/9227">#9227</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/jorrit/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jorrit">@jorrit</a></li>
-<li>[plugin:upload] strapi-plugin-upload: Read responsive breakpoints from config (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="775038863" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9002" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9002/hovercard" href="https://github.com/strapi/strapi/pull/9002">#9002</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/blefevre/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/blefevre">@blefevre</a></li>
-<li>[plugin:upload] [Media Library] Get preview mime type from thumbnail (to support video thumbnail) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="791878972" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9184" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9184/hovercard" href="https://github.com/strapi/strapi/pull/9184">#9184</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/darron1217/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/darron1217">@darron1217</a></li>
-<li>[plugin:upload] add support for actionOptions for provider upload and delete functions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="793776354" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9219" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9219/hovercard" href="https://github.com/strapi/strapi/pull/9219">#9219</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bglidwell/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bglidwell">@bglidwell</a></li>
-</ul>
-<h3><g-emoji class="g-emoji" alias="earth_asia" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f30f.png">🌏</g-emoji> Translation</h3>
-<ul>
-<li>[plugin:upload] Adds missing import for italian translation of upload plugin (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="796072054" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/9249" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/9249/hovercard" href="https://github.com/strapi/strapi/pull/9249">#9249</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dappiu/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dappiu">@dappiu</a></li>
-</ul>
-<hr>
-<h3><g-emoji class="g-emoji" alias="books" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4da.png">📚</g-emoji>  Migration guides can be found <a href="https://strapi.io/documentation/v3.x/migration-guide" rel="nofollow">here</a> <g-emoji class="g-emoji" alias="books" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4da.png">📚</g-emoji></h3>]]></content:encoded>
         </item>
     </channel>
 </rss>
