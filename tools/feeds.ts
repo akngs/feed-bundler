@@ -6,13 +6,23 @@ export type FeedDef = {
   feedId: string
   title: string
   description: string
-  urls: string[]
+  sources: FeedSource[]
 }
 
-export async function fetchFeed(url: string): Promise<Parser.Output | null> {
+export type FeedSource = {
+  url: string
+  filters?: string[]
+}
+
+export async function fetchFeed(source: FeedSource): Promise<Parser.Output | null> {
   try {
     const parser = new Parser()
-    return await parser.parseURL(url)
+    const output = await parser.parseURL(source.url)
+    const items = filterItems(output.items || [], source.filters || [])
+    return {
+      ...output,
+      items,
+    }
   } catch (e) {
     console.log(e)
     return null
@@ -27,10 +37,10 @@ export async function aggregateFeeds(
 ): Promise<Parser.Output> {
   // rate-limit concurrent HTTP requests
   const limiter = new Bottleneck({ maxConcurrent: 10, minTime: 100 })
-  const tasks = def.urls.map((url) => limiter.schedule(fetchFeed, url))
+  const tasks = def.sources.map((source) => limiter.schedule(fetchFeed, source))
 
   // fetch all feeds
-  const feeds = (await Promise.all(tasks)).filter((feed) => !!feed) as Parser.Output[]
+  const feeds = (await Promise.all(tasks)).filter((feed) => feed) as Parser.Output[]
 
   // merge and sort items
   const items: Parser.Item[] = []
@@ -80,4 +90,22 @@ export function toXml(feed: Parser.Output): string {
   })
 
   return gen.rss2()
+}
+
+export function filterItems(items: Parser.Item[], rawFilters: string[]): Parser.Item[] {
+  const filters = rawFilters.map((rawFilter) => {
+    const negative = rawFilter.startsWith("! ")
+    const pattern = new RegExp(negative ? rawFilter.substr(2) : rawFilter)
+    return { negative, pattern }
+  })
+
+  return items.filter((item) => {
+    const text = [item.title, item.contentSnippet, item.content].filter((d) => !!d).join(" ")
+    if (!text) return false
+
+    return filters.every((filter) => {
+      if (filter.negative) return !filter.pattern.test(text)
+      else return filter.pattern.test(text)
+    })
+  })
 }
