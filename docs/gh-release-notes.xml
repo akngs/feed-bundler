@@ -4,15 +4,312 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 05 Aug 2021 12:33:58 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 05 Aug 2021 18:25:53 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.30-RC-release-322]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-RC-release-322</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-RC-release-322</guid>
-            <pubDate>Thu, 05 Aug 2021 12:21:36 GMT</pubDate>
+            <title><![CDATA[Release notes from workbox: Workbox v6.2.0]]></title>
+            <link>https://github.com/GoogleChrome/workbox/releases/tag/v6.2.0</link>
+            <guid>https://github.com/GoogleChrome/workbox/releases/tag/v6.2.0</guid>
+            <pubDate>Thu, 05 Aug 2021 18:04:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Workbox v6.2.0. It includes a number of bug fixes and internal refactoring described below.</p>
+<p>Our intention is <strong>not</strong> to include any breaking changes in v6.2.0, and we've made an effort to maintain the same public interfaces and general behaviors while rewriting some of Workbox's internals.</p>
+<h2><g-emoji class="g-emoji" alias="tada" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f389.png">🎉</g-emoji> What's New?</h2>
+<h3>workbox-build TypeScript rewrite</h3>
+<p>The <code>workbox-build</code> module has been rewritten in TypeScript, following the earlier migration of the <code>workbox-cli</code> module. (<code>workbox-webpack-plugin</code> has not yet been migrated.) Developers who use <code>workbox-build</code> from their own TypeScript code should benefit from the official, accurate type definitions that are now published alongside <code>workbox-build</code>. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="921534913" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2867" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2867/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2867">#2867</a>]</p>
+<h3>Build tool option validation</h3>
+<p>As part of this change, <code>workbox-build</code> now uses the TypeScript definitions as the source of truth when validating the configuration options developers provide. Previously, <a href="https://joi.dev/" rel="nofollow"><code>joi</code></a> was used for validation with its own set of schema, and this would sometimes lead to mismatches between what the validation logic thought was okay and what the code actually expected. Developers who inspect the validation errors returned by <code>workbox-build</code> will likely see different error strings in v6.2.0. We expect that moving forward, using TypeScript as the source of truth will lead to fewer of those mismatches.This change applies to both <code>workbox-cli</code> and <code>workbox-webpack-plugin</code>, as well, which rely on <code>workbox-build</code> under the hood.</p>
+<h3>IndexedDB code migration</h3>
+<p>Another refactoring is the replacement of our previous custom IndexedDB logic with the <a href="https://github.com/jakearchibald/idb"><code>idb</code> library</a>. No developer-visible changes are expected due to this migration. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="877050225" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2838" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2838/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2838">#2838</a>]</p>
+<h3>Multiple controlling events during a page's lifetime</h3>
+<p>Following this change, <code>worbox-window</code>'s <code>controlling</code> event is fired each time the underlying <a href="https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerContainer/oncontrollerchange" rel="nofollow"><code>oncontrollerchange</code> event</a> happens. Multiple <code>controlling</code> events can occur on a long-lived page in which multiple service worker updates take place. <code>isExternal: true</code> will be set when the service worker that takes control is "<a href="https://developers.google.com/web/tools/workbox/modules/workbox-window#when_an_unexpected_version_of_the_service_worker_is_found" rel="nofollow">external</a>," which will always be the case for multiple updates.</p>
+<p>Previously, <code>controlling</code> would only be fired once per lifetime of the page, which does not match the documented behavior. This change is considered a bug fix to match the expected behavior, and developers are encouraged to test their logic to ensure that they were not relying on the previous, buggy behavior. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="858036077" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2817" data-hovercard-type="issue" data-hovercard-url="/GoogleChrome/workbox/issues/2817/hovercard" href="https://github.com/GoogleChrome/workbox/issues/2817">#2817</a>]</p>
+<h3>TrustedScriptURL support in workbox-window</h3>
+<p>Developers who have opted-in to the <a href="https://web.dev/trusted-types/" rel="nofollow">CSP policy</a> <code>"require-trusted-types-for 'script'"</code> and who are using TypeScript would have previously had trouble using <code>TrustedScriptURL</code>s in <code>workbox-window</code>. This release improves that support. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="924364283" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2872" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2872/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2872">#2872</a>]</p>
+<h3>rangeRequests option in runtimeCaching</h3>
+<p>Setting <code>rangeRequests: true</code> inside of a <a href="https://developers.google.com/web/tools/workbox/reference-docs/latest/module-workbox-build#.RuntimeCachingEntry" rel="nofollow"><code>runtimeCaching</code></a> configuration entry will add the RangeRequestsPlugin to the service worker generated by Workbox's build tools. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="924240299" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2871" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2871/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2871">#2871</a>]</p>
+<h2><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> What's Fixed?</h2>
+<h3>workbox-core</h3>
+<ul>
+<li>The <code>HandlerDidErrorCallbackParam</code> type definition is now exported alongside the other relevant TypeScript types. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="942353127" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2886" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2886/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2886">#2886</a>]</li>
+</ul>
+<h3>workbox-webpack-plugin</h3>
+<ul>
+<li>A bug was fixed that could lead to invalid generated code when quotation chars when <code>webpack</code>'s <code>eval-cheap-source-map</code> is used along with the <code>InjectManifest</code> plugin. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="893847850" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2847" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2847/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2847">#2847</a>]</li>
+</ul>
+<h3>workbox-window</h3>
+<ul>
+<li>
+<p><code>ports</code> was missing on the <code>WorkboxMessageEvent</code>. It's been added, mirroring the value of the underlying <code>MessageEvent</code>, when used in an <code>onmessage</code> handler. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="926572471" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2874" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2874/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2874">#2874</a>]</p>
+</li>
+<li>
+<p>The <code>WorkboxEventMap</code> type definition is now exported alongside the other relevant TypeScript types. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="924225891" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2870" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2870/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2870">#2870</a>]</p>
+</li>
+</ul>
+<h2>Thanks!</h2>
+<p>Thank you <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/rockwalrus/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rockwalrus">@rockwalrus</a> for contributing a PR [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="908590191" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/2857" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/2857/hovercard" href="https://github.com/GoogleChrome/workbox/pull/2857">#2857</a>] that went into this release!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@0.3.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%400.3.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%400.3.0-next.2</guid>
+            <pubDate>Thu, 05 Aug 2021 17:59:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-worker@0.3.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@3.12.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.12.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.12.0-next.2</guid>
+            <pubDate>Thu, 05 Aug 2021 17:59:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@3.12.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@3.12.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%403.12.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%403.12.0-next.2</guid>
+            <pubDate>Thu, 05 Aug 2021 17:59:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-toml@3.12.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@3.12.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.12.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.12.0-next.2</guid>
+            <pubDate>Thu, 05 Aug 2021 17:59:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@3.12.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby@3.12.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%403.12.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%403.12.0-next.2</guid>
+            <pubDate>Thu, 05 Aug 2021 17:59:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby@3.12.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2523]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2523</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2523</guid>
+            <pubDate>Thu, 05 Aug 2021 17:58:58 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from vscode: July 2021]]></title>
+            <link>https://github.com/microsoft/vscode/releases/tag/1.59.0</link>
+            <guid>https://github.com/microsoft/vscode/releases/tag/1.59.0</guid>
+            <pubDate>Thu, 05 Aug 2021 17:58:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Welcome to the July 2021 release of Visual Studio Code. There are many updates in this version that we hope you will like, some of the key highlights include:</p>
+<ul>
+<li><strong><a href="#extensions">Extensions view improvements</a></strong> - Rich extension detail hovers, new runtime status tab.</li>
+<li><strong><a href="#settings-editor">Settings editor validation</a></strong> - Quickly find editing errors for object-based settings.</li>
+<li><strong><a href="#drag-and-drop-terminals-across-windows">Drag and drop terminals</a></strong> - Move terminals across windows to both editor and panel areas.</li>
+<li><strong><a href="#extended-theme-customization-syntax">Extended theme customization</a></strong> - Customize multiple color themes at once.</li>
+<li><strong><a href="#support-for-jupyter-notebooks">Built-in support for Jupyter notebooks</a></strong> - Open <code>.ipynb</code> files directly in VS Code.</li>
+<li><strong><a href="#notebook-layout-improvements">Notebook UI improvements</a></strong> - Display first line of collapsed cells, Undo/Redo per cell.</li>
+<li><strong><a href="#testing-apis">Testing API finalized</a></strong> - Native support for running tests in VS Code with built-in Test Explorer.</li>
+<li><strong><a href="#disassembly-view">Debug Disassembly view preview</a></strong> - Display disassembled C++ code in VS Code.</li>
+<li><strong><a href="#live-preview">Live Preview extension</a></strong> - Live HTML preview within VS Code with JavaScript debugging support.</li>
+<li><strong><a href="#remote-containers-devcontainer-cli">Remote - Containers devcontainer CLI</a></strong> - Command line interface for working with development containers.</li>
+</ul>
+<blockquote>
+<p>If you'd like to read these release notes online, go to <a href="https://code.visualstudio.com/updates" rel="nofollow">Updates</a> on <a href="https://code.visualstudio.com" rel="nofollow">code.visualstudio.com</a>.</p>
+</blockquote>
+<p><strong>Insiders:</strong> Want to try new features as soon as possible? You can download the nightly <a href="https://code.visualstudio.com/insiders" rel="nofollow">Insiders</a> build and try the latest updates as soon as they are available.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: 6.4.1]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/6.4.1</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/6.4.1</guid>
+            <pubDate>Thu, 05 Aug 2021 17:54:02 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Release 6.4.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2518]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2518</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2518</guid>
+            <pubDate>Thu, 05 Aug 2021 16:34:32 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2513]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2513</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2513</guid>
+            <pubDate>Thu, 05 Aug 2021 16:11:49 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2508]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2508</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2508</guid>
+            <pubDate>Thu, 05 Aug 2021 15:46:55 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: v15.0.0-alpha.4]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v15.0.0-alpha.4</link>
+            <guid>https://github.com/electron/electron/releases/tag/v15.0.0-alpha.4</guid>
+            <pubDate>Thu, 05 Aug 2021 15:42:05 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v15.0.0-alpha.4</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from grafana: 8.1.0 (2021-08-05)]]></title>
+            <link>https://github.com/grafana/grafana/releases/tag/v8.1.0</link>
+            <guid>https://github.com/grafana/grafana/releases/tag/v8.1.0</guid>
+            <pubDate>Thu, 05 Aug 2021 15:29:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p><a href="https://grafana.com/grafana/download/8.1.0" rel="nofollow">Download page</a><br>
+<a href="https://grafana.com/docs/grafana/latest/whatsnew/" rel="nofollow">What's new highlights</a></p>
+<h3>Features and enhancements</h3>
+<ul>
+<li><strong>Alerting:</strong> Deduplicate receivers during migration. <a href="https://github.com/grafana/grafana/pull/36812" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/36812/hovercard">#36812</a>, <a href="https://github.com/codesome">@codesome</a></li>
+<li><strong>ColorPicker:</strong> Display colors as RGBA. <a href="https://github.com/grafana/grafana/pull/37231" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37231/hovercard">#37231</a>, <a href="https://github.com/nikki-kiga">@nikki-kiga</a></li>
+<li><strong>Select:</strong> Make portalling the menu opt-in, but opt-in <em>everywhere</em>. <a href="https://github.com/grafana/grafana/pull/37501" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37501/hovercard">#37501</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>TimeRangePicker:</strong> Improve accessibility. <a href="https://github.com/grafana/grafana/pull/36912" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/36912/hovercard">#36912</a>, <a href="https://github.com/tskarhed">@tskarhed</a></li>
+</ul>
+<h3>Bug fixes</h3>
+<ul>
+<li><strong>Annotations:</strong> Correct annotations that are displayed upon page refresh. <a href="https://github.com/grafana/grafana/pull/37496" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37496/hovercard">#37496</a>, <a href="https://github.com/axelavargas">@axelavargas</a></li>
+<li><strong>Annotations:</strong> Fix <strong>Enabled</strong> button that disappeared from Grafana v8.0.6. <a href="https://github.com/grafana/grafana/pull/37454" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37454/hovercard">#37454</a>, <a href="https://github.com/axelavargas">@axelavargas</a></li>
+<li><strong>Annotations:</strong> Fix data source template variable that was not available for annotations. <a href="https://github.com/grafana/grafana/pull/37506" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37506/hovercard">#37506</a>, <a href="https://github.com/axelavargas">@axelavargas</a></li>
+<li><strong>AzureMonitor:</strong> Fix annotations query editor that does not load. <a href="https://github.com/grafana/grafana/pull/37476" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37476/hovercard">#37476</a>, <a href="https://github.com/torkelo">@torkelo</a></li>
+<li><strong>Geomap:</strong> Fix scale calculations. <a href="https://github.com/grafana/grafana/pull/37375" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37375/hovercard">#37375</a>, <a href="https://github.com/ryantxu">@ryantxu</a></li>
+<li><strong>GraphNG:</strong> Fix y-axis autosizing. <a href="https://github.com/grafana/grafana/pull/37464" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37464/hovercard">#37464</a>, <a href="https://github.com/leeoniya">@leeoniya</a></li>
+<li><strong>Live:</strong> Display stream rate and fix duplicate channels in list response. <a href="https://github.com/grafana/grafana/pull/37365" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37365/hovercard">#37365</a>, <a href="https://github.com/FZambia">@FZambia</a></li>
+<li><strong>Loki:</strong> Update labels in log browser when time range changes. <a href="https://github.com/grafana/grafana/pull/37520" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37520/hovercard">#37520</a>, <a href="https://github.com/ivanahuckova">@ivanahuckova</a></li>
+<li><strong>Loki:</strong> Update labels in log browser when time range changes in dashboard. <a href="https://github.com/grafana/grafana/pull/37541" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37541/hovercard">#37541</a>, <a href="https://github.com/ivanahuckova">@ivanahuckova</a></li>
+<li><strong>NGAlert:</strong> Send resolve signal to alertmanager on alerting -&gt; Normal. <a href="https://github.com/grafana/grafana/pull/37363" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37363/hovercard">#37363</a>, <a href="https://github.com/kylebrandt">@kylebrandt</a></li>
+<li><strong>PasswordField:</strong> Prevent a password from being displayed when you click the Enter button. <a href="https://github.com/grafana/grafana/pull/37444" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37444/hovercard">#37444</a>, <a href="https://github.com/tskarhed">@tskarhed</a></li>
+<li><strong>Renderer:</strong> Remove debug.log file when Grafana is stopped. <a href="https://github.com/grafana/grafana/pull/37367" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37367/hovercard">#37367</a>, <a href="https://github.com/AgnesToulet">@AgnesToulet</a></li>
+<li><strong>Security:</strong> Update dependencies to fix CVE-2021-36222. <a href="https://github.com/grafana/grafana/pull/37546" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/37546/hovercard">#37546</a>, <a href="https://github.com/ying-jeanne">@ying-jeanne</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: electron v14.0.0-beta.19]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v14.0.0-beta.19</link>
+            <guid>https://github.com/electron/electron/releases/tag/v14.0.0-beta.19</guid>
+            <pubDate>Thu, 05 Aug 2021 15:19:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Note: This is a beta release.  Please file new issues for any bugs you find in it.</p>
+<p>This release is published to npm under the beta tag and can be installed via <code>npm install electron@beta</code>, or <code>npm install electron@14.0.0-beta.19</code>.</p>
+<h1>Release Notes for v14.0.0-beta.19</h1>
+<h2>Fixes</h2>
+<ul>
+<li>Fixed an issue on Windows where empty console windows were appearing when <code>--enable-logging</code> was present. <a href="https://github.com/electron/electron/pull/30385" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30385/hovercard">#30385</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30386" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30386/hovercard">15</a>)</span></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2503]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2503</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2503</guid>
+            <pubDate>Thu, 05 Aug 2021 15:01:10 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 9.0.257.34]]></title>
+            <link>https://github.com/v8/v8/releases/tag/9.0.257.34</link>
+            <guid>https://github.com/v8/v8/releases/tag/9.0.257.34</guid>
+            <pubDate>Thu, 05 Aug 2021 14:45:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>TBR=<a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a></p>
+<p>Change-Id: I5d963c5bc80a3ce827711cdbdcd963640d9e74af<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3074522" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3074522</a><br>
+Reviewed-by: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/branch-heads/9.0@{#69}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7/hovercard" href="https://github.com/v8/v8/commit/bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7"><tt>bd0108b</tt></a>-refs/heads/9.0.257@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/349bcc6a075411f1a7ce2d866c3dfeefc2efa39d/hovercard" href="https://github.com/v8/v8/commit/349bcc6a075411f1a7ce2d866c3dfeefc2efa39d"><tt>349bcc6</tt></a>-refs/heads/master@{#73001}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2500]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2500</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2500</guid>
+            <pubDate>Thu, 05 Aug 2021 14:11:54 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from meteor: release/METEOR@2.4-beta.9]]></title>
+            <link>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.4-beta.9</link>
+            <guid>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.4-beta.9</guid>
+            <pubDate>Thu, 05 Aug 2021 13:35:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>2.4-beta.9</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cube.js: v0.28.14]]></title>
+            <link>https://github.com/cube-js/cube.js/releases/tag/v0.28.14</link>
+            <guid>https://github.com/cube-js/cube.js/releases/tag/v0.28.14</guid>
+            <pubDate>Thu, 05 Aug 2021 13:33:20 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube.js/compare/v0.28.13...v0.28.14">0.28.14</a> (2021-08-05)</h2>
+<h3>Bug Fixes</h3>
+<ul>
+<li><strong>@cubejs-client/playground:</strong> live preview styles (<a href="https://github.com/cube-js/cube.js/issues/3191" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/3191/hovercard">#3191</a>) (<a href="https://github.com/cube-js/cube.js/commit/862ee2761e0e41a2598b16c13d4d8b0e68b8bb29">862ee27</a>)</li>
+<li><strong>cubestore:</strong> proper support for nulls in group by (<a href="https://github.com/cube-js/cube.js/commit/922138d0c0e294f67aef133b42aeee85070e7a9a">922138d</a>)</li>
+<li><strong>docs:</strong> change top banner api url &amp; catch network error (<a href="https://github.com/cube-js/cube.js/commit/0d600e5fa8c30cf172704694c4f14f1e91d7074b">0d600e5</a>)</li>
+<li><strong>docs:</strong> fix broken image link (<a href="https://github.com/cube-js/cube.js/commit/5179071c806745a65eaa335dc4a2bef10dd6bb05">5179071</a>)</li>
+<li><strong>examples:</strong> change invalid api url (<a href="https://github.com/cube-js/cube.js/issues/3194" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/3194/hovercard">#3194</a>) (<a href="https://github.com/cube-js/cube.js/commit/d79263149ba2bc2127fd8adb041e98c5d7593c05">d792631</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: v16.0.0-nightly.20210805]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210805</link>
+            <guid>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210805</guid>
+            <pubDate>Thu, 05 Aug 2021 13:01:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v16.0.0-nightly.20210805</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cdk: v1.117.0]]></title>
+            <link>https://github.com/aws/aws-cdk/releases/tag/v1.117.0</link>
+            <guid>https://github.com/aws/aws-cdk/releases/tag/v1.117.0</guid>
+            <pubDate>Thu, 05 Aug 2021 12:58:48 GMT</pubDate>
+            <content:encoded><![CDATA[<h3><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠</g-emoji> BREAKING CHANGES TO EXPERIMENTAL FEATURES</h3>
+<ul>
+<li><strong>assertions:</strong> <code>Template.fromTemplate()</code> is now<br>
+renamed to <code>Template.fromJSON()</code> to provide clarity.</li>
+<li><strong>assertions:</strong> <code>TemplateAssertions</code> is now renamed to<br>
+<code>Template</code>.</li>
+</ul>
+<h3>Features</h3>
+<ul>
+<li><strong>aws-cloudfront:</strong> add enabled to web distribution (<a href="https://github.com/aws/aws-cdk/issues/15433" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15433/hovercard">#15433</a>) (<a href="https://github.com/aws/aws-cdk/commit/7ad9348b49ab3b9dde1b4f1db3d888ddec423a9f">7ad9348</a>)</li>
+<li><strong>aws-ec2:</strong> Add SubnetFilter for Id and CIDR netmask (<a href="https://github.com/aws/aws-cdk/issues/15373" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15373/hovercard">#15373</a>) (<a href="https://github.com/aws/aws-cdk/commit/407b02d62bd8b3eb77e53fc74197b64148640b5a">407b02d</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15228" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15228/hovercard">#15228</a></li>
+<li><strong>aws-kinesisfirehose:</strong> support for S3 destination encryption on DeliveryStream (<a href="https://github.com/aws/aws-cdk/issues/15558" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15558/hovercard">#15558</a>) (<a href="https://github.com/aws/aws-cdk/commit/388877300e460e23cd69d67a16a00f7c57630649">3888773</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15555" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15555/hovercard">#15555</a></li>
+<li><strong>cfnspec:</strong> cloudformation spec v39.8.0 (<a href="https://github.com/aws/aws-cdk/issues/15885" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15885/hovercard">#15885</a>) (<a href="https://github.com/aws/aws-cdk/commit/60e6b4186680af98b538a21e82146fb0a0e84f33">60e6b41</a>)</li>
+<li><strong>cloudfront:</strong> Origin Shield support (<a href="https://github.com/aws/aws-cdk/issues/15453" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15453/hovercard">#15453</a>) (<a href="https://github.com/aws/aws-cdk/commit/08ebbae4cffdf85a66775f4e8f5ea9d7400bf358">08ebbae</a>), closes <a href="https://github.com/aws/aws-cdk/issues/12872" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/12872/hovercard">#12872</a></li>
+<li><strong>cloudfront:</strong> use TLS_V1_2_2021 SecurityPolicy as default version (under feature flag) (<a href="https://github.com/aws/aws-cdk/issues/15477" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15477/hovercard">#15477</a>) (<a href="https://github.com/aws/aws-cdk/commit/7b64abf51c52cd2f6f585d7fd9201030fdba8163">7b64abf</a>)</li>
+<li><strong>ec2:</strong> Add Transcribe interface endpoint (<a href="https://github.com/aws/aws-cdk/issues/15465" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15465/hovercard">#15465</a>) (<a href="https://github.com/aws/aws-cdk/commit/929d6aef84eb21aea0d9a4fff953a0f39246288e">929d6ae</a>)</li>
+<li><strong>eks:</strong> support Kubernetes 1.21 (<a href="https://github.com/aws/aws-cdk/issues/15774" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15774/hovercard">#15774</a>) (<a href="https://github.com/aws/aws-cdk/commit/83dd318959b1b1e5f94b5a31030d03379638c9ad">83dd318</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15758" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15758/hovercard">#15758</a></li>
+<li><strong>kinesisfirehose:</strong> add metrics functions to IDeliveryStream (<a href="https://github.com/aws/aws-cdk/issues/15618" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15618/hovercard">#15618</a>) (<a href="https://github.com/aws/aws-cdk/commit/33909ed2144ede58e5e503f3f220f610dbd89675">33909ed</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15543" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15543/hovercard">#15543</a></li>
+<li><strong>kinesisfirehose:</strong> add support for backing up source records to S3 (<a href="https://github.com/aws/aws-cdk/issues/15725" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15725/hovercard">#15725</a>) (<a href="https://github.com/aws/aws-cdk/commit/b86062ff6215384b5def76e07586e94cc6ecc9c1">b86062f</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15724" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15724/hovercard">#15724</a></li>
+<li><strong>kinesisfirehose:</strong> add support for BufferingHints (<a href="https://github.com/aws/aws-cdk/issues/15557" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15557/hovercard">#15557</a>) (<a href="https://github.com/aws/aws-cdk/commit/099b5840cc5b45bad987b7e797e6009d6383a3a7">099b584</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15554" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15554/hovercard">#15554</a></li>
+<li><strong>kinesisfirehose:</strong> add support for Lambda data processors (<a href="https://github.com/aws/aws-cdk/issues/15704" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15704/hovercard">#15704</a>) (<a href="https://github.com/aws/aws-cdk/commit/6244a81af17ec823df409437c4a33ef5fb13a1c5">6244a81</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15703" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15703/hovercard">#15703</a></li>
+<li><strong>kinesisfirehose:</strong> add support for server-side encryption on DeliveryStream (<a href="https://github.com/aws/aws-cdk/issues/15547" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15547/hovercard">#15547</a>) (<a href="https://github.com/aws/aws-cdk/commit/74f3cda53de7e8b5cd1d144e79cf9f5bb28e1938">74f3cda</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15546" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15546/hovercard">#15546</a></li>
+<li><strong>kinesisfirehose:</strong> supports Kinesis data stream source for delivery stream (<a href="https://github.com/aws/aws-cdk/issues/15836" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15836/hovercard">#15836</a>) (<a href="https://github.com/aws/aws-cdk/commit/afd5bf768a280cd11b4e72db841af36df2268ccf">afd5bf7</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15500" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15500/hovercard">#15500</a> <a href="https://github.com/aws/aws-cdk/issues/10783" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/10783/hovercard">#10783</a></li>
+<li><strong>kinesisfirehose-destinations:</strong> add support for compression on S3 delivery stream destinations (<a href="https://github.com/aws/aws-cdk/issues/15550" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15550/hovercard">#15550</a>) (<a href="https://github.com/aws/aws-cdk/commit/1eb56a025f728b7596f57b1289c2fc4c1c20e7f4">1eb56a0</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15548" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15548/hovercard">#15548</a></li>
+<li><strong>kinesisfirehose-destinations:</strong> add support for prefixes in the S3 destination (<a href="https://github.com/aws/aws-cdk/issues/15552" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15552/hovercard">#15552</a>) (<a href="https://github.com/aws/aws-cdk/commit/d227e48458832ff85d2d575e5462e45d29f49a6c">d227e48</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15551" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15551/hovercard">#15551</a></li>
+<li><strong>lambda:</strong> cloudwatch lambda insights (<a href="https://github.com/aws/aws-cdk/issues/15439" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15439/hovercard">#15439</a>) (<a href="https://github.com/aws/aws-cdk/commit/9efd800b4eea3a849edc5710975e4d70ec14a5cd">9efd800</a>)</li>
+<li><strong>Route53:</strong> add support for RemovalPolicy in CrossAccountZoneDelegationRecord (<a href="https://github.com/aws/aws-cdk/issues/15782" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15782/hovercard">#15782</a>) (<a href="https://github.com/aws/aws-cdk/commit/9eea4b8d454f7bc23930e6254651029b1a348a2c">9eea4b8</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15211" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15211/hovercard">#15211</a></li>
+<li><strong>s3-deployment:</strong> control object access (<a href="https://github.com/aws/aws-cdk/issues/15730" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15730/hovercard">#15730</a>) (<a href="https://github.com/aws/aws-cdk/commit/f58cf3c95eb32e9a4dc797665160e1b508ace2e1">f58cf3c</a>)</li>
+<li><strong>servicecatalog:</strong> add CloudFormation Parameter constraint (<a href="https://github.com/aws/aws-cdk/issues/15770" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15770/hovercard">#15770</a>) (<a href="https://github.com/aws/aws-cdk/commit/58fda9104ad884026d578dc0602f7d64dd533f6d">58fda91</a>)</li>
+<li><strong>stepfunctions-tasks:</strong> add sns publish with message attributes (<a href="https://github.com/aws/aws-cdk/issues/14817" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/14817/hovercard">#14817</a>) (<a href="https://github.com/aws/aws-cdk/commit/bc99e8271d443b10928d99437593c52efd763d7c">bc99e82</a>), closes <a href="https://github.com/aws/aws-cdk/issues/4702" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/4702/hovercard">#4702</a></li>
+</ul>
+<h3>Bug Fixes</h3>
+<ul>
+<li><strong>assert:</strong> module is incompatible with jest@27 (<a href="https://github.com/aws/aws-cdk/issues/15666" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15666/hovercard">#15666</a>) (<a href="https://github.com/aws/aws-cdk/commit/f446566bd26ca024aed0a88da08a82a261c0dac6">f446566</a>)</li>
+<li><strong>appsync:</strong> graphqlapi throws incorrect error message for authorizationConfig (<a href="https://github.com/aws/aws-cdk/issues/15830" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15830/hovercard">#15830</a>) (<a href="https://github.com/aws/aws-cdk/commit/1f23313e889a00d85e7cbc56a64242d6e7762835">1f23313</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15039" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15039/hovercard">#15039</a></li>
+<li><strong>eks:</strong> Allow desiredsize minsize and maxsize to accept CfnParameters. (<a href="https://github.com/aws/aws-cdk/issues/15487" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15487/hovercard">#15487</a>) (<a href="https://github.com/aws/aws-cdk/commit/fb437693c0f1568ddc53e9a198e54be3b9a01592">fb43769</a>)</li>
+<li><strong>chatbot:</strong> ARN validation in fromSlackChannelConfigurationArn fails for tokenized values (<a href="https://github.com/aws/aws-cdk/issues/15849" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15849/hovercard">#15849</a>) (<a href="https://github.com/aws/aws-cdk/commit/440ca35cf0f0e9f6f86bef445bd9aa6ef05ff9be">440ca35</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15842" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15842/hovercard">#15842</a></li>
+<li><strong>cli:</strong> move fail option into the diff command (<a href="https://github.com/aws/aws-cdk/issues/15829" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15829/hovercard">#15829</a>) (<a href="https://github.com/aws/aws-cdk/commit/473c1d8248ae84bd8b4bb3863334e05e5328fddc">473c1d8</a>)</li>
+<li><strong>ec2:</strong> volumename doesn't set name of volume (<a href="https://github.com/aws/aws-cdk/issues/15832" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15832/hovercard">#15832</a>) (<a href="https://github.com/aws/aws-cdk/commit/b842702cbb7aa6632dd2fc4b4981abdd3a773826">b842702</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15831" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15831/hovercard">#15831</a></li>
+<li><strong>elbv2:</strong> unresolved listener priority throws error (<a href="https://github.com/aws/aws-cdk/issues/15804" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15804/hovercard">#15804</a>) (<a href="https://github.com/aws/aws-cdk/commit/fce9ac73fe6da5e604f0659d9f101001dcef830a">fce9ac7</a>)</li>
+<li><strong>pipelines:</strong> Prepare stage doesn't have AUTO_EXPAND capability (<a href="https://github.com/aws/aws-cdk/issues/15819" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15819/hovercard">#15819</a>) (<a href="https://github.com/aws/aws-cdk/commit/a6fac4974fa17949b836c72d04e1cc4504bc920a">a6fac49</a>), closes <a href="https://github.com/aws/aws-cdk/issues/15711" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/15711/hovercard">#15711</a></li>
+<li><strong>s3:</strong> notifications are broken in some regions (<a href="https://github.com/aws/aws-cdk/issues/15884" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15884/hovercard">#15884</a>) (<a href="https://github.com/aws/aws-cdk/commit/ee191961a8b057a0585e731a67c15a7edd59c79e">ee19196</a>)</li>
+<li><strong>stepfunctions-tasks:</strong> Stage field not included in CallApiGatewayHttpApiEndpoint task definition (<a href="https://github.com/aws/aws-cdk/issues/15755" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15755/hovercard">#15755</a>) (<a href="https://github.com/aws/aws-cdk/commit/4f38fe1c3e5515ae22f2820712644ed763dbc248">4f38fe1</a>), closes <a href="https://github.com/aws/aws-cdk/issues/14242" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/14242/hovercard">#14242</a></li>
+</ul>
+<h3>Miscellaneous Chores</h3>
+<ul>
+<li><strong>assertions:</strong> migrate more modules to use assertions (<a href="https://github.com/aws/aws-cdk/issues/15857" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15857/hovercard">#15857</a>) (<a href="https://github.com/aws/aws-cdk/commit/45b484cdff115a0893f7eed2b0c1d6424c2751e4">45b484c</a>)</li>
+<li><strong>assertions:</strong> rename TemplateAssertions to Template (<a href="https://github.com/aws/aws-cdk/issues/15823" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/15823/hovercard">#15823</a>) (<a href="https://github.com/aws/aws-cdk/commit/823dfda76f39f0eff51d792b28aafcc5568f3db1">823dfda</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2490]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2490</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2490</guid>
+            <pubDate>Thu, 05 Aug 2021 12:35:03 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
@@ -36,25 +333,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby@3.12.0-next.1</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@3.12.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%403.12.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%403.12.0-next.1</guid>
-            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@3.12.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-worker@0.3.0-next.1]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%400.3.0-next.1</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%400.3.0-next.1</guid>
             <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-worker@0.3.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@3.12.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.12.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.12.0-next.1</guid>
-            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@3.12.0-next.1</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@3.12.0-next.1]]></title>
@@ -64,46 +347,18 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-transformer-xml@3.12.0-next.1</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@3.12.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.12.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.12.0-next.1</guid>
+            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@3.12.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@3.12.0-next.1]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%403.12.0-next.1</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%403.12.0-next.1</guid>
             <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-toml@3.12.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@3.12.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%403.12.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%403.12.0-next.1</guid>
-            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@3.12.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@4.9.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%404.9.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%404.9.0-next.1</guid>
-            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-remark@4.9.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@6.12.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%406.12.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%406.12.0-next.1</guid>
-            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@6.12.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@3.12.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%403.12.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%403.12.0-next.1</guid>
-            <pubDate>Thu, 05 Aug 2021 11:48:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@3.12.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.30-333]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-333</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-333</guid>
-            <pubDate>Thu, 05 Aug 2021 11:03:07 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2485]]></title>
@@ -138,20 +393,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.30-332]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-332</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-332</guid>
-            <pubDate>Thu, 05 Aug 2021 10:11:40 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.30-RC-release-319]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-RC-release-319</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-RC-release-319</guid>
-            <pubDate>Thu, 05 Aug 2021 10:11:40 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 9.4.112]]></title>
             <link>https://github.com/v8/v8/releases/tag/9.4.112</link>
             <guid>https://github.com/v8/v8/releases/tag/9.4.112</guid>
@@ -163,13 +404,6 @@ Cr-Commit-Position: refs/heads/9.4.112@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/12b81e8ea54a0cb12da224cfcc14cd032200eb7d/hovercard" href="https://github.com/v8/v8/commit/12b81e8ea54a0cb12da224cfcc14cd032200eb7d"><tt>12b81e8</tt></a>-refs/heads/master@{#76107}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.30-RC-release-318]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-RC-release-318</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-RC-release-318</guid>
-            <pubDate>Thu, 05 Aug 2021 09:24:19 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 9.4.111]]></title>
             <link>https://github.com/v8/v8/releases/tag/9.4.111</link>
             <guid>https://github.com/v8/v8/releases/tag/9.4.111</guid>
@@ -179,13 +413,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3074224
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/9.4.111@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/821e02d89c638d8959f2dc68b644767e28b056b4/hovercard" href="https://github.com/v8/v8/commit/821e02d89c638d8959f2dc68b644767e28b056b4"><tt>821e02d</tt></a>-refs/heads/master@{#76106}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.30-331]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-331</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.30-331</guid>
-            <pubDate>Thu, 05 Aug 2021 08:40:07 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 9.4.110]]></title>
@@ -372,15 +599,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4b6b4cabf3b6a20cdfda72b369df49f3311c4344/hovercard" href="https://github.com/v8/v8/commit/4b6b4cabf3b6a20cdfda72b369df49f3311c4344"><tt>4b6b4ca</tt></a>-refs/heads/master@{#75728}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 9.4.106]]></title>
-            <link>https://github.com/v8/v8/releases/tag/9.4.106</link>
-            <guid>https://github.com/v8/v8/releases/tag/9.4.106</guid>
-            <pubDate>Wed, 04 Aug 2021 23:21:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I4497040a962150652e83283a13dd5762a0e42da0<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3071609" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3071609</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/9.4.106@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/68043e340c3e4dad49299bafeb399b1485bde571/hovercard" href="https://github.com/v8/v8/commit/68043e340c3e4dad49299bafeb399b1485bde571"><tt>68043e3</tt></a>-refs/heads/master@{#76100}</p>]]></content:encoded>
+            <title><![CDATA[Release notes from flutter: 2.5.0-5.0.pre: Revert "update ScrollMetricsNotification (#87421)" (#87693)]]></title>
+            <link>https://github.com/flutter/flutter/releases/tag/2.5.0-5.0.pre</link>
+            <guid>https://github.com/flutter/flutter/releases/tag/2.5.0-5.0.pre</guid>
+            <pubDate>Wed, 04 Aug 2021 22:59:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This reverts commit <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/flutter/flutter/commit/52bf9dbbd72ecc787474da223c32d2368a4ad49e/hovercard" href="https://github.com/flutter/flutter/commit/52bf9dbbd72ecc787474da223c32d2368a4ad49e"><tt>52bf9db</tt></a>.</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from apollo-client: v3.5.0-beta.4]]></title>
@@ -579,13 +802,6 @@ Trust: Damien Neil <a href="mailto:dneil@google.com">dneil@google.com</a></p>]]>
 </tr><tr><td>SHA256</td><td>74a99bfebac7ec87052c0cf8c027f49c60606d14004bf95068a4456effd6cb41</td></tr>
 <tr><td>SHA512</td><td>d1145ec29a8581a4c94a83cefa3658a73bfc7d8e2624d31e735d53551718c9212e477673f74cfa4e430a8367a47bba65e2573162711613e60db54563dc912f00</td></tr>
 </tbody></table>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.0-dev-2458]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2458</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-dev-2458</guid>
-            <pubDate>Wed, 04 Aug 2021 19:27:59 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from three.js: r131]]></title>
@@ -2290,293 +2506,6 @@ Importantly this renames <del><code>vfile.contents</code></del> to <code>vfile.v
             <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.4.3</guid>
             <pubDate>Mon, 02 Aug 2021 21:25:17 GMT</pubDate>
             <content:encoded><![CDATA[<p>Bump @apollo/client npm version to 3.4.3.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.20.12]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.20.12</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.20.12</guid>
-            <pubDate>Mon, 02 Aug 2021 18:12:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.20.12 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from go: [release-branch.go1.17] go1.17rc2]]></title>
-            <link>https://github.com/golang/go/releases/tag/go1.17rc2</link>
-            <guid>https://github.com/golang/go/releases/tag/go1.17rc2</guid>
-            <pubDate>Mon, 02 Aug 2021 17:57:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I1f1ada15d7365db3e48599fbaddd6a65a8e5d06c<br>
-Reviewed-on: <a href="https://go-review.googlesource.com/c/go/+/339130" rel="nofollow">https://go-review.googlesource.com/c/go/+/339130</a><br>
-Run-TryBot: Alexander Rakoczy <a href="mailto:alex@golang.org">alex@golang.org</a><br>
-TryBot-Result: Go Bot <a href="mailto:gobot@golang.org">gobot@golang.org</a><br>
-Trust: Alexander Rakoczy <a href="mailto:alex@golang.org">alex@golang.org</a><br>
-Reviewed-by: David Chase <a href="mailto:drchase@google.com">drchase@google.com</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v15.0.0-alpha.3]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v15.0.0-alpha.3</link>
-            <guid>https://github.com/electron/electron/releases/tag/v15.0.0-alpha.3</guid>
-            <pubDate>Mon, 02 Aug 2021 17:12:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Note: This is an alpha release.  Please file new issues for any bugs you find in it.</p>
-<p>This release is published to npm under the alpha tag and can be installed via <code>npm install electron@alpha</code>, or <code>npm install electron@15.0.0-alpha.3</code>.</p>
-<h1>Release Notes for v15.0.0-alpha.3</h1>
-<h2>Fixes</h2>
-<ul>
-<li>Fixed a potential crash that would occur with draggable regions on Windows. <a href="https://github.com/electron/electron/pull/30328" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30328/hovercard">#30328</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30326" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30326/hovercard">13</a>, <a href="https://github.com/electron/electron/pull/30327" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30327/hovercard">14</a>)</span></li>
-<li>Fixed an issue where <code>BrowserView</code> webContents would appear not to load in some circumstances. <a href="https://github.com/electron/electron/pull/30336" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30336/hovercard">#30336</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30335" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30335/hovercard">14</a>)</span></li>
-<li>Fixed an issue where a specified aspect ratio could become incorrect when maximizing a window on macOS. <a href="https://github.com/electron/electron/pull/30332" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30332/hovercard">#30332</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30329" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30329/hovercard">12</a>, <a href="https://github.com/electron/electron/pull/30330" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30330/hovercard">13</a>, <a href="https://github.com/electron/electron/pull/30331" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30331/hovercard">14</a>)</span></li>
-<li>Fixed frameless window having wrong traffic lights position on macOS 11. <a href="https://github.com/electron/electron/pull/30270" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30270/hovercard">#30270</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30319" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30319/hovercard">13</a>, <a href="https://github.com/electron/electron/pull/30269" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30269/hovercard">14</a>)</span></li>
-<li>Fixed some console messages still being printed to logs when the LogJsConsoleMessages feature was disabled. <a href="https://github.com/electron/electron/pull/30356" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30356/hovercard">#30356</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30355" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30355/hovercard">14</a>)</span></li>
-</ul>
-<h2>Other Changes</h2>
-<ul>
-<li>Updated Chromium to 94.0.4584.0. <a href="https://github.com/electron/electron/pull/30268" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30268/hovercard">#30268</a></li>
-<li>Web Serial API is no longer experimental. <a href="https://github.com/electron/electron/pull/30334" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30334/hovercard">#30334</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30333" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30333/hovercard">14</a>)</span></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from meteor: release/METEOR@2.3.3]]></title>
-            <link>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.3.3</link>
-            <guid>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.3.3</guid>
-            <pubDate>Mon, 02 Aug 2021 16:33:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Release 2.3.3</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.2.71: feat(node/swc): Support `sourceFileName` (#1976)]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.2.71</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.2.71</guid>
-            <pubDate>Mon, 02 Aug 2021 16:28:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>feat(node/swc): Support `sourceFileName` (<a class="issue-link js-issue-link" href="https://github.com/swc-project/swc/pull/1976">#1976</a>)</p>
-
-<p>swc:
-<br /> - Support `sourceFileName`.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pixijs: v6.1.0]]></title>
-            <link>https://github.com/pixijs/pixijs/releases/tag/v6.1.0</link>
-            <guid>https://github.com/pixijs/pixijs/releases/tag/v6.1.0</guid>
-            <pubDate>Mon, 02 Aug 2021 16:05:24 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> Important</h2>
-<h3>ParticleContainer Package Renamed</h3>
-<p>The package <code>@pixi/particles</code> is renamed to <code>@pixi/particle-container</code> to avoid confusion with <code>pixi-particles</code> plugin. Please make sure, if you are importing directly from this packages, to rename your import.</p>
-<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="//import { ParticleContainer } from '@pixi/particles'; // OLD
-import { ParticleContainer } from '@pixi/particle-container';
-"><pre><span class="pl-c">//import { ParticleContainer } from '@pixi/particles'; // OLD</span>
-<span class="pl-k">import</span> <span class="pl-kos">{</span> <span class="pl-smi">ParticleContainer</span> <span class="pl-kos">}</span> <span class="pl-k">from</span> <span class="pl-s">'@pixi/particle-container'</span><span class="pl-kos">;</span></pre></div>
-<h3>Now Using Peer Dependencies</h3>
-<p>Many users encountered issues upgrading PixiJS because of how we designed our dependencies. We have replace dependencies with <code>peerDependencies</code> for all internal relationships.</p>
-<h2><g-emoji class="g-emoji" alias="floppy_disk" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4be.png">💾</g-emoji>  Download</h2>
-<p>Development Build:</p>
-<ul>
-<li><a href="https://pixijs.download/v6.1.0/pixi.js" rel="nofollow">https://pixijs.download/v6.1.0/pixi.js</a></li>
-<li><a href="https://pixijs.download/v6.1.0/pixi.js.map" rel="nofollow">https://pixijs.download/v6.1.0/pixi.js.map</a></li>
-<li><a href="https://pixijs.download/v6.1.0/pixi.mjs" rel="nofollow">https://pixijs.download/v6.1.0/pixi.mjs</a></li>
-<li><a href="https://pixijs.download/v6.1.0/pixi.mjs.map" rel="nofollow">https://pixijs.download/v6.1.0/pixi.mjs.map</a></li>
-</ul>
-<p>Production Build:</p>
-<ul>
-<li><a href="https://pixijs.download/v6.1.0/pixi.min.js" rel="nofollow">https://pixijs.download/v6.1.0/pixi.min.js</a></li>
-<li><a href="https://pixijs.download/v6.1.0/pixi.min.js.map" rel="nofollow">https://pixijs.download/v6.1.0/pixi.min.js.map</a></li>
-<li><a href="https://pixijs.download/v6.1.0/pixi.min.mjs" rel="nofollow">https://pixijs.download/v6.1.0/pixi.min.mjs</a></li>
-<li><a href="https://pixijs.download/v6.1.0/pixi.min.mjs.map" rel="nofollow">https://pixijs.download/v6.1.0/pixi.min.mjs.map</a></li>
-</ul>
-<p>Documentation:</p>
-<ul>
-<li><a href="https://pixijs.download/v6.1.0/docs/index.html" rel="nofollow">https://pixijs.download/v6.1.0/docs/index.html</a></li>
-</ul>
-<h2>Changed</h2>
-<p><a class="commit-link" href="https://github.com/pixijs/pixijs/compare/v6.0.1...v6.1.0"><tt>v6.0.1...v6.1.0</tt></a></p>
-<h3><g-emoji class="g-emoji" alias="gift" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f381.png">🎁</g-emoji>  Added</h3>
-<ul>
-<li>Add support of line alignment on CanvasRenderer (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="785934656" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7150" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7150/hovercard" href="https://github.com/pixijs/pixijs/pull/7150">#7150</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/SerG-Y/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/SerG-Y">@SerG-Y</a></li>
-<li>Added better shader debugging (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="821441022" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7268" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7268/hovercard" href="https://github.com/pixijs/pixijs/pull/7268">#7268</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a></li>
-<li>Federated Events API, alternative package to interaction (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="797539693" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7213" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7213/hovercard" href="https://github.com/pixijs/pixijs/pull/7213">#7213</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="842639852" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7350" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7350/hovercard" href="https://github.com/pixijs/pixijs/pull/7350">#7350</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="849968217" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7381" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7381/hovercard" href="https://github.com/pixijs/pixijs/pull/7381">#7381</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="849717429" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7376" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7376/hovercard" href="https://github.com/pixijs/pixijs/pull/7376">#7376</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="947890731" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7616" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7616/hovercard" href="https://github.com/pixijs/pixijs/pull/7616">#7616</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="956947622" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7652" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7652/hovercard" href="https://github.com/pixijs/pixijs/pull/7652">#7652</a>) @SukantPal <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a> <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/miltoncandelero/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/miltoncandelero">@miltoncandelero</a></li>
-<li>Support running GitHub Actions on Forks (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="836005935" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7318" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7318/hovercard" href="https://github.com/pixijs/pixijs/pull/7318">#7318</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Add <code>destroyed</code> event to DisplayObject (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="837007947" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7322" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7322/hovercard" href="https://github.com/pixijs/pixijs/pull/7322">#7322</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ayamada/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ayamada">@ayamada</a></li>
-<li>Add new BufferSystem to Renderer (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="773031866" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7096" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7096/hovercard" href="https://github.com/pixijs/pixijs/pull/7096">#7096</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="849936316" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7380" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7380/hovercard" href="https://github.com/pixijs/pixijs/pull/7380">#7380</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="945217140" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7600" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7600/hovercard" href="https://github.com/pixijs/pixijs/pull/7600">#7600</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a></li>
-<li>Add support for R32F (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="800942440" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7222" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7222/hovercard" href="https://github.com/pixijs/pixijs/pull/7222">#7222</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/joshuahhh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/joshuahhh">@joshuahhh</a></li>
-<li>Add support for rendering with a specific mip level of a texture (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="846452783" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7358" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7358/hovercard" href="https://github.com/pixijs/pixijs/pull/7358">#7358</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="849852182" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7377" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7377/hovercard" href="https://github.com/pixijs/pixijs/pull/7377">#7377</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a></li>
-<li>Allow supplying arrays to <code>Buffer.update()</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="850703332" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7387" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7387/hovercard" href="https://github.com/pixijs/pixijs/pull/7387">#7387</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/getkey/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/getkey">@getkey</a></li>
-<li>Add drawRoundedPolygon to graphics-extras (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="852900389" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7392" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7392/hovercard" href="https://github.com/pixijs/pixijs/pull/7392">#7392</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a> <a href="https://jsfiddle.net/bigtimebuddy/czr97ox3" rel="nofollow">Demo</a></li>
-<li>Add support for RGB Float format (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="860600152" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7425" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7425/hovercard" href="https://github.com/pixijs/pixijs/pull/7425">#7425</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a></li>
-<li>Add multisample shortcut and parameters (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="865406470" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7440" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7440/hovercard" href="https://github.com/pixijs/pixijs/pull/7440">#7440</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="950198483" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7633" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7633/hovercard" href="https://github.com/pixijs/pixijs/pull/7633">#7633</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a>
-<ul>
-<li>Add <code>multisample</code> getter and setter in <code>RenderTexture</code></li>
-<li>Add <code>multisample</code> option to <code>RenderTexture.create()</code> and <code>RenderTexture</code>/<code>BaseRenderTexture</code> constructors</li>
-<li>Add <code>multisample</code> parameter to <code>AbtractRenderer.generateTexture()</code></li>
-</ul>
-</li>
-<li>InteractionManager replace <code>useCapture</code> with options (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="867076398" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7452" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7452/hovercard" href="https://github.com/pixijs/pixijs/pull/7452">#7452</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/puxiao/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/puxiao">@puxiao</a></li>
-<li>Add cacheAsBitmapMultisample to add multisampling to cacheAsBitmap (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="865418342" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7441" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7441/hovercard" href="https://github.com/pixijs/pixijs/pull/7441">#7441</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="951467848" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7637" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7637/hovercard" href="https://github.com/pixijs/pixijs/pull/7637">#7637</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Add automated publishing case for prereleases (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="917647346" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7530" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7530/hovercard" href="https://github.com/pixijs/pixijs/pull/7530">#7530</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Add <code>tint(color, multiply)</code> method to ColorMatrixFilter (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="917950246" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7531" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7531/hovercard" href="https://github.com/pixijs/pixijs/pull/7531">#7531</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/miltoncandelero/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/miltoncandelero">@miltoncandelero</a></li>
-<li>Add mixins to @pixi/math (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="927771964" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7548" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7548/hovercard" href="https://github.com/pixijs/pixijs/pull/7548">#7548</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/miltoncandelero/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/miltoncandelero">@miltoncandelero</a></li>
-<li>Add getter/setter for mipmap, scaleMode, wrapMode in BaseTexture (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="933241316" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7562" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7562/hovercard" href="https://github.com/pixijs/pixijs/pull/7562">#7562</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ShukantPal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ShukantPal">@ShukantPal</a></li>
-<li>Add getter for DisplayObject destroyed (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="939417325" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7582" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7582/hovercard" href="https://github.com/pixijs/pixijs/pull/7582">#7582</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ShukantPal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ShukantPal">@ShukantPal</a></li>
-<li>Convert unit-tests to TypeScript (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="942625691" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7593" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7593/hovercard" href="https://github.com/pixijs/pixijs/pull/7593">#7593</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="945874374" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7609" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7609/hovercard" href="https://github.com/pixijs/pixijs/pull/7609">#7609</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Introduce Math Extras package (Vector2 Math, Rectangle operations, and more!) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="933277673" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7563" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7563/hovercard" href="https://github.com/pixijs/pixijs/pull/7563">#7563</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/miltoncandelero/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/miltoncandelero">@miltoncandelero</a></li>
-<li>Add support for all texture formats and types (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="941330435" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7586" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7586/hovercard" href="https://github.com/pixijs/pixijs/pull/7586">#7586</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Group unit-tests together by package (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="944866826" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7595" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7595/hovercard" href="https://github.com/pixijs/pixijs/pull/7595">#7595</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Add missing basic unit-tests for various packages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="945657796" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7608" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7608/hovercard" href="https://github.com/pixijs/pixijs/pull/7608">#7608</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Add support for multisampled filters (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="860506905" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7423" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7423/hovercard" href="https://github.com/pixijs/pixijs/pull/7423">#7423</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fork resource-loader into loaders package (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="945496407" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7603" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7603/hovercard" href="https://github.com/pixijs/pixijs/pull/7603">#7603</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ivanpopelyshev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ivanpopelyshev">@ivanpopelyshev</a> <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Replace arguments with options in <code>generateTexture</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="949966071" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7629" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7629/hovercard" href="https://github.com/pixijs/pixijs/pull/7629">#7629</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="950845118" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7634" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7634/hovercard" href="https://github.com/pixijs/pixijs/pull/7634">#7634</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Add multisample property to Renderer (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="950141651" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7632" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7632/hovercard" href="https://github.com/pixijs/pixijs/pull/7632">#7632</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Add sprite mask filter's resolution and multisample properly (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="948613443" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7618" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7618/hovercard" href="https://github.com/pixijs/pixijs/pull/7618">#7618</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-</ul>
-<h3><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji>  Fixed</h3>
-<ul>
-<li>Remove System inheritance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="821524067" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7269" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7269/hovercard" href="https://github.com/pixijs/pixijs/pull/7269">#7269</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="830796092" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7291" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7291/hovercard" href="https://github.com/pixijs/pixijs/pull/7291">#7291</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="844988050" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7353" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7353/hovercard" href="https://github.com/pixijs/pixijs/pull/7353">#7353</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Shader compiling optimization (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="821441022" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7268" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7268/hovercard" href="https://github.com/pixijs/pixijs/pull/7268">#7268</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a></li>
-<li>Fix Mesh render crash due new behavior of ShaderSystem (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="834596332" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7311" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7311/hovercard" href="https://github.com/pixijs/pixijs/pull/7311">#7311</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ivanpopelyshev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ivanpopelyshev">@ivanpopelyshev</a></li>
-<li>Remove deprecation warnings in tests (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="835527354" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7315" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7315/hovercard" href="https://github.com/pixijs/pixijs/pull/7315">#7315</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix video texture not working in SimplePlane, add <code>autoResize</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="836054603" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7319" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7319/hovercard" href="https://github.com/pixijs/pixijs/pull/7319">#7319</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/JetLua/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JetLua">@JetLua</a></li>
-<li>Upgrade <code>@pixi-build-tools/api-extractor-lerna-monorepo</code> to 1.0.3 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="839302012" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7333" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7333/hovercard" href="https://github.com/pixijs/pixijs/pull/7333">#7333</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Upgrade Floss and Electron dependencies (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="840375040" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7334" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7334/hovercard" href="https://github.com/pixijs/pixijs/pull/7334">#7334</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Upgrade to webdoc 1.2.1, remove bug workarounds (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="860540018" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7424" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7424/hovercard" href="https://github.com/pixijs/pixijs/pull/7424">#7424</a>) @SukantPal</li>
-<li>Use fetch for createImageBitmap for prevent synced decoding ImageBitmap (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="866713062" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7450" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7450/hovercard" href="https://github.com/pixijs/pixijs/pull/7450">#7450</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/eXponenta/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eXponenta">@eXponenta</a></li>
-<li>Fix unit-test failures from npm@7.12.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="879378546" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7476" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7476/hovercard" href="https://github.com/pixijs/pixijs/pull/7476">#7476</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix incorrect bounds for drawPolygon with lineAlignment lower than 0.5 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="864262095" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7434" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7434/hovercard" href="https://github.com/pixijs/pixijs/pull/7434">#7434</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/andrej-ilic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrej-ilic">@andrej-ilic</a></li>
-<li>Set _isConnectedToTicker to false when disposing VideoResource (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="892486902" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7491" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7491/hovercard" href="https://github.com/pixijs/pixijs/pull/7491">#7491</a>) @SukantPal</li>
-<li>Fix UBO handling mat3 Matrix uniforms (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="892491675" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7492" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7492/hovercard" href="https://github.com/pixijs/pixijs/pull/7492">#7492</a>) @SukantPal</li>
-<li>Remove duplicate lines from BitmapText's drawGlyph (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="892422229" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7489" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7489/hovercard" href="https://github.com/pixijs/pixijs/pull/7489">#7489</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/serglider/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/serglider">@serglider</a></li>
-<li>Fix geometry merging when geometries are of different sizes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="892498042" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7493" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7493/hovercard" href="https://github.com/pixijs/pixijs/pull/7493">#7493</a>) @SukantPal</li>
-<li>Fix SVG validation by supporting XML prolog and leading comments (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="881606621" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7478" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7478/hovercard" href="https://github.com/pixijs/pixijs/pull/7478">#7478</a>) @SukantPal</li>
-<li>Fix docs removeEventListener &amp; addEventListener (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="891267269" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7487" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7487/hovercard" href="https://github.com/pixijs/pixijs/pull/7487">#7487</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix FilterSystem frame rounding precision issue (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="890630428" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7485" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7485/hovercard" href="https://github.com/pixijs/pixijs/pull/7485">#7485</a>) @SukantPal</li>
-<li>Fix default type and internalFormat of GLTexture (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="865297972" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7438" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7438/hovercard" href="https://github.com/pixijs/pixijs/pull/7438">#7438</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fix rounding in <code>gl.scissor</code> and <code>gl.viewport</code> arguments (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="865641261" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7442" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7442/hovercard" href="https://github.com/pixijs/pixijs/pull/7442">#7442</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fix DisplayObject's parent type to Container (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="896025124" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7501" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7501/hovercard" href="https://github.com/pixijs/pixijs/pull/7501">#7501</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix lineWidth calculation in BitmapText's updateText (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="882492483" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7479" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7479/hovercard" href="https://github.com/pixijs/pixijs/pull/7479">#7479</a>) @SukantPal</li>
-<li>Fix typo in EventSystem (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="908435857" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7518" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7518/hovercard" href="https://github.com/pixijs/pixijs/pull/7518">#7518</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/eltociear/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eltociear">@eltociear</a></li>
-<li>Fix regression in RoundedRectangle (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="907761074" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7516" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7516/hovercard" href="https://github.com/pixijs/pixijs/pull/7516">#7516</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix Graphics color/textureId filling (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="913863054" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7529" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7529/hovercard" href="https://github.com/pixijs/pixijs/pull/7529">#7529</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/eXponenta/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eXponenta">@eXponenta</a> <g-emoji class="g-emoji" alias="fire" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f525.png">🔥</g-emoji>  <strong>Major Bug</strong></li>
-<li>Ignore built-in attributes that start with 'gl_' (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="912901118" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7527" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7527/hovercard" href="https://github.com/pixijs/pixijs/pull/7527">#7527</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/eXponenta/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eXponenta">@eXponenta</a></li>
-<li>Fix extra new Function call in unsafe-eval (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="926503659" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7545" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7545/hovercard" href="https://github.com/pixijs/pixijs/pull/7545">#7545</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix holes in Graphics when used as masks with canvas (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="930973672" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7556" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7556/hovercard" href="https://github.com/pixijs/pixijs/pull/7556">#7556</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/a-c-sreedhar-reddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/a-c-sreedhar-reddy">@a-c-sreedhar-reddy</a></li>
-<li>Fix dependency flaws by converting to peerDependencies (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="931820813" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7559" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7559/hovercard" href="https://github.com/pixijs/pixijs/pull/7559">#7559</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix canvas resizing in Text when resolution is not 1 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="935349010" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7571" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7571/hovercard" href="https://github.com/pixijs/pixijs/pull/7571">#7571</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ShukantPal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ShukantPal">@ShukantPal</a></li>
-<li>Warn instead of error when compressed textures are not available (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="935338805" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7570" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7570/hovercard" href="https://github.com/pixijs/pixijs/pull/7570">#7570</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ShukantPal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ShukantPal">@ShukantPal</a></li>
-<li>Fix Text vertical gradient so that it handles overlapping lines (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="937366676" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7581" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7581/hovercard" href="https://github.com/pixijs/pixijs/pull/7581">#7581</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ShukantPal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ShukantPal">@ShukantPal</a></li>
-<li>Reformat canvas and compressed textures documentation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="941311288" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7584" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7584/hovercard" href="https://github.com/pixijs/pixijs/pull/7584">#7584</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/Zyie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zyie">@Zyie</a></li>
-<li>Fixes wrong information on the compressed-loader docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="942517700" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7592" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7592/hovercard" href="https://github.com/pixijs/pixijs/pull/7592">#7592</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/miltoncandelero/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/miltoncandelero">@miltoncandelero</a></li>
-<li>Remove duplicate getBufferType util function (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="945015548" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7597" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7597/hovercard" href="https://github.com/pixijs/pixijs/pull/7597">#7597</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix texImage2D/3D internal format and type arguments (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="945334227" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7601" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7601/hovercard" href="https://github.com/pixijs/pixijs/pull/7601">#7601</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fix minor documentation errors (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="947233184" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7612" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7612/hovercard" href="https://github.com/pixijs/pixijs/pull/7612">#7612</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Round texture, framebuffer, and canvas dimensions properly (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="850337159" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7384" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7384/hovercard" href="https://github.com/pixijs/pixijs/pull/7384">#7384</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fix rendering to multisampled framebuffers (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="860492722" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7422" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7422/hovercard" href="https://github.com/pixijs/pixijs/pull/7422">#7422</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>GitHub Actions optimization and fixes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="949126339" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7621" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7621/hovercard" href="https://github.com/pixijs/pixijs/pull/7621">#7621</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Fix bug in <code>FramebufferSystem.forceStencil</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="949652719" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7623" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7623/hovercard" href="https://github.com/pixijs/pixijs/pull/7623">#7623</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fix interaction with un-rendered Graphics (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="950103168" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7630" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7630/hovercard" href="https://github.com/pixijs/pixijs/pull/7630">#7630</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/andrewstart/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewstart">@andrewstart</a></li>
-<li>Bind empty if texture is invalid (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="950859155" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7635" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7635/hovercard" href="https://github.com/pixijs/pixijs/pull/7635">#7635</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Fix keys for multisampled textures in RenderTexturePool (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="949162594" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7622" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7622/hovercard" href="https://github.com/pixijs/pixijs/pull/7622">#7622</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/dev7355608/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dev7355608">@dev7355608</a></li>
-<li>Update graphics documentation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="952262555" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7641" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7641/hovercard" href="https://github.com/pixijs/pixijs/pull/7641">#7641</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/doehyunbaek/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/doehyunbaek">@doehyunbaek</a></li>
-</ul>
-<h3><g-emoji class="g-emoji" alias="toilet" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6bd.png">🚽</g-emoji>  Deprecated</h3>
-<ul>
-<li>Remove Lerna bootstrap, replace with npm v7 workspaces (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="845345189" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7357" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7357/hovercard" href="https://github.com/pixijs/pixijs/pull/7357">#7357</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-<li>Rename the <code>@pixi/particles</code> to <code>@pixi/particle-container</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="925513859" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/7543" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/7543/hovercard" href="https://github.com/pixijs/pixijs/pull/7543">#7543</a>) <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/bigtimebuddy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bigtimebuddy">@bigtimebuddy</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from apollo-client: v3.4.2]]></title>
-            <link>https://github.com/apollographql/apollo-client/releases/tag/v3.4.2</link>
-            <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.4.2</guid>
-            <pubDate>Mon, 02 Aug 2021 15:55:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Bump @apollo/client npm version to 3.4.2.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v14.0.0-beta.18]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v14.0.0-beta.18</link>
-            <guid>https://github.com/electron/electron/releases/tag/v14.0.0-beta.18</guid>
-            <pubDate>Mon, 02 Aug 2021 15:50:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Note: This is a beta release.  Please file new issues for any bugs you find in it.</p>
-<p>This release is published to npm under the beta tag and can be installed via <code>npm install electron@beta</code>, or <code>npm install electron@14.0.0-beta.18</code>.</p>
-<h1>Release Notes for v14.0.0-beta.18</h1>
-<h2>Fixes</h2>
-<ul>
-<li>Fixed a potential crash that would occur with draggable regions on Windows. <a href="https://github.com/electron/electron/pull/30327" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30327/hovercard">#30327</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30326" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30326/hovercard">13</a>, <a href="https://github.com/electron/electron/pull/30328" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30328/hovercard">15</a>)</span></li>
-<li>Fixed an issue where <code>BrowserView</code> webContents would appear not to load in some circumstances. <a href="https://github.com/electron/electron/pull/30335" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30335/hovercard">#30335</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30336" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30336/hovercard">15</a>)</span></li>
-<li>Fixed an issue where a specified aspect ratio could become incorrect when maximizing a window on macOS. <a href="https://github.com/electron/electron/pull/30331" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30331/hovercard">#30331</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30329" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30329/hovercard">12</a>, <a href="https://github.com/electron/electron/pull/30330" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30330/hovercard">13</a>, <a href="https://github.com/electron/electron/pull/30332" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30332/hovercard">15</a>)</span></li>
-<li>Fixed frameless window having wrong traffic lights position on macOS 11. <a href="https://github.com/electron/electron/pull/30269" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30269/hovercard">#30269</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30319" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30319/hovercard">13</a>, <a href="https://github.com/electron/electron/pull/30270" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30270/hovercard">15</a>)</span></li>
-<li>Fixed redirects between locations in custom protocols. <a href="https://github.com/electron/electron/pull/30156" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30156/hovercard">#30156</a></li>
-<li>Fixed some console messages still being printed to logs when the LogJsConsoleMessages feature was disabled. <a href="https://github.com/electron/electron/pull/30355" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30355/hovercard">#30355</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30356" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30356/hovercard">15</a>)</span></li>
-<li>Fixed tray.setTitle not respecting ANSI colors if a font type was specified. <a href="https://github.com/electron/electron/pull/30164" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30164/hovercard">#30164</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30163" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30163/hovercard">13</a>)</span></li>
-</ul>
-<h2>Other Changes</h2>
-<ul>
-<li>Updated Chromium to 93.0.4577.15. <a href="https://github.com/electron/electron/pull/30029" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30029/hovercard">#30029</a></li>
-<li>Web Serial API is no longer experimental. <a href="https://github.com/electron/electron/pull/30333" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30333/hovercard">#30333</a> <span>(Also in <a href="https://github.com/electron/electron/pull/30334" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/30334/hovercard">15</a>)</span></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from apollo-client: v3.5.0-beta.2]]></title>
-            <link>https://github.com/apollographql/apollo-client/releases/tag/v3.5.0-beta.2</link>
-            <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.5.0-beta.2</guid>
-            <pubDate>Mon, 02 Aug 2021 15:38:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Bump @apollo/client npm version to 3.5.0-beta.2.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from bitcoin: v22.0rc2: Bitcoin Core 22.0 release candidate 2]]></title>
-            <link>https://github.com/bitcoin/bitcoin/releases/tag/v22.0rc2</link>
-            <guid>https://github.com/bitcoin/bitcoin/releases/tag/v22.0rc2</guid>
-            <pubDate>Mon, 02 Aug 2021 14:18:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tree-SHA512: 2e9db22da514b0ef4456f46524762420730cdd3c160a4012ca9d736d18d01abd2403b0ce800743b1f92212937436fe849b1c1b07bed0e3ad9f61165be55b7958</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from ant-design: 4.16.10]]></title>
-            <link>https://github.com/ant-design/ant-design/releases/tag/4.16.10</link>
-            <guid>https://github.com/ant-design/ant-design/releases/tag/4.16.10</guid>
-            <pubDate>Mon, 02 Aug 2021 14:05:09 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Badge not showing count when customize <code>color</code> prop. <a href="https://github.com/ant-design/ant-design/pull/31617" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31617/hovercard">#31617</a> <a href="https://github.com/eokoneyo">@eokoneyo</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix circle Progress <code>success.strokeColor</code> cannot take effect. <a href="https://github.com/ant-design/ant-design/pull/31589" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31589/hovercard">#31589</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix the type error due to the Select component didn't ignore the <code>getRawInputElement</code> prop. <a href="https://github.com/ant-design/ant-design/pull/31566" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31566/hovercard">#31566</a> <a href="https://github.com/aoilti">@aoilti</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Pagination's <code>totalBoundaryShowSizeChanger</code> property type error. <a href="https://github.com/ant-design/ant-design/pull/31549" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31549/hovercard">#31549</a> <a href="https://github.com/Monty-Ma">@Monty-Ma</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix <code>className</code> applied to both Skeleton.Avatar wrapper and element itself. <a href="https://github.com/ant-design/ant-design/pull/31536" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31536/hovercard">#31536</a> <a href="https://github.com/Greatshock">@Greatshock</a></li>
-<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Fix Form <code>&lt;Input bordered={false} /&gt;</code> outline style. <a href="https://github.com/ant-design/ant-design/pull/31562" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31562/hovercard">#31562</a></li>
-<li><g-emoji class="g-emoji" alias="globe_with_meridians" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f310.png">🌐</g-emoji> Internationalization
-<ul>
-<li><g-emoji class="g-emoji" alias="tr" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f1f9-1f1f7.png">🇹🇷</g-emoji> Added Turkish translation for Image <code>Preview</code> text. <a href="https://github.com/ant-design/ant-design/pull/31593" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31593/hovercard">#31593</a> <a href="https://github.com/mburakkalkan">@mburakkalkan</a></li>
-<li><g-emoji class="g-emoji" alias="kr" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f1f0-1f1f7.png">🇰🇷</g-emoji> Fix a typo in the Korean language. <a href="https://github.com/ant-design/ant-design/pull/31575" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31575/hovercard">#31575</a> <a href="https://github.com/chatoo2412">@chatoo2412</a></li>
-</ul>
-</li>
-</ul>
-<hr>
-<ul>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Badge 设置自定义 <code>color</code> 不显示数字的问题。<a href="https://github.com/ant-design/ant-design/pull/31617" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31617/hovercard">#31617</a> <a href="https://github.com/eokoneyo">@eokoneyo</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Progress 环形进度条 <code>success.strokeColor</code> 不生效的问题。<a href="https://github.com/ant-design/ant-design/pull/31589" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31589/hovercard">#31589</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Select 组件没有忽略 <code>getRawInputElement</code> 属性导致的类型报错问题。<a href="https://github.com/ant-design/ant-design/pull/31566" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31566/hovercard">#31566</a> <a href="https://github.com/aoilti">@aoilti</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Pagination 的 <code>totalBoundaryShowSizeChanger</code> 属性类型错误。<a href="https://github.com/ant-design/ant-design/pull/31549" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31549/hovercard">#31549</a> <a href="https://github.com/Monty-Ma">@Monty-Ma</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Skeleton.Avatar <code>className</code> 重复应用的问题。 <a href="https://github.com/ant-design/ant-design/pull/31536" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31536/hovercard">#31536</a> <a href="https://github.com/Greatshock">@Greatshock</a></li>
-<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 修复 Form 内 <code>&lt;Input bordered={false} /&gt;</code> 错误状态下有异常外框样式的问题。<a href="https://github.com/ant-design/ant-design/pull/31562" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31562/hovercard">#31562</a></li>
-<li><g-emoji class="g-emoji" alias="globe_with_meridians" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f310.png">🌐</g-emoji> 国际化
-<ul>
-<li><g-emoji class="g-emoji" alias="tr" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f1f9-1f1f7.png">🇹🇷</g-emoji> 为 Image 组件中 <code>预览</code> 文案增加土耳其语翻译。<a href="https://github.com/ant-design/ant-design/pull/31593" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31593/hovercard">#31593</a> <a href="https://github.com/mburakkalkan">@mburakkalkan</a></li>
-<li><g-emoji class="g-emoji" alias="kr" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f1f0-1f1f7.png">🇰🇷</g-emoji> 修复韩语中的错别字。<a href="https://github.com/ant-design/ant-design/pull/31575" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/31575/hovercard">#31575</a> <a href="https://github.com/chatoo2412">@chatoo2412</a></li>
-</ul>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v16.0.0-nightly.20210802]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210802</link>
-            <guid>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210802</guid>
-            <pubDate>Mon, 02 Aug 2021 13:01:52 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v16.0.0-nightly.20210802</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from webpack: v5.48.0]]></title>
-            <link>https://github.com/webpack/webpack/releases/tag/v5.48.0</link>
-            <guid>https://github.com/webpack/webpack/releases/tag/v5.48.0</guid>
-            <pubDate>Mon, 02 Aug 2021 12:37:50 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Features</h1>
-<ul>
-<li>enable import assertions again</li>
-</ul>
-<h1>Bugfixes</h1>
-<ul>
-<li>upgrade webpack-sources for fixes regarding source maps</li>
-<li>fix infinite loop in HMR runtime code</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
