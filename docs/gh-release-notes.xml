@@ -4,10 +4,838 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Tue, 07 Sep 2021 12:31:49 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 07 Sep 2021 18:24:02 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from prisma: 3.0.1]]></title>
+            <link>https://github.com/prisma/prisma/releases/tag/3.0.1</link>
+            <guid>https://github.com/prisma/prisma/releases/tag/3.0.1</guid>
+            <pubDate>Tue, 07 Sep 2021 17:49:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Today, we are excited to share the <code>3.0.1</code> stable release <g-emoji class="g-emoji" alias="tada" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f389.png">🎉</g-emoji></p>
+<p><a href="https://www.prisma.io/blog/prisma-adopts-semver-strictly" rel="nofollow">As previously announced</a>, Prisma has adopted SemVer strictly and this is the first major release which means it has some breaking changes.</p>
+<p>For all the breaking changes, there are guides and documentation to assist you with the upgrade.</p>
+<p>This release promotes many Preview features to General Availability. This means that they are ready for production use and have passed rigorous testing both internally and by the community.</p>
+<p>We recommend that you read through the breaking changes below carefully and make sure that you've correctly upgraded your application.</p>
+<p><g-emoji class="g-emoji" alias="star2" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f31f.png">🌟</g-emoji> <strong>Help us spread the word about Prisma by starring the repo <g-emoji class="g-emoji" alias="point_up" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/261d.png">☝️</g-emoji> or <a href="https://twitter.com/intent/tweet?text=Check%20out%20the%20latest%20Prisma%203.0.1%20Release!%20%F0%9F%9A%80&amp;url=https%3A%2F%2Fgithub.com%2Fprisma%2Fprisma%2Freleases%2F3.0.1" rel="nofollow">tweeting</a> about the release.</strong></p>
+<h1>Major improvements</h1>
+<p>Today's release is packed with many new features that are now Generally Available!</p>
+<p>Here's a summary:</p>
+<ul>
+<li>Referential Actions</li>
+<li>Named Constraints</li>
+<li>Microsoft SQL Server and Azure SQL Connector</li>
+<li>Seeding with <code>prisma db seed</code> has been revamped</li>
+<li>Node-API</li>
+<li>Order by Aggregate in Group By</li>
+<li>Order by Relation</li>
+<li>Select Relation Count</li>
+</ul>
+<p>Read along to dive deeper into all the new Generally Available improvements.</p>
+<p>To read more about what Generally Available means, check out the <a href="https://www.prisma.io/docs/about/prisma/releases#generally-available-ga" rel="nofollow">maturity levels</a> in the Prisma docs.</p>
+<h2>Referential Actions is now Generally Available</h2>
+<p>Referential Actions is a feature that allows you to control how relations are handled when an entity with relations is changed or deleted. Typically this is done when defining the database schema using SQL.</p>
+<p>Referential Actions allows you to define this behavior from the Prisma schema by passing in the <code>onDelete</code> and <code>onUpdate</code> arguments to the <code>@relation</code> attribute.</p>
+<p>For example:</p>
+<div class="highlight highlight-source-prisma position-relative" data-snippet-clipboard-copy-content="model LitterBox {
+  id   Int     @id @default(autoincrement())
+  cats Cat[]
+  full Boolean @default(false)
+}
+
+model Cat {
+  id    String    @id @default(uuid())
+  boxId Int
+  box   LitterBox @relation(fields: [boxId], references: [id], onDelete: Restrict)
+}
+"><pre><span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">LitterBox</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>   <span class="pl-c1">Int</span>     <span class="pl-s1"><span class="pl-en">@id</span></span> <span class="pl-s1"><span class="pl-en">@default</span>(<span class="pl-s1"><span class="pl-c1">autoincrement</span>()</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">cats</span> <span class="pl-c1">Cat</span><span class="pl-k">[]</span></span>
+<span class="pl-s1">  <span class="pl-smi">full</span> <span class="pl-c1">Boolean</span> <span class="pl-s1"><span class="pl-en">@default</span>(<span class="pl-c1">false</span>)</span></span>
+<span class="pl-s1">}</span>
+
+<span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">Cat</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>    <span class="pl-c1">String</span>    <span class="pl-s1"><span class="pl-en">@id</span></span> <span class="pl-s1"><span class="pl-en">@default</span>(<span class="pl-s1"><span class="pl-c1">uuid</span>()</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">boxId</span> <span class="pl-c1">Int</span></span>
+<span class="pl-s1">  <span class="pl-smi">box</span>   <span class="pl-c1">LitterBox</span> <span class="pl-s1"><span class="pl-en">@relation</span>(<span class="pl-v">fields</span>: <span class="pl-s1">[<span class="pl-c1">boxId</span>]</span>, <span class="pl-v">references</span>: <span class="pl-s1">[<span class="pl-c1">id</span>]</span>, <span class="pl-v">onDelete</span>: <span class="pl-c1">Restrict</span>)</span></span>
+<span class="pl-s1">}</span></pre></div>
+<p>Here, you would not be able to delete a <code>LitterBox</code> as long as there still is a <code>Cat</code> linked to it in your database, because of the <code>onDelete: Restrict</code> annotation. If we had written <code>onDelete: Cascade</code>, deleting a <code>LitterBox</code> would also automatically delete the <code>Cat</code>s linked to it.</p>
+<p>Referential Actions was first released in in <a href="https://github.com/prisma/prisma/releases/tag/2.26.0">2.26.0</a> with the <code>referentialActions</code> Preview flag. Since then, we've worked to stabilize the feature.</p>
+<p>Today, we're delighted to announce that Referential Actions is now General Available, meaning it is enabled by default. <g-emoji class="g-emoji" alias="cat" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f431.png">🐱</g-emoji></p>
+<p>On PostgreSQL, MySQL, SQLite and Microsoft SQL Server, referential actions will be enforced by the database.</p>
+<p>If you use Prisma Migrate to manage your database schema, you can use introspection with <code>prisma db pull</code> to automatically fill in the existing referential actions from your database. If the refen Alternatively, you can migrate existing referential actions after you upgrade. Please read the <a href="https://www.prisma.io/docs/concepts/components/prisma-schema/relations/referential-actions#upgrade-paths" rel="nofollow">upgrade guide</a> for all the details.</p>
+<p><g-emoji class="g-emoji" alias="rotating_light" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6a8.png">🚨</g-emoji> <strong>Please note</strong> that the defaults change in this release. In some cases, this can lead to queries behaving differently in Prisma 3.x compared to Prisma 2.x, since the database will be enforcing referential actions, and not Prisma Client anymore. This means that if you only update your client without changing your Prisma schema, you will lose Prisma-level protections against cascading deletes. Read more in the Breaking Changes section below and the <a href="https://www.prisma.io/docs/concepts/components/prisma-schema/relations/referential-actions#upgrade-paths" rel="nofollow">upgrade guide</a> for a detailed explanation and steps to follow. <g-emoji class="g-emoji" alias="rotating_light" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6a8.png">🚨</g-emoji></p>
+<h2>Named Constraints is now Generally Available</h2>
+<p>One of the core concepts in Prisma is the Prisma schema which serves as a single source of truth for your database schema and application models. For Prisma to automatically generate migrations and Prisma Client, it's necessary for the Prisma schema to represent the database schema as accurately as possible.</p>
+<p>Named Constraints allows the Prisma schema to more accurately represent the names of all currently supported constraints such as unique constraints, primary keys, etc.</p>
+<p>By having this representation in the Prisma schema, you now have finer control over two things:</p>
+<ul>
+<li>The names of constraints in the database schema which are generated by Prisma Migrate and the <code>prisma db push</code> command.</li>
+<li>The name mapping for the constraint in Prisma Client for <code>findUnique</code> queries on compound indices.</li>
+</ul>
+<p>Named Constraints was initially released in Preview in <a href="https://github.com/prisma/prisma/releases/tag/2.29.0">2.29.0</a>. Since then, we've made minor fixes and improvements to ease the upgrade experience.</p>
+<p>Today, we're happy to launch Named Constraints to General Availability, meaning it will be enabled by default.</p>
+<p><a href="https://www.prisma.io/docs/concepts/components/prisma-schema/names-in-underlying-database/" rel="nofollow">Named Constraints</a> are about reflecting another aspect of the database in your Prisma schema: many objects in your schema, like indexes, unique constraints, and foreign keys, have a name in the database. That was not properly reflected in the Prisma Schema Language in earlier versions. The addition of Named Constraints fills this gap and improves overall correctness.</p>
+<p>Given the following example:</p>
+<div class="highlight highlight-source-prisma position-relative" data-snippet-clipboard-copy-content="model Post {
+  id      Int    @id(map: &quot;pk_of_Post&quot;)
+  blog_id Int
+  blog    Blog   @relation(fields: [blog_id], references: [id], map: &quot;Post_blog_fk&quot;)
+  title   String
+
+  @@unique([title, blog_id], name: &quot;Post_title_blog_id_unique&quot;, map: &quot;Post.title_blog_id_unique&quot;)
+}
+
+model Blog {
+  id    Int    @id
+  posts Post[]
+}
+"><pre><span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">Post</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>      <span class="pl-c1">Int</span>    <span class="pl-s1"><span class="pl-en">@id</span>(<span class="pl-v">map</span>: <span class="pl-s">"</span><span class="pl-s">pk_of_Post</span><span class="pl-s">"</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">blog_id</span> <span class="pl-c1">Int</span></span>
+<span class="pl-s1">  <span class="pl-smi">blog</span>    <span class="pl-c1">Blog</span>   <span class="pl-s1"><span class="pl-en">@relation</span>(<span class="pl-v">fields</span>: <span class="pl-s1">[<span class="pl-c1">blog_id</span>]</span>, <span class="pl-v">references</span>: <span class="pl-s1">[<span class="pl-c1">id</span>]</span>, <span class="pl-v">map</span>: <span class="pl-s">"</span><span class="pl-s">Post_blog_fk</span><span class="pl-s">"</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">title</span>   <span class="pl-c1">String</span></span>
+<span class="pl-s1"></span>
+<span class="pl-s1">  <span class="pl-s1"><span class="pl-en">@@unique</span>(<span class="pl-s1">[<span class="pl-c1">title</span>, <span class="pl-c1">blog_id</span>]</span>, <span class="pl-v">name</span>: <span class="pl-s">"</span><span class="pl-s">Post_title_blog_id_unique</span><span class="pl-s">"</span>, <span class="pl-v">map</span>: <span class="pl-s">"</span><span class="pl-s">Post.title_blog_id_unique</span><span class="pl-s">"</span>)</span></span>
+<span class="pl-s1">}</span>
+
+<span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">Blog</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>    <span class="pl-c1">Int</span>    <span class="pl-s1"><span class="pl-en">@id</span></span></span>
+<span class="pl-s1">  <span class="pl-smi">posts</span> <span class="pl-c1">Post</span><span class="pl-k">[]</span></span>
+<span class="pl-s1">}</span></pre></div>
+<p>You can see that <code>@id</code>, <code>@relation</code> and <code>@@unique</code> now can take a <code>map</code> argument corresponding to the database name of the primary key/foreign key/constraint.</p>
+<p><code>@@unique</code> can also take a <code>name</code> argument to control the naming of the <code>WhereUnique</code> argument in Prisma Client.</p>
+<p><strong>A quick way to remember:</strong> The new API is uniform. <code>map: "..."</code> always corresponds to a name <em>in the database</em>, whereas <code>name: "..."</code> always corresponds to names <em>in the Prisma Client API</em>.</p>
+<p><g-emoji class="g-emoji" alias="rotating_light" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6a8.png">🚨</g-emoji> <strong>Please note</strong> that you will have to make conscious decisions about constraint names when you upgrade to Prisma 3. Prisma will help you with the upgrade process using introspection with  <code>prisma db pull</code> and Prisma Migrate. Read more in the Breaking Changes section below and the <a href="https://prisma.io/docs/guides/upgrade-guides/upgrading-versions/upgrading-to-prisma-3/named-constraints" rel="nofollow">upgrade guide</a> for a detailed explanation and steps to follow. <g-emoji class="g-emoji" alias="rotating_light" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6a8.png">🚨</g-emoji></p>
+<h2>Microsoft SQL Server and Azure SQL Connector is now Generally Available</h2>
+<p>Today we are excited to announce that Prisma support for <strong>Microsoft SQL Server</strong> and <strong>Azure SQL</strong> is Generally Available and ready for production!</p>
+<p>Since we released Prisma Client for General Availability over a year ago with support for PostgreSQL, MySQL, SQLite, and MariaDB, we've heard from thousands of engineers about how the Prisma ORM is helping them be more productive and confident when building data-intensive applications.</p>
+<p>After passing rigorous testing internally and by the community over the last year since the <a href="https://github.com/prisma/prisma/releases/tag/2.10.0">Preview release in version 2.10.0</a>, we are thrilled to bring Prisma's streamlined developer experience and type safety to developers using <strong>Microsoft SQL Server</strong> and <strong>Azure SQL</strong> in General Availability <g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji>.</p>
+<p>Learn more in the <a href="https://www.prisma.io/blog/prisma-microsoft-sql-server-azure-sql-production-ga" rel="nofollow">release blog post</a> <g-emoji class="g-emoji" alias="nerd_face" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f913.png">🤓</g-emoji></p>
+<h2>Seeding with <code>prisma db seed</code> has been revamped and is now Generally Available</h2>
+<p>When developing locally, it's common to seed your database with initial data to test functionality. In <a href="https://github.com/prisma/prisma/releases/tag/2.15.0">version 2.15</a> of Prisma, we initially introduced a Preview version of seeding using the <code>prisma db seed</code> command.</p>
+<p>Today, we're excited to share that the <code>prisma db seed</code> command has been revamped and simplified with a better developer experience and is now Generally Available.</p>
+<p>The seeding functionality is now just a hook for any command defined in <code>"prisma"."seed"</code> in your <code>package.json</code>.</p>
+<p>For example, here's how you would define a TypeScript seed script with <code>ts-node</code>:</p>
+<ol>
+<li>Open the <code>package.json</code> of your project</li>
+<li>Add the following example to it:</li>
+</ol>
+<div class="highlight highlight-source-json position-relative" data-snippet-clipboard-copy-content="// package.json
+&quot;prisma&quot;: {
+  &quot;seed&quot;: &quot;ts-node prisma/seed.ts&quot;
+}
+"><pre>// package.json
+<span class="pl-s"><span class="pl-pds">"</span>prisma<span class="pl-pds">"</span></span>: {
+  <span class="pl-s"><span class="pl-pds">"</span>seed<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>ts-node prisma/seed.ts<span class="pl-pds">"</span></span>
+}</pre></div>
+<details><summary>Expand to view an example seed script</summary>
+<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
+
+async function main() {
+  const alice = await prisma.user.upsert({
+    where: { email: 'alice@prisma.io' },
+    update: {},
+    create: {
+      email: 'alice@prisma.io',
+      name: 'Alice',
+    },
+  })
+
+  console.log({ alice })
+}
+
+main()
+  .catch((e) =&gt; {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () =&gt; {
+    await prisma.$disconnect()
+  })
+"><pre><span class="pl-k">import</span> <span class="pl-kos">{</span> <span class="pl-smi">PrismaClient</span> <span class="pl-kos">}</span> <span class="pl-k">from</span> <span class="pl-s">'@prisma/client'</span>
+<span class="pl-k">const</span> <span class="pl-s1">prisma</span> <span class="pl-c1">=</span> <span class="pl-k">new</span> <span class="pl-smi">PrismaClient</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+
+<span class="pl-k">async</span> <span class="pl-k">function</span> <span class="pl-en">main</span><span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+  <span class="pl-k">const</span> <span class="pl-s1">alice</span> <span class="pl-c1">=</span> <span class="pl-k">await</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">user</span><span class="pl-kos">.</span><span class="pl-en">upsert</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+    <span class="pl-c1">where</span>: <span class="pl-kos">{</span> <span class="pl-c1">email</span>: <span class="pl-s">'alice@prisma.io'</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
+    <span class="pl-c1">update</span>: <span class="pl-kos">{</span><span class="pl-kos">}</span><span class="pl-kos">,</span>
+    <span class="pl-c1">create</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">email</span>: <span class="pl-s">'alice@prisma.io'</span><span class="pl-kos">,</span>
+      <span class="pl-c1">name</span>: <span class="pl-s">'Alice'</span><span class="pl-kos">,</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span>
+
+  <span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">log</span><span class="pl-kos">(</span><span class="pl-kos">{</span> alice <span class="pl-kos">}</span><span class="pl-kos">)</span>
+<span class="pl-kos">}</span>
+
+<span class="pl-en">main</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+  <span class="pl-kos">.</span><span class="pl-en">catch</span><span class="pl-kos">(</span><span class="pl-kos">(</span><span class="pl-s1">e</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+    <span class="pl-smi">console</span><span class="pl-kos">.</span><span class="pl-en">error</span><span class="pl-kos">(</span><span class="pl-s1">e</span><span class="pl-kos">)</span>
+    <span class="pl-s1">process</span><span class="pl-kos">.</span><span class="pl-en">exit</span><span class="pl-kos">(</span><span class="pl-c1">1</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span>
+  <span class="pl-kos">.</span><span class="pl-en">finally</span><span class="pl-kos">(</span><span class="pl-k">async</span> <span class="pl-kos">(</span><span class="pl-kos">)</span> <span class="pl-c1">=&gt;</span> <span class="pl-kos">{</span>
+    <span class="pl-k">await</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-en">$disconnect</span><span class="pl-kos">(</span><span class="pl-kos">)</span>
+  <span class="pl-kos">}</span><span class="pl-kos">)</span></pre></div>
+</details>
+<p>This approach gives you more flexibility and makes fewer assumptions about how you choose to seed. You can define a seed script in any language as long as you it's just a terminal command.</p>
+<p>For example, here's how you would seed using an SQL script and the <code>psql</code> CLI tool.</p>
+<div class="highlight highlight-source-json position-relative" data-snippet-clipboard-copy-content="// package.json
+&quot;prisma&quot;: {
+  &quot;seed&quot;: &quot;psql --dbname=mydb --file=./prisma/seed.sql&quot;
+}
+"><pre>// package.json
+<span class="pl-s"><span class="pl-pds">"</span>prisma<span class="pl-pds">"</span></span>: {
+  <span class="pl-s"><span class="pl-pds">"</span>seed<span class="pl-pds">"</span></span>: <span class="pl-s"><span class="pl-pds">"</span>psql --dbname=mydb --file=./prisma/seed.sql<span class="pl-pds">"</span></span>
+}</pre></div>
+<p><g-emoji class="g-emoji" alias="rotating_light" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6a8.png">🚨</g-emoji> <strong>Please note</strong> that if you already have a seed script that worked created in versions prior, you will need to add the script to <code>prisma.seed</code> in your <code>package.json</code> and adapt the script to the new API. Read more in the Breaking Changes section below and the <a href="https://www.prisma.io/docs/guides/database/seed-database" rel="nofollow">seeding docs</a> for a complete explanation and walkthroughs of common use cases.</p>
+<h2>Node-API is Generally Available</h2>
+<p>Node-API is a new technique for binding Prisma's Rust-based query engine directly to Prisma Client. This reduces the communication overhead between the Node.js and Rust layers when resolving Prisma Client's database queries.</p>
+<p>Earlier versions of Prisma (since version 2.0.0) used the Prisma Query Engine binary, which runs as a sidecar process alongside your application and handles the heavy lifting of executing queries from Prisma Client against your database.</p>
+<p>In <a href="https://github.com/prisma/prisma/releases/tag/2.20.0">2.20.0</a> we introduced a Preview feature, the Node-API library, as a more efficient way to communicate with the Prisma Engine binary. Using the Node-API library is functionally identical to running the Prisma engine binary while reducing the runtime overhead by making direct binary calls from Node.js.</p>
+<p><strong>Starting with today's 3.0.1 release we are making the Node-API library engine the default query engine type.</strong> If necessary for your project, you can <a href="http://prisma.io/docs/concepts/components/prisma-engines/query-engine#configuring-the-query-engine" rel="nofollow">fall back to the previous behavior</a> of a sidecar Prisma Engine binary, however, we don't anticipate a reason to do so.</p>
+<p>If you've been using this preview feature, you can remove the <code>nApi</code> flag from <code>previewFeatures</code> in your Prisma Schema.</p>
+<p>Learn more about the Query Engine in <a href="http://prisma.io/docs/concepts/components/prisma-engines/query-engine#configuring-the-query-engine" rel="nofollow">our documentation</a>.</p>
+<h2>Order by Aggregate in Group By is Generally Available</h2>
+<p>Let's say you want to group your users by the city they live in and then order the results by the cities with the most users. Order by Aggregate Group allows you to do that, for example:</p>
+<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="await prisma.user.groupBy({
+  by: ['city'],
+  _count: {
+    city: true,
+  },
+  orderBy: {
+    _count: {
+      city: 'desc',
+    },
+  },
+}),
+"><pre><span class="pl-k">await</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">user</span><span class="pl-kos">.</span><span class="pl-en">groupBy</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">by</span>: <span class="pl-kos">[</span><span class="pl-s">'city'</span><span class="pl-kos">]</span><span class="pl-kos">,</span>
+  <span class="pl-c1">_count</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">city</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-c1">orderBy</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">_count</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">city</span>: <span class="pl-s">'desc'</span><span class="pl-kos">,</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">,</span></pre></div>
+<details><summary>Expand to view the underlying Prisma schema</summary>
+<div class="highlight highlight-source-prisma position-relative" data-snippet-clipboard-copy-content="model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  city  String
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  Int?
+}
+"><pre><span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">User</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>    <span class="pl-c1">Int</span>     <span class="pl-s1"><span class="pl-en">@id</span></span> <span class="pl-s1"><span class="pl-en">@default</span>(<span class="pl-s1"><span class="pl-c1">autoincrement</span>()</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">email</span> <span class="pl-c1">String</span>  <span class="pl-s1"><span class="pl-en">@unique</span></span></span>
+<span class="pl-s1">  <span class="pl-smi">city</span>  <span class="pl-c1">String</span></span>
+<span class="pl-s1">  <span class="pl-smi">name</span>  <span class="pl-c1">String</span><span class="pl-k">?</span></span>
+<span class="pl-s1">  <span class="pl-smi">posts</span> <span class="pl-c1">Post</span><span class="pl-k">[]</span></span>
+<span class="pl-s1">}</span>
+
+<span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">Post</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>        <span class="pl-c1">Int</span>      <span class="pl-s1"><span class="pl-en">@id</span></span> <span class="pl-s1"><span class="pl-en">@default</span>(<span class="pl-s1"><span class="pl-c1">autoincrement</span>()</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">title</span>     <span class="pl-c1">String</span></span>
+<span class="pl-s1">  <span class="pl-smi">content</span>   <span class="pl-c1">String</span><span class="pl-k">?</span></span>
+<span class="pl-s1">  <span class="pl-smi">published</span> <span class="pl-c1">Boolean</span>  <span class="pl-s1"><span class="pl-en">@default</span>(<span class="pl-c1">false</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">author</span>    <span class="pl-c1">User</span><span class="pl-k">?</span>    <span class="pl-s1"><span class="pl-en">@relation</span>(<span class="pl-v">fields</span>: <span class="pl-s1">[<span class="pl-c1">authorId</span>]</span>, <span class="pl-v">references</span>: <span class="pl-s1">[<span class="pl-c1">id</span>]</span>)</span></span>
+<span class="pl-s1">  <span class="pl-smi">authorId</span>  <span class="pl-c1">Int</span><span class="pl-k">?</span></span>
+<span class="pl-s1">}</span></pre></div>
+</details>
+<p>Order by Aggregate Group was initially released as a Preview feature in <a href="https://github.com/prisma/prisma/releases/2.21.0">2.21.0</a>.</p>
+<p><strong>Starting with today's release it is Generally Available <g-emoji class="g-emoji" alias="star_struck" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f929.png">🤩</g-emoji></strong></p>
+<p>If you've been using this Preview feature, you can remove the <code>orderByAggregateGroup</code> flag from <code>previewFeatures</code> in your Prisma Schema.</p>
+<p>Learn more about this feature in <a href="https://www.prisma.io/docs/concepts/components/prisma-client/aggregation-grouping-summarizing#order-by-aggregate-group-preview" rel="nofollow">our documentation</a>.</p>
+<h2>Order by Relation is Generally Available</h2>
+<p>Ever wondered how you can query posts and have the results ordered by their author's name?</p>
+<p>With Order by Relations, you can do this with the following query:</p>
+<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="await prisma.post.findMany({
+  orderBy: {
+    author: {
+      name: 'asc',
+    },
+  },
+  include: {
+    author: true,
+  },
+})
+"><pre><span class="pl-k">await</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">post</span><span class="pl-kos">.</span><span class="pl-en">findMany</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">orderBy</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">author</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">name</span>: <span class="pl-s">'asc'</span><span class="pl-kos">,</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-c1">include</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">author</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span></pre></div>
+<details><summary>Expand to view the underlying Prisma schema</summary>
+<div class="snippet-clipboard-content position-relative" data-snippet-clipboard-copy-content="```tsx
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  city  String
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  Int?
+}
+```
+"><pre><code>```tsx
+model User {
+  id    Int     @id @default(autoincrement())
+  email String  @unique
+  city  String
+  name  String?
+  posts Post[]
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String?
+  published Boolean  @default(false)
+  author    User?    @relation(fields: [authorId], references: [id])
+  authorId  Int?
+}
+```
+</code></pre></div>
+</details>
+<p>Order by Relation was initially released in Preview in <a href="https://github.com/prisma/prisma/releases/2.16.0">2.16.0</a>.</p>
+<p>Starting with today's 3.0.1 release it is Generally Available <g-emoji class="g-emoji" alias="mage" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f9d9.png">🧙</g-emoji></p>
+<p>If you've been using this preview feature, you can remove the <code>orderByRelation</code> flag from <code>previewFeatures</code> in your Prisma Schema.</p>
+<p>Learn more about this feature in <a href="https://www.prisma.io/docs/concepts/components/prisma-client/filtering-and-sorting#sort-by-relation-preview" rel="nofollow">our documentation</a>.</p>
+<h2>Select Relation Count is Generally Available</h2>
+<p>Select Relation Count allows you to count the number of related records by passing <code>_count</code> to the <code>select</code> or <code>include</code> options and then specifying which relation counts should be included in the resulting objects via another <code>select</code>.</p>
+<p>Select Relation Count helps you query counts on related models, for example, <strong>counting the number of posts per user</strong>:</p>
+<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="const users = await prisma.user.findMany({
+  include: {
+    _count: {
+      select: { posts: true },
+    },
+  },
+})
+"><pre><span class="pl-k">const</span> <span class="pl-s1">users</span> <span class="pl-c1">=</span> <span class="pl-k">await</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">user</span><span class="pl-kos">.</span><span class="pl-en">findMany</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">include</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">_count</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">select</span>: <span class="pl-kos">{</span> <span class="pl-c1">posts</span>: <span class="pl-c1">true</span> <span class="pl-kos">}</span><span class="pl-kos">,</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span></pre></div>
+<details><summary>Expand to view the structure of the returned `users`</summary>
+```ts
+[
+  {
+    id: 2,
+    email: 'bob@prisma.io',
+    city: 'London',
+    name: 'Bob',
+    _count: { posts: 2 },
+  },
+  {
+    id: 1,
+    email: 'alice@prisma.io',
+    city: 'Berlin',
+    name: 'Alice',
+    _count: { posts: 1 },
+  },
+]
+```
+</details>
+<p>If you've been using this Preview feature, you can remove the <code>selectRelationCount</code> flag from <code>previewFeatures</code> in your Prisma Schema.</p>
+<p>Learn more about this feature in <a href="https://www.prisma.io/docs/concepts/components/prisma-client/aggregation-grouping-summarizing#count-relations" rel="nofollow">our documentation</a>.</p>
+<h1>Breaking Changes</h1>
+<p>Some of the features above introduce breaking changes. In this section, we cover the breaking changes in more detail with links to upgrade guides in the documentation. We recommend that you read through the breaking changes carefully and make sure that you've upgraded and tested your application.</p>
+<h2>Named Constraints</h2>
+<p>Starting with Prisma 3, the names of database constraints and indexes are reflected in the Prisma schema. This means that Introspection with <code>db pull</code> as well as <code>migrate</code> and <code>db push</code> will work towards keeping your constraint and index names in sync between your schema and your database.</p>
+<p>Additionally, a new convention for default constraint names is now built into the Prisma Schema Language logic. This ensures reasonable, consistent defaults for new greenfield projects. The new defaults are more consistent and friendlier to code generation. It also means that if you have an existing schema and/or database, you will either need to migrate the database to the new defaults, or introspect the existing names.</p>
+<p><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> <strong>This means you will have to make conscious choices about constraint names when you upgrade.</strong> Please read the <a href="https://www.prisma.io/docs/guides/upgrade-guides/upgrading-versions/upgrading-to-prisma-3/named-constraints" rel="nofollow">Named Constraints upgrade guide</a> for a detailed explanation and steps to follow. <g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji></p>
+<h2>Referential Actions</h2>
+<p>The default referential actions behaviors when you update or delete data changes between Prisma 2 and Prisma 3. This will lead to queries behaving differently in Prisma 3.x compared to Prisma 2.x.</p>
+<p>In some cases, <strong>a delete operation will delete more data than previously</strong>. This is ****because in Prisma 2, cascading deletes and updates defined at the database level were prevented by Prisma Client, but will be allowed to happen in Prisma 3.</p>
+<p>On relational databases, Prisma now relies on the database for referential actions — using <code>db pull</code> after you upgrade will reflect the actual behavior in your Prisma Schema.</p>
+<p>Please read the <a href="https://www.prisma.io/docs/concepts/components/prisma-schema/relations/referential-actions#upgrade-paths" rel="nofollow">Referential Actions upgrade guide</a> for a detailed explanation and steps to follow.</p>
+<h2>Seeding with <code>prisma db seed</code> , <code>prisma migrate dev</code>, <code>prisma migrate reset</code></h2>
+<p>The mechanism through which seeds are discovered changes. If you were already using seeding since Prisma 2.15.0, you will see a warning with steps to follow the next time seeding is triggered.</p>
+<p>In summary, you will need to:</p>
+<ul>
+<li>Add the script to <code>prisma.seed</code> in your <code>package.json</code></li>
+<li>Adapt the script to the new API.</li>
+</ul>
+<p>See the example above in the <strong>Major Improvements</strong> section and read the <a href="https://www.prisma.io/docs/guides/database/seed-database" rel="nofollow">seeding docs</a> for a complete explanation.</p>
+<p><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> <strong>Please note</strong> that the breaking change applies if you have an existing seed file since Prisma <a href="https://github.com/prisma/prisma/releases/2.15.0">2.15.0</a> without using <code>prisma db seed</code>. You will have to switch to the new mechanism. <g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji></p>
+<h2><code>$queryRaw</code> API changes</h2>
+<p>We’ve taken this opportunity to cleanup <code>$queryRaw</code> and <code>$executeRaw</code>. In Prisma 2.x, the Prisma Client had different behavior depending on how you called <code>$queryRaw</code> or <code>$executeRaw</code>:</p>
+<ol>
+<li>Tagged Template: <code>prisma.$queryRaw</code>...``. This API sent a prepared statement and was safe from SQL injections.</li>
+<li>Function Call: <code>prisma.$queryRaw(</code>...<code>)</code>. This API sent a raw query string and was <strong>not safe</strong> from SQL injections.</li>
+</ol>
+<p>This was too subtle. Starting with Prisma 3, we've split our raw query APIs into "safe" and "unsafe":</p>
+<ol>
+<li><code>$queryRaw</code>...``: Safe from SQL injections. Sends a prepared statement and returns the resulting rows.</li>
+<li><code>$executeRaw</code>...``: Safe from SQL injections. Sends a prepared statement and returns the result count.</li>
+<li><code>$queryRawUnsafe(</code>...<code>)</code>: Not safe from SQL injections. Sends the query as a string and returns the resulting rows. Useful for queries that can't be prepared, like using a variable for the table name.</li>
+<li><code>$executeRawUnsafe(</code>...<code>)</code>:  Not safe from SQL injections. Sends the query as a string and returns the result count. Useful for queries that can't be prepared, like altering a column's data type.</li>
+</ol>
+<p>To update your application, you can do a "Find All" in your codebase for <code>$queryRaw(</code> and <code>$executeRaw(</code>. Then you can either turn them into tagged templates or use the unsafe functions.</p>
+<h2>Changes to how you query Null values on JSON fields</h2>
+<p>While <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field" rel="nofollow">Filtering on a Json field</a> was in Preview, we learned from <a href="https://github.com/prisma/prisma/issues/8399" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8399/hovercard">a community member</a> that you couldn't filter a Json field by the JSON value null.</p>
+<p>This is because <code>{ equals: null }</code> checks if the value in the database is <code>NULL</code>, not if the value inside the column is a JSON <code>null</code>.</p>
+<p>To fix this problem, we decided to split "null" on Json fields into <code>JsonNull</code>, <code>DbNull</code> and <code>AnyNull:</code></p>
+<ul>
+<li><strong>JsonNull</strong>: Selects the null value in JSON.</li>
+<li><strong>DbNull</strong>: Selects the NULL value in the database.</li>
+<li><strong>AnyNull:</strong> Selects both null JSON values and NULL database values.</li>
+</ul>
+<p>Given the following model in your Prisma Schema:</p>
+<div class="highlight highlight-source-prisma position-relative" data-snippet-clipboard-copy-content="model Log {
+  id   Int  @id
+  meta Json
+}
+"><pre><span class="pl-s1"><span class="pl-k">model</span> <span class="pl-en">Log</span> {</span>
+<span class="pl-s1">  <span class="pl-smi">id</span>   <span class="pl-c1">Int</span>  <span class="pl-s1"><span class="pl-en">@id</span></span></span>
+<span class="pl-s1">  <span class="pl-smi">meta</span> <span class="pl-c1">Json</span></span>
+<span class="pl-s1">}</span></pre></div>
+<p>Starting in 3.0.1, you'll see a TypeError if you try to filter by <code>null</code> on a <code>Json</code> field:</p>
+<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="prisma.log.findMany({
+  where: {
+    data: {
+      meta: {
+        equals: null
+         //      ^ TypeError: Type 'null' is not assignable to type
+        }
+    },
+  },
+});
+"><pre><span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">log</span><span class="pl-kos">.</span><span class="pl-en">findMany</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">where</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">data</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">meta</span>: <span class="pl-kos">{</span>
+        <span class="pl-c1">equals</span>: <span class="pl-c1">null</span>
+         <span class="pl-c">//      ^ TypeError: Type 'null' is not assignable to type</span>
+        <span class="pl-kos">}</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
+<p>To fix this, you'll import and use one of the new null types:</p>
+<div class="highlight highlight-source-ts position-relative" data-snippet-clipboard-copy-content="import { Prisma } from '@prisma/client'
+
+prisma.log.findMany({
+  where: {
+    data: {
+      meta: {
+        equals: Prisma.AnyNull,
+      },
+    },
+  },
+})
+"><pre><span class="pl-k">import</span> <span class="pl-kos">{</span> <span class="pl-smi">Prisma</span> <span class="pl-kos">}</span> <span class="pl-k">from</span> <span class="pl-s">'@prisma/client'</span>
+
+<span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">log</span><span class="pl-kos">.</span><span class="pl-en">findMany</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">where</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">data</span>: <span class="pl-kos">{</span>
+      <span class="pl-c1">meta</span>: <span class="pl-kos">{</span>
+        <span class="pl-c1">equals</span>: <span class="pl-smi">Prisma</span><span class="pl-kos">.</span><span class="pl-c1">AnyNull</span><span class="pl-kos">,</span>
+      <span class="pl-kos">}</span><span class="pl-kos">,</span>
+    <span class="pl-kos">}</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span></pre></div>
+<p>Learn more about JSON filtering in <a href="https://www.prisma.io/docs/concepts/components/prisma-client/working-with-fields/working-with-json-fields#filtering-on-a-json-field" rel="nofollow">our documentation</a>.</p>
+<h2>Renamed Aggregate Fields</h2>
+<p>In 2.23.0, we announced that aggregate fields like <code>count</code> will be deprecated in favor of the prefixed notation, i.e. <code>_count</code> in order to avoid clashing with model fields names in your application.</p>
+<p>For example:</p>
+<div class="highlight highlight-source-diff position-relative" data-snippet-clipboard-copy-content="const result = await prisma.user.groupBy({
+  by: ['name'],
+-   count: true,
++   _count: true,
+})
+"><pre>const result = await prisma.user.groupBy({
+  by: ['name'],
+<span class="pl-md"><span class="pl-md">-</span>   count: true,</span>
+<span class="pl-mi1"><span class="pl-mi1">+</span>   _count: true,</span>
+})</pre></div>
+<p>In this release, we're removing the deprecated old notation. You now must prefix your aggregate fields with an underscore.</p>
+<p>To help with this transition, we suggest searching your codebase for <code>.aggregate({</code> and <code>.groupBy({</code>, and prefixing <code>count</code>, <code>max</code>, <code>min</code>, <code>avg</code> and <code>sum</code> are all prefixed with an underscore, i.e. <code>_count</code>, <code>_max</code>, <code>_min</code>, <code>_avg</code> , and <code>_sum</code>.</p>
+<p>You can learn more about the original deprecation in the <a href="https://github.com/prisma/prisma/releases/tag/2.23.0">2.23.0 Release Notes</a>.</p>
+<h2>The minimum required version of Node.js is v12.6</h2>
+<p>Up until this release, Prisma supported versions 12.2 of Node.js and up</p>
+<p>Starting with this release, the minimum required version of Node.js is <strong>12.6</strong>.</p>
+<h1>Fixes and improvements</h1>
+<h3>Prisma Migrate</h3>
+<ul>
+<li><a href="https://github.com/prisma/prisma/issues/4537" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/4537/hovercard">Remove <code>microsoftSqlServer</code> preview flag</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8033" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8033/hovercard"><code>db seed</code> tests need to run on multiple platforms, not just Ubuntu</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8176" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8176/hovercard">Validate <code>referentialActions</code> with Introspection and Migration CI</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8479" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8479/hovercard">Introspection adds an extra space to map properties in enums in prisma.schema</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8633" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8633/hovercard">Remove <code>referentialActions</code> preview flag</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8645" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8645/hovercard">[Introspection] @@unique name with spaces are not supported</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8732" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8732/hovercard">EPIC: re-design of <code>db seed</code> feature</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8843" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8843/hovercard">MySQL: Support SSL with system certificate store</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8863" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8863/hovercard">Enable TLS by default on SQL Server</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8975" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8975/hovercard">Make order of introspected foreign keys stable</a></li>
+</ul>
+<h3>Prisma Client</h3>
+<ul>
+<li><a href="https://github.com/prisma/prisma/issues/4911" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/4911/hovercard">Prisma Client Node-API Support</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/5005" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/5005/hovercard">[BREAKING CHANGE] Disconnect/connect (for relations) throws errors needlessly</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/7035" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/7035/hovercard">Error classes are wrapped twice</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8189" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8189/hovercard"><code>$queryRaw</code> availability isn't derived from the DMMF</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8399" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8399/hovercard">Can't filter by <code>null</code> values on JSONB fields</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8629" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8629/hovercard">Remove preview flag for <code>orderByRelations</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8630" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8630/hovercard">Remove preview flag for <code>orderByAggregateGroup</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8631" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8631/hovercard">Remove preview flag for <code>selectRelationCount</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8731" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8731/hovercard">Make Node-API library default engine</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8808" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8808/hovercard">Add runtime check to <code>$queryRaw("...")</code> to throw for JS calls</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8809" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8809/hovercard">Write a codemod to rename <code>$queryRaw(...)</code> to <code>$queryRawUnsafe(...)</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8836" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8836/hovercard">Using invalid connection string parameters leads to suboptimal error message with Node-API library</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8839" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8839/hovercard">Bump Node.js requirement from to &gt;=12.2 to &gt;=12.6</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8870" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8870/hovercard">Running a statement results in different prepared statements</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8909" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8909/hovercard">A <code>NOT</code> within a <code>NOT</code> creates a SQL query with only a single <code>NOT</code> in 2.30.0</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/9029" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/9029/hovercard">Remove non-underscored fields (e.g. <code>count</code> should be <code>_count</code>)</a></li>
+</ul>
+<h3>Prisma</h3>
+<ul>
+<li><a href="https://github.com/prisma/prisma/issues/8874" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8874/hovercard">Json filters <code>array_starts_with</code> and <code>array_ends_with</code> don't work on MariaDB</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/8969" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8969/hovercard">SQL Server cycle detection doesn't detect multiple paths correctly</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/9061" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/9061/hovercard">Adapt CLI update notifier for major upgrade</a></li>
+</ul>
+<h3>Language tools (e.g. VS Code)</h3>
+<ul>
+<li><a href="https://github.com/prisma/language-tools/issues/843" data-hovercard-type="issue" data-hovercard-url="/prisma/language-tools/issues/843/hovercard">Node-API: <code>engineType</code> autocompletion support</a></li>
+</ul>
+<h3>Prisma Studio</h3>
+<ul>
+<li><a href="https://github.com/prisma/studio/issues/767" data-hovercard-type="issue" data-hovercard-url="/prisma/studio/issues/767/hovercard"><code>npx prisma studio</code> throws <code>spawn undefined\System32\WindowsPowerShell\v1.0\powershell ENOENT</code> error on windows</a></li>
+</ul>
+<h2>Credits</h2>
+<p>Huge thanks to <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/saintmalik/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/saintmalik">@saintmalik</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/benkenawell/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/benkenawell">@benkenawell</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ShubhankarKG/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ShubhankarKG">@ShubhankarKG</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/hehex9/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/hehex9">@hehex9</a> for helping!</p>
+<h2><g-emoji class="g-emoji" alias="tv" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4fa.png">📺</g-emoji> Join us for another "What's new in Prisma" livestream</h2>
+<p>Learn about the latest 3.0.1 release and other news from the Prisma community by joining Matt Muller and Daniel Norman from the Prisma team for another <a href="https://youtu.be/pJ6fs5wXnyM" rel="nofollow">"What's new in Prisma"</a> livestream.</p>
+<p>The stream takes place <a href="https://www.youtube.com/watch?v=Dt9uEq1WVvQ" rel="nofollow">on Youtube</a> on <strong>Thursday, September 9</strong> at <strong>5pm Berlin | 8am San Francisco</strong>.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-962]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-962</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-962</guid>
+            <pubDate>Tue, 07 Sep 2021 17:41:43 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from certbot: v1.19.0]]></title>
+            <link>https://github.com/certbot/certbot/releases/tag/v1.19.0</link>
+            <guid>https://github.com/certbot/certbot/releases/tag/v1.19.0</guid>
+            <pubDate>Tue, 07 Sep 2021 17:15:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Release 1.19.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-958]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-958</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-958</guid>
+            <pubDate>Tue, 07 Sep 2021 17:09:50 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-956]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-956</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-956</guid>
+            <pubDate>Tue, 07 Sep 2021 17:03:33 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: NVIM v0.6.0-dev+220-gdb695cc4c]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Tue, 07 Sep 2021 16:02:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nvim development (prerelease) build</p>
+<div class="snippet-clipboard-content position-relative" data-snippet-clipboard-copy-content="NVIM v0.6.0-dev+220-gdb695cc4c
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+"><pre><code>NVIM v0.6.0-dev+220-gdb695cc4c
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<ol>
+<li>Extract <strong>nvim-win64.zip</strong> (or <strong>nvim-win32.zip</strong>)</li>
+<li>Run <code>nvim-qt.exe</code></li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-osx64/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content position-relative" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+"><pre><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content position-relative" data-snippet-clipboard-copy-content="2a8e173afb4e671565d3c9d212cdab2ccf4437fd7149f50c15f0921192f8e88c  nvim-linux64.tar.gz
+c00ee31f68ad28721b20840d1d1b486195fa9c7abc82d7a6f9825567412c8238  nvim.appimage
+c0d2f5a70f6172a458a49afd11203463cbffc7f7b6ff3b53756e0e16b2cd09cc  nvim.appimage.zsync
+02884798f3dc8ad3b1887e64c694f4202c7889db481cd7e5683b3a0c6e4568e1  nvim-macos.tar.gz
+7a97f285bcd68d2dbe80518141a267b1e19de4ede8f42362af93fcf5ac244d55  nvim-win64.zip
+04a6e14975567ac290464cb1d94758b2d4c8b222319f6aea2382134203d2607e  nvim-win32.zip
+"><pre><code>2a8e173afb4e671565d3c9d212cdab2ccf4437fd7149f50c15f0921192f8e88c  nvim-linux64.tar.gz
+c00ee31f68ad28721b20840d1d1b486195fa9c7abc82d7a6f9825567412c8238  nvim.appimage
+c0d2f5a70f6172a458a49afd11203463cbffc7f7b6ff3b53756e0e16b2cd09cc  nvim.appimage.zsync
+02884798f3dc8ad3b1887e64c694f4202c7889db481cd7e5683b3a0c6e4568e1  nvim-macos.tar.gz
+7a97f285bcd68d2dbe80518141a267b1e19de4ede8f42362af93fcf5ac244d55  nvim-win64.zip
+04a6e14975567ac290464cb1d94758b2d4c8b222319f6aea2382134203d2607e  nvim-win32.zip
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 9.5.151]]></title>
+            <link>https://github.com/v8/v8/releases/tag/9.5.151</link>
+            <guid>https://github.com/v8/v8/releases/tag/9.5.151</guid>
+            <pubDate>Tue, 07 Sep 2021 15:51:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I4cca05a2382fd41813d074d35a339d174409d16d<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3145473" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3145473</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/9.5.151@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d17564b38a663edc1580d613f21b079e59a0bb51/hovercard" href="https://github.com/v8/v8/commit/d17564b38a663edc1580d613f21b079e59a0bb51"><tt>d17564b</tt></a>-refs/heads/main@{#76695}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from bootstrap: v5.1.1]]></title>
+            <link>https://github.com/twbs/bootstrap/releases/tag/v5.1.1</link>
+            <guid>https://github.com/twbs/bootstrap/releases/tag/v5.1.1</guid>
+            <pubDate>Tue, 07 Sep 2021 15:41:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Highlights</h2>
+<h2><g-emoji class="g-emoji" alias="art" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3a8.png">🎨</g-emoji> CSS</h2>
+<ul>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="960746616" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34679" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34679/hovercard" href="https://github.com/twbs/bootstrap/pull/34679">#34679</a>: Fix font size variable name</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="962195534" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34699" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34699/hovercard" href="https://github.com/twbs/bootstrap/pull/34699">#34699</a>: Add check to <code>rgba-css-var</code> function for body or bg</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="974186083" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34773" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34773/hovercard" href="https://github.com/twbs/bootstrap/pull/34773">#34773</a>: Include root.scss in all dist builds</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="974970771" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34779" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34779/hovercard" href="https://github.com/twbs/bootstrap/pull/34779">#34779</a>: Fix <code>$dropdown-link-hover-color</code> variable color value in _variable.scss file</li>
+</ul>
+<h2><g-emoji class="g-emoji" alias="coffee" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2615.png">☕️</g-emoji> JavaScript</h2>
+<ul>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="955956258" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34621" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34621/hovercard" href="https://github.com/twbs/bootstrap/pull/34621">#34621</a>: carousel: move common checks to a function</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="962506438" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34701" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34701/hovercard" href="https://github.com/twbs/bootstrap/pull/34701">#34701</a>: Fix modal when is triggered by <code>bs-toggle</code>, to hide other open instances</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="981948632" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34835" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34835/hovercard" href="https://github.com/twbs/bootstrap/pull/34835">#34835</a>: Collapse on toggle, should not hide descendant tabpanels</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="982880197" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34842" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34842/hovercard" href="https://github.com/twbs/bootstrap/pull/34842">#34842</a>: Fix tooltip <code>data-bs-original-title</code> issue</li>
+</ul>
+<h2><g-emoji class="g-emoji" alias="book" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4d6.png">📖</g-emoji> Docs</h2>
+<ul>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="784879719" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/32781" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/32781/hovercard" href="https://github.com/twbs/bootstrap/pull/32781">#32781</a>: docs: shortcodes tweaks and consistency changes</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="961385836" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34686" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34686/hovercard" href="https://github.com/twbs/bootstrap/pull/34686">#34686</a>: docs: Fix placeholders typo</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="971062980" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34752" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34752/hovercard" href="https://github.com/twbs/bootstrap/pull/34752">#34752</a>: Fix typo in placeholder docs</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="973857781" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34769" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34769/hovercard" href="https://github.com/twbs/bootstrap/pull/34769">#34769</a>: Enhance Alerts &gt; Live Example section</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="975254574" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34781" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34781/hovercard" href="https://github.com/twbs/bootstrap/pull/34781">#34781</a>: docs: fix typos in approach and placeholders</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="975708156" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34787" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34787/hovercard" href="https://github.com/twbs/bootstrap/pull/34787">#34787</a>: Progress page: remove toggle animation button</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="982636944" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34840" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34840/hovercard" href="https://github.com/twbs/bootstrap/pull/34840">#34840</a>: clarify importing all vs specific plugins</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="982880197" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34842" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34842/hovercard" href="https://github.com/twbs/bootstrap/pull/34842">#34842</a>: Fix tooltip <code>data-bs-original-title</code> issue</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="986939059" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34877" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34877/hovercard" href="https://github.com/twbs/bootstrap/pull/34877">#34877</a>: docs: add <code>$enable-smooth-scroll</code> to Sass options page</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="987200447" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34886" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34886/hovercard" href="https://github.com/twbs/bootstrap/pull/34886">#34886</a>: Disabled link cleanup</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="987456988" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34892" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34892/hovercard" href="https://github.com/twbs/bootstrap/pull/34892">#34892</a>: Fix a11y issues in <code>.hstack</code> example and placeholder 'How it works' example</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="989095230" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34910" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34910/hovercard" href="https://github.com/twbs/bootstrap/pull/34910">#34910</a>: Docs: Add Callout to Stacks Helper page about limited flexbox gap support</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="989289245" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34913" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34913/hovercard" href="https://github.com/twbs/bootstrap/pull/34913">#34913</a>: docs: make use of the <code>.Site.Params.docs_version</code> variable</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="989401272" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34914" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34914/hovercard" href="https://github.com/twbs/bootstrap/pull/34914">#34914</a>: Typo/US locale fixes</li>
+</ul>
+<h2><g-emoji class="g-emoji" alias="hammer_and_wrench" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6e0.png">🛠</g-emoji> Examples</h2>
+<ul>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="973582165" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34766" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34766/hovercard" href="https://github.com/twbs/bootstrap/pull/34766">#34766</a>: dashboard-rtl: use the same scripts as the dashboard example</li>
+</ul>
+<h2><g-emoji class="g-emoji" alias="earth_americas" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f30e.png">🌎</g-emoji> Accessibility</h2>
+<ul>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="987200447" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34886" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34886/hovercard" href="https://github.com/twbs/bootstrap/pull/34886">#34886</a>: Disabled link cleanup</li>
+</ul>
+<h2><g-emoji class="g-emoji" alias="factory" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3ed.png">🏭</g-emoji> Tests</h2>
+<ul>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="898779138" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34077" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34077/hovercard" href="https://github.com/twbs/bootstrap/pull/34077">#34077</a>: Add GitHub SHA in BrowserStack build ID.</li>
+<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="989142277" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/34912" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/34912/hovercard" href="https://github.com/twbs/bootstrap/pull/34912">#34912</a>: BrowserStack: add Firefox 60 and Chrome 60</li>
+</ul>
+<h2><g-emoji class="g-emoji" alias="package" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4e6.png">📦</g-emoji> Dependencies</h2>
+<ul>
+<li>Updated numerous devDependencies: <a href="https://github.com/twbs/bootstrap/pulls?q=is%3Apr+is%3Aclosed+label%3Adependencies+project%3Atwbs%2Fbootstrap%2F42">https://github.com/twbs/bootstrap/pulls?q=is%3Apr+is%3Aclosed+label%3Adependencies+project%3Atwbs%2Fbootstrap%2F42</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 9.5.150]]></title>
+            <link>https://github.com/v8/v8/releases/tag/9.5.150</link>
+            <guid>https://github.com/v8/v8/releases/tag/9.5.150</guid>
+            <pubDate>Tue, 07 Sep 2021 14:51:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I7bf6a4b2a26f201d5234503dd2bbfe82212b4ff2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3145177" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3145177</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/9.5.150@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0100a8e8af80da676b57e6937645965172fa8e32/hovercard" href="https://github.com/v8/v8/commit/0100a8e8af80da676b57e6937645965172fa8e32"><tt>0100a8e</tt></a>-refs/heads/main@{#76694}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from scikit-learn: 1.0.rc1]]></title>
+            <link>https://github.com/scikit-learn/scikit-learn/releases/tag/1.0.rc1</link>
+            <guid>https://github.com/scikit-learn/scikit-learn/releases/tag/1.0.rc1</guid>
+            <pubDate>Tue, 07 Sep 2021 14:45:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>1.0.rc1 tag</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-948]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-948</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-948</guid>
+            <pubDate>Tue, 07 Sep 2021 14:39:19 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from laravel: v8.6.2]]></title>
+            <link>https://github.com/laravel/laravel/releases/tag/v8.6.2</link>
+            <guid>https://github.com/laravel/laravel/releases/tag/v8.6.2</guid>
+            <pubDate>Tue, 07 Sep 2021 14:34:14 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Changed</h3>
+<ul>
+<li>Dark mode auth links contrast (<a href="https://github.com/laravel/laravel/pull/5678" data-hovercard-type="pull_request" data-hovercard-url="/laravel/laravel/pull/5678/hovercard">#5678</a>)</li>
+<li>Added prohibits validation message (<a href="https://github.com/laravel/laravel/pull/5681" data-hovercard-type="pull_request" data-hovercard-url="/laravel/laravel/pull/5681/hovercard">#5681</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-939]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-939</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-939</guid>
+            <pubDate>Tue, 07 Sep 2021 14:11:57 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 9.5.149]]></title>
+            <link>https://github.com/v8/v8/releases/tag/9.5.149</link>
+            <guid>https://github.com/v8/v8/releases/tag/9.5.149</guid>
+            <pubDate>Tue, 07 Sep 2021 13:51:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I9b56922f0c4faba191c33622ff7a3d302ae07a60<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3145174" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3145174</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/9.5.149@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/90da6284baca5de318fe910feb981305fc04bd76/hovercard" href="https://github.com/v8/v8/commit/90da6284baca5de318fe910feb981305fc04bd76"><tt>90da628</tt></a>-refs/heads/main@{#76692}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-toml@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@6.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%406.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%406.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@6.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@4.11.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%404.11.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%404.11.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@4.11.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@0.5.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%400.5.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%400.5.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-worker@0.5.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby@3.14.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%403.14.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%403.14.0-next.2</guid>
+            <pubDate>Tue, 07 Sep 2021 13:49:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby@3.14.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-934]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-934</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-934</guid>
+            <pubDate>Tue, 07 Sep 2021 13:28:40 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 9.5.148]]></title>
+            <link>https://github.com/v8/v8/releases/tag/9.5.148</link>
+            <guid>https://github.com/v8/v8/releases/tag/9.5.148</guid>
+            <pubDate>Tue, 07 Sep 2021 13:06:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ic76c64bfc83f2bbeb53e8d251f50d66f1dd311b6<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3145172" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3145172</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/9.5.148@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/906459f1423e140bc789660b48143c331f183b8a/hovercard" href="https://github.com/v8/v8/commit/906459f1423e140bc789660b48143c331f183b8a"><tt>906459f</tt></a>-refs/heads/main@{#76691}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: v16.0.0-nightly.20210907]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210907</link>
+            <guid>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210907</guid>
+            <pubDate>Tue, 07 Sep 2021 13:02:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v16.0.0-nightly.20210907</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-922]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-922</link>
@@ -56,31 +884,10 @@ Cr-Commit-Position: refs/heads/9.5.147@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/fa0cb0204a4db415ca7ff02fcb4c580f48e21923/hovercard" href="https://github.com/v8/v8/commit/fa0cb0204a4db415ca7ff02fcb4c580f48e21923"><tt>fa0cb02</tt></a>-refs/heads/main@{#76688}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.0-RC-328]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-RC-328</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-RC-328</guid>
-            <pubDate>Tue, 07 Sep 2021 10:36:28 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.0-M1-355]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-M1-355</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-M1-355</guid>
-            <pubDate>Tue, 07 Sep 2021 10:36:28 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from next.js: v11.1.3-canary.13]]></title>
             <link>https://github.com/vercel/next.js/releases/tag/v11.1.3-canary.13</link>
             <guid>https://github.com/vercel/next.js/releases/tag/v11.1.3-canary.13</guid>
             <pubDate>Tue, 07 Sep 2021 10:25:46 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.31-496]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.31-496</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.31-496</guid>
-            <pubDate>Tue, 07 Sep 2021 10:23:21 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
@@ -253,20 +1060,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.0-RC-322]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-RC-322</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.0-RC-322</guid>
-            <pubDate>Tue, 07 Sep 2021 08:47:32 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.5.31-493]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.31-493</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.5.31-493</guid>
-            <pubDate>Tue, 07 Sep 2021 08:46:53 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from electron: electron v15.0.0-beta.3]]></title>
             <link>https://github.com/electron/electron/releases/tag/v15.0.0-beta.3</link>
             <guid>https://github.com/electron/electron/releases/tag/v15.0.0-beta.3</guid>
@@ -351,26 +1144,6 @@ Cr-Commit-Position: refs/heads/9.5.143@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4df88823399e9a70dd62c1c847cc18e9a44cdcfe/hovercard" href="https://github.com/v8/v8/commit/4df88823399e9a70dd62c1c847cc18e9a44cdcfe"><tt>4df8882</tt></a>-refs/heads/main@{#76683}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.20-dev-881]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-881</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-dev-881</guid>
-            <pubDate>Tue, 07 Sep 2021 04:48:59 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 9.0.257.37]]></title>
-            <link>https://github.com/v8/v8/releases/tag/9.0.257.37</link>
-            <guid>https://github.com/v8/v8/releases/tag/9.0.257.37</guid>
-            <pubDate>Tue, 07 Sep 2021 04:27:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>TBR=<a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a></p>
-<p>Change-Id: Idd048913e5439e13d7a6acb7e2b1d82a48c534fb<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3142002" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3142002</a><br>
-Reviewed-by: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/branch-heads/9.0@{#77}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7/hovercard" href="https://github.com/v8/v8/commit/bd0108b4c88e0d6f2350cb79b5f363fbd02f3eb7"><tt>bd0108b</tt></a>-refs/heads/9.0.257@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/349bcc6a075411f1a7ce2d866c3dfeefc2efa39d/hovercard" href="https://github.com/v8/v8/commit/349bcc6a075411f1a7ce2d866c3dfeefc2efa39d"><tt>349bcc6</tt></a>-refs/heads/master@{#73001}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 9.5.142]]></title>
             <link>https://github.com/v8/v8/releases/tag/9.5.142</link>
             <guid>https://github.com/v8/v8/releases/tag/9.5.142</guid>
@@ -380,17 +1153,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3142001
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/9.5.142@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8ef83ee3e40dea77c569d42d05ab388c5916c1fe/hovercard" href="https://github.com/v8/v8/commit/8ef83ee3e40dea77c569d42d05ab388c5916c1fe"><tt>8ef83ee</tt></a>-refs/heads/main@{#76682}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 9.5.141]]></title>
-            <link>https://github.com/v8/v8/releases/tag/9.5.141</link>
-            <guid>https://github.com/v8/v8/releases/tag/9.5.141</guid>
-            <pubDate>Tue, 07 Sep 2021 03:05:39 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Idce8adb22ad1e969ca28679bfd0bae35c3136207<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3141999" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3141999</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/9.5.141@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/cf5021aa1719c78a5529e25701fdd897bb9df0da/hovercard" href="https://github.com/v8/v8/commit/cf5021aa1719c78a5529e25701fdd897bb9df0da"><tt>cf5021a</tt></a>-refs/heads/main@{#76681}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from bitcoin: v0.20.2rc3: Bitcoin Core 0.20.2 release candidate 3]]></title>
@@ -405,17 +1167,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/electron/electron/releases/tag/v16.0.0-nightly.20210906</guid>
             <pubDate>Tue, 07 Sep 2021 02:02:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>v16.0.0-nightly.20210906</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 9.5.140]]></title>
-            <link>https://github.com/v8/v8/releases/tag/9.5.140</link>
-            <guid>https://github.com/v8/v8/releases/tag/9.5.140</guid>
-            <pubDate>Mon, 06 Sep 2021 21:11:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I45a0033f070b0f298e0e58d77099d7e4d01c2172<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3142338" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3142338</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/9.5.140@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/fcbcb42e5218249a55bc3f3c1600d9fcbf7c5151/hovercard" href="https://github.com/v8/v8/commit/fcbcb42e5218249a55bc3f3c1600d9fcbf7c5151"><tt>fcbcb42</tt></a>-refs/heads/main@{#76680}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from httpie: HTTPie 2.5.0]]></title>
@@ -434,17 +1185,6 @@ an alternative to <code>stdin</code>. (<a href="https://github.com/httpie/httpie
 <p>Join our Discord community: <a href="https://httpie.io/chat" rel="nofollow">https://httpie.io/chat</a><br>
 Install HTTPie: <a href="https://httpie.io/docs#installation" rel="nofollow">https://httpie.io/docs#installation</a><br>
 Learn more: <a href="https://httpie.io" rel="nofollow">https://httpie.io</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 9.5.139]]></title>
-            <link>https://github.com/v8/v8/releases/tag/9.5.139</link>
-            <guid>https://github.com/v8/v8/releases/tag/9.5.139</guid>
-            <pubDate>Mon, 06 Sep 2021 18:20:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Id405c07302fcc3b1103b532d7aeaa10bfceb164c<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3144072" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3144072</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/9.5.139@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/74a6e15efe67cc7d4cbd319bcca138c3b1dd5fd2/hovercard" href="https://github.com/v8/v8/commit/74a6e15efe67cc7d4cbd319bcca138c3b1dd5fd2"><tt>74a6e15</tt></a>-refs/heads/main@{#76679}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v11.1.3-canary.9]]></title>
