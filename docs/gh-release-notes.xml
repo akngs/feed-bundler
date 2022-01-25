@@ -4,22 +4,36 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Tue, 25 Jan 2022 12:33:49 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 25 Jan 2022 18:24:49 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/all/69754]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F69754</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F69754</guid>
-            <pubDate>Tue, 25 Jan 2022 12:26:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>clang-format</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/all/71256: Update on "Add new reduce options and autograd support for scatter_re…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F71256</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F71256</guid>
+            <pubDate>Tue, 25 Jan 2022 18:13:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…duce"</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D33712802" rel="nofollow">D33712802</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/all/70750: Update on "Rename _scatter_reduce to scatter_reduce"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F70750</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F70750</guid>
+            <pubDate>Tue, 25 Jan 2022 18:13:00 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>Change name from <code>_scatter_reduce</code> to <code>scatter_reduce</code></li>
+<li>Make <code>scatter_reduce</code> unstructured because gradients not supported for out</li>
+</ul>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D33712801" rel="nofollow">D33712801</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/all/70253: Update on "Implement forward AD for linalg.svd and improve svd_backward"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F70253</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F70253</guid>
-            <pubDate>Tue, 25 Jan 2022 11:41:46 GMT</pubDate>
+            <pubDate>Tue, 25 Jan 2022 18:04:56 GMT</pubDate>
             <content:encoded><![CDATA[<p>I included a derivation of the formula in the complex case, as it is<br>
 particularly tricky. As far as I know, this is the first time this formula<br>
 is derived in the literature.</p>
@@ -32,46 +46,189 @@ vectors, and not their joint phase.</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/all/69827: Update on "Rewrite svd and linalg.svd as structured kernels"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F69827</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F69827</guid>
-            <pubDate>Tue, 25 Jan 2022 11:41:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>In general, the current pattern allows for implementing optimisations<br>
-for all the backends in a common place (see for example the optimisation<br>
-for empty matrices).</p>
-<p>After this PR, <code>torch.svd</code> is implemented in terms of <code>linalg.svd</code> and<br>
-<code>linalg.svdvals</code>, as expected. This makes it differentiable in the case<br>
-when <code>compute_uv=False</code>, although this is not particularly important, as<br>
-<code>torch.svd</code> will eventually be deprecated.</p>
-<p>This PR also instantiates smaller <code>U</code> / <code>V</code> when calling cusolver_gesvdj<br>
-in the cases when <code>full_matrices=False</code> or <code>compute_uv=False</code>.</p>
-<p>The memory for auxiliary <code>U</code> and <code>V</code> in the cases above, needed for some<br>
-cuSOLVER routines is allocated raw allocators rather than through fully<br>
-fledged tensors, as it's just a blob of memory the algorithm requests.<br>
-As the code is better structured now, it was easier to see that <code>U</code> and<br>
-<code>Vh</code> needn't be allocated when calling <code>svd_cusolver_gesvd</code>.</p>
-<p>Now <code>linalg.svdvals</code> work as expected wrt the <code>out=</code> parameter.<br>
-Note that in the test <code>test_svd_memory_allocation</code> we were<br>
-passing a tensor of the wrong size and dtype and the test seemed to<br>
-pass...</p>
-<p>This PR also changes the backward formula to avoid saving the input<br>
-matrix, as it's not necessary. In a follow up PR, I will clean the<br>
-backward formula and make it more numerically stable and efficient.</p>
-<p>This PR also does a number of memory optimisations here and there, and fixes<br>
-the call to cusolver_gesvd, which were incorrect for m &lt;= n. To test<br>
-this path, I compiled the code with a flag to unconditionally execute<br>
-the <code>if (!gesvdj_convergence_check.empty())</code> branch, and all the tests<br>
-passed.</p>
-<p>I also took this chance to simplify the tests for these functions in<br>
-<code>test_linalg.py</code>, as we had lots of tests that were testing some<br>
-functionality that is already currently tested in the corresponding<br>
-OpInfos. I used xwang233's feature to test both MAGMA and CUDA<br>
-backends. This is particularly good for SVD, as cuSOLVER is always<br>
-chosen over MAGMA when available, so testing MAGMA otherwise would be<br>
-tricky.</p>
-<p>cc jianyuh nikitaved pearu mruberry walterddr IvanYashchuk xwang233 Lezcano</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D33751983" rel="nofollow">D33751983</a></p>
+            <title><![CDATA[Release notes from isomorphic-git: v1.11.0]]></title>
+            <link>https://github.com/isomorphic-git/isomorphic-git/releases/tag/v1.11.0</link>
+            <guid>https://github.com/isomorphic-git/isomorphic-git/releases/tag/v1.11.0</guid>
+            <pubDate>Tue, 25 Jan 2022 17:51:19 GMT</pubDate>
+            <content:encoded><![CDATA[<h1><a href="https://github.com/isomorphic-git/isomorphic-git/compare/v1.10.5...v1.11.0">1.11.0</a> (2022-01-25)</h1>
+<h3>Features</h3>
+<ul>
+<li>add <code>noTrack</code> option to checkout (<a href="https://github.com/isomorphic-git/isomorphic-git/issues/1463" data-hovercard-type="pull_request" data-hovercard-url="/isomorphic-git/isomorphic-git/pull/1463/hovercard">#1463</a>) (<a href="https://github.com/isomorphic-git/isomorphic-git/commit/64506265ff1cb7c0ebe56472705239fb8d636d2e">6450626</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/cuda/69299: [CUDA Pinned Memory] [Retry] Alternative implementation of pinned mem…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fcuda%2F69299</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fcuda%2F69299</guid>
+            <pubDate>Tue, 25 Jan 2022 17:44:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ory allocator focusing on multi-threaded scalability (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1069834205" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/69299" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/69299/hovercard" href="https://github.com/pytorch/pytorch/pull/69299">#69299</a>)</p>
+<p>Summary:<br>
+Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1069834205" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/69299" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/69299/hovercard" href="https://github.com/pytorch/pytorch/pull/69299">#69299</a></p>
+<p><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1063097768" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/68906" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/68906/hovercard" href="https://github.com/pytorch/pytorch/pull/68906">#68906</a> + <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1060513147" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/68749" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/68749/hovercard" href="https://github.com/pytorch/pytorch/pull/68749">#68749</a> plugged one correctness hole (non-blocking copies of offset pinned memory tensors) while introducing another (non-blocking copies of pinned memory tensors with a non-standard DataPtr context).</p>
+<p>In this revision, we use both the tensor data pointer and context to attempt to identify the originating block in the pinned memory allocator.</p>
+<p>Test Plan: New unit tests added to cover the missing case previously.</p>
+<p>Reviewed By: yinghai</p>
+<p>Differential Revision: D32787087</p>
+<p>fbshipit-source-id: 0df5e77b5dea5148d88ec6d6e8416d7e2dfbd1dd</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1070]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1070</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1070</guid>
+            <pubDate>Tue, 25 Jan 2022 17:40:52 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/all/71582]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F71582</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F71582</guid>
+            <pubDate>Tue, 25 Jan 2022 17:10:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Parameterize test on index dtype</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v12.0.9-canary.9]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v12.0.9-canary.9</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v12.0.9-canary.9</guid>
+            <pubDate>Tue, 25 Jan 2022 16:53:52 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>feat(next-swc): Update swc: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1113575812" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/33628" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/33628/hovercard" href="https://github.com/vercel/next.js/pull/33628">#33628</a></li>
+<li>Add <code>lazyRoot</code> optional property to <code>next/image</code> component : <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1102570720" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/33290" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/33290/hovercard" href="https://github.com/vercel/next.js/pull/33290">#33290</a></li>
+</ul>
+<h3>Documentation Changes</h3>
+<ul>
+<li>Clarify <code>headers</code> config option description: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1108887490" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/33484" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/33484/hovercard" href="https://github.com/vercel/next.js/pull/33484">#33484</a></li>
+<li>fix(errors/no-cache): <code>netlify-plugin-cache-nextjs</code> has been deprecated: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1113638389" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/33629" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/33629/hovercard" href="https://github.com/vercel/next.js/pull/33629">#33629</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/lobsterkatie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lobsterkatie">@lobsterkatie</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/kdy1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kdy1">@kdy1</a>, <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/11koukou/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/11koukou">@11koukou</a>, and <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/renbaoshuo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/renbaoshuo">@renbaoshuo</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1061]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1061</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1061</guid>
+            <pubDate>Tue, 25 Jan 2022 16:20:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from arangodb: v3.7.17]]></title>
+            <link>https://github.com/arangodb/arangodb/releases/tag/v3.7.17</link>
+            <guid>https://github.com/arangodb/arangodb/releases/tag/v3.7.17</guid>
+            <pubDate>Tue, 25 Jan 2022 15:58:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>arangodb release 3.7.17</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1059]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1059</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1059</guid>
+            <pubDate>Tue, 25 Jan 2022 15:53:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/all/70610: Update on "[PyTorchEdge] Making promoted ops to instructions"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F70610</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F70610</guid>
+            <pubDate>Tue, 25 Jan 2022 15:25:49 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D33398092/" rel="nofollow">D33398092</a></p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1055]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1055</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1055</guid>
+            <pubDate>Tue, 25 Jan 2022 14:36:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1052]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1052</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1052</guid>
+            <pubDate>Tue, 25 Jan 2022 14:15:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@4.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%404.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%404.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@4.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@4.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%404.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%404.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@4.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@4.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%404.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%404.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@4.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@4.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%404.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%404.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-toml@4.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@4.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%404.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%404.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@4.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-pdf@3.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-pdf%403.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-pdf%403.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-pdf@3.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@7.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%407.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%407.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@7.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@1.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%401.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%401.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-worker@1.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@5.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%405.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%405.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@5.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@4.6.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%404.6.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%404.6.0</guid>
+            <pubDate>Tue, 25 Jan 2022 13:43:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@4.6.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from meteor: release/METEOR@2.5.6]]></title>
+            <link>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.5.6</link>
+            <guid>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.5.6</guid>
+            <pubDate>Tue, 25 Jan 2022 13:09:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Use fibers 5.0.1 version - release meteor 2.5.6</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: v18.0.0-nightly.20220125]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v18.0.0-nightly.20220125</link>
+            <guid>https://github.com/electron/electron/releases/tag/v18.0.0-nightly.20220125</guid>
+            <pubDate>Tue, 25 Jan 2022 13:01:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v18.0.0-nightly.20220125</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.6.20-RC-61]]></title>
@@ -90,20 +247,6 @@ tricky.</p>
 <ul>
 <li>rollback PR <a href="https://github.com/sequelize/sequelize/issues/13951" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13951/hovercard">#13951</a> in v6 (<a href="https://github.com/sequelize/sequelize/issues/14004" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/14004/hovercard">#14004</a>) (<a href="https://github.com/sequelize/sequelize/commit/1882f3cd9c42c245d486950b3a9cb18b761e1536">1882f3c</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.20-M1-150]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-M1-150</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-M1-150</guid>
-            <pubDate>Tue, 25 Jan 2022 10:44:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.6.20-RC-60]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-RC-60</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.6.20-RC-60</guid>
-            <pubDate>Tue, 25 Jan 2022 10:44:11 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from httpie: HTTPie 3.0.2]]></title>
@@ -153,32 +296,6 @@ tricky.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/slow/69751: Update on "no longer coalesce sparse COO tensors before comparison"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fslow%2F69751</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fslow%2F69751</guid>
-            <pubDate>Tue, 25 Jan 2022 07:33:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc nikitaved pearu cpuhrsch <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/IvanYashchuk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/IvanYashchuk">@IvanYashchuk</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/all/67796: Update on "use `torch.testing.assert_equal` in `TestCase.assertEqual`"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F67796</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F67796</guid>
-            <pubDate>Tue, 25 Jan 2022 07:33:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Supersedes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="901995835" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/58981" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/58981/hovercard" href="https://github.com/pytorch/pytorch/pull/58981">#58981</a>.</p>
-<p>cc mruberry</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D33542994" rel="nofollow">D33542994</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/all/69751: Update on "no longer coalesce sparse COO tensors before comparison"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F69751</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F69751</guid>
-            <pubDate>Tue, 25 Jan 2022 07:33:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc nikitaved pearu cpuhrsch <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/IvanYashchuk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/IvanYashchuk">@IvanYashchuk</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/slow/67796: Update on "use `torch.testing.assert_equal` in `TestCase.assertEqual`"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fslow%2F67796</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fslow%2F67796</guid>
@@ -189,12 +306,11 @@ tricky.</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/all/71256: Update on "Add new reduce options and autograd support for scatter_re…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F71256</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fall%2F71256</guid>
-            <pubDate>Tue, 25 Jan 2022 06:24:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…duce"</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D33712802" rel="nofollow">D33712802</a></p>
+            <title><![CDATA[Release notes from pytorch: ciflow/slow/69751: Update on "no longer coalesce sparse COO tensors before comparison"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fslow%2F69751</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fslow%2F69751</guid>
+            <pubDate>Tue, 25 Jan 2022 07:33:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc nikitaved pearu cpuhrsch <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/IvanYashchuk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/IvanYashchuk">@IvanYashchuk</a></p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
@@ -323,13 +439,6 @@ transfers over those tests</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1015]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1015</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1015</guid>
-            <pubDate>Mon, 24 Jan 2022 22:39:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from apollo-client: v3.5.8]]></title>
             <link>https://github.com/apollographql/apollo-client/releases/tag/v3.5.8</link>
             <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.5.8</guid>
@@ -356,20 +465,6 @@ transfers over those tests</p>
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention" data-hovercard-type="user" data-hovercard-url="/users/ecklf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ecklf">@ecklf</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1013]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1013</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1013</guid>
-            <pubDate>Mon, 24 Jan 2022 22:21:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.7.0-dev-1012]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1012</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.0-dev-1012</guid>
-            <pubDate>Mon, 24 Jan 2022 21:28:52 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
@@ -1007,20 +1102,6 @@ transfers over those tests</p>
             <content:encoded><![CDATA[<p>v18.0.0-nightly.20220124</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby@4.5.5]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%404.5.5</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%404.5.5</guid>
-            <pubDate>Mon, 24 Jan 2022 11:55:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby@4.5.5</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-plugin-schema-snapshot@3.5.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-plugin-schema-snapshot%403.5.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-plugin-schema-snapshot%403.5.1</guid>
-            <pubDate>Mon, 24 Jan 2022 11:55:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-plugin-schema-snapshot@3.5.1</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from arrow: apache-arrow-7.0.0]]></title>
             <link>https://github.com/apache/arrow/releases/tag/apache-arrow-7.0.0</link>
             <guid>https://github.com/apache/arrow/releases/tag/apache-arrow-7.0.0</guid>
@@ -1222,75 +1303,6 @@ transfers over those tests</p>
             <guid>https://github.com/alacritty/alacritty/releases/tag/alacritty_terminal_v0.16.0</guid>
             <pubDate>Sun, 23 Jan 2022 10:33:56 GMT</pubDate>
             <content:encoded><![CDATA[<p>Alacritty Terminal version 0.16.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from babel: v7.16.12]]></title>
-            <link>https://github.com/babel/babel/releases/tag/v7.16.12</link>
-            <guid>https://github.com/babel/babel/releases/tag/v7.16.12</guid>
-            <pubDate>Sat, 22 Jan 2022 15:14:15 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>v7.16.12 (2022-01-22)</h2>
-<h4><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Bug Fix</h4>
-<ul>
-<li><code>babel-core</code>
-<ul>
-<li><a href="https://github.com/babel/babel/pull/14192" data-hovercard-type="pull_request" data-hovercard-url="/babel/babel/pull/14192/hovercard">#14192</a> Avoid dynamic import when it's not needed (<a href="https://github.com/nicolo-ribaudo">@nicolo-ribaudo</a>)</li>
-</ul>
-</li>
-<li><code>babel-parser</code>
-<ul>
-<li><a href="https://github.com/babel/babel/pull/14194" data-hovercard-type="pull_request" data-hovercard-url="/babel/babel/pull/14194/hovercard">#14194</a> fix: incorrect <code>in</code> parsing in arrow ConciseBody (<a href="https://github.com/JLHwung">@JLHwung</a>)</li>
-</ul>
-</li>
-</ul>
-<h4>Committers: 2</h4>
-<ul>
-<li>Huáng Jùnliàng (<a href="https://github.com/JLHwung">@JLHwung</a>)</li>
-<li>Nicolò Ribaudo (<a href="https://github.com/nicolo-ribaudo">@nicolo-ribaudo</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pandas: Pandas 1.4.0]]></title>
-            <link>https://github.com/pandas-dev/pandas/releases/tag/v1.4.0</link>
-            <guid>https://github.com/pandas-dev/pandas/releases/tag/v1.4.0</guid>
-            <pubDate>Sat, 22 Jan 2022 15:11:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This release includes some new features, bug fixes, and performance improvements. We recommend that all users upgrade to this version.</p>
-<p>See the <a href="https://pandas.pydata.org/pandas-docs/version/1.4.0/whatsnew/v1.4.0.html" rel="nofollow">full whatsnew</a> for a list of all the changes. pandas 1.4.0 supports Python 3.8 and higher.</p>
-<p>The release will be available on the defaults and conda-forge channels:</p>
-<div class="snippet-clipboard-content position-relative overflow-auto" data-snippet-clipboard-copy-content="conda install -c conda-forge pandas"><pre><code>conda install -c conda-forge pandas
-</code></pre></div>
-<p>Or via PyPI:</p>
-<div class="snippet-clipboard-content position-relative overflow-auto" data-snippet-clipboard-copy-content="python3 -m pip install --upgrade pandas"><pre><code>python3 -m pip install --upgrade pandas
-</code></pre></div>
-<p>Please report any issues with the release on the <a href="https://github.com/pandas-dev/pandas/issues">pandas issue tracker</a>.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zdog: v1.1.3]]></title>
-            <link>https://github.com/metafizzy/zdog/releases/tag/v1.1.3</link>
-            <guid>https://github.com/metafizzy/zdog/releases/tag/v1.1.3</guid>
-            <pubDate>Sat, 22 Jan 2022 14:59:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>1.1.3</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from sequelize: v6.14.0]]></title>
-            <link>https://github.com/sequelize/sequelize/releases/tag/v6.14.0</link>
-            <guid>https://github.com/sequelize/sequelize/releases/tag/v6.14.0</guid>
-            <pubDate>Sat, 22 Jan 2022 13:35:24 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/sequelize/sequelize/compare/v6.13.0...v6.14.0">6.14.0</a> (2022-01-22)</h1>
-<h3>Bug Fixes</h3>
-<ul>
-<li>don't call overloaded versions of find functions internally (<a href="https://github.com/sequelize/sequelize/issues/13951" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13951/hovercard">#13951</a>) (<a href="https://github.com/sequelize/sequelize/commit/fc53cdbfbbf312d501c03f4268637795e43131d7">fc53cdb</a>)</li>
-<li>don't call overloaded versions of find functions internally (<a href="https://github.com/sequelize/sequelize/issues/13951" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13951/hovercard">#13951</a>) (<a href="https://github.com/sequelize/sequelize/commit/b253d8ed63c91bc2c7143f07806554b5a5ac67eb">b253d8e</a>)</li>
-<li><strong>model.d:</strong> fix type for <code>count</code> and <code>findAndCountAll</code> (<a href="https://github.com/sequelize/sequelize/issues/13786" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13786/hovercard">#13786</a>) (<a href="https://github.com/sequelize/sequelize/commit/b06c1fc283cbd20af6031199ece075d8b10b0feb">b06c1fc</a>)</li>
-<li><strong>types:</strong> add hooks to InstanceDestroyOptions type (<a href="https://github.com/sequelize/sequelize/issues/13491" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13491/hovercard">#13491</a>) (<a href="https://github.com/sequelize/sequelize/commit/dbd9ea8690d6d2209cf0d000239e87f93d02cbb0">dbd9ea8</a>)</li>
-<li><strong>types:</strong> add missing fields to FindOr{Create,Build}Options (<a href="https://github.com/sequelize/sequelize/issues/13389" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13389/hovercard">#13389</a>) (<a href="https://github.com/sequelize/sequelize/commit/ef63f8f3900135f9d5d7869ee5a1f78dd4da0e76">ef63f8f</a>)</li>
-<li><strong>types:</strong> fix QueryInterface#bulkInsert attribute arg type (<a href="https://github.com/sequelize/sequelize/issues/13945" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13945/hovercard">#13945</a>) (<a href="https://github.com/sequelize/sequelize/commit/9e108e3417c56df1b19db322cc7b0168d9bb3b85">9e108e3</a>)</li>
-</ul>
-<h3>Features</h3>
-<ul>
-<li><strong>types:</strong> add <code>InferAttributes</code> utility type (<a href="https://github.com/sequelize/sequelize/issues/13909" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13909/hovercard">#13909</a>) (<a href="https://github.com/sequelize/sequelize/commit/fd426876dca4d265f80147b6c2080e7400fa0129">fd42687</a>)</li>
-<li><strong>types:</strong> add typings for DataTypes.TSVECTOR (<a href="https://github.com/sequelize/sequelize/issues/13940" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13940/hovercard">#13940</a>) (<a href="https://github.com/sequelize/sequelize/commit/b8f0463c30cc9ccb9386692e9acd7afbb9de5bd9">b8f0463</a>)</li>
-<li><strong>types:</strong> drop TypeScript &lt; 4.1 (<a href="https://github.com/sequelize/sequelize/issues/13954" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/13954/hovercard">#13954</a>) (<a href="https://github.com/sequelize/sequelize/commit/dd49044bc7a1a0dace3e438881a32416fe68aaf6">dd49044</a>)</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
