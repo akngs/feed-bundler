@@ -4,10 +4,219 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 06 Mar 2022 18:06:53 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 07 Mar 2022 00:18:44 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from sqlalchemy: 1.4.32]]></title>
+            <link>https://github.com/sqlalchemy/sqlalchemy/releases/tag/rel_1_4_32</link>
+            <guid>https://github.com/sqlalchemy/sqlalchemy/releases/tag/rel_1_4_32</guid>
+            <pubDate>Sun, 06 Mar 2022 23:12:21 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>1.4.32</h1>
+<p>Released: March 6, 2022</p>
+<h2>orm</h2>
+<ul>
+<li>
+<p><strong>[orm] [bug] [regression]</strong> Fixed regression where the ORM exception that is to be raised when an<br>
+INSERT silently fails to actually insert a row (such as from a trigger)<br>
+would not be reached, due to a runtime exception raised ahead of time due<br>
+to the missing primary key value, thus raising an uninformative exception<br>
+rather than the correct one. For 1.4 and above, a new<br>
+<code>_ormexc.FlushError</code> is added for this case that's raised earlier<br>
+than the previous "null identity" exception was for 1.3, as a situation<br>
+where the number of rows actually INSERTed does not match what was expected<br>
+is a more critical situation in 1.4 as it prevents batching of multiple<br>
+objects from working correctly. This is separate from the case where a<br>
+newly fetched primary key is fetched as NULL, which continues to raise the<br>
+existing "null identity" exception.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7594" rel="nofollow">#7594</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Fixed issue where using a fully qualified path for the classname in<br>
+<code>_orm.relationship()</code> that nonetheless contained an incorrect name for<br>
+path tokens that were not the first token, would fail to raise an<br>
+informative error and would instead fail randomly at a later step.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7697" rel="nofollow">#7697</a></p>
+</li>
+</ul>
+<h2>engine</h2>
+<ul>
+<li>
+<p><strong>[engine] [bug]</strong> Adjusted the logging for key SQLAlchemy components including<br>
+<code>_engine.Engine</code>, <code>_engine.Connection</code> to establish an<br>
+appropriate stack level parameter, so that the Python logging tokens<br>
+<code>funcName</code> and <code>lineno</code> when used in custom logging formatters will<br>
+report the correct information, which can be useful when filtering log<br>
+output; supported on Python 3.8 and above. Pull request courtesy Markus<br>
+Gerstel.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7612" rel="nofollow">#7612</a></p>
+</li>
+</ul>
+<h2>sql</h2>
+<ul>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed type-related error messages that would fail for values that were<br>
+tuples, due to string formatting syntax, including compile of unsupported<br>
+literal values and invalid boolean values.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7721" rel="nofollow">#7721</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug] [mysql]</strong> Fixed issues in MySQL <code>_mysql.SET</code> datatype as well as the generic<br>
+<code>Enum</code> datatype where the <code>__repr__()</code> method would not render<br>
+all optional parameters in the string output, impacting the use of these<br>
+types in Alembic autogenerate. Pull request for MySQL courtesy Yuki<br>
+Nishimine.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7598" rel="nofollow">#7598</a>, <a href="https://www.sqlalchemy.org/trac/ticket/7720" rel="nofollow">#7720</a>, <a href="https://www.sqlalchemy.org/trac/ticket/7789" rel="nofollow">#7789</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> The <code>_sqltypes.Enum</code> datatype now emits a warning if the<br>
+<code>_sqltypes.Enum.length</code> argument is specified without also<br>
+specifying <code>_sqltypes.Enum.native_enum</code> as False, as the<br>
+parameter is otherwise silently ignored in this case, despite the fact that<br>
+the <code>_sqltypes.Enum</code> datatype will still render VARCHAR DDL on<br>
+backends that don't have a native ENUM datatype such as SQLite. This<br>
+behavior may change in a future release so that "length" is honored for all<br>
+non-native "enum" types regardless of the "native_enum" setting.</p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed issue where the <code>HasCTE.add_cte()</code> method as called upon a<br>
+<code>TextualSelect</code> instance was not being accommodated by the SQL<br>
+compiler. The fix additionally adds more "SELECT"-like compiler behavior to<br>
+<code>TextualSelect</code> including that DML CTEs such as UPDATE and INSERT<br>
+may be accommodated.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7760" rel="nofollow">#7760</a></p>
+</li>
+</ul>
+<h2>asyncio</h2>
+<ul>
+<li>
+<p><strong>[asyncio] [bug]</strong> Fixed issues where a descriptive error message was not raised for some<br>
+classes of event listening with an async engine, which should instead be a<br>
+sync engine instance.</p>
+</li>
+<li>
+<p><strong>[asyncio] [bug]</strong> Fixed issue where the <code>_asyncio.AsyncSession.execute()</code> method failed<br>
+to raise an informative exception if the<br>
+<code>_engine.Connection.execution_options.stream_results</code> execution<br>
+option were used, which is incompatible with a sync-style<br>
+<code>_result.Result</code> object when using an asyncio calling style, as the<br>
+operation to fetch more rows would need to be awaited. An exception is now<br>
+raised in this scenario in the same way one was already raised when the<br>
+<code>_engine.Connection.execution_options.stream_results</code> option<br>
+would be used with the <code>_asyncio.AsyncConnection.execute()</code> method.</p>
+<p>Additionally, for improved stability with state-sensitive database drivers<br>
+such as asyncmy, the cursor is now closed when this error condition is<br>
+raised; previously with the asyncmy dialect, the connection would go into<br>
+an invalid state with unconsumed server side results remaining.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7667" rel="nofollow">#7667</a></p>
+</li>
+</ul>
+<h2>postgresql</h2>
+<ul>
+<li>
+<p><strong>[postgresql] [usecase]</strong> Added compiler support for the PostgreSQL <code>NOT VALID</code> phrase when rendering<br>
+DDL for the <code>CheckConstraint</code>, <code>ForeignKeyConstraint</code><br>
+and <code>ForeignKey</code> schema constructs.  Pull request courtesy<br>
+Gilbert Gilb's.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7600" rel="nofollow">#7600</a></p>
+</li>
+</ul>
+<h2>mysql</h2>
+<ul>
+<li>
+<p><strong>[mysql] [bug] [regression]</strong> Fixed regression caused by <a href="https://www.sqlalchemy.org/trac/ticket/7518" rel="nofollow">#7518</a> where changing the syntax "SHOW<br>
+VARIABLES" to "SELECT @@" broke compatibility with MySQL versions older<br>
+than 5.6, including early 5.0 releases. While these are very old MySQL<br>
+versions, a change in compatibility was not planned, so version-specific<br>
+logic has been restored to fall back to "SHOW VARIABLES" for MySQL server<br>
+versions &lt; 5.6.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7518" rel="nofollow">#7518</a></p>
+</li>
+</ul>
+<h2>mariadb</h2>
+<ul>
+<li>
+<p><strong>[mariadb] [bug] [regression]</strong> Fixed regression in mariadbconnector dialect as of mariadb connector 1.0.10<br>
+where the DBAPI no longer pre-buffers cursor.lastrowid, leading to errors<br>
+when inserting objects with the ORM as well as causing non-availability of<br>
+the <code>_result.CursorResult.inserted_primary_key</code> attribute. The<br>
+dialect now fetches this value proactively for situations where it applies.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7738" rel="nofollow">#7738</a></p>
+</li>
+</ul>
+<h2>sqlite</h2>
+<ul>
+<li>
+<p><strong>[sqlite] [usecase]</strong> Added support for reflecting SQLite inline unique constraints where<br>
+the column names are formatted with SQLite "escape quotes" <code>[]</code><br>
+or ```, which are discarded by the database when producing the<br>
+column name.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7736" rel="nofollow">#7736</a></p>
+</li>
+<li>
+<p><strong>[sqlite] [bug]</strong> Fixed issue where SQLite unique constraint reflection would fail to detect<br>
+a column-inline UNIQUE constraint where the column name had an underscore<br>
+in its name.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7736" rel="nofollow">#7736</a></p>
+</li>
+</ul>
+<h2>oracle</h2>
+<ul>
+<li>
+<p><strong>[oracle] [bug]</strong> Fixed issue in Oracle dialect where using a column name that requires<br>
+quoting when written as a bound parameter, such as <code>"_id"</code>, would not<br>
+correctly track a Python generated default value due to the bound-parameter<br>
+rewriting missing this value, causing an Oracle error to be raised.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7676" rel="nofollow">#7676</a></p>
+</li>
+<li>
+<p><strong>[oracle] [bug] [regression]</strong> Added support to parse "DPI" error codes from cx_Oracle exception objects<br>
+such as <code>DPI-1080</code> and <code>DPI-1010</code>, both of which now indicate a<br>
+disconnect scenario as of cx_Oracle 8.3.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7748" rel="nofollow">#7748</a></p>
+</li>
+</ul>
+<h2>tests</h2>
+<ul>
+<li>
+<p><strong>[tests] [bug]</strong> Improvements to the test suite's integration with pytest such that the<br>
+"warnings" plugin, if manually enabled, will not interfere with the test<br>
+suite, such that third parties can enable the warnings plugin or make use<br>
+of the <code>-W</code> parameter and SQLAlchemy's test suite will continue to pass.<br>
+Additionally, modernized the detection of the "pytest-xdist" plugin so that<br>
+plugins can be globally disabled using PYTEST_DISABLE_PLUGIN_AUTOLOAD=1<br>
+without breaking the test suite if xdist were still installed. Warning<br>
+filters that promote deprecation warnings to errors are now localized to<br>
+SQLAlchemy-specific warnings, or within SQLAlchemy-specific sources for<br>
+general Python deprecation warnings, so that non-SQLAlchemy deprecation<br>
+warnings emitted from pytest plugins should also not impact the test suite.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7599" rel="nofollow">#7599</a></p>
+</li>
+<li>
+<p><strong>[tests] [bug]</strong> Made corrections to the default pytest configuration regarding how test<br>
+discovery is configured, to fix issue where the test suite would not<br>
+configure warnings correctly and also attempt to load example suites as<br>
+tests, in the specific case where the SQLAlchemy checkout were located in<br>
+an absolute path that had a super-directory named "test".</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7045" rel="nofollow">#7045</a></p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/73788]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F73788</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F73788</guid>
+            <pubDate>Sun, 06 Mar 2022 22:59:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Add Windows smoke builds as well</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Sun, 06 Mar 2022 21:26:52 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-03-06 21:25:53 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/33de55540b41f5dded79dd37f9ac7134f60d7196/hovercard" href="https://github.com/kovidgoyal/kitty/commit/33de55540b41f5dded79dd37f9ac7134f60d7196"><tt>33de555</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from ava: v4.1.0]]></title>
             <link>https://github.com/avajs/ava/releases/tag/v4.1.0</link>
@@ -250,13 +459,6 @@ Cr-Commit-Position: refs/heads/10.1.69@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5974242ae2141744091e5c6adcc95c8d9f6cee81/hovercard" href="https://github.com/v8/v8/commit/5974242ae2141744091e5c6adcc95c8d9f6cee81"><tt>5974242</tt></a>-refs/heads/main@{#79375}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Sat, 05 Mar 2022 21:23:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-03-05 21:22:14 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/482b853908239b6c8a416d49beabcf0606be077c/hovercard" href="https://github.com/kovidgoyal/kitty/commit/482b853908239b6c8a416d49beabcf0606be077c"><tt>482b853</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.294]]></title>
             <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.294</link>
             <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.294</guid>
@@ -272,16 +474,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-cloudflare@1.0.0-next.15]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%401.0.0-next.15</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%401.0.0-next.15</guid>
-            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>[breaking] replace builder.prerender() with builder.writePrerendered() and builder.prerendered (<a href="https://github.com/sveltejs/kit/pull/4192" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4192/hovercard">#4192</a>) (<a href="https://github.com/sveltejs/kit/pull/4229" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4229/hovercard">#4229</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kit: @sveltejs/adapter-netlify@1.0.0-next.50]]></title>
             <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-netlify%401.0.0-next.50</link>
             <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-netlify%401.0.0-next.50</guid>
@@ -292,9 +484,60 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.293]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.293</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.293</guid>
+            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>Expose Server and SSRManifest as public types (<a href="https://github.com/sveltejs/kit/pull/4220" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4220/hovercard">#4220</a>)</p>
+</li>
+<li>
+<p>fetch <code>version.json</code> relative to <code>paths.assets</code>, if set (<a href="https://github.com/sveltejs/kit/pull/4234" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4234/hovercard">#4234</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-auto@1.0.0-next.31]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%401.0.0-next.31</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%401.0.0-next.31</guid>
+            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>Updated dependencies [<a href="https://github.com/sveltejs/kit/commit/8aa2920b9a05ab2907ee2ffbe9f273ab8e2dbc69"><code>8aa2920b</code></a>]:
+<ul>
+<li>@sveltejs/adapter-cloudflare@1.0.0-next.15</li>
+<li>@sveltejs/adapter-netlify@1.0.0-next.50</li>
+<li>@sveltejs/adapter-vercel@1.0.0-next.46</li>
+</ul>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-cloudflare@1.0.0-next.15]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%401.0.0-next.15</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%401.0.0-next.15</guid>
+            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>[breaking] replace builder.prerender() with builder.writePrerendered() and builder.prerendered (<a href="https://github.com/sveltejs/kit/pull/4192" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4192/hovercard">#4192</a>) (<a href="https://github.com/sveltejs/kit/pull/4229" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4229/hovercard">#4229</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from kit: @sveltejs/adapter-vercel@1.0.0-next.46]]></title>
             <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.46</link>
             <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.46</guid>
+            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>[breaking] replace builder.prerender() with builder.writePrerendered() and builder.prerendered (<a href="https://github.com/sveltejs/kit/pull/4192" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4192/hovercard">#4192</a>) (<a href="https://github.com/sveltejs/kit/pull/4229" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4229/hovercard">#4229</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-cloudflare-workers@1.0.0-next.35]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare-workers%401.0.0-next.35</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare-workers%401.0.0-next.35</guid>
             <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
@@ -319,47 +562,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
 <li>[breaking] replace builder.prerender() with builder.writePrerendered() and builder.prerendered (<a href="https://github.com/sveltejs/kit/pull/4192" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4192/hovercard">#4192</a>) (<a href="https://github.com/sveltejs/kit/pull/4229" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4229/hovercard">#4229</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.293]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.293</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.293</guid>
-            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>Expose Server and SSRManifest as public types (<a href="https://github.com/sveltejs/kit/pull/4220" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4220/hovercard">#4220</a>)</p>
-</li>
-<li>
-<p>fetch <code>version.json</code> relative to <code>paths.assets</code>, if set (<a href="https://github.com/sveltejs/kit/pull/4234" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4234/hovercard">#4234</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-cloudflare-workers@1.0.0-next.35]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare-workers%401.0.0-next.35</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare-workers%401.0.0-next.35</guid>
-            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>[breaking] replace builder.prerender() with builder.writePrerendered() and builder.prerendered (<a href="https://github.com/sveltejs/kit/pull/4192" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4192/hovercard">#4192</a>) (<a href="https://github.com/sveltejs/kit/pull/4229" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/4229/hovercard">#4229</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-auto@1.0.0-next.31]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%401.0.0-next.31</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%401.0.0-next.31</guid>
-            <pubDate>Sat, 05 Mar 2022 19:44:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>Updated dependencies [<a href="https://github.com/sveltejs/kit/commit/8aa2920b9a05ab2907ee2ffbe9f273ab8e2dbc69"><code>8aa2920b</code></a>]:
-<ul>
-<li>@sveltejs/adapter-cloudflare@1.0.0-next.15</li>
-<li>@sveltejs/adapter-netlify@1.0.0-next.50</li>
-<li>@sveltejs/adapter-vercel@1.0.0-next.46</li>
-</ul>
-</li>
 </ul>]]></content:encoded>
         </item>
         <item>
@@ -686,13 +888,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <title><![CDATA[Release notes from pytorch: ciflow/cpu/73342]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fcpu%2F73342</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fcpu%2F73342</guid>
-            <pubDate>Fri, 04 Mar 2022 09:35:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>set LongPathsEnabled</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/binaries/73342]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fbinaries%2F73342</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fbinaries%2F73342</guid>
             <pubDate>Fri, 04 Mar 2022 09:35:25 GMT</pubDate>
             <content:encoded><![CDATA[<p>set LongPathsEnabled</p>]]></content:encoded>
         </item>
@@ -1215,189 +1410,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Bump follow-redirects from 1.14.1 to 1.14.7 in /tfjs-backend-webgl (<a href="https://github.com/tensorflow/tfjs/pull/6048" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/6048/hovercard">#6048</a>). Thanks, <a class="user-mention" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>[bot].</li>
 <li>Bump engine.io from 4.1.1 to 4.1.2 in /tfjs-backend-webgl (<a href="https://github.com/tensorflow/tfjs/pull/6046" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/6046/hovercard">#6046</a>). Thanks, <a class="user-mention" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>[bot].</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from rust: Rust 1.52.1]]></title>
-            <link>https://github.com/rust-lang/rust/releases/tag/1.52.1</link>
-            <guid>https://github.com/rust-lang/rust/releases/tag/1.52.1</guid>
-            <pubDate>Fri, 04 Mar 2022 00:04:56 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This release disables incremental compilation, unless the user has explicitly opted in via the newly added RUSTC_FORCE_INCREMENTAL=1 environment variable.</p>
-<p>This is due to the widespread, and frequently occurring, breakage encountered by Rust users due to newly enabled incremental verification in 1.52.0. Notably, Rust users <strong>should</strong> upgrade to 1.52.0 or 1.52.1: the bugs that are detected by newly added incremental verification are still present in past stable versions, and are not yet fixed on any channel. These bugs can lead to miscompilation of Rust binaries.</p>
-<p>These problems only affect incremental builds, so release builds with Cargo should not be affected unless the user has explicitly opted into incremental. Debug and check builds are affected.</p>
-<p>See <a href="https://github.com/rust-lang/rust/issues/84970" data-hovercard-type="issue" data-hovercard-url="/rust-lang/rust/issues/84970/hovercard">84970</a> for more details.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from angular: release: cut the zone.js-0.11.5 release (#45256)]]></title>
-            <link>https://github.com/angular/angular/releases/tag/zone.js-0.11.5</link>
-            <guid>https://github.com/angular/angular/releases/tag/zone.js-0.11.5</guid>
-            <pubDate>Thu, 03 Mar 2022 23:49:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>PR Close <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1159041886" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/45256" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/45256/hovercard" href="https://github.com/angular/angular/pull/45256">#45256</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 10.1.61]]></title>
-            <link>https://github.com/v8/v8/releases/tag/10.1.61</link>
-            <guid>https://github.com/v8/v8/releases/tag/10.1.61</guid>
-            <pubDate>Thu, 03 Mar 2022 23:48:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie9c807ee997bf8f8c4eeeeec653e1a2c1fa5b208<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3497617" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3497617</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/10.1.61@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a0b25ebd754351534d1dd64ad664913e7abe76e9/hovercard" href="https://github.com/v8/v8/commit/a0b25ebd754351534d1dd64ad664913e7abe76e9"><tt>a0b25eb</tt></a>-refs/heads/main@{#79355}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from code-server: v4.1.0]]></title>
-            <link>https://github.com/coder/code-server/releases/tag/v4.1.0</link>
-            <guid>https://github.com/coder/code-server/releases/tag/v4.1.0</guid>
-            <pubDate>Thu, 03 Mar 2022 22:45:56 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v4.1.0</p>
-<p>Code 1.63.0</p>
-<p>Upgrading is as easy as installing the new version over the old one. code-server<br>
-maintains all user data in ~/.local/share/code-server so that it is preserved in between<br>
-installations.</p>
-<h3>Added</h3>
-<ul>
-<li>Support for injecting GitHub token into Code so extensions can make use of it.<br>
-This can be done with the <code>GITHUB_TOKEN</code> environment variable or <code>github-auth</code><br>
-in the config file.</li>
-<li>New flag <code>--socket-mode</code> allows setting the mode (file permissions) of the<br>
-socket created when using <code>--socket</code>.</li>
-<li>The version of Code bundled with code-server now appears when using the<br>
-<code>--version</code> flag. For example: <code>4.0.2 5cdfe74686aa73e023f8354a9a6014eb30caa7dd with Code 1.63.0</code>.<br>
-If you have been parsing this flag for the version you might want to use<br>
-<code>--version --json</code> instead as doing that will be more stable.</li>
-</ul>
-<h3>Changed</h3>
-<ul>
-<li>The workspace or folder passed on the CLI will now use the same redirect<br>
-method that the last opened workspace or folder uses. This means if you use<br>
-something like <code>code-server /path/to/dir</code> you will now get a query parameter<br>
-added (like so: <code>my-domain.tld?folder=/path/to/dir</code>), making it easier to edit<br>
-by hand and making it consistent with the last opened and menu open behaviors.</li>
-<li>The folder/workspace query parameter no longer has encoded slashes, making<br>
-them more readable and editable by hand. This was only affecting the last<br>
-opened behavior, not opens from the menu.</li>
-</ul>
-<h3>Fixed</h3>
-<ul>
-<li>Fix web sockets not connecting when using <code>--cert</code>.</li>
-<li>Prevent workspace state collisions when opening a workspace that shares the<br>
-same file path with another workspace on a different machine that shares the<br>
-same domain. This was causing files opened in one workspace to be "re-"opened<br>
-in the other workspace when the other workspace is opened.</li>
-<li>Pin the Express version which should make installing from npm work again.</li>
-<li>Propagate signals to code-server in the Docker image which means it should<br>
-stop more quickly and gracefully.</li>
-<li>Fix missing argon binaries in the standalone releases on arm machines.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 2.4.23]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/2.4.23</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/2.4.23</guid>
-            <pubDate>Thu, 03 Mar 2022 21:48:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 2.4.23 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: v8.5.3]]></title>
-            <link>https://github.com/npm/cli/releases/tag/v8.5.3</link>
-            <guid>https://github.com/npm/cli/releases/tag/v8.5.3</guid>
-            <pubDate>Thu, 03 Mar 2022 21:31:36 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>v8.5.3 (2022-03-03)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/defe79ad6f2f4216bf5e0188256c77b49164eb94"><code>defe79ad6</code></a> <a href="https://github.com/npm/cli/pull/4480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4480/hovercard">#4480</a> fix: publish of tarballs includes README in packument (<a href="https://github.com/fritzy">@fritzy</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/45fc297f12e63c026715945a186ba0ec4efbdedb"><code>45fc297f1</code></a> <a href="https://github.com/npm/cli/pull/4479" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4479/hovercard">#4479</a> fix: ignore implict workspace for some commands (<a href="https://github.com/fritzy">@fritzy</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/a0900bdf1ab7a68988984735f1f3885d02ffb67f"><code>a0900bdf1</code></a> <a href="https://github.com/npm/cli/pull/4481" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4481/hovercard">#4481</a> fix(ls): respect <code>--include-workspace-root</code> (<a href="https://github.com/fritzy">@fritzy</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/0cfc155db5f11ce23419e440111d99a63bf39754"><code>0cfc155db</code></a> <a href="https://github.com/npm/cli/pull/4476" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4476/hovercard">#4476</a> fix: set proper workspace repo urls in package.json (<a href="https://github.com/ljharb">@ljharb</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/9e43de8a59e5bf354a9595ed8a79fedcec085aaa"><code>9e43de8a5</code></a> <a href="https://github.com/npm/cli/pull/4493" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4493/hovercard">#4493</a> fix: ignore implicit workspace for whoami (<a href="https://github.com/nlf">@nlf</a>)</li>
-</ul>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/d13f067d91283e1dec94780a3c007883de9edc46"><code>d13f067d9</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>@npmcli/run-script@3.0.1</code> (<a href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/ce9a6eac0c8329871664167c37f4982c5e443a2a"><code>ce9a6eac0</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>node-gyp@9.0.0</code> (<a href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/bd660f5f1ccc1d9fa88085b168ea05b6dcf5826a"><code>bd660f5f1</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>@npmcli/config@4.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/3c17b6965f0c5fffd5ac908388568a307466a73f"><code>3c17b6965</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>make-fetch-happen@10.0.4</code></li>
-<li><a href="https://github.com/npm/cli/commit/e9b69c4c5454cc8b7d6cf2cbf1f09313f0d20afc"><code>e9b69c4c5</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>npm-registry-fetch@13.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/cf27ca8884387f2b82f8f6900a29e4e41693e774"><code>cf27ca888</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>write-file-atomic@4.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/f3421921aa72ef570105474cdb2e48cec80de796"><code>f3421921a</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>gauge@4.0.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/1dd2f7ee16a61024e520b3efa54f8cdba5458a16"><code>1dd2f7ee1</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>socks@2.6.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/236e3b4030dd91397713eb02cdf2737dcc988fd7"><code>236e3b403</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>minimatch@3.1.2</code> (<a href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/10e1326d2eb7ff2c70ee19907991b369476ccdd0"><code>10e1326d2</code></a> <a href="https://github.com/npm/cli/pull/4490" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/4490/hovercard">#4490</a> deps: <code>lru-cache@7.4.0</code></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from isomorphic-git: v1.13.1]]></title>
-            <link>https://github.com/isomorphic-git/isomorphic-git/releases/tag/v1.13.1</link>
-            <guid>https://github.com/isomorphic-git/isomorphic-git/releases/tag/v1.13.1</guid>
-            <pubDate>Thu, 03 Mar 2022 19:46:34 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/isomorphic-git/isomorphic-git/compare/v1.13.0...v1.13.1">1.13.1</a> (2022-03-03)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>statusMatrix:</strong> fix status matrix if entry changes type (<a href="https://github.com/isomorphic-git/isomorphic-git/issues/1498" data-hovercard-type="pull_request" data-hovercard-url="/isomorphic-git/isomorphic-git/pull/1498/hovercard">#1498</a>) (<a href="https://github.com/isomorphic-git/isomorphic-git/commit/f654d79303b90930136fc112ae535d6e62bbedd7">f654d79</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 10.1.60]]></title>
-            <link>https://github.com/v8/v8/releases/tag/10.1.60</link>
-            <guid>https://github.com/v8/v8/releases/tag/10.1.60</guid>
-            <pubDate>Thu, 03 Mar 2022 19:33:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie7a653545ac34fe3ce2100a5e03eced57bc773b0<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3498173" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3498173</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/10.1.60@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/995217a31b1c110de5b1aceae2e0d8fc34a1142d/hovercard" href="https://github.com/v8/v8/commit/995217a31b1c110de5b1aceae2e0d8fc34a1142d"><tt>995217a</tt></a>-refs/heads/main@{#79353}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from workbox: Workbox v6.5.1]]></title>
-            <link>https://github.com/GoogleChrome/workbox/releases/tag/v6.5.1</link>
-            <guid>https://github.com/GoogleChrome/workbox/releases/tag/v6.5.1</guid>
-            <pubDate>Thu, 03 Mar 2022 19:26:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>The Workbox v6.5.1 release includes a few changes related to our TypeScript interfaces and documentation.</p>
-<p>A full changelog is available at <a class="commit-link" href="https://github.com/GoogleChrome/workbox/compare/v6.5.0...v6.5.1"><tt>v6.5.0...v6.5.1</tt></a></p>
-<h2>What's New</h2>
-<ul>
-<li>Additional inline <code>@example</code>s of using our build tools have been added to the TSDocs for <code>workbox-build</code> and <code>workbox-webpack-plugin</code>. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1157677450" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/3038" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/3038/hovercard" href="https://github.com/GoogleChrome/workbox/pull/3038">#3038</a>]</li>
-<li>The TypeScript type for the <code>generateSW()</code>, <code>injectManifest()</code>, and <code>getManifest()</code> methods in <code>workbox-build</code> has been updated from <code>unknown</code> to an appropriate actual type specific to each method. This should lead to better TSDoc generation and type inferences for developers. As this takes what was previously only a runtime check and moves it to a compile-time check, we believe that it should be functionally equivalent to prior releases, but if you run into problems, please let us know by opening an issue. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1150759793" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/3037" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/3037/hovercard" href="https://github.com/GoogleChrome/workbox/pull/3037">#3037</a>]</li>
-</ul>
-<h2>What's Fixed</h2>
-<ul>
-<li>We have re-added the <code>default</code> export to <code>workbox-webpack-plugin</code>. [<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1149392383" data-permission-text="Title is private" data-url="https://github.com/GoogleChrome/workbox/issues/3036" data-hovercard-type="pull_request" data-hovercard-url="/GoogleChrome/workbox/pull/3036/hovercard" href="https://github.com/GoogleChrome/workbox/pull/3036">#3036</a>]</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.22.67]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.22.67</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.22.67</guid>
-            <pubDate>Thu, 03 Mar 2022 19:12:11 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.22.67 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from vscode: February 2022 (version 1.65)]]></title>
-            <link>https://github.com/microsoft/vscode/releases/tag/1.65.0</link>
-            <guid>https://github.com/microsoft/vscode/releases/tag/1.65.0</guid>
-            <pubDate>Thu, 03 Mar 2022 19:03:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Welcome to the February 2022 release of Visual Studio Code.</p>
-<ul>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_new-editor-history-navigation" rel="nofollow">New editor history navigation</a></strong> - Scope Go Back/Go Forward history to editor group or single editor.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_light-high-contrast-theme" rel="nofollow">Light High Contrast theme</a></strong> - Light theme for enhanced VS Code editor visibility.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_audio-cues" rel="nofollow">New audio cues</a></strong> - Audio cues for warnings, inline suggestions, and breakpoint hits.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_drag-and-drop-problems-and-search-results" rel="nofollow">Drag and drop Problems and Search results</a></strong> - Drag results to new or existing editor groups.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_diff-editor-management" rel="nofollow">Source Control diff editor management</a></strong> - Automatically close diff editors after Git operations.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_lazy-variables" rel="nofollow">Debugger lazy variable evaluation</a></strong> - Lazy evaluation of JavaScript/TypeScript property getters.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_terminal-shell-integration" rel="nofollow">Preview: Terminal shell integration</a></strong> - Rerun terminal commands, command status decorations.</li>
-<li><strong><a href="https://code.visualstudio.com/updates/v1_65#_vs-code-for-the-web" rel="nofollow">VS Code for the Web</a></strong> - Reopen recent local files and folders, improved Git integration.</li>
-</ul>
-<blockquote>
-<p>If you'd like to read these release notes online, go to <a href="https://code.visualstudio.com/updates" rel="nofollow">Updates</a> on <a href="https://code.visualstudio.com/" rel="nofollow">code.visualstudio.com</a>.</p>
-</blockquote>
-<p><strong>Insiders:</strong> Want to try new features as soon as possible? You can download the nightly <a href="https://code.visualstudio.com/insiders" rel="nofollow">Insiders</a> build and try the latest updates as soon as they are available.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from bitcoin: v23.0rc1: Bitcoin Core 23.0 release candidate 1]]></title>
-            <link>https://github.com/bitcoin/bitcoin/releases/tag/v23.0rc1</link>
-            <guid>https://github.com/bitcoin/bitcoin/releases/tag/v23.0rc1</guid>
-            <pubDate>Thu, 03 Mar 2022 18:45:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tree-SHA512: 8366ebbb3603f3f021285f62df75996883458273b24db4e84ff56a3cb56b54cef474f640ea1f48ebc29dbde0593bd78256b9830555a288ba7e4a0a88e07f729e</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
