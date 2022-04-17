@@ -14,9 +14,7 @@ export type FeedSource = {
   filters: string[]
 }
 
-type ParserOutput = Parser.Output & {
-  items: Parser.Item[]
-}
+type ParserOutput = Parser.Output<Parser.Item>
 
 export async function fetchFeed(source: FeedSource): Promise<ParserOutput | null> {
   try {
@@ -58,7 +56,6 @@ export async function aggregateFeeds(
 
   // done
   return {
-    id: def.feedId,
     feedUrl: `${baseUrl}${def.feedId}`,
     title: def.title,
     description: def.description,
@@ -66,9 +63,9 @@ export async function aggregateFeeds(
   }
 }
 
-export function toXml(feed: ParserOutput): string {
+export function toXml(id: string, feed: ParserOutput): string {
   const gen = new Feed({
-    id: feed.id ?? "",
+    id,
     link: feed.feedUrl ?? "",
     title: feed.title ?? "",
     description: feed.description ?? "",
