@@ -11,18 +11,19 @@ export type FeedDef = {
 
 export type FeedSource = {
   url: string
-  filters?: string[]
+  filters: string[]
 }
 
-export async function fetchFeed(source: FeedSource): Promise<Parser.Output | null> {
+type ParserOutput = Parser.Output & {
+  items: Parser.Item[]
+}
+
+export async function fetchFeed(source: FeedSource): Promise<ParserOutput | null> {
   try {
     const parser = new Parser()
     const output = await parser.parseURL(source.url)
-    const items = filterItems(output.items || [], source.filters || [])
-    return {
-      ...output,
-      items,
-    }
+    const items = filterItems(output.items || [], source.filters)
+    return { ...output, items }
   } catch (e) {
     console.log(e)
     return null
@@ -34,25 +35,20 @@ export async function aggregateFeeds(
   def: FeedDef,
   now: Date,
   maxAgeInDays: number,
-): Promise<Parser.Output> {
+): Promise<ParserOutput> {
   // rate-limit concurrent HTTP requests
   const limiter = new Bottleneck({ maxConcurrent: 10, minTime: 100 })
   const tasks = def.sources.map((source) => limiter.schedule(fetchFeed, source))
 
   // fetch all feeds
-  const feeds = (await Promise.all(tasks)).filter((feed) => feed) as Parser.Output[]
+  const feeds = (await Promise.all(tasks)).filter(isNotNull)
 
   // merge and sort items
   const items: Parser.Item[] = []
   const expireLimit = +now - maxAgeInDays * 24 * 60 * 60 * 1000
-  feeds.forEach((feed) => {
-    const newItems = (feed.items || []).filter((item) => +new Date(item.isoDate || 0) > expireLimit)
-    newItems.forEach((item) =>
-      items.push({
-        ...item,
-        title: `${feed.title}: ${item.title}`,
-      }),
-    )
+  feeds.forEach((f) => {
+    const newItems = f.items.filter((i) => +new Date(i.isoDate ?? 0) > expireLimit)
+    newItems.forEach((i) => items.push({ ...i, title: `${f.title}: ${i.title}` }))
   })
   items.sort((a, b) => {
     const aDate = +new Date(a.isoDate || 0)
@@ -70,22 +66,21 @@ export async function aggregateFeeds(
   }
 }
 
-export function toXml(feed: Parser.Output): string {
+export function toXml(feed: ParserOutput): string {
   const gen = new Feed({
-    id: feed.id || "",
-    link: feed.feedUrl || "",
-    title: feed.title || "",
-    description: feed.description || "",
+    id: feed.id ?? "",
+    link: feed.feedUrl ?? "",
+    title: feed.title ?? "",
+    description: feed.description ?? "",
     copyright: "N/A",
   })
 
-  const items = feed.items || []
-  items.forEach((item) => {
+  feed.items.forEach((i) => {
     gen.addItem({
-      title: item.title || "",
-      link: item.link || "",
-      date: new Date(item.isoDate || ""),
-      content: item.content,
+      title: i.title ?? "",
+      link: i.link ?? "",
+      date: new Date(i.isoDate ?? ""),
+      content: i.content,
     })
   })
 
@@ -93,19 +88,34 @@ export function toXml(feed: Parser.Output): string {
 }
 
 export function filterItems(items: Parser.Item[], rawFilters: string[]): Parser.Item[] {
-  const filters = rawFilters.map((rawFilter) => {
-    const negative = rawFilter.startsWith("! ")
-    const pattern = new RegExp(negative ? rawFilter.substr(2) : rawFilter)
-    return { negative, pattern }
-  })
+  const filters = rawFilters.map((f) => ({
+    negative: f.startsWith("! "),
+    pattern: new RegExp(f.startsWith("! ") ? f.substring(2) : f),
+  }))
 
   return items.filter((item) => {
     const text = [item.title, item.contentSnippet, item.content].filter((d) => !!d).join(" ")
     if (!text) return false
-
-    return filters.every((filter) => {
-      if (filter.negative) return !filter.pattern.test(text)
-      else return filter.pattern.test(text)
-    })
+    return filters.every((f) => (f.negative ? !f.pattern.test(text) : f.pattern.test(text)))
   })
+}
+
+export function validateFeedDef(def: Record<string, unknown>): FeedDef {
+  return {
+    feedId: String(def.feedId ?? ""),
+    title: String(def.title ?? ""),
+    description: String(def.description ?? ""),
+    sources: ((def.sources ?? []) as Record<string, unknown>[]).map(validateFeedSource),
+  }
+}
+
+function validateFeedSource(src: Record<string, unknown>): FeedSource {
+  return {
+    url: String(src.url ?? ""),
+    filters: ((src.filters ?? []) as unknown[]).map(String),
+  }
+}
+
+function isNotNull<T>(value: T | null): value is T {
+  return value !== null
 }
