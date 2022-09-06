@@ -4,10 +4,626 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Tue, 06 Sep 2022 06:31:27 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 06 Sep 2022 12:10:10 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/83428: Update on "Faster mul(sparse, sparse) with broadcasting in dense dims."]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83428</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83428</guid>
+            <pubDate>Tue, 06 Sep 2022 11:19:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Preliminary benchmarks (square matrices of shape (n, n)).</p>
+<details>
+<summary>Script</summary>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import torch
+import math
+from IPython import get_ipython
+from itertools import product, repeat
+import pickle
+from torch.utils.benchmark import Timer, Compare
+
+torch.manual_seed(13)
+
+# specifies (n, nnz)
+problem_dims = (
+    # n &gt; nnz
+    (10000, 100),
+    (100000, 1000),
+    (1000000, 10000),
+    # n &lt; nnz
+    (10, 100),
+    (10, 1000),
+    (10, 10000),
+    (100, 1000),
+    (100, 10000),
+    (1000, 10000),
+    (1000, 100000),
+    (1000, 1000000),
+    #(1000000, 1000000000),
+)
+
+name = &quot;PR&quot;
+device = &quot;cuda&quot;
+results = []
+
+for n, nnz in problem_dims:
+    def gen_tensor(coalesce=False):
+        shape = (n, n)
+        nrows, ncols = shape
+        rowidx = torch.randint(low=0, high=nrows, size=(nnz,), device=device)
+        colidx = torch.randint(low=0, high=ncols, size=(nnz,), device=device)
+        itemidx = torch.vstack((rowidx, colidx))
+        xvalues = torch.randn(nnz, device=device)
+        itemidx = torch.hstack((itemidx, itemidx))
+        xvalues = torch.hstack((xvalues, xvalues))
+        res = torch.sparse_coo_tensor(itemidx, xvalues, size=shape)
+        if coalesce:
+            return res.coalesce()
+        else:
+            return res
+
+
+    for x_coalesce, y_coalesce in product(*repeat((True, False), 2)):
+        x = gen_tensor(x_coalesce)
+        y = gen_tensor(y_coalesce)
+        smtp = &quot;x * y&quot;
+        timer = Timer(smtp,
+                      globals=globals(),
+                      label=&quot;coo.mul&quot;,
+                      description=f&quot;{name}: mul, device: {device}&quot;,
+                      sub_label=f&quot;n={n}, nnz={nnz}, coalesce=({x_coalesce, y_coalesce})&quot;,
+                      num_threads=torch.get_num_threads())
+        results.append(timer.blocked_autorange())
+
+compare = Compare(results)
+compare.trim_significant_figures()
+compare.print()
+
+with open(f&quot;{name}_{device}_mul.pickle&quot;, 'wb') as f:
+    pickle.dump(results, f)
+"><pre><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">math</span>
+<span class="pl-k">from</span> <span class="pl-v">IPython</span> <span class="pl-k">import</span> <span class="pl-s1">get_ipython</span>
+<span class="pl-k">from</span> <span class="pl-s1">itertools</span> <span class="pl-k">import</span> <span class="pl-s1">product</span>, <span class="pl-s1">repeat</span>
+<span class="pl-k">import</span> <span class="pl-s1">pickle</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">utils</span>.<span class="pl-s1">benchmark</span> <span class="pl-k">import</span> <span class="pl-v">Timer</span>, <span class="pl-v">Compare</span>
+
+<span class="pl-s1">torch</span>.<span class="pl-en">manual_seed</span>(<span class="pl-c1">13</span>)
+
+<span class="pl-c"># specifies (n, nnz)</span>
+<span class="pl-s1">problem_dims</span> <span class="pl-c1">=</span> (
+    <span class="pl-c"># n &gt; nnz</span>
+    (<span class="pl-c1">10000</span>, <span class="pl-c1">100</span>),
+    (<span class="pl-c1">100000</span>, <span class="pl-c1">1000</span>),
+    (<span class="pl-c1">1000000</span>, <span class="pl-c1">10000</span>),
+    <span class="pl-c"># n &lt; nnz</span>
+    (<span class="pl-c1">10</span>, <span class="pl-c1">100</span>),
+    (<span class="pl-c1">10</span>, <span class="pl-c1">1000</span>),
+    (<span class="pl-c1">10</span>, <span class="pl-c1">10000</span>),
+    (<span class="pl-c1">100</span>, <span class="pl-c1">1000</span>),
+    (<span class="pl-c1">100</span>, <span class="pl-c1">10000</span>),
+    (<span class="pl-c1">1000</span>, <span class="pl-c1">10000</span>),
+    (<span class="pl-c1">1000</span>, <span class="pl-c1">100000</span>),
+    (<span class="pl-c1">1000</span>, <span class="pl-c1">1000000</span>),
+    <span class="pl-c">#(1000000, 1000000000),</span>
+)
+
+<span class="pl-s1">name</span> <span class="pl-c1">=</span> <span class="pl-s">"PR"</span>
+<span class="pl-s1">device</span> <span class="pl-c1">=</span> <span class="pl-s">"cuda"</span>
+<span class="pl-s1">results</span> <span class="pl-c1">=</span> []
+
+<span class="pl-k">for</span> <span class="pl-s1">n</span>, <span class="pl-s1">nnz</span> <span class="pl-c1">in</span> <span class="pl-s1">problem_dims</span>:
+    <span class="pl-k">def</span> <span class="pl-en">gen_tensor</span>(<span class="pl-s1">coalesce</span><span class="pl-c1">=</span><span class="pl-c1">False</span>):
+        <span class="pl-s1">shape</span> <span class="pl-c1">=</span> (<span class="pl-s1">n</span>, <span class="pl-s1">n</span>)
+        <span class="pl-s1">nrows</span>, <span class="pl-s1">ncols</span> <span class="pl-c1">=</span> <span class="pl-s1">shape</span>
+        <span class="pl-s1">rowidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randint</span>(<span class="pl-s1">low</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">high</span><span class="pl-c1">=</span><span class="pl-s1">nrows</span>, <span class="pl-s1">size</span><span class="pl-c1">=</span>(<span class="pl-s1">nnz</span>,), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)
+        <span class="pl-s1">colidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randint</span>(<span class="pl-s1">low</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">high</span><span class="pl-c1">=</span><span class="pl-s1">ncols</span>, <span class="pl-s1">size</span><span class="pl-c1">=</span>(<span class="pl-s1">nnz</span>,), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)
+        <span class="pl-s1">itemidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">vstack</span>((<span class="pl-s1">rowidx</span>, <span class="pl-s1">colidx</span>))
+        <span class="pl-s1">xvalues</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randn</span>(<span class="pl-s1">nnz</span>, <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)
+        <span class="pl-s1">itemidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">hstack</span>((<span class="pl-s1">itemidx</span>, <span class="pl-s1">itemidx</span>))
+        <span class="pl-s1">xvalues</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">hstack</span>((<span class="pl-s1">xvalues</span>, <span class="pl-s1">xvalues</span>))
+        <span class="pl-s1">res</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">sparse_coo_tensor</span>(<span class="pl-s1">itemidx</span>, <span class="pl-s1">xvalues</span>, <span class="pl-s1">size</span><span class="pl-c1">=</span><span class="pl-s1">shape</span>)
+        <span class="pl-k">if</span> <span class="pl-s1">coalesce</span>:
+            <span class="pl-k">return</span> <span class="pl-s1">res</span>.<span class="pl-en">coalesce</span>()
+        <span class="pl-k">else</span>:
+            <span class="pl-k">return</span> <span class="pl-s1">res</span>
+
+
+    <span class="pl-k">for</span> <span class="pl-s1">x_coalesce</span>, <span class="pl-s1">y_coalesce</span> <span class="pl-c1">in</span> <span class="pl-en">product</span>(<span class="pl-c1">*</span><span class="pl-en">repeat</span>((<span class="pl-c1">True</span>, <span class="pl-c1">False</span>), <span class="pl-c1">2</span>)):
+        <span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-en">gen_tensor</span>(<span class="pl-s1">x_coalesce</span>)
+        <span class="pl-s1">y</span> <span class="pl-c1">=</span> <span class="pl-en">gen_tensor</span>(<span class="pl-s1">y_coalesce</span>)
+        <span class="pl-s1">smtp</span> <span class="pl-c1">=</span> <span class="pl-s">"x * y"</span>
+        <span class="pl-s1">timer</span> <span class="pl-c1">=</span> <span class="pl-v">Timer</span>(<span class="pl-s1">smtp</span>,
+                      <span class="pl-s1">globals</span><span class="pl-c1">=</span><span class="pl-en">globals</span>(),
+                      <span class="pl-s1">label</span><span class="pl-c1">=</span><span class="pl-s">"coo.mul"</span>,
+                      <span class="pl-s1">description</span><span class="pl-c1">=</span><span class="pl-s">f"<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">name</span><span class="pl-kos">}</span></span>: mul, device: <span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">device</span><span class="pl-kos">}</span></span>"</span>,
+                      <span class="pl-s1">sub_label</span><span class="pl-c1">=</span><span class="pl-s">f"n=<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">n</span><span class="pl-kos">}</span></span>, nnz=<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">nnz</span><span class="pl-kos">}</span></span>, coalesce=(<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">x_coalesce</span>, <span class="pl-s1">y_coalesce</span><span class="pl-kos">}</span></span>)"</span>,
+                      <span class="pl-s1">num_threads</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-en">get_num_threads</span>())
+        <span class="pl-s1">results</span>.<span class="pl-en">append</span>(<span class="pl-s1">timer</span>.<span class="pl-en">blocked_autorange</span>())
+
+<span class="pl-s1">compare</span> <span class="pl-c1">=</span> <span class="pl-v">Compare</span>(<span class="pl-s1">results</span>)
+<span class="pl-s1">compare</span>.<span class="pl-en">trim_significant_figures</span>()
+<span class="pl-s1">compare</span>.<span class="pl-en">print</span>()
+
+<span class="pl-k">with</span> <span class="pl-en">open</span>(<span class="pl-s">f"<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">name</span><span class="pl-kos">}</span></span>_<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">device</span><span class="pl-kos">}</span></span>_mul.pickle"</span>, <span class="pl-s">'wb'</span>) <span class="pl-k">as</span> <span class="pl-s1">f</span>:
+    <span class="pl-s1">pickle</span>.<span class="pl-en">dump</span>(<span class="pl-s1">results</span>, <span class="pl-s1">f</span>)</pre></div>
+</details>
+<details>
+<summary>Gather results</summary>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import pickle
+from torch.utils.benchmark import Timer, Compare
+
+files = [
+        &quot;PR&quot;,
+        &quot;master&quot;
+        ]
+
+device = 'cuda'
+
+timers = []
+for name in files:
+    with open(&quot;{}_{}_mul.pickle&quot;.format(name, device), 'rb') as f:
+        timers += pickle.load(f)
+
+compare = Compare(timers)
+compare.trim_significant_figures()
+compare.print()
+"><pre><span class="pl-k">import</span> <span class="pl-s1">pickle</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">utils</span>.<span class="pl-s1">benchmark</span> <span class="pl-k">import</span> <span class="pl-v">Timer</span>, <span class="pl-v">Compare</span>
+
+<span class="pl-s1">files</span> <span class="pl-c1">=</span> [
+        <span class="pl-s">"PR"</span>,
+        <span class="pl-s">"master"</span>
+        ]
+
+<span class="pl-s1">device</span> <span class="pl-c1">=</span> <span class="pl-s">'cuda'</span>
+
+<span class="pl-s1">timers</span> <span class="pl-c1">=</span> []
+<span class="pl-k">for</span> <span class="pl-s1">name</span> <span class="pl-c1">in</span> <span class="pl-s1">files</span>:
+    <span class="pl-k">with</span> <span class="pl-en">open</span>(<span class="pl-s">"{}_{}_mul.pickle"</span>.<span class="pl-en">format</span>(<span class="pl-s1">name</span>, <span class="pl-s1">device</span>), <span class="pl-s">'rb'</span>) <span class="pl-k">as</span> <span class="pl-s1">f</span>:
+        <span class="pl-s1">timers</span> <span class="pl-c1">+=</span> <span class="pl-s1">pickle</span>.<span class="pl-en">load</span>(<span class="pl-s1">f</span>)
+
+<span class="pl-s1">compare</span> <span class="pl-c1">=</span> <span class="pl-v">Compare</span>(<span class="pl-s1">timers</span>)
+<span class="pl-s1">compare</span>.<span class="pl-en">trim_significant_figures</span>()
+<span class="pl-s1">compare</span>.<span class="pl-en">print</span>()</pre></div>
+</details>
+<details>
+<summary>CUDA</summary>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------------------------------------- coo.mul -------------------------------------------------]
+                                                       |  PR: mul, device: cuda  |  master: mul, device: cuda
+24 threads: -------------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |             95          |                91
+      n=10000, nnz=100, coalesce=((True, False))       |             87          |               242
+      n=10000, nnz=100, coalesce=((False, True))       |             87          |               226
+      n=10000, nnz=100, coalesce=((False, False))      |            130          |               371
+      n=100000, nnz=1000, coalesce=((True, True))      |            100          |               521
+      n=100000, nnz=1000, coalesce=((True, False))     |             90          |               649
+      n=100000, nnz=1000, coalesce=((False, True))     |            100          |               659
+      n=100000, nnz=1000, coalesce=((False, False))    |            200          |               781
+      n=1000000, nnz=10000, coalesce=((True, True))    |            100          |              4861
+      n=1000000, nnz=10000, coalesce=((True, False))   |            100          |              5012
+      n=1000000, nnz=10000, coalesce=((False, True))   |             98          |              5010
+      n=1000000, nnz=10000, coalesce=((False, False))  |            384          |              5174
+      n=10, nnz=100, coalesce=((True, True))           |            100          |                79
+      n=10, nnz=100, coalesce=((True, False))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, True))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, False))         |            100          |               350
+      n=10, nnz=1000, coalesce=((True, True))          |            100          |               100
+      n=10, nnz=1000, coalesce=((True, False))         |            100          |               240
+      n=10, nnz=1000, coalesce=((False, True))         |            100          |               254
+      n=10, nnz=1000, coalesce=((False, False))        |            100          |               392
+      n=10, nnz=10000, coalesce=((True, True))         |            100          |               110
+      n=10, nnz=10000, coalesce=((True, False))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, True))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, False))       |            271          |               455
+      n=100, nnz=1000, coalesce=((True, True))         |            110          |               851
+      n=100, nnz=1000, coalesce=((True, False))        |            110          |              1000
+      n=100, nnz=1000, coalesce=((False, True))        |            110          |               990
+      n=100, nnz=1000, coalesce=((False, False))       |            140          |              1124
+      n=100, nnz=10000, coalesce=((True, True))        |            110          |              5137
+      n=100, nnz=10000, coalesce=((True, False))       |            110          |              5391
+      n=100, nnz=10000, coalesce=((False, True))       |            100          |              5405
+      n=100, nnz=10000, coalesce=((False, False))      |            249          |              5539
+      n=1000, nnz=10000, coalesce=((True, True))       |            100          |              8598
+      n=1000, nnz=10000, coalesce=((True, False))      |            100          |              8800
+      n=1000, nnz=10000, coalesce=((False, True))      |            100          |              8782
+      n=1000, nnz=10000, coalesce=((False, False))     |            255          |              8956
+      n=1000, nnz=100000, coalesce=((True, True))      |            120          |             84500
+      n=1000, nnz=100000, coalesce=((True, False))     |            200          |             88560
+      n=1000, nnz=100000, coalesce=((False, True))     |            160          |             89000
+      n=1000, nnz=100000, coalesce=((False, False))    |            373          |             89000
+      n=1000, nnz=1000000, coalesce=((True, True))     |            312          |            606400
+      n=1000, nnz=1000000, coalesce=((True, False))    |           1340          |            609200
+      n=1000, nnz=1000000, coalesce=((False, True))    |           1340          |            609100
+      n=1000, nnz=1000000, coalesce=((False, False))   |           4408          |            611400
+
+Times are in microseconds (us)."><pre class="notranslate"><code>[------------------------------------------------- coo.mul -------------------------------------------------]
+                                                       |  PR: mul, device: cuda  |  master: mul, device: cuda
+24 threads: -------------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |             95          |                91
+      n=10000, nnz=100, coalesce=((True, False))       |             87          |               242
+      n=10000, nnz=100, coalesce=((False, True))       |             87          |               226
+      n=10000, nnz=100, coalesce=((False, False))      |            130          |               371
+      n=100000, nnz=1000, coalesce=((True, True))      |            100          |               521
+      n=100000, nnz=1000, coalesce=((True, False))     |             90          |               649
+      n=100000, nnz=1000, coalesce=((False, True))     |            100          |               659
+      n=100000, nnz=1000, coalesce=((False, False))    |            200          |               781
+      n=1000000, nnz=10000, coalesce=((True, True))    |            100          |              4861
+      n=1000000, nnz=10000, coalesce=((True, False))   |            100          |              5012
+      n=1000000, nnz=10000, coalesce=((False, True))   |             98          |              5010
+      n=1000000, nnz=10000, coalesce=((False, False))  |            384          |              5174
+      n=10, nnz=100, coalesce=((True, True))           |            100          |                79
+      n=10, nnz=100, coalesce=((True, False))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, True))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, False))         |            100          |               350
+      n=10, nnz=1000, coalesce=((True, True))          |            100          |               100
+      n=10, nnz=1000, coalesce=((True, False))         |            100          |               240
+      n=10, nnz=1000, coalesce=((False, True))         |            100          |               254
+      n=10, nnz=1000, coalesce=((False, False))        |            100          |               392
+      n=10, nnz=10000, coalesce=((True, True))         |            100          |               110
+      n=10, nnz=10000, coalesce=((True, False))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, True))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, False))       |            271          |               455
+      n=100, nnz=1000, coalesce=((True, True))         |            110          |               851
+      n=100, nnz=1000, coalesce=((True, False))        |            110          |              1000
+      n=100, nnz=1000, coalesce=((False, True))        |            110          |               990
+      n=100, nnz=1000, coalesce=((False, False))       |            140          |              1124
+      n=100, nnz=10000, coalesce=((True, True))        |            110          |              5137
+      n=100, nnz=10000, coalesce=((True, False))       |            110          |              5391
+      n=100, nnz=10000, coalesce=((False, True))       |            100          |              5405
+      n=100, nnz=10000, coalesce=((False, False))      |            249          |              5539
+      n=1000, nnz=10000, coalesce=((True, True))       |            100          |              8598
+      n=1000, nnz=10000, coalesce=((True, False))      |            100          |              8800
+      n=1000, nnz=10000, coalesce=((False, True))      |            100          |              8782
+      n=1000, nnz=10000, coalesce=((False, False))     |            255          |              8956
+      n=1000, nnz=100000, coalesce=((True, True))      |            120          |             84500
+      n=1000, nnz=100000, coalesce=((True, False))     |            200          |             88560
+      n=1000, nnz=100000, coalesce=((False, True))     |            160          |             89000
+      n=1000, nnz=100000, coalesce=((False, False))    |            373          |             89000
+      n=1000, nnz=1000000, coalesce=((True, True))     |            312          |            606400
+      n=1000, nnz=1000000, coalesce=((True, False))    |           1340          |            609200
+      n=1000, nnz=1000000, coalesce=((False, True))    |           1340          |            609100
+      n=1000, nnz=1000000, coalesce=((False, False))   |           4408          |            611400
+
+Times are in microseconds (us).
+</code></pre></div>
+</details>
+<details>
+<summary>CPU</summary>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------------------------------------ coo.mul ------------------------------------------------]
+                                                       |  PR: mul, device: cpu  |  master: mul, device: cpu
+24 threads: -----------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |              8         |                8         
+      n=10000, nnz=100, coalesce=((True, False))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, True))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, False))      |             41         |               56         
+      n=100000, nnz=1000, coalesce=((True, True))      |             24         |               24         
+      n=100000, nnz=1000, coalesce=((True, False))     |             90         |              100         
+      n=100000, nnz=1000, coalesce=((False, True))     |             87         |              100         
+      n=100000, nnz=1000, coalesce=((False, False))    |            231         |              255         
+      n=1000000, nnz=10000, coalesce=((True, True))    |            190         |              200         
+      n=1000000, nnz=10000, coalesce=((True, False))   |            908         |             2023         
+      n=1000000, nnz=10000, coalesce=((False, True))   |            800         |             2036         
+      n=1000000, nnz=10000, coalesce=((False, False))  |           3684         |             3989         
+      n=10, nnz=100, coalesce=((True, True))           |              8         |                7         
+      n=10, nnz=100, coalesce=((True, False))          |             34         |               30         
+      n=10, nnz=100, coalesce=((False, True))          |             33         |               30         
+      n=10, nnz=100, coalesce=((False, False))         |             44         |               50         
+      n=10, nnz=1000, coalesce=((True, True))          |              8         |                7         
+      n=10, nnz=1000, coalesce=((True, False))         |            100         |              100         
+      n=10, nnz=1000, coalesce=((False, True))         |            130         |              100         
+      n=10, nnz=1000, coalesce=((False, False))        |            746         |              210         
+      n=10, nnz=10000, coalesce=((True, True))         |              8         |                7         
+      n=10, nnz=10000, coalesce=((True, False))        |           1000         |             1500         
+      n=10, nnz=10000, coalesce=((False, True))        |           1000         |             1510         
+      n=10, nnz=10000, coalesce=((False, False))       |           3063         |             2457         
+      n=100, nnz=1000, coalesce=((True, True))         |             25         |               25         
+      n=100, nnz=1000, coalesce=((True, False))        |            180         |              130         
+      n=100, nnz=1000, coalesce=((False, True))        |            200         |              130         
+      n=100, nnz=1000, coalesce=((False, False))       |            271         |              255         
+      n=100, nnz=10000, coalesce=((True, True))        |            100         |              100         
+      n=100, nnz=10000, coalesce=((True, False))       |           2444         |             2290         
+      n=100, nnz=10000, coalesce=((False, True))       |           2455         |             2357         
+      n=100, nnz=10000, coalesce=((False, False))      |           5316         |             3783         
+      n=1000, nnz=10000, coalesce=((True, True))       |            204         |              211         
+      n=1000, nnz=10000, coalesce=((True, False))      |           2457         |             2480         
+      n=1000, nnz=10000, coalesce=((False, True))      |           2448         |             2539         
+      n=1000, nnz=10000, coalesce=((False, False))     |           3665         |             4801         
+      n=1000, nnz=100000, coalesce=((True, True))      |           2293         |             2374         
+      n=1000, nnz=100000, coalesce=((True, False))     |           9000         |            24620         
+      n=1000, nnz=100000, coalesce=((False, True))     |           8000         |            25080         
+      n=1000, nnz=100000, coalesce=((False, False))    |          26500         |            47650         
+      n=1000, nnz=1000000, coalesce=((True, True))     |          10000         |            13000         
+      n=1000, nnz=1000000, coalesce=((True, False))    |          80000         |           362200         
+      n=1000, nnz=1000000, coalesce=((False, True))    |          78050         |           392600         
+      n=1000, nnz=1000000, coalesce=((False, False))   |         312100         |           766900         
+
+Times are in microseconds (us)."><pre class="notranslate"><code>[------------------------------------------------ coo.mul ------------------------------------------------]
+                                                       |  PR: mul, device: cpu  |  master: mul, device: cpu
+24 threads: -----------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |              8         |                8         
+      n=10000, nnz=100, coalesce=((True, False))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, True))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, False))      |             41         |               56         
+      n=100000, nnz=1000, coalesce=((True, True))      |             24         |               24         
+      n=100000, nnz=1000, coalesce=((True, False))     |             90         |              100         
+      n=100000, nnz=1000, coalesce=((False, True))     |             87         |              100         
+      n=100000, nnz=1000, coalesce=((False, False))    |            231         |              255         
+      n=1000000, nnz=10000, coalesce=((True, True))    |            190         |              200         
+      n=1000000, nnz=10000, coalesce=((True, False))   |            908         |             2023         
+      n=1000000, nnz=10000, coalesce=((False, True))   |            800         |             2036         
+      n=1000000, nnz=10000, coalesce=((False, False))  |           3684         |             3989         
+      n=10, nnz=100, coalesce=((True, True))           |              8         |                7         
+      n=10, nnz=100, coalesce=((True, False))          |             34         |               30         
+      n=10, nnz=100, coalesce=((False, True))          |             33         |               30         
+      n=10, nnz=100, coalesce=((False, False))         |             44         |               50         
+      n=10, nnz=1000, coalesce=((True, True))          |              8         |                7         
+      n=10, nnz=1000, coalesce=((True, False))         |            100         |              100         
+      n=10, nnz=1000, coalesce=((False, True))         |            130         |              100         
+      n=10, nnz=1000, coalesce=((False, False))        |            746         |              210         
+      n=10, nnz=10000, coalesce=((True, True))         |              8         |                7         
+      n=10, nnz=10000, coalesce=((True, False))        |           1000         |             1500         
+      n=10, nnz=10000, coalesce=((False, True))        |           1000         |             1510         
+      n=10, nnz=10000, coalesce=((False, False))       |           3063         |             2457         
+      n=100, nnz=1000, coalesce=((True, True))         |             25         |               25         
+      n=100, nnz=1000, coalesce=((True, False))        |            180         |              130         
+      n=100, nnz=1000, coalesce=((False, True))        |            200         |              130         
+      n=100, nnz=1000, coalesce=((False, False))       |            271         |              255         
+      n=100, nnz=10000, coalesce=((True, True))        |            100         |              100         
+      n=100, nnz=10000, coalesce=((True, False))       |           2444         |             2290         
+      n=100, nnz=10000, coalesce=((False, True))       |           2455         |             2357         
+      n=100, nnz=10000, coalesce=((False, False))      |           5316         |             3783         
+      n=1000, nnz=10000, coalesce=((True, True))       |            204         |              211         
+      n=1000, nnz=10000, coalesce=((True, False))      |           2457         |             2480         
+      n=1000, nnz=10000, coalesce=((False, True))      |           2448         |             2539         
+      n=1000, nnz=10000, coalesce=((False, False))     |           3665         |             4801         
+      n=1000, nnz=100000, coalesce=((True, True))      |           2293         |             2374         
+      n=1000, nnz=100000, coalesce=((True, False))     |           9000         |            24620         
+      n=1000, nnz=100000, coalesce=((False, True))     |           8000         |            25080         
+      n=1000, nnz=100000, coalesce=((False, False))    |          26500         |            47650         
+      n=1000, nnz=1000000, coalesce=((True, True))     |          10000         |            13000         
+      n=1000, nnz=1000000, coalesce=((True, False))    |          80000         |           362200         
+      n=1000, nnz=1000000, coalesce=((False, True))    |          78050         |           392600         
+      n=1000, nnz=1000000, coalesce=((False, False))   |         312100         |           766900         
+
+Times are in microseconds (us).
+</code></pre></div>
+</details>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/83427: Update on "coo binary_op intersection primitives"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83427</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83427</guid>
+            <pubDate>Tue, 06 Sep 2022 11:19:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from grafana: 9.1.3 (2022-09-05)]]></title>
+            <link>https://github.com/grafana/grafana/releases/tag/v9.1.3</link>
+            <guid>https://github.com/grafana/grafana/releases/tag/v9.1.3</guid>
+            <pubDate>Tue, 06 Sep 2022 11:05:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p><a href="https://grafana.com/grafana/download/9.1.3" rel="nofollow">Download page</a><br>
+<a href="https://grafana.com/docs/grafana/latest/whatsnew/" rel="nofollow">What's new highlights</a></p>
+<h3>Features and enhancements</h3>
+<ul>
+<li><strong>API:</strong> Do not expose user input in datasource error responses. <a href="https://github.com/grafana/grafana/pull/53483" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/53483/hovercard">#53483</a>, <a href="https://github.com/papagian">@papagian</a></li>
+<li><strong>Alerting:</strong> Write and Delete multiple alert instances. <a href="https://github.com/grafana/grafana/pull/54072" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54072/hovercard">#54072</a>, <a href="https://github.com/joeblubaugh">@joeblubaugh</a></li>
+<li><strong>Library Panel:</strong> Allow to delete them when deprecated. <a href="https://github.com/grafana/grafana/pull/54662" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54662/hovercard">#54662</a>, <a href="https://github.com/ivanortegaalba">@ivanortegaalba</a></li>
+<li><strong>Plugins Catalog:</strong> Allow to filter plugins using special characters. <a href="https://github.com/grafana/grafana/pull/54474" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54474/hovercard">#54474</a>, <a href="https://github.com/murtazaqa">@murtazaqa</a></li>
+</ul>
+<h3>Bug fixes</h3>
+<ul>
+<li><strong>Alerting:</strong> Fix UI bug when setting custom notification policy group by. <a href="https://github.com/grafana/grafana/pull/54607" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54607/hovercard">#54607</a>, <a href="https://github.com/JacobsonMT">@JacobsonMT</a></li>
+<li><strong>AppRootPage:</strong> Fix issue navigating between two app plugin pages. <a href="https://github.com/grafana/grafana/pull/54519" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54519/hovercard">#54519</a>, <a href="https://github.com/torkelo">@torkelo</a></li>
+<li><strong>Correlations:</strong> Use correct fallback handlers. <a href="https://github.com/grafana/grafana/pull/54511" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54511/hovercard">#54511</a>, <a href="https://github.com/kalleep">@kalleep</a></li>
+<li><strong>FIX:</strong> RBAC prevents deleting empty snapshots (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354175980" data-permission-text="Title is private" data-url="https://github.com/grafana/grafana/issues/54385" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54385/hovercard" href="https://github.com/grafana/grafana/pull/54385">#54385</a>). <a href="https://github.com/grafana/grafana/pull/54510" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54510/hovercard">#54510</a>, <a href="https://github.com/gamab">@gamab</a></li>
+<li><strong>LibraryElements:</strong> Fix inability to delete library panels under MySQL. <a href="https://github.com/grafana/grafana/pull/54600" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54600/hovercard">#54600</a>, <a href="https://github.com/kaydelaney">@kaydelaney</a></li>
+<li><strong>Metrics:</strong> fix <code>grafana_database_conn_*</code> metrics, and add new <code>go_sql_stats_*</code> metrics as eventual replacement. <a href="https://github.com/grafana/grafana/pull/54405" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54405/hovercard">#54405</a>, <a href="https://github.com/hairyhenderson">@hairyhenderson</a></li>
+<li><strong>TestData DB:</strong> Fix node graph not showing when the <code>Data type</code> field is set to <code>random</code>. <a href="https://github.com/grafana/grafana/pull/54298" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54298/hovercard">#54298</a>, <a href="https://github.com/CrypticSignal">@CrypticSignal</a></li>
+</ul>
+<h3>Deprecations</h3>
+<p>The <code>grafana_database_conn_*</code> metrics are deprecated, and will be removed in a future version of Grafana. Use the <code>go_sql_stats_*</code> metrics instead. Issue <a href="https://github.com/grafana/grafana/issues/54405" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54405/hovercard">#54405</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2795]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2795</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2795</guid>
+            <pubDate>Tue, 06 Sep 2022 10:57:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/81763: Update on "Dispatch the auxiliary frobenius_norm and nuclear_norm to …]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F81763</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F81763</guid>
+            <pubDate>Tue, 06 Sep 2022 10:18:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…better implementations and deprecate them"</p>
+<p>These functions will be legacy functions. We deprecate them, but we also<br>
+take this chance to dispatch to a more efficient and consistent implementation.<br>
+Doing so should help writing a conversion rule for these to be able to<br>
+remove them once and for all</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/81763: Update on "Dispatch the auxiliary frobenius_norm and nuclear_norm to …]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F81763</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F81763</guid>
+            <pubDate>Tue, 06 Sep 2022 10:18:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…better implementations and deprecate them"</p>
+<p>These functions will be legacy functions. We deprecate them, but we also<br>
+take this chance to dispatch to a more efficient and consistent implementation.<br>
+Doing so should help writing a conversion rule for these to be able to<br>
+remove them once and for all</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 10.7.120]]></title>
+            <link>https://github.com/v8/v8/releases/tag/10.7.120</link>
+            <guid>https://github.com/v8/v8/releases/tag/10.7.120</guid>
+            <pubDate>Tue, 06 Sep 2022 10:02:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I07713a4ee728c49bc861872213659604a3b1e303<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3875726" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3875726</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/10.7.120@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8df265970a80e86b9a32e8c5b82c3b0cf7962536/hovercard" href="https://github.com/v8/v8/commit/8df265970a80e86b9a32e8c5b82c3b0cf7962536"><tt>8df2659</tt></a>-refs/heads/main@{#82992}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 10.7.119]]></title>
+            <link>https://github.com/v8/v8/releases/tag/10.7.119</link>
+            <guid>https://github.com/v8/v8/releases/tag/10.7.119</guid>
+            <pubDate>Tue, 06 Sep 2022 09:01:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: If6baca75927f5865993cb33f7a957bd724a3eaf0<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3875725" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3875725</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/10.7.119@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/6811cb9f88cc5f8307216b43f6ccd993a1106786/hovercard" href="https://github.com/v8/v8/commit/6811cb9f88cc5f8307216b43f6ccd993a1106786"><tt>6811cb9</tt></a>-refs/heads/main@{#82991}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from Ghost: 5.13.1]]></title>
+            <link>https://github.com/TryGhost/Ghost/releases/tag/v5.13.1</link>
+            <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.13.1</guid>
+            <pubDate>Tue, 06 Sep 2022 09:00:15 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed paid subscription alert showing incorrect offer amount - Rishabh</li>
+</ul>
+<hr>
+<p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.13.0...v5.13.1"><tt>v5.13.0...v5.13.1</tt></a></p>
+<p><g-emoji class="g-emoji" alias="magic_wand" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1fa84.png">🪄</g-emoji> Love open source? We're hiring <a href="https://careers.ghost.org/product-engineer-node-js" rel="nofollow">Node.js Engineers</a> to work on Ghost full-time</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.7.20-RC-185]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.20-RC-185</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.7.20-RC-185</guid>
+            <pubDate>Tue, 06 Sep 2022 09:00:05 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from YouTube.js: v2.0.0]]></title>
+            <link>https://github.com/LuanRT/YouTube.js/releases/tag/v2.0.0</link>
+            <guid>https://github.com/LuanRT/YouTube.js/releases/tag/v2.0.0</guid>
+            <pubDate>Tue, 06 Sep 2022 08:54:28 GMT</pubDate>
+            <content:encoded><![CDATA[
+<h2>What's Changed</h2>
+<h3>Breaking Changes</h3>
+<ul>
+<li>feat!: feature complete contents parser by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1221472574" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/44" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/44/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/44">#44</a></li>
+<li>refactor: rewrite Live Chat logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1289202400" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/85" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/85/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/85">#85</a></li>
+<li>refactor: rewrite Comments Section logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1291930137" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/88" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/88/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/88">#88</a></li>
+<li>refactor: rewrite search suggestions logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1297025050" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/92" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/92/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/92">#92</a></li>
+<li>refactor!: better cross runtime support by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1301241092" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/97" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/97/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/97">#97</a></li>
+<li>refactor!: rewrite <code>Analytics</code> to TypeScript by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1321932003" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/122" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/122/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/122">#122</a></li>
+<li>refactor: migrate parsers to TS by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333663256" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/133" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/133/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/133">#133</a></li>
+<li>feat: add settings page parser by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1352983296" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/154" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/154/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/154">#154</a></li>
+<li>feat(download): bring back <code>WEB</code> client by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1353586460" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/156" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/156/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/156">#156</a></li>
+</ul>
+<h3>New Features</h3>
+<ul>
+<li>feat: download video directly from VideoInfo by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1272894457" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/76" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/76/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/76">#76</a></li>
+<li>fix(ytmusic): Multiple authors/artists by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DanielKrasny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DanielKrasny">@DanielKrasny</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1286064037" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/82" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/82/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/82">#82</a></li>
+<li>feat(contents): Multiple video authors by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DanielKrasny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DanielKrasny">@DanielKrasny</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1286468504" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/83" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/83/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/83">#83</a></li>
+<li>feat: add <code>Studio#setThumbnail()</code> method by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315382042" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/111" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/111/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/111">#111</a></li>
+<li>refactor: smaller user-agent list (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315575493" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/112" data-hovercard-type="issue" data-hovercard-url="/LuanRT/YouTube.js/issues/112/hovercard" href="https://github.com/LuanRT/YouTube.js/issues/112">#112</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315583555" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/113" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/113/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/113">#113</a></li>
+<li>refactor: generate typescript protobuf encoders by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315629075" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/114" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/114/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/114">#114</a></li>
+<li>feat: add support for uploading videos by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315838546" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/115" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/115/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/115">#115</a></li>
+<li>refactor: allow uploads of streams by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1317197886" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/117" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/117/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/117">#117</a></li>
+<li>feat: allow users to cache OAuth credentials by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1320055748" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/121" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/121/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/121">#121</a></li>
+<li>Migrate <code>MusicCarouselShelfBasicHeader</code> to TypeScript and add <code>more_content</code> prop by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333534447" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/132" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/132/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/132">#132</a></li>
+<li>feat(ytmusic): add music#getPlaylist() by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333113618" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/131" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/131/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/131">#131</a></li>
+<li>feat(ytmusic): <code>music#Playlist</code> fixes and additions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1338328286" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/138" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/138/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/138">#138</a></li>
+<li>Misc fixes and additions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1341712843" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/142" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/142/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/142">#142</a></li>
+<li>feat: improve parsing by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1343663168" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/145" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/145/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/145">#145</a></li>
+<li>Add <code>end_icons</code> to <code>MusicCarouselShelfBasicHeader</code> and fix <code>music#getPlaylist()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1346326075" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/149" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/149/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/149">#149</a></li>
+<li>feat: add <code>MusicSortFilterButton</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1349560799" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/151" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/151/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/151">#151</a></li>
+<li>feat: add <code>MusicVisualHeader</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354799998" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/157" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/157/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/157">#157</a></li>
+<li>feat: Add paid chat color info by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akkadaska/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akkadaska">@akkadaska</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361070009" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/164" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/164/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/164">#164</a></li>
+<li>feat: add <code>music#getRecap()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361583870" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/165" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/165/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/165">#165</a></li>
+<li>feat: add <code>&lt;info&gt;#addToWatchHistory()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1362727146" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/169" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/169/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/169">#169</a></li>
+</ul>
+<h3>Other Changes</h3>
+<ul>
+<li>docs: fix sample code for download example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iShibi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iShibi">@iShibi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1251951439" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/59/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/59">#59</a></li>
+<li>Socks and http(s) proxy support for each session by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xrip/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xrip">@xrip</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1253418055" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/62" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/62/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/62">#62</a></li>
+<li>docs(download): examples for downloading videos by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1273441090" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/77" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/77/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/77">#77</a></li>
+<li>fix(VideoInfo): Fix the problem that chooseFormat still returns empty, even though there are videos to adapt by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EveCoffee/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EveCoffee">@EveCoffee</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1277799789" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/80" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/80/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/80">#80</a></li>
+<li>feat(player): improved decipher logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1277318499" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/79" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/79/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/79">#79</a></li>
+<li>Remove confusing code practices  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MasterOfBob777/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MasterOfBob777">@MasterOfBob777</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1291709478" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/87" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/87/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/87">#87</a></li>
+<li>refactor: rewrite OAuth and Requester by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1293509916" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/90" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/90/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/90">#90</a></li>
+<li>Make project multiplatform by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MasterOfBob777/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MasterOfBob777">@MasterOfBob777</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1294369535" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/91" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/91/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/91">#91</a></li>
+<li>chore(deps): bump undici from 5.7.0 to 5.8.0 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1313808021" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/109" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/109/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/109">#109</a></li>
+<li>fix: add missing playlist_length by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315346237" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/110" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/110/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/110">#110</a></li>
+<li>refactor: replace xmlbuilder2 with linkedom by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1317276677" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/119" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/119/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/119">#119</a></li>
+<li>fix: TabbedFeed#getTab to parse response. by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1318561816" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/120" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/120/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/120">#120</a></li>
+<li>docs: OAuth example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1332053799" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/130" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/130/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/130">#130</a></li>
+<li>Fix build error caused by <code>music#Playlist.getRelated()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1336466601" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/135" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/135/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/135">#135</a></li>
+<li>feat(ytmusic): implement music#Library by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1337953053" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/136" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/136/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/136">#136</a></li>
+<li>fix(music#Library): sort_by err when items  &lt;= 1 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1338060502" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/137" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/137/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/137">#137</a></li>
+<li>chore(deps): bump undici from 5.8.0 to 5.8.2 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1343574688" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/144" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/144/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/144">#144</a></li>
+<li><code>PlaylistPanel</code> fixes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1344177890" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/146" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/146/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/146">#146</a></li>
+<li>fix: playlist radios misidentified as videos by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1345438062" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/147" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/147/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/147">#147</a></li>
+<li>fix: captions should be a PlayerCaptionsTracklist by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/BGerard/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/BGerard">@BGerard</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1345597248" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/148" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/148/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/148">#148</a></li>
+<li>Fix <code>music#library.getArtists()</code> and add <code>MusicShelf.bottom_button</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1350006962" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/152" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/152/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/152">#152</a></li>
+<li>fix: <code>Music#Artist</code>parse err if missing shelves by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1353399578" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/155" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/155/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/155">#155</a></li>
+<li>Fix <code>DidYouMean</code> endpoints and add <code>text</code> prop by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354810501" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/158" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/158/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/158">#158</a></li>
+<li>Minor fixes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360320304" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/159" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/159/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/159">#159</a></li>
+<li>docs: add parser info and examples  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360585943" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/160" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/160/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/160">#160</a></li>
+<li>fix: ytmusic formats returning 403 when deciphered by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360744536" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/161" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/161/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/161">#161</a></li>
+<li>fix: <code>Music#getAlbum()</code>fails for private album ID by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360792142" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/162" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/162/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/162">#162</a></li>
+</ul>
+<h2>New Contributors</h2>
+<ul>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iShibi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iShibi">@iShibi</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1251951439" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/59/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/59">#59</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xrip/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xrip">@xrip</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1253418055" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/62" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/62/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/62">#62</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1221472574" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/44" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/44/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/44">#44</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EveCoffee/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EveCoffee">@EveCoffee</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1277799789" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/80" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/80/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/80">#80</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DanielKrasny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DanielKrasny">@DanielKrasny</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1286064037" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/82" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/82/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/82">#82</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1289202400" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/85" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/85/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/85">#85</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MasterOfBob777/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MasterOfBob777">@MasterOfBob777</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1291709478" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/87" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/87/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/87">#87</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333534447" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/132" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/132/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/132">#132</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/BGerard/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/BGerard">@BGerard</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1345597248" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/148" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/148/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/148">#148</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akkadaska/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akkadaska">@akkadaska</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361070009" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/164" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/164/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/164">#164</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/LuanRT/YouTube.js/compare/V1.4.3...v2.0.0"><tt>V1.4.3...v2.0.0</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2791]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2791</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2791</guid>
+            <pubDate>Tue, 06 Sep 2022 08:50:07 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2790]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2790</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2790</guid>
+            <pubDate>Tue, 06 Sep 2022 08:43:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 10.7.118]]></title>
+            <link>https://github.com/v8/v8/releases/tag/10.7.118</link>
+            <guid>https://github.com/v8/v8/releases/tag/10.7.118</guid>
+            <pubDate>Tue, 06 Sep 2022 08:16:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6681573d9fa578065a22a7045fca3eee54b57cbd<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3875722" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3875722</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/10.7.118@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ca2a96837c828ac3560170caf452d66bf130ed68/hovercard" href="https://github.com/v8/v8/commit/ca2a96837c828ac3560170caf452d66bf130ed68"><tt>ca2a968</tt></a>-refs/heads/main@{#82989}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2785]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2785</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2785</guid>
+            <pubDate>Tue, 06 Sep 2022 08:12:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/82839: Update on "[maskedtensor] adding reductions"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F82839</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F82839</guid>
+            <pubDate>Tue, 06 Sep 2022 06:56:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -853,17 +1469,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 10.7.110]]></title>
-            <link>https://github.com/v8/v8/releases/tag/10.7.110</link>
-            <guid>https://github.com/v8/v8/releases/tag/10.7.110</guid>
-            <pubDate>Mon, 05 Sep 2022 14:09:01 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I087826b5bbe4d49c8ba2ea2d90336c65a48fa99e<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3870593" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3870593</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/10.7.110@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0b1b79d24ab368397d5a23435e6c3ae464b9f615/hovercard" href="https://github.com/v8/v8/commit/0b1b79d24ab368397d5a23435e6c3ae464b9f615"><tt>0b1b79d</tt></a>-refs/heads/main@{#82970}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2772]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2772</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2772</guid>
@@ -930,250 +1535,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 10.7.109]]></title>
-            <link>https://github.com/v8/v8/releases/tag/10.7.109</link>
-            <guid>https://github.com/v8/v8/releases/tag/10.7.109</guid>
-            <pubDate>Mon, 05 Sep 2022 12:06:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Id285495fc688f26f979f8c923c5279a3029527d9<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3870592" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3870592</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/10.7.109@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/203c18b993c963f6384278b7b04d1c5b91fc5efb/hovercard" href="https://github.com/v8/v8/commit/203c18b993c963f6384278b7b04d1c5b91fc5efb"><tt>203c18b</tt></a>-refs/heads/main@{#82968}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/83427: Update on "coo binary_op intersection primitives"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83427</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83427</guid>
-            <pubDate>Mon, 05 Sep 2022 11:25:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/83428: Update on "Faster mul(sparse, sparse) with broadcasting in dense dims."]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83428</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83428</guid>
-            <pubDate>Mon, 05 Sep 2022 11:25:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Preliminary benchmarks (square matrices of shape (n, n)).</p>
-<details>
-<summary>CUDA</summary>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------------------------------------- coo.mul -------------------------------------------------]
-                                                       |  PR: mul, device: cuda  |  master: mul, device: cuda
-24 threads: -------------------------------------------------------------------------------------------------
-      n=10000, nnz=100, coalesce=((True, True))        |             95          |                91
-      n=10000, nnz=100, coalesce=((True, False))       |             87          |               242
-      n=10000, nnz=100, coalesce=((False, True))       |             87          |               226
-      n=10000, nnz=100, coalesce=((False, False))      |            130          |               371
-      n=100000, nnz=1000, coalesce=((True, True))      |            100          |               521
-      n=100000, nnz=1000, coalesce=((True, False))     |             90          |               649
-      n=100000, nnz=1000, coalesce=((False, True))     |            100          |               659
-      n=100000, nnz=1000, coalesce=((False, False))    |            200          |               781
-      n=1000000, nnz=10000, coalesce=((True, True))    |            100          |              4861
-      n=1000000, nnz=10000, coalesce=((True, False))   |            100          |              5012
-      n=1000000, nnz=10000, coalesce=((False, True))   |             98          |              5010
-      n=1000000, nnz=10000, coalesce=((False, False))  |            384          |              5174
-      n=10, nnz=100, coalesce=((True, True))           |            100          |                79
-      n=10, nnz=100, coalesce=((True, False))          |            100          |               221
-      n=10, nnz=100, coalesce=((False, True))          |            100          |               221
-      n=10, nnz=100, coalesce=((False, False))         |            100          |               350
-      n=10, nnz=1000, coalesce=((True, True))          |            100          |               100
-      n=10, nnz=1000, coalesce=((True, False))         |            100          |               240
-      n=10, nnz=1000, coalesce=((False, True))         |            100          |               254
-      n=10, nnz=1000, coalesce=((False, False))        |            100          |               392
-      n=10, nnz=10000, coalesce=((True, True))         |            100          |               110
-      n=10, nnz=10000, coalesce=((True, False))        |            110          |               286
-      n=10, nnz=10000, coalesce=((False, True))        |            110          |               286
-      n=10, nnz=10000, coalesce=((False, False))       |            271          |               455
-      n=100, nnz=1000, coalesce=((True, True))         |            110          |               851
-      n=100, nnz=1000, coalesce=((True, False))        |            110          |              1000
-      n=100, nnz=1000, coalesce=((False, True))        |            110          |               990
-      n=100, nnz=1000, coalesce=((False, False))       |            140          |              1124
-      n=100, nnz=10000, coalesce=((True, True))        |            110          |              5137
-      n=100, nnz=10000, coalesce=((True, False))       |            110          |              5391
-      n=100, nnz=10000, coalesce=((False, True))       |            100          |              5405
-      n=100, nnz=10000, coalesce=((False, False))      |            249          |              5539
-      n=1000, nnz=10000, coalesce=((True, True))       |            100          |              8598
-      n=1000, nnz=10000, coalesce=((True, False))      |            100          |              8800
-      n=1000, nnz=10000, coalesce=((False, True))      |            100          |              8782
-      n=1000, nnz=10000, coalesce=((False, False))     |            255          |              8956
-      n=1000, nnz=100000, coalesce=((True, True))      |            120          |             84500
-      n=1000, nnz=100000, coalesce=((True, False))     |            200          |             88560
-      n=1000, nnz=100000, coalesce=((False, True))     |            160          |             89000
-      n=1000, nnz=100000, coalesce=((False, False))    |            373          |             89000
-      n=1000, nnz=1000000, coalesce=((True, True))     |            312          |            606400
-      n=1000, nnz=1000000, coalesce=((True, False))    |           1340          |            609200
-      n=1000, nnz=1000000, coalesce=((False, True))    |           1340          |            609100
-      n=1000, nnz=1000000, coalesce=((False, False))   |           4408          |            611400
-
-Times are in microseconds (us)."><pre class="notranslate"><code>[------------------------------------------------- coo.mul -------------------------------------------------]
-                                                       |  PR: mul, device: cuda  |  master: mul, device: cuda
-24 threads: -------------------------------------------------------------------------------------------------
-      n=10000, nnz=100, coalesce=((True, True))        |             95          |                91
-      n=10000, nnz=100, coalesce=((True, False))       |             87          |               242
-      n=10000, nnz=100, coalesce=((False, True))       |             87          |               226
-      n=10000, nnz=100, coalesce=((False, False))      |            130          |               371
-      n=100000, nnz=1000, coalesce=((True, True))      |            100          |               521
-      n=100000, nnz=1000, coalesce=((True, False))     |             90          |               649
-      n=100000, nnz=1000, coalesce=((False, True))     |            100          |               659
-      n=100000, nnz=1000, coalesce=((False, False))    |            200          |               781
-      n=1000000, nnz=10000, coalesce=((True, True))    |            100          |              4861
-      n=1000000, nnz=10000, coalesce=((True, False))   |            100          |              5012
-      n=1000000, nnz=10000, coalesce=((False, True))   |             98          |              5010
-      n=1000000, nnz=10000, coalesce=((False, False))  |            384          |              5174
-      n=10, nnz=100, coalesce=((True, True))           |            100          |                79
-      n=10, nnz=100, coalesce=((True, False))          |            100          |               221
-      n=10, nnz=100, coalesce=((False, True))          |            100          |               221
-      n=10, nnz=100, coalesce=((False, False))         |            100          |               350
-      n=10, nnz=1000, coalesce=((True, True))          |            100          |               100
-      n=10, nnz=1000, coalesce=((True, False))         |            100          |               240
-      n=10, nnz=1000, coalesce=((False, True))         |            100          |               254
-      n=10, nnz=1000, coalesce=((False, False))        |            100          |               392
-      n=10, nnz=10000, coalesce=((True, True))         |            100          |               110
-      n=10, nnz=10000, coalesce=((True, False))        |            110          |               286
-      n=10, nnz=10000, coalesce=((False, True))        |            110          |               286
-      n=10, nnz=10000, coalesce=((False, False))       |            271          |               455
-      n=100, nnz=1000, coalesce=((True, True))         |            110          |               851
-      n=100, nnz=1000, coalesce=((True, False))        |            110          |              1000
-      n=100, nnz=1000, coalesce=((False, True))        |            110          |               990
-      n=100, nnz=1000, coalesce=((False, False))       |            140          |              1124
-      n=100, nnz=10000, coalesce=((True, True))        |            110          |              5137
-      n=100, nnz=10000, coalesce=((True, False))       |            110          |              5391
-      n=100, nnz=10000, coalesce=((False, True))       |            100          |              5405
-      n=100, nnz=10000, coalesce=((False, False))      |            249          |              5539
-      n=1000, nnz=10000, coalesce=((True, True))       |            100          |              8598
-      n=1000, nnz=10000, coalesce=((True, False))      |            100          |              8800
-      n=1000, nnz=10000, coalesce=((False, True))      |            100          |              8782
-      n=1000, nnz=10000, coalesce=((False, False))     |            255          |              8956
-      n=1000, nnz=100000, coalesce=((True, True))      |            120          |             84500
-      n=1000, nnz=100000, coalesce=((True, False))     |            200          |             88560
-      n=1000, nnz=100000, coalesce=((False, True))     |            160          |             89000
-      n=1000, nnz=100000, coalesce=((False, False))    |            373          |             89000
-      n=1000, nnz=1000000, coalesce=((True, True))     |            312          |            606400
-      n=1000, nnz=1000000, coalesce=((True, False))    |           1340          |            609200
-      n=1000, nnz=1000000, coalesce=((False, True))    |           1340          |            609100
-      n=1000, nnz=1000000, coalesce=((False, False))   |           4408          |            611400
-
-Times are in microseconds (us).
-</code></pre></div>
-</details>
-<details>
-<summary>CPU</summary>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------------------------------------ coo.mul ------------------------------------------------]
-                                                       |  PR: mul, device: cpu  |  master: mul, device: cpu
-24 threads: -----------------------------------------------------------------------------------------------
-      n=10000, nnz=100, coalesce=((True, True))        |              8         |                8         
-      n=10000, nnz=100, coalesce=((True, False))       |             32         |               34         
-      n=10000, nnz=100, coalesce=((False, True))       |             32         |               34         
-      n=10000, nnz=100, coalesce=((False, False))      |             41         |               56         
-      n=100000, nnz=1000, coalesce=((True, True))      |             24         |               24         
-      n=100000, nnz=1000, coalesce=((True, False))     |             90         |              100         
-      n=100000, nnz=1000, coalesce=((False, True))     |             87         |              100         
-      n=100000, nnz=1000, coalesce=((False, False))    |            231         |              255         
-      n=1000000, nnz=10000, coalesce=((True, True))    |            190         |              200         
-      n=1000000, nnz=10000, coalesce=((True, False))   |            908         |             2023         
-      n=1000000, nnz=10000, coalesce=((False, True))   |            800         |             2036         
-      n=1000000, nnz=10000, coalesce=((False, False))  |           3684         |             3989         
-      n=10, nnz=100, coalesce=((True, True))           |              8         |                7         
-      n=10, nnz=100, coalesce=((True, False))          |             34         |               30         
-      n=10, nnz=100, coalesce=((False, True))          |             33         |               30         
-      n=10, nnz=100, coalesce=((False, False))         |             44         |               50         
-      n=10, nnz=1000, coalesce=((True, True))          |              8         |                7         
-      n=10, nnz=1000, coalesce=((True, False))         |            100         |              100         
-      n=10, nnz=1000, coalesce=((False, True))         |            130         |              100         
-      n=10, nnz=1000, coalesce=((False, False))        |            746         |              210         
-      n=10, nnz=10000, coalesce=((True, True))         |              8         |                7         
-      n=10, nnz=10000, coalesce=((True, False))        |           1000         |             1500         
-      n=10, nnz=10000, coalesce=((False, True))        |           1000         |             1510         
-      n=10, nnz=10000, coalesce=((False, False))       |           3063         |             2457         
-      n=100, nnz=1000, coalesce=((True, True))         |             25         |               25         
-      n=100, nnz=1000, coalesce=((True, False))        |            180         |              130         
-      n=100, nnz=1000, coalesce=((False, True))        |            200         |              130         
-      n=100, nnz=1000, coalesce=((False, False))       |            271         |              255         
-      n=100, nnz=10000, coalesce=((True, True))        |            100         |              100         
-      n=100, nnz=10000, coalesce=((True, False))       |           2444         |             2290         
-      n=100, nnz=10000, coalesce=((False, True))       |           2455         |             2357         
-      n=100, nnz=10000, coalesce=((False, False))      |           5316         |             3783         
-      n=1000, nnz=10000, coalesce=((True, True))       |            204         |              211         
-      n=1000, nnz=10000, coalesce=((True, False))      |           2457         |             2480         
-      n=1000, nnz=10000, coalesce=((False, True))      |           2448         |             2539         
-      n=1000, nnz=10000, coalesce=((False, False))     |           3665         |             4801         
-      n=1000, nnz=100000, coalesce=((True, True))      |           2293         |             2374         
-      n=1000, nnz=100000, coalesce=((True, False))     |           9000         |            24620         
-      n=1000, nnz=100000, coalesce=((False, True))     |           8000         |            25080         
-      n=1000, nnz=100000, coalesce=((False, False))    |          26500         |            47650         
-      n=1000, nnz=1000000, coalesce=((True, True))     |          10000         |            13000         
-      n=1000, nnz=1000000, coalesce=((True, False))    |          80000         |           362200         
-      n=1000, nnz=1000000, coalesce=((False, True))    |          78050         |           392600         
-      n=1000, nnz=1000000, coalesce=((False, False))   |         312100         |           766900         
-
-Times are in microseconds (us)."><pre class="notranslate"><code>[------------------------------------------------ coo.mul ------------------------------------------------]
-                                                       |  PR: mul, device: cpu  |  master: mul, device: cpu
-24 threads: -----------------------------------------------------------------------------------------------
-      n=10000, nnz=100, coalesce=((True, True))        |              8         |                8         
-      n=10000, nnz=100, coalesce=((True, False))       |             32         |               34         
-      n=10000, nnz=100, coalesce=((False, True))       |             32         |               34         
-      n=10000, nnz=100, coalesce=((False, False))      |             41         |               56         
-      n=100000, nnz=1000, coalesce=((True, True))      |             24         |               24         
-      n=100000, nnz=1000, coalesce=((True, False))     |             90         |              100         
-      n=100000, nnz=1000, coalesce=((False, True))     |             87         |              100         
-      n=100000, nnz=1000, coalesce=((False, False))    |            231         |              255         
-      n=1000000, nnz=10000, coalesce=((True, True))    |            190         |              200         
-      n=1000000, nnz=10000, coalesce=((True, False))   |            908         |             2023         
-      n=1000000, nnz=10000, coalesce=((False, True))   |            800         |             2036         
-      n=1000000, nnz=10000, coalesce=((False, False))  |           3684         |             3989         
-      n=10, nnz=100, coalesce=((True, True))           |              8         |                7         
-      n=10, nnz=100, coalesce=((True, False))          |             34         |               30         
-      n=10, nnz=100, coalesce=((False, True))          |             33         |               30         
-      n=10, nnz=100, coalesce=((False, False))         |             44         |               50         
-      n=10, nnz=1000, coalesce=((True, True))          |              8         |                7         
-      n=10, nnz=1000, coalesce=((True, False))         |            100         |              100         
-      n=10, nnz=1000, coalesce=((False, True))         |            130         |              100         
-      n=10, nnz=1000, coalesce=((False, False))        |            746         |              210         
-      n=10, nnz=10000, coalesce=((True, True))         |              8         |                7         
-      n=10, nnz=10000, coalesce=((True, False))        |           1000         |             1500         
-      n=10, nnz=10000, coalesce=((False, True))        |           1000         |             1510         
-      n=10, nnz=10000, coalesce=((False, False))       |           3063         |             2457         
-      n=100, nnz=1000, coalesce=((True, True))         |             25         |               25         
-      n=100, nnz=1000, coalesce=((True, False))        |            180         |              130         
-      n=100, nnz=1000, coalesce=((False, True))        |            200         |              130         
-      n=100, nnz=1000, coalesce=((False, False))       |            271         |              255         
-      n=100, nnz=10000, coalesce=((True, True))        |            100         |              100         
-      n=100, nnz=10000, coalesce=((True, False))       |           2444         |             2290         
-      n=100, nnz=10000, coalesce=((False, True))       |           2455         |             2357         
-      n=100, nnz=10000, coalesce=((False, False))      |           5316         |             3783         
-      n=1000, nnz=10000, coalesce=((True, True))       |            204         |              211         
-      n=1000, nnz=10000, coalesce=((True, False))      |           2457         |             2480         
-      n=1000, nnz=10000, coalesce=((False, True))      |           2448         |             2539         
-      n=1000, nnz=10000, coalesce=((False, False))     |           3665         |             4801         
-      n=1000, nnz=100000, coalesce=((True, True))      |           2293         |             2374         
-      n=1000, nnz=100000, coalesce=((True, False))     |           9000         |            24620         
-      n=1000, nnz=100000, coalesce=((False, True))     |           8000         |            25080         
-      n=1000, nnz=100000, coalesce=((False, False))    |          26500         |            47650         
-      n=1000, nnz=1000000, coalesce=((True, True))     |          10000         |            13000         
-      n=1000, nnz=1000000, coalesce=((True, False))    |          80000         |           362200         
-      n=1000, nnz=1000000, coalesce=((False, True))    |          78050         |           392600         
-      n=1000, nnz=1000000, coalesce=((False, False))   |         312100         |           766900         
-
-Times are in microseconds (us).
-</code></pre></div>
-</details>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2761]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2761</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2761</guid>
             <pubDate>Mon, 05 Sep 2022 11:21:25 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 10.7.108]]></title>
-            <link>https://github.com/v8/v8/releases/tag/10.7.108</link>
-            <guid>https://github.com/v8/v8/releases/tag/10.7.108</guid>
-            <pubDate>Mon, 05 Sep 2022 11:19:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I6bd8b43dc64c7c2987ab8c827d0de28876a2af8d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/3870590" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/3870590</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/10.7.108@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/271bd0866fbea44ae2a5bf31bf4f018e107a6342/hovercard" href="https://github.com/v8/v8/commit/271bd0866fbea44ae2a5bf31bf4f018e107a6342"><tt>271bd08</tt></a>-refs/heads/main@{#82963}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.0-next.42]]></title>
@@ -1197,27 +1563,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2758</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2758</guid>
             <pubDate>Mon, 05 Sep 2022 10:25:40 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2757]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2757</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2757</guid>
-            <pubDate>Mon, 05 Sep 2022 10:12:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2754]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2754</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2754</guid>
-            <pubDate>Mon, 05 Sep 2022 08:17:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2751]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2751</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2751</guid>
-            <pubDate>Mon, 05 Sep 2022 06:12:26 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
@@ -1498,16 +1843,16 @@ Approved by: <a href="https://github.com/ngimel">https://github.com/ngimel</a></
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/70982]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F70982</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F70982</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/70982]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F70982</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F70982</guid>
             <pubDate>Sun, 04 Sep 2022 07:30:21 GMT</pubDate>
             <content:encoded><![CDATA[<p>Merge remote-tracking branch 'upstream/master' into remove-eig</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/70982]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F70982</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F70982</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/70982]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F70982</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F70982</guid>
             <pubDate>Sun, 04 Sep 2022 07:30:21 GMT</pubDate>
             <content:encoded><![CDATA[<p>Merge remote-tracking branch 'upstream/master' into remove-eig</p>]]></content:encoded>
         </item>
@@ -1629,48 +1974,6 @@ Approved by: <a href="https://github.com/ngimel">https://github.com/ngimel</a></
             <guid>https://github.com/jasmine/jasmine/releases/tag/v4.4.0</guid>
             <pubDate>Sat, 03 Sep 2022 16:53:51 GMT</pubDate>
             <content:encoded><![CDATA[<p>Please see the <a href="https://github.com/jasmine/jasmine/blob/main/release_notes/4.4.0.md">release notes</a>.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.465]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.465</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.465</guid>
-            <pubDate>Sat, 03 Sep 2022 11:27:45 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>[feat] add <code>type</code> to navigation object (<a href="https://github.com/sveltejs/kit/pull/6537" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6537/hovercard">#6537</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jest: v29.0.2]]></title>
-            <link>https://github.com/facebook/jest/releases/tag/v29.0.2</link>
-            <guid>https://github.com/facebook/jest/releases/tag/v29.0.2</guid>
-            <pubDate>Sat, 03 Sep 2022 10:49:41 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Features</h2>
-<ul>
-<li><code>[jest-transform]</code> Expose <code>TransformFactory</code> type (<a href="https://github.com/facebook/jest/pull/13184" data-hovercard-type="pull_request" data-hovercard-url="/facebook/jest/pull/13184/hovercard">#13184</a>)</li>
-</ul>
-<h2>Fixes</h2>
-<ul>
-<li><code>[babel-plugin-jest-hoist]</code> Support imported <code>jest</code> in mock factory (<a href="https://github.com/facebook/jest/pull/13188" data-hovercard-type="pull_request" data-hovercard-url="/facebook/jest/pull/13188/hovercard">#13188</a>)</li>
-<li><code>[jest-mock]</code> Align the behavior and return type of <code>generateFromMetadata</code> method (<a href="https://github.com/facebook/jest/pull/13207" data-hovercard-type="pull_request" data-hovercard-url="/facebook/jest/pull/13207/hovercard">#13207</a>)</li>
-<li><code>[jest-runtime]</code> Support <code>jest.resetModules()</code> with ESM (<a href="https://github.com/facebook/jest/pull/13211" data-hovercard-type="pull_request" data-hovercard-url="/facebook/jest/pull/13211/hovercard">#13211</a>)</li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/momokid/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/momokid">@momokid</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1356512363" data-permission-text="Title is private" data-url="https://github.com/facebook/jest/issues/13194" data-hovercard-type="pull_request" data-hovercard-url="/facebook/jest/pull/13194/hovercard" href="https://github.com/facebook/jest/pull/13194">#13194</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/facebook/jest/compare/v29.0.1...v29.0.2"><tt>v29.0.1...v29.0.2</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from isomorphic-git: v1.21.0]]></title>
-            <link>https://github.com/isomorphic-git/isomorphic-git/releases/tag/v1.21.0</link>
-            <guid>https://github.com/isomorphic-git/isomorphic-git/releases/tag/v1.21.0</guid>
-            <pubDate>Sat, 03 Sep 2022 09:45:25 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/isomorphic-git/isomorphic-git/compare/v1.20.0...v1.21.0">1.21.0</a> (2022-09-03)</h1>
-<h3>Features</h3>
-<ul>
-<li><strong>branch:</strong> add force param to overwrite existing branch (<a href="https://github.com/isomorphic-git/isomorphic-git/issues/1637" data-hovercard-type="pull_request" data-hovercard-url="/isomorphic-git/isomorphic-git/pull/1637/hovercard">#1637</a>) (<a href="https://github.com/isomorphic-git/isomorphic-git/commit/e65ad3753bb7d8b2c27ad710ac37f61c28e72c9d">e65ad37</a>)</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
