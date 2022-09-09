@@ -4,10 +4,802 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 09 Sep 2022 06:16:05 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 09 Sep 2022 12:09:28 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/83428: Update on "Faster mul(sparse, sparse) with broadcasting in dense dims."]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83428</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83428</guid>
+            <pubDate>Fri, 09 Sep 2022 11:39:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Preliminary benchmarks (square matrices of shape (n, n)).</p>
+<details>
+<summary>Script</summary>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import torch
+import math
+from IPython import get_ipython
+from itertools import product, repeat
+import pickle
+from torch.utils.benchmark import Timer, Compare
+
+torch.manual_seed(13)
+
+# specifies (n, nnz)
+problem_dims = (
+    # n &gt; nnz
+    (10000, 100),
+    (100000, 1000),
+    (1000000, 10000),
+    # n &lt; nnz
+    (10, 100),
+    (10, 1000),
+    (10, 10000),
+    (100, 1000),
+    (100, 10000),
+    (1000, 10000),
+    (1000, 100000),
+    (1000, 1000000),
+    #(1000000, 1000000000),
+)
+
+name = &quot;PR&quot;
+device = &quot;cuda&quot;
+results = []
+
+for n, nnz in problem_dims:
+    def gen_tensor(coalesce=False):
+        shape = (n, n)
+        nrows, ncols = shape
+        rowidx = torch.randint(low=0, high=nrows, size=(nnz,), device=device)
+        colidx = torch.randint(low=0, high=ncols, size=(nnz,), device=device)
+        itemidx = torch.vstack((rowidx, colidx))
+        xvalues = torch.randn(nnz, device=device)
+        itemidx = torch.hstack((itemidx, itemidx))
+        xvalues = torch.hstack((xvalues, xvalues))
+        res = torch.sparse_coo_tensor(itemidx, xvalues, size=shape)
+        if coalesce:
+            return res.coalesce()
+        else:
+            return res
+
+
+    for x_coalesce, y_coalesce in product(*repeat((True, False), 2)):
+        x = gen_tensor(x_coalesce)
+        y = gen_tensor(y_coalesce)
+        smtp = &quot;x * y&quot;
+        timer = Timer(smtp,
+                      globals=globals(),
+                      label=&quot;coo.mul&quot;,
+                      description=f&quot;{name}: mul, device: {device}&quot;,
+                      sub_label=f&quot;n={n}, nnz={nnz}, coalesce=({x_coalesce, y_coalesce})&quot;,
+                      num_threads=torch.get_num_threads())
+        results.append(timer.blocked_autorange())
+
+compare = Compare(results)
+compare.trim_significant_figures()
+compare.print()
+
+with open(f&quot;{name}_{device}_mul.pickle&quot;, 'wb') as f:
+    pickle.dump(results, f)
+"><pre><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">math</span>
+<span class="pl-k">from</span> <span class="pl-v">IPython</span> <span class="pl-k">import</span> <span class="pl-s1">get_ipython</span>
+<span class="pl-k">from</span> <span class="pl-s1">itertools</span> <span class="pl-k">import</span> <span class="pl-s1">product</span>, <span class="pl-s1">repeat</span>
+<span class="pl-k">import</span> <span class="pl-s1">pickle</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">utils</span>.<span class="pl-s1">benchmark</span> <span class="pl-k">import</span> <span class="pl-v">Timer</span>, <span class="pl-v">Compare</span>
+
+<span class="pl-s1">torch</span>.<span class="pl-en">manual_seed</span>(<span class="pl-c1">13</span>)
+
+<span class="pl-c"># specifies (n, nnz)</span>
+<span class="pl-s1">problem_dims</span> <span class="pl-c1">=</span> (
+    <span class="pl-c"># n &gt; nnz</span>
+    (<span class="pl-c1">10000</span>, <span class="pl-c1">100</span>),
+    (<span class="pl-c1">100000</span>, <span class="pl-c1">1000</span>),
+    (<span class="pl-c1">1000000</span>, <span class="pl-c1">10000</span>),
+    <span class="pl-c"># n &lt; nnz</span>
+    (<span class="pl-c1">10</span>, <span class="pl-c1">100</span>),
+    (<span class="pl-c1">10</span>, <span class="pl-c1">1000</span>),
+    (<span class="pl-c1">10</span>, <span class="pl-c1">10000</span>),
+    (<span class="pl-c1">100</span>, <span class="pl-c1">1000</span>),
+    (<span class="pl-c1">100</span>, <span class="pl-c1">10000</span>),
+    (<span class="pl-c1">1000</span>, <span class="pl-c1">10000</span>),
+    (<span class="pl-c1">1000</span>, <span class="pl-c1">100000</span>),
+    (<span class="pl-c1">1000</span>, <span class="pl-c1">1000000</span>),
+    <span class="pl-c">#(1000000, 1000000000),</span>
+)
+
+<span class="pl-s1">name</span> <span class="pl-c1">=</span> <span class="pl-s">"PR"</span>
+<span class="pl-s1">device</span> <span class="pl-c1">=</span> <span class="pl-s">"cuda"</span>
+<span class="pl-s1">results</span> <span class="pl-c1">=</span> []
+
+<span class="pl-k">for</span> <span class="pl-s1">n</span>, <span class="pl-s1">nnz</span> <span class="pl-c1">in</span> <span class="pl-s1">problem_dims</span>:
+    <span class="pl-k">def</span> <span class="pl-en">gen_tensor</span>(<span class="pl-s1">coalesce</span><span class="pl-c1">=</span><span class="pl-c1">False</span>):
+        <span class="pl-s1">shape</span> <span class="pl-c1">=</span> (<span class="pl-s1">n</span>, <span class="pl-s1">n</span>)
+        <span class="pl-s1">nrows</span>, <span class="pl-s1">ncols</span> <span class="pl-c1">=</span> <span class="pl-s1">shape</span>
+        <span class="pl-s1">rowidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randint</span>(<span class="pl-s1">low</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">high</span><span class="pl-c1">=</span><span class="pl-s1">nrows</span>, <span class="pl-s1">size</span><span class="pl-c1">=</span>(<span class="pl-s1">nnz</span>,), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)
+        <span class="pl-s1">colidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randint</span>(<span class="pl-s1">low</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">high</span><span class="pl-c1">=</span><span class="pl-s1">ncols</span>, <span class="pl-s1">size</span><span class="pl-c1">=</span>(<span class="pl-s1">nnz</span>,), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)
+        <span class="pl-s1">itemidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">vstack</span>((<span class="pl-s1">rowidx</span>, <span class="pl-s1">colidx</span>))
+        <span class="pl-s1">xvalues</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randn</span>(<span class="pl-s1">nnz</span>, <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)
+        <span class="pl-s1">itemidx</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">hstack</span>((<span class="pl-s1">itemidx</span>, <span class="pl-s1">itemidx</span>))
+        <span class="pl-s1">xvalues</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">hstack</span>((<span class="pl-s1">xvalues</span>, <span class="pl-s1">xvalues</span>))
+        <span class="pl-s1">res</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">sparse_coo_tensor</span>(<span class="pl-s1">itemidx</span>, <span class="pl-s1">xvalues</span>, <span class="pl-s1">size</span><span class="pl-c1">=</span><span class="pl-s1">shape</span>)
+        <span class="pl-k">if</span> <span class="pl-s1">coalesce</span>:
+            <span class="pl-k">return</span> <span class="pl-s1">res</span>.<span class="pl-en">coalesce</span>()
+        <span class="pl-k">else</span>:
+            <span class="pl-k">return</span> <span class="pl-s1">res</span>
+
+
+    <span class="pl-k">for</span> <span class="pl-s1">x_coalesce</span>, <span class="pl-s1">y_coalesce</span> <span class="pl-c1">in</span> <span class="pl-en">product</span>(<span class="pl-c1">*</span><span class="pl-en">repeat</span>((<span class="pl-c1">True</span>, <span class="pl-c1">False</span>), <span class="pl-c1">2</span>)):
+        <span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-en">gen_tensor</span>(<span class="pl-s1">x_coalesce</span>)
+        <span class="pl-s1">y</span> <span class="pl-c1">=</span> <span class="pl-en">gen_tensor</span>(<span class="pl-s1">y_coalesce</span>)
+        <span class="pl-s1">smtp</span> <span class="pl-c1">=</span> <span class="pl-s">"x * y"</span>
+        <span class="pl-s1">timer</span> <span class="pl-c1">=</span> <span class="pl-v">Timer</span>(<span class="pl-s1">smtp</span>,
+                      <span class="pl-s1">globals</span><span class="pl-c1">=</span><span class="pl-en">globals</span>(),
+                      <span class="pl-s1">label</span><span class="pl-c1">=</span><span class="pl-s">"coo.mul"</span>,
+                      <span class="pl-s1">description</span><span class="pl-c1">=</span><span class="pl-s">f"<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">name</span><span class="pl-kos">}</span></span>: mul, device: <span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">device</span><span class="pl-kos">}</span></span>"</span>,
+                      <span class="pl-s1">sub_label</span><span class="pl-c1">=</span><span class="pl-s">f"n=<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">n</span><span class="pl-kos">}</span></span>, nnz=<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">nnz</span><span class="pl-kos">}</span></span>, coalesce=(<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">x_coalesce</span>, <span class="pl-s1">y_coalesce</span><span class="pl-kos">}</span></span>)"</span>,
+                      <span class="pl-s1">num_threads</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-en">get_num_threads</span>())
+        <span class="pl-s1">results</span>.<span class="pl-en">append</span>(<span class="pl-s1">timer</span>.<span class="pl-en">blocked_autorange</span>())
+
+<span class="pl-s1">compare</span> <span class="pl-c1">=</span> <span class="pl-v">Compare</span>(<span class="pl-s1">results</span>)
+<span class="pl-s1">compare</span>.<span class="pl-en">trim_significant_figures</span>()
+<span class="pl-s1">compare</span>.<span class="pl-en">print</span>()
+
+<span class="pl-k">with</span> <span class="pl-en">open</span>(<span class="pl-s">f"<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">name</span><span class="pl-kos">}</span></span>_<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">device</span><span class="pl-kos">}</span></span>_mul.pickle"</span>, <span class="pl-s">'wb'</span>) <span class="pl-k">as</span> <span class="pl-s1">f</span>:
+    <span class="pl-s1">pickle</span>.<span class="pl-en">dump</span>(<span class="pl-s1">results</span>, <span class="pl-s1">f</span>)</pre></div>
+</details>
+<details>
+<summary>Gather results</summary>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import pickle
+from torch.utils.benchmark import Timer, Compare
+
+files = [
+        &quot;PR&quot;,
+        &quot;master&quot;
+        ]
+
+device = 'cuda'
+
+timers = []
+for name in files:
+    with open(&quot;{}_{}_mul.pickle&quot;.format(name, device), 'rb') as f:
+        timers += pickle.load(f)
+
+compare = Compare(timers)
+compare.trim_significant_figures()
+compare.print()
+"><pre><span class="pl-k">import</span> <span class="pl-s1">pickle</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">utils</span>.<span class="pl-s1">benchmark</span> <span class="pl-k">import</span> <span class="pl-v">Timer</span>, <span class="pl-v">Compare</span>
+
+<span class="pl-s1">files</span> <span class="pl-c1">=</span> [
+        <span class="pl-s">"PR"</span>,
+        <span class="pl-s">"master"</span>
+        ]
+
+<span class="pl-s1">device</span> <span class="pl-c1">=</span> <span class="pl-s">'cuda'</span>
+
+<span class="pl-s1">timers</span> <span class="pl-c1">=</span> []
+<span class="pl-k">for</span> <span class="pl-s1">name</span> <span class="pl-c1">in</span> <span class="pl-s1">files</span>:
+    <span class="pl-k">with</span> <span class="pl-en">open</span>(<span class="pl-s">"{}_{}_mul.pickle"</span>.<span class="pl-en">format</span>(<span class="pl-s1">name</span>, <span class="pl-s1">device</span>), <span class="pl-s">'rb'</span>) <span class="pl-k">as</span> <span class="pl-s1">f</span>:
+        <span class="pl-s1">timers</span> <span class="pl-c1">+=</span> <span class="pl-s1">pickle</span>.<span class="pl-en">load</span>(<span class="pl-s1">f</span>)
+
+<span class="pl-s1">compare</span> <span class="pl-c1">=</span> <span class="pl-v">Compare</span>(<span class="pl-s1">timers</span>)
+<span class="pl-s1">compare</span>.<span class="pl-en">trim_significant_figures</span>()
+<span class="pl-s1">compare</span>.<span class="pl-en">print</span>()</pre></div>
+</details>
+<details>
+<summary>CUDA</summary>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------------------------------------- coo.mul -------------------------------------------------]
+                                                       |  PR: mul, device: cuda  |  master: mul, device: cuda
+24 threads: -------------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |             95          |                91
+      n=10000, nnz=100, coalesce=((True, False))       |             87          |               242
+      n=10000, nnz=100, coalesce=((False, True))       |             87          |               226
+      n=10000, nnz=100, coalesce=((False, False))      |            130          |               371
+      n=100000, nnz=1000, coalesce=((True, True))      |            100          |               521
+      n=100000, nnz=1000, coalesce=((True, False))     |             90          |               649
+      n=100000, nnz=1000, coalesce=((False, True))     |            100          |               659
+      n=100000, nnz=1000, coalesce=((False, False))    |            200          |               781
+      n=1000000, nnz=10000, coalesce=((True, True))    |            100          |              4861
+      n=1000000, nnz=10000, coalesce=((True, False))   |            100          |              5012
+      n=1000000, nnz=10000, coalesce=((False, True))   |             98          |              5010
+      n=1000000, nnz=10000, coalesce=((False, False))  |            384          |              5174
+      n=10, nnz=100, coalesce=((True, True))           |            100          |                79
+      n=10, nnz=100, coalesce=((True, False))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, True))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, False))         |            100          |               350
+      n=10, nnz=1000, coalesce=((True, True))          |            100          |               100
+      n=10, nnz=1000, coalesce=((True, False))         |            100          |               240
+      n=10, nnz=1000, coalesce=((False, True))         |            100          |               254
+      n=10, nnz=1000, coalesce=((False, False))        |            100          |               392
+      n=10, nnz=10000, coalesce=((True, True))         |            100          |               110
+      n=10, nnz=10000, coalesce=((True, False))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, True))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, False))       |            271          |               455
+      n=100, nnz=1000, coalesce=((True, True))         |            110          |               851
+      n=100, nnz=1000, coalesce=((True, False))        |            110          |              1000
+      n=100, nnz=1000, coalesce=((False, True))        |            110          |               990
+      n=100, nnz=1000, coalesce=((False, False))       |            140          |              1124
+      n=100, nnz=10000, coalesce=((True, True))        |            110          |              5137
+      n=100, nnz=10000, coalesce=((True, False))       |            110          |              5391
+      n=100, nnz=10000, coalesce=((False, True))       |            100          |              5405
+      n=100, nnz=10000, coalesce=((False, False))      |            249          |              5539
+      n=1000, nnz=10000, coalesce=((True, True))       |            100          |              8598
+      n=1000, nnz=10000, coalesce=((True, False))      |            100          |              8800
+      n=1000, nnz=10000, coalesce=((False, True))      |            100          |              8782
+      n=1000, nnz=10000, coalesce=((False, False))     |            255          |              8956
+      n=1000, nnz=100000, coalesce=((True, True))      |            120          |             84500
+      n=1000, nnz=100000, coalesce=((True, False))     |            200          |             88560
+      n=1000, nnz=100000, coalesce=((False, True))     |            160          |             89000
+      n=1000, nnz=100000, coalesce=((False, False))    |            373          |             89000
+      n=1000, nnz=1000000, coalesce=((True, True))     |            312          |            606400
+      n=1000, nnz=1000000, coalesce=((True, False))    |           1340          |            609200
+      n=1000, nnz=1000000, coalesce=((False, True))    |           1340          |            609100
+      n=1000, nnz=1000000, coalesce=((False, False))   |           4408          |            611400
+
+Times are in microseconds (us)."><pre class="notranslate"><code>[------------------------------------------------- coo.mul -------------------------------------------------]
+                                                       |  PR: mul, device: cuda  |  master: mul, device: cuda
+24 threads: -------------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |             95          |                91
+      n=10000, nnz=100, coalesce=((True, False))       |             87          |               242
+      n=10000, nnz=100, coalesce=((False, True))       |             87          |               226
+      n=10000, nnz=100, coalesce=((False, False))      |            130          |               371
+      n=100000, nnz=1000, coalesce=((True, True))      |            100          |               521
+      n=100000, nnz=1000, coalesce=((True, False))     |             90          |               649
+      n=100000, nnz=1000, coalesce=((False, True))     |            100          |               659
+      n=100000, nnz=1000, coalesce=((False, False))    |            200          |               781
+      n=1000000, nnz=10000, coalesce=((True, True))    |            100          |              4861
+      n=1000000, nnz=10000, coalesce=((True, False))   |            100          |              5012
+      n=1000000, nnz=10000, coalesce=((False, True))   |             98          |              5010
+      n=1000000, nnz=10000, coalesce=((False, False))  |            384          |              5174
+      n=10, nnz=100, coalesce=((True, True))           |            100          |                79
+      n=10, nnz=100, coalesce=((True, False))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, True))          |            100          |               221
+      n=10, nnz=100, coalesce=((False, False))         |            100          |               350
+      n=10, nnz=1000, coalesce=((True, True))          |            100          |               100
+      n=10, nnz=1000, coalesce=((True, False))         |            100          |               240
+      n=10, nnz=1000, coalesce=((False, True))         |            100          |               254
+      n=10, nnz=1000, coalesce=((False, False))        |            100          |               392
+      n=10, nnz=10000, coalesce=((True, True))         |            100          |               110
+      n=10, nnz=10000, coalesce=((True, False))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, True))        |            110          |               286
+      n=10, nnz=10000, coalesce=((False, False))       |            271          |               455
+      n=100, nnz=1000, coalesce=((True, True))         |            110          |               851
+      n=100, nnz=1000, coalesce=((True, False))        |            110          |              1000
+      n=100, nnz=1000, coalesce=((False, True))        |            110          |               990
+      n=100, nnz=1000, coalesce=((False, False))       |            140          |              1124
+      n=100, nnz=10000, coalesce=((True, True))        |            110          |              5137
+      n=100, nnz=10000, coalesce=((True, False))       |            110          |              5391
+      n=100, nnz=10000, coalesce=((False, True))       |            100          |              5405
+      n=100, nnz=10000, coalesce=((False, False))      |            249          |              5539
+      n=1000, nnz=10000, coalesce=((True, True))       |            100          |              8598
+      n=1000, nnz=10000, coalesce=((True, False))      |            100          |              8800
+      n=1000, nnz=10000, coalesce=((False, True))      |            100          |              8782
+      n=1000, nnz=10000, coalesce=((False, False))     |            255          |              8956
+      n=1000, nnz=100000, coalesce=((True, True))      |            120          |             84500
+      n=1000, nnz=100000, coalesce=((True, False))     |            200          |             88560
+      n=1000, nnz=100000, coalesce=((False, True))     |            160          |             89000
+      n=1000, nnz=100000, coalesce=((False, False))    |            373          |             89000
+      n=1000, nnz=1000000, coalesce=((True, True))     |            312          |            606400
+      n=1000, nnz=1000000, coalesce=((True, False))    |           1340          |            609200
+      n=1000, nnz=1000000, coalesce=((False, True))    |           1340          |            609100
+      n=1000, nnz=1000000, coalesce=((False, False))   |           4408          |            611400
+
+Times are in microseconds (us).
+</code></pre></div>
+</details>
+<details>
+<summary>CPU</summary>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------------------------------------ coo.mul ------------------------------------------------]
+                                                       |  PR: mul, device: cpu  |  master: mul, device: cpu
+24 threads: -----------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |              8         |                8         
+      n=10000, nnz=100, coalesce=((True, False))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, True))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, False))      |             41         |               56         
+      n=100000, nnz=1000, coalesce=((True, True))      |             24         |               24         
+      n=100000, nnz=1000, coalesce=((True, False))     |             90         |              100         
+      n=100000, nnz=1000, coalesce=((False, True))     |             87         |              100         
+      n=100000, nnz=1000, coalesce=((False, False))    |            231         |              255         
+      n=1000000, nnz=10000, coalesce=((True, True))    |            190         |              200         
+      n=1000000, nnz=10000, coalesce=((True, False))   |            908         |             2023         
+      n=1000000, nnz=10000, coalesce=((False, True))   |            800         |             2036         
+      n=1000000, nnz=10000, coalesce=((False, False))  |           3684         |             3989         
+      n=10, nnz=100, coalesce=((True, True))           |              8         |                7         
+      n=10, nnz=100, coalesce=((True, False))          |             34         |               30         
+      n=10, nnz=100, coalesce=((False, True))          |             33         |               30         
+      n=10, nnz=100, coalesce=((False, False))         |             44         |               50         
+      n=10, nnz=1000, coalesce=((True, True))          |              8         |                7         
+      n=10, nnz=1000, coalesce=((True, False))         |            100         |              100         
+      n=10, nnz=1000, coalesce=((False, True))         |            130         |              100         
+      n=10, nnz=1000, coalesce=((False, False))        |            746         |              210         
+      n=10, nnz=10000, coalesce=((True, True))         |              8         |                7         
+      n=10, nnz=10000, coalesce=((True, False))        |           1000         |             1500         
+      n=10, nnz=10000, coalesce=((False, True))        |           1000         |             1510         
+      n=10, nnz=10000, coalesce=((False, False))       |           3063         |             2457         
+      n=100, nnz=1000, coalesce=((True, True))         |             25         |               25         
+      n=100, nnz=1000, coalesce=((True, False))        |            180         |              130         
+      n=100, nnz=1000, coalesce=((False, True))        |            200         |              130         
+      n=100, nnz=1000, coalesce=((False, False))       |            271         |              255         
+      n=100, nnz=10000, coalesce=((True, True))        |            100         |              100         
+      n=100, nnz=10000, coalesce=((True, False))       |           2444         |             2290         
+      n=100, nnz=10000, coalesce=((False, True))       |           2455         |             2357         
+      n=100, nnz=10000, coalesce=((False, False))      |           5316         |             3783         
+      n=1000, nnz=10000, coalesce=((True, True))       |            204         |              211         
+      n=1000, nnz=10000, coalesce=((True, False))      |           2457         |             2480         
+      n=1000, nnz=10000, coalesce=((False, True))      |           2448         |             2539         
+      n=1000, nnz=10000, coalesce=((False, False))     |           3665         |             4801         
+      n=1000, nnz=100000, coalesce=((True, True))      |           2293         |             2374         
+      n=1000, nnz=100000, coalesce=((True, False))     |           9000         |            24620         
+      n=1000, nnz=100000, coalesce=((False, True))     |           8000         |            25080         
+      n=1000, nnz=100000, coalesce=((False, False))    |          26500         |            47650         
+      n=1000, nnz=1000000, coalesce=((True, True))     |          10000         |            13000         
+      n=1000, nnz=1000000, coalesce=((True, False))    |          80000         |           362200         
+      n=1000, nnz=1000000, coalesce=((False, True))    |          78050         |           392600         
+      n=1000, nnz=1000000, coalesce=((False, False))   |         312100         |           766900         
+
+Times are in microseconds (us)."><pre class="notranslate"><code>[------------------------------------------------ coo.mul ------------------------------------------------]
+                                                       |  PR: mul, device: cpu  |  master: mul, device: cpu
+24 threads: -----------------------------------------------------------------------------------------------
+      n=10000, nnz=100, coalesce=((True, True))        |              8         |                8         
+      n=10000, nnz=100, coalesce=((True, False))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, True))       |             32         |               34         
+      n=10000, nnz=100, coalesce=((False, False))      |             41         |               56         
+      n=100000, nnz=1000, coalesce=((True, True))      |             24         |               24         
+      n=100000, nnz=1000, coalesce=((True, False))     |             90         |              100         
+      n=100000, nnz=1000, coalesce=((False, True))     |             87         |              100         
+      n=100000, nnz=1000, coalesce=((False, False))    |            231         |              255         
+      n=1000000, nnz=10000, coalesce=((True, True))    |            190         |              200         
+      n=1000000, nnz=10000, coalesce=((True, False))   |            908         |             2023         
+      n=1000000, nnz=10000, coalesce=((False, True))   |            800         |             2036         
+      n=1000000, nnz=10000, coalesce=((False, False))  |           3684         |             3989         
+      n=10, nnz=100, coalesce=((True, True))           |              8         |                7         
+      n=10, nnz=100, coalesce=((True, False))          |             34         |               30         
+      n=10, nnz=100, coalesce=((False, True))          |             33         |               30         
+      n=10, nnz=100, coalesce=((False, False))         |             44         |               50         
+      n=10, nnz=1000, coalesce=((True, True))          |              8         |                7         
+      n=10, nnz=1000, coalesce=((True, False))         |            100         |              100         
+      n=10, nnz=1000, coalesce=((False, True))         |            130         |              100         
+      n=10, nnz=1000, coalesce=((False, False))        |            746         |              210         
+      n=10, nnz=10000, coalesce=((True, True))         |              8         |                7         
+      n=10, nnz=10000, coalesce=((True, False))        |           1000         |             1500         
+      n=10, nnz=10000, coalesce=((False, True))        |           1000         |             1510         
+      n=10, nnz=10000, coalesce=((False, False))       |           3063         |             2457         
+      n=100, nnz=1000, coalesce=((True, True))         |             25         |               25         
+      n=100, nnz=1000, coalesce=((True, False))        |            180         |              130         
+      n=100, nnz=1000, coalesce=((False, True))        |            200         |              130         
+      n=100, nnz=1000, coalesce=((False, False))       |            271         |              255         
+      n=100, nnz=10000, coalesce=((True, True))        |            100         |              100         
+      n=100, nnz=10000, coalesce=((True, False))       |           2444         |             2290         
+      n=100, nnz=10000, coalesce=((False, True))       |           2455         |             2357         
+      n=100, nnz=10000, coalesce=((False, False))      |           5316         |             3783         
+      n=1000, nnz=10000, coalesce=((True, True))       |            204         |              211         
+      n=1000, nnz=10000, coalesce=((True, False))      |           2457         |             2480         
+      n=1000, nnz=10000, coalesce=((False, True))      |           2448         |             2539         
+      n=1000, nnz=10000, coalesce=((False, False))     |           3665         |             4801         
+      n=1000, nnz=100000, coalesce=((True, True))      |           2293         |             2374         
+      n=1000, nnz=100000, coalesce=((True, False))     |           9000         |            24620         
+      n=1000, nnz=100000, coalesce=((False, True))     |           8000         |            25080         
+      n=1000, nnz=100000, coalesce=((False, False))    |          26500         |            47650         
+      n=1000, nnz=1000000, coalesce=((True, True))     |          10000         |            13000         
+      n=1000, nnz=1000000, coalesce=((True, False))    |          80000         |           362200         
+      n=1000, nnz=1000000, coalesce=((False, True))    |          78050         |           392600         
+      n=1000, nnz=1000000, coalesce=((False, False))   |         312100         |           766900         
+
+Times are in microseconds (us).
+</code></pre></div>
+</details>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/83427: Update on "coo binary_op intersection primitives"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83427</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F83427</guid>
+            <pubDate>Fri, 09 Sep 2022 11:39:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/82841: Update on "[maskedtensor] add basic tests and unary/binary/reduction …]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F82841</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F82841</guid>
+            <pubDate>Fri, 09 Sep 2022 11:37:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…tests from common_method_invocations"</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from deno: v1.25.2]]></title>
+            <link>https://github.com/denoland/deno/releases/tag/v1.25.2</link>
+            <guid>https://github.com/denoland/deno/releases/tag/v1.25.2</guid>
+            <pubDate>Fri, 09 Sep 2022 11:09:17 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>1.25.2 / 2022.09.09</h3>
+<ul>
+<li>BREAKING(unstable): remove --compat mode (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354904067" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15678" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15678/hovercard" href="https://github.com/denoland/deno/pull/15678">#15678</a>)</li>
+<li>feat(ext/ffi): Implement FFI fast-call trampoline with Dynasmrt (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1316606406" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15305" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15305/hovercard" href="https://github.com/denoland/deno/pull/15305">#15305</a>)</li>
+<li>feat(ext/ffi): Support bool FFI type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360873737" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15754" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15754/hovercard" href="https://github.com/denoland/deno/pull/15754">#15754</a>)</li>
+<li>feat(serde_v8): Support StringObject as unit enum variant (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1358065622" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15715" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15715/hovercard" href="https://github.com/denoland/deno/pull/15715">#15715</a>)</li>
+<li>fix(bench): make sure bytes/response is equal (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361118398" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15763" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15763/hovercard" href="https://github.com/denoland/deno/pull/15763">#15763</a>)</li>
+<li>fix(cli): Fix panic when providing invalid urls to --reload (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1362652646" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15784" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15784/hovercard" href="https://github.com/denoland/deno/pull/15784">#15784</a>)</li>
+<li>fix(cli): allow using file resource synchronously while being used async<br>
+(<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360454424" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15747" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15747/hovercard" href="https://github.com/denoland/deno/pull/15747">#15747</a>)</li>
+<li>fix(cli/repl): await Promise.any([])... (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1352241368" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15623" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15623/hovercard" href="https://github.com/denoland/deno/pull/15623">#15623</a>)</li>
+<li>fix(core): Register external references for imports to the SnapshotCreator<br>
+(<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1352224858" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15621" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15621/hovercard" href="https://github.com/denoland/deno/pull/15621">#15621</a>)</li>
+<li>fix(core): make errors more resistant to tampering (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1363861465" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15789" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15789/hovercard" href="https://github.com/denoland/deno/pull/15789">#15789</a>)</li>
+<li>fix(core): opAsync leaks a promise on type error (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1364206158" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15795" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15795/hovercard" href="https://github.com/denoland/deno/pull/15795">#15795</a>)</li>
+<li>fix(docs): add missing categories for unstable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1364858105" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15807" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15807/hovercard" href="https://github.com/denoland/deno/pull/15807">#15807</a>)</li>
+<li>fix(docs): change category for Deno.Process to "Sub Process" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1365428920" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15812" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15812/hovercard" href="https://github.com/denoland/deno/pull/15812">#15812</a>)</li>
+<li>fix(ext/flash): use utf8 length as Content-Length (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1364092717" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15793" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15793/hovercard" href="https://github.com/denoland/deno/pull/15793">#15793</a>)</li>
+<li>fix(ext/timers): create primordial <code>eval</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1296537940" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15110" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15110/hovercard" href="https://github.com/denoland/deno/pull/15110">#15110</a>)</li>
+<li>fix(init): suppress info logs when using quiet mode (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1359944073" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15741" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15741/hovercard" href="https://github.com/denoland/deno/pull/15741">#15741</a>)</li>
+<li>fix(npm): add more context to errors when file doesn't exist (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360598341" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15749" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15749/hovercard" href="https://github.com/denoland/deno/pull/15749">#15749</a>)</li>
+<li>fix(npm): conditional exports in npm: specifiers (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361799488" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15778" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15778/hovercard" href="https://github.com/denoland/deno/pull/15778">#15778</a>)</li>
+<li>fix(npm): correct exact matching of pre-release versions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360246792" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15745" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15745/hovercard" href="https://github.com/denoland/deno/pull/15745">#15745</a>)</li>
+<li>fix(npm): recursive translation of reexports, remove window global in node<br>
+code (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1364790983" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15806" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15806/hovercard" href="https://github.com/denoland/deno/pull/15806">#15806</a>)</li>
+<li>fix(npm): respect <code>latest</code> dist tag for getting current version (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360338382" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15746" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15746/hovercard" href="https://github.com/denoland/deno/pull/15746">#15746</a>)</li>
+<li>fix(ops): use qualified borrow in op macro (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361295800" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15769" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15769/hovercard" href="https://github.com/denoland/deno/pull/15769">#15769</a>)</li>
+<li>fix(repl): don't terminate on unhandled error events (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1347134015" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15548" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15548/hovercard" href="https://github.com/denoland/deno/pull/15548">#15548</a>)</li>
+<li>fix(test): unflake wasm_unreachable test (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1364190337" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15794" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15794/hovercard" href="https://github.com/denoland/deno/pull/15794">#15794</a>)</li>
+<li>fix(watch): ignore unload errors on drop (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1362375639" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15782" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15782/hovercard" href="https://github.com/denoland/deno/pull/15782">#15782</a>)</li>
+<li>fix: upgrade deno_ast to 0.19 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1364931111" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15808" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15808/hovercard" href="https://github.com/denoland/deno/pull/15808">#15808</a>)</li>
+<li>perf(ops): inline &amp;[u8] arguments and enable fast API (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1359191898" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15731" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15731/hovercard" href="https://github.com/denoland/deno/pull/15731">#15731</a>)</li>
+<li>perf(runtime): flatten arguments for write_file ops (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361597217" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15776" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15776/hovercard" href="https://github.com/denoland/deno/pull/15776">#15776</a>)</li>
+<li>perf(runtime): short-circuit <code>queue_async_op</code> for Poll::Ready (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361389268" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/15773" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/15773/hovercard" href="https://github.com/denoland/deno/pull/15773">#15773</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2995]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2995</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2995</guid>
+            <pubDate>Fri, 09 Sep 2022 10:38:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from ant-design: 4.23.1]]></title>
+            <link>https://github.com/ant-design/ant-design/releases/tag/4.23.1</link>
+            <guid>https://github.com/ant-design/ant-design/releases/tag/4.23.1</guid>
+            <pubDate>Fri, 09 Sep 2022 10:13:25 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix unable to close modal when using visible in <code>Modal.confirm().update</code>. <a href="https://github.com/ant-design/ant-design/pull/37471" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37471/hovercard">#37471</a> <a href="https://github.com/Aaron674092290">@Aaron674092290</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix esbuild strict mode call <code>No matching export theme</code> error. <a href="https://github.com/ant-design/ant-design/pull/37462" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37462/hovercard">#37462</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Switch background flush issue by reverting <a href="https://github.com/ant-design/ant-design/pull/35103" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/35103/hovercard">#35103</a>. <a href="https://github.com/ant-design/ant-design/pull/37458" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37458/hovercard">#37458</a></li>
+<li>TypeScript
+<ul>
+<li><g-emoji class="g-emoji" alias="robot" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f916.png">🤖</g-emoji> InputNumber <code>value</code> add null type. <a href="https://github.com/ant-design/ant-design/pull/37421" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37421/hovercard">#37421</a> <a href="https://github.com/li-jia-nan">@li-jia-nan</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<ul>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 <code>Modal.confirm().update({visible: true})</code> 导致无法关闭 modal 的问题。<a href="https://github.com/ant-design/ant-design/pull/37471" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37471/hovercard">#37471</a> <a href="https://github.com/Aaron674092290">@Aaron674092290</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 兜底修复 esbuild 严格模式构建时报 <code>No matching export theme</code> 错误。<a href="https://github.com/ant-design/ant-design/pull/37462" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37462/hovercard">#37462</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 回滚 <a href="https://github.com/ant-design/ant-design/pull/35103" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/35103/hovercard">#35103</a> 以修复 Switch 切换时背景闪烁的问题。<a href="https://github.com/ant-design/ant-design/pull/37458" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37458/hovercard">#37458</a></li>
+<li>TypeScript
+<ul>
+<li><g-emoji class="g-emoji" alias="robot" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f916.png">🤖</g-emoji> InputNumber <code>value</code> 新增类型 null。<a href="https://github.com/ant-design/ant-design/pull/37421" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/37421/hovercard">#37421</a> <a href="https://github.com/li-jia-nan">@li-jia-nan</a></li>
+</ul>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2992]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2992</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2992</guid>
+            <pubDate>Fri, 09 Sep 2022 10:12:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from moby: v20.10.18]]></title>
+            <link>https://github.com/moby/moby/releases/tag/v20.10.18</link>
+            <guid>https://github.com/moby/moby/releases/tag/v20.10.18</guid>
+            <pubDate>Fri, 09 Sep 2022 09:56:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This release of Docker Engine comes with a fix for a low-severity security issue,<br>
+some minor bug fixes, and updated versions of Docker Compose, Docker Buildx,<br>
+<code>containerd</code>, and <code>runc</code>.</p>
+<h3>Client</h3>
+<ul>
+<li>Add Bash completion for Docker Compose <a href="https://github.com/docker/cli/pull/3752" data-hovercard-type="pull_request" data-hovercard-url="/docker/cli/pull/3752/hovercard">docker/cli#3752</a>.</li>
+</ul>
+<h3>Builder</h3>
+<ul>
+<li>Fix an issue where file-capabilities were not preserved during build <a href="https://github.com/moby/moby/pull/43876" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/43876/hovercard">moby/moby#43876</a>.</li>
+<li>Fix an issue that could result in a panic caused by a concurrent map read and map write <a href="https://github.com/moby/moby/pull/44067" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/44067/hovercard">moby/moby#44067</a></li>
+</ul>
+<h3>Daemon</h3>
+<ul>
+<li>Fix a security vulnerability relating to supplementary group permissions, which<br>
+could allow a container process to bypass primary group restrictions within the<br>
+container <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-36109" rel="nofollow">CVE-2022-36109</a>,  <a href="https://github.com/moby/moby/security/advisories/GHSA-rc4r-wh2q-q6c4">GHSA-rc4r-wh2q-q6c4</a>.</li>
+<li>seccomp: add support for Landlock syscalls in default policy <a href="https://github.com/moby/moby/pull/43991" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/43991/hovercard">moby/moby#43991</a>.</li>
+<li>seccomp: update default policy to support new syscalls introduced in kernel 5.12 - 5.16 <a href="https://github.com/moby/moby/pull/43991" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/43991/hovercard">moby/moby#43991</a>.</li>
+<li>Fix an issue where cache lookup for image manifests would fail, resulting<br>
+in a redundant round-trip to the image registry <a href="https://github.com/moby/moby/pull/44109" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/44109/hovercard">moby/moby#44109</a>.</li>
+<li>Fix an issue where <code>exec</code> processes and healthchecks were not terminated<br>
+when they timed out <a href="https://github.com/moby/moby/pull/44018" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/44018/hovercard">moby/moby#44018</a>.</li>
+</ul>
+<h3>Packaging</h3>
+<ul>
+<li>Update Docker Buildx to <a href="https://github.com/docker/buildx/releases/tag/v0.9.1">v0.9.1</a>.</li>
+<li>Update Docker Compose to <a href="https://github.com/docker/compose/releases/tag/v2.10.2">v2.10.2</a>.</li>
+<li>Update containerd (<code>containerd.io</code> package) to <a href="https://github.com/containerd/containerd/releases/tag/v1.6.8">v1.6.8</a>.</li>
+<li>Update runc to <a href="https://github.com/opencontainers/runc/releases/tag/v1.1.4">v1.1.4</a>.</li>
+<li>Update Go runtime to <a href="https://go.dev/doc/devel/release#go1.18.minor" rel="nofollow">1.18.6</a>,<br>
+which contains fixes for <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-27664" rel="nofollow">CVE-2022-27664</a><br>
+and <a href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-32190" rel="nofollow">CVE-2022-32190</a>.</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rust: Rust 1.62.0]]></title>
+            <link>https://github.com/rust-lang/rust/releases/tag/1.62.0</link>
+            <guid>https://github.com/rust-lang/rust/releases/tag/1.62.0</guid>
+            <pubDate>Fri, 09 Sep 2022 09:06:21 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Language</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/94457/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/94457/hovercard">Stabilize <code>#[derive(Default)]</code> on enums with a <code>#[default]</code> variant</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/93313/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/93313/hovercard">Teach flow sensitive checks that visibly uninhabited call expressions never return</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/94775/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/94775/hovercard">Fix constants not getting dropped if part of a diverging expression</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95380/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95380/hovercard">Support unit struct/enum variant in destructuring assignment</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/96268/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96268/hovercard">Remove mutable_borrow_reservation_conflict lint and allow the code pattern</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95346/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95346/hovercard"><code>const</code> functions may now specify <code>extern "C"</code> or <code>extern "Rust"</code></a></li>
+</ul>
+<h2>Compiler</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/96436/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96436/hovercard">linker: Stop using whole-archive on dependencies of dylibs</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95372/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95372/hovercard">Make <code>unaligned_references</code> lint deny-by-default</a> This lint is also a future compatibility lint, and is expected to eventually become a hard error.</li>
+<li><a href="https://github.com/rust-lang/rust/pull/93969/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/93969/hovercard">Only add codegen backend to dep info if -Zbinary-dep-depinfo is used</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95006/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95006/hovercard">Reject <code>#[thread_local]</code> attribute on non-static items</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/94872/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/94872/hovercard">Add tier 3 <code>aarch64-pc-windows-gnullvm</code> and <code>x86_64-pc-windows-gnullvm</code> targets*</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/96150/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96150/hovercard">Implement a lint to warn about unused macro rules</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95705/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95705/hovercard">Promote <code>x86_64-unknown-none</code> target to Tier 2*</a></li>
+</ul>
+<p>* Refer to Rust's <a href="https://doc.rust-lang.org/nightly/rustc/platform-support.html" rel="nofollow">platform support page</a> for more information on Rust's tiered platform support.</p>
+<h2>Libraries</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/95841/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95841/hovercard">Windows: Use a pipe relay for chaining pipes</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95035/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95035/hovercard">Replace Linux Mutex and Condvar with futex based ones.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95801/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95801/hovercard">Replace RwLock by a futex based one on Linux</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/96393/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96393/hovercard">std: directly use pthread in UNIX parker implementation</a></li>
+</ul>
+<h2>Stabilized APIs</h2>
+<ul>
+<li><a href="https://doc.rust-lang.org/stable/std/primitive.bool.html#method.then_some" rel="nofollow"><code>bool::then_some</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/primitive.f32.html#method.total_cmp" rel="nofollow"><code>f32::total_cmp</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/primitive.f64.html#method.total_cmp" rel="nofollow"><code>f64::total_cmp</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/io/struct.Stdin.html#method.lines" rel="nofollow"><code>Stdin::lines</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/os/windows/process/trait.CommandExt.html#tymethod.raw_arg" rel="nofollow"><code>windows::CommandExt::raw_arg</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/panic/struct.AssertUnwindSafe.html#impl-Default" rel="nofollow"><code>impl&lt;T: Default&gt; Default for AssertUnwindSafe&lt;T&gt;</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/rc/struct.Rc.html#impl-From%3CRc%3Cstr%3E%3E" rel="nofollow"><code>From&lt;Rc&lt;str&gt;&gt; for Rc&lt;[u8]&gt;</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/sync/struct.Arc.html#impl-From%3CArc%3Cstr%3E%3E" rel="nofollow"><code>From&lt;Arc&lt;str&gt;&gt; for Arc&lt;[u8]&gt;</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/os/windows/ffi/struct.EncodeWide.html#impl-FusedIterator" rel="nofollow"><code>FusedIterator for EncodeWide</code></a></li>
+<li><a href="https://github.com/rust-lang/stdarch/pull/1285" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/stdarch/pull/1285/hovercard">RDM intrinsics on aarch64</a></li>
+</ul>
+<h2>Clippy</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/94206/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/94206/hovercard">Create clippy lint against unexpectedly late drop for temporaries in match scrutinee expressions</a></li>
+</ul>
+<h2>Cargo</h2>
+<ul>
+<li>Added the <code>cargo add</code> command for adding dependencies to <code>Cargo.toml</code> from the command-line. <a href="https://doc.rust-lang.org/nightly/cargo/commands/cargo-add.html" rel="nofollow">docs</a></li>
+<li>Package ID specs now support <code>name@version</code> syntax in addition to the previous <code>name:version</code> to align with the behavior in <code>cargo add</code> and other tools. <code>cargo install</code> and <code>cargo yank</code> also now support this syntax so the version does not need to passed as a separate flag.</li>
+<li>The <code>git</code> and <code>registry</code> directories in Cargo's home directory (usually <code>~/.cargo</code>) are now marked as cache directories so that they are not included in backups or content indexing (on Windows).</li>
+<li>Added automatic <code>@</code> argfile support, which will use "response files" if the command-line to <code>rustc</code> exceeds the operating system's limit.</li>
+</ul>
+<h2>Compatibility Notes</h2>
+<ul>
+<li><code>cargo test</code> now passes <code>--target</code> to <code>rustdoc</code> if the specified target is the same as the host target. <a href="https://github.com/rust-lang/cargo/pull/10594" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/cargo/pull/10594/hovercard">#10594</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/96630/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96630/hovercard">rustdoc: doctests are now run on unexported <code>macro_rules!</code> macros, matching other private items</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/96279/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96279/hovercard">rustdoc: Remove .woff font files</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95819/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95819/hovercard">Enforce Copy bounds for repeat elements while considering lifetimes</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/95469/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/95469/hovercard">Windows: Fix potentinal unsoundness by aborting if <code>File</code> reads or writes cannot complete synchronously</a>.</li>
+</ul>
+<h2>Internal Changes</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/96042/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96042/hovercard">Unify ReentrantMutex implementations across all platforms</a></li>
+</ul>
+<p>These changes provide no direct user facing benefits, but represent significant improvements to the internals and overall performance of rustc and related tools.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2984]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2984</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2984</guid>
+            <pubDate>Fri, 09 Sep 2022 08:29:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2983]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2983</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2983</guid>
+            <pubDate>Fri, 09 Sep 2022 08:21:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.479]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.479</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.479</guid>
+            <pubDate>Fri, 09 Sep 2022 07:00:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>[breaking] request creation cleanup (<a href="https://github.com/sveltejs/kit/pull/6681" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6681/hovercard">#6681</a>)</p>
+</li>
+<li>
+<p>[breaking] limit adapter-node request size (<a href="https://github.com/sveltejs/kit/pull/6684" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6684/hovercard">#6684</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-node@1.0.0-next.89]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-node%401.0.0-next.89</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-node%401.0.0-next.89</guid>
+            <pubDate>Fri, 09 Sep 2022 07:00:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>[breaking] request creation cleanup (<a href="https://github.com/sveltejs/kit/pull/6681" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6681/hovercard">#6681</a>)</p>
+</li>
+<li>
+<p>[breaking] limit adapter-node request size (<a href="https://github.com/sveltejs/kit/pull/6684" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6684/hovercard">#6684</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-vercel@1.0.0-next.73]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.73</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.73</guid>
+            <pubDate>Fri, 09 Sep 2022 07:00:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>[breaking] request creation cleanup (<a href="https://github.com/sveltejs/kit/pull/6681" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6681/hovercard">#6681</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-auto@1.0.0-next.72]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%401.0.0-next.72</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%401.0.0-next.72</guid>
+            <pubDate>Fri, 09 Sep 2022 07:00:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>Updated dependencies [<a href="https://github.com/sveltejs/kit/commit/f1e762bff16acc56b0d1e10c9cadeada0d25017d"><code>f1e762bf</code></a>]:
+<ul>
+<li>@sveltejs/adapter-vercel@1.0.0-next.73</li>
+<li>@sveltejs/adapter-netlify@1.0.0-next.76</li>
+</ul>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/78764]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F78764</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F78764</guid>
+            <pubDate>Fri, 09 Sep 2022 06:42:49 GMT</pubDate>
+            <content:encoded><![CDATA[<p>bad test</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Fri, 09 Sep 2022 06:37:16 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.8.0-dev-1059-g2d6735d8c
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+"><pre class="notranslate"><code>NVIM v0.8.0-dev-1059-g2d6735d8c
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip.</li>
+<li>Run <code>nvim-qt.exe</code></li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice.</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h4>Debian Package</h4>
+<ol>
+<li>Download <strong>nvim-linux64.deb</strong></li>
+<li>Install the package using <code>sudo apt install ./nvim-linux64.deb</code></li>
+<li>Run <code>nvim</code></li>
+</ol>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="b722edb2eaf4947f4b43b2e487e3b1389d2f255f625f6cd0f546d6101bacf81e  nvim-linux64.tar.gz
+4be5f5b284495bbdb6ef67cc50a3c5c7e12a2344e5082a915e7010d88e897f64  nvim-linux64.deb
+b6403887385c32cf979e6e78db0c79e0276bb89db9ba60b279f9f496071c8b7d  nvim.appimage
+04f16f9d02f40d6bef44dc2437e3dc0c5a77dd750ea80af8f2f1547ed6139ce2  nvim.appimage.zsync
+9860f5957faf66813fb1e135b9293509dda5f8637fffbbd5af9ceaf57538a4bb  nvim-macos.tar.gz
+843e4ccb9746cf4ddd63e008f14fd3030f3c48e9a627c754cf0a822ddf4a0e2d  nvim-win64.zip
+294a168b1d32f6c341b57eb6b6ad663a1e758453e6dcbf8e3803dc7ecf190cc0  nvim-win64.msi"><pre class="notranslate"><code>b722edb2eaf4947f4b43b2e487e3b1389d2f255f625f6cd0f546d6101bacf81e  nvim-linux64.tar.gz
+4be5f5b284495bbdb6ef67cc50a3c5c7e12a2344e5082a915e7010d88e897f64  nvim-linux64.deb
+b6403887385c32cf979e6e78db0c79e0276bb89db9ba60b279f9f496071c8b7d  nvim.appimage
+04f16f9d02f40d6bef44dc2437e3dc0c5a77dd750ea80af8f2f1547ed6139ce2  nvim.appimage.zsync
+9860f5957faf66813fb1e135b9293509dda5f8637fffbbd5af9ceaf57538a4bb  nvim-macos.tar.gz
+843e4ccb9746cf4ddd63e008f14fd3030f3c48e9a627c754cf0a822ddf4a0e2d  nvim-win64.zip
+294a168b1d32f6c341b57eb6b6ad663a1e758453e6dcbf8e3803dc7ecf190cc0  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from crystal: 1.5.1]]></title>
+            <link>https://github.com/crystal-lang/crystal/releases/tag/1.5.1</link>
+            <guid>https://github.com/crystal-lang/crystal/releases/tag/1.5.1</guid>
+            <pubDate>Fri, 09 Sep 2022 06:33:12 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Standard Library</h2>
+<ul>
+<li>Fix <code>Class#nilable?</code> for recursive unions and root types (<a href="https://github.com/crystal-lang/crystal/pull/12353" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12353/hovercard">#12353</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/HertzDevil/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/HertzDevil">@HertzDevil</a>)</li>
+</ul>
+<h3>Numeric</h3>
+<ul>
+<li>Fix <code>Float#abs</code> and <code>Number#format</code> for <code>-0.0</code> (<a href="https://github.com/crystal-lang/crystal/pull/12424" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12424/hovercard">#12424</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
+</ul>
+<h3>Text</h3>
+<ul>
+<li>Fix null dereference when passing empty slice to <code>Base64.encode</code> (<a href="https://github.com/crystal-lang/crystal/pull/12377" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12377/hovercard">#12377</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dscottboggs/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dscottboggs">@dscottboggs</a>)</li>
+</ul>
+<h2>Compiler</h2>
+<ul>
+<li>Do not check abstract def parameter names on abstract types and modules (<a href="https://github.com/crystal-lang/crystal/pull/12434" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12434/hovercard">#12434</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/HertzDevil/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/HertzDevil">@HertzDevil</a>)</li>
+</ul>
+<h3>Codegen</h3>
+<ul>
+<li>Compiler/codegen: reset <code>@needs_value</code> (<a href="https://github.com/crystal-lang/crystal/pull/12444" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12444/hovercard">#12444</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asterite/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asterite">@asterite</a>)</li>
+<li>Fix <code>homogeneous_aggregate?</code> check for aarch64 types (<a href="https://github.com/crystal-lang/crystal/pull/12445" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12445/hovercard">#12445</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mattrberry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mattrberry">@mattrberry</a>)</li>
+</ul>
+<h3>Semantic</h3>
+<ul>
+<li>Compiler: don't eagerly check cast type (<a href="https://github.com/crystal-lang/crystal/pull/12272" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12272/hovercard">#12272</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asterite/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asterite">@asterite</a>)</li>
+<li>Fix type restriction augmenter for <code>Union(*T)</code> and similar (<a href="https://github.com/crystal-lang/crystal/pull/12438" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12438/hovercard">#12438</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asterite/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asterite">@asterite</a>)</li>
+</ul>
+<h2>Tools</h2>
+<h3>Formatter</h3>
+<ul>
+<li>Formatter: Fix assign followed by comment (<a href="https://github.com/crystal-lang/crystal/pull/12319" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12319/hovercard">#12319</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
+<li>Handle formatting annotated method parameters (<a href="https://github.com/crystal-lang/crystal/pull/12446" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12446/hovercard">#12446</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Blacksmoke16/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Blacksmoke16">@Blacksmoke16</a>)</li>
+</ul>
+<h2>Other</h2>
+<ul>
+<li>Update distribution-scripts (<a href="https://github.com/crystal-lang/crystal/pull/12359" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12359/hovercard">#12359</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
+<li>Update distribution-scripts (<a href="https://github.com/crystal-lang/crystal/pull/12333" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12333/hovercard">#12333</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
+<li>[CI] Bumping xcode to 13.4.1 (<a href="https://github.com/crystal-lang/crystal/pull/12264" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12264/hovercard">#12264</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/beta-ziliani/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/beta-ziliani">@beta-ziliani</a>)</li>
+</ul>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 10.7.155]]></title>
             <link>https://github.com/v8/v8/releases/tag/10.7.155</link>
@@ -32,20 +824,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84389</guid>
             <pubDate>Fri, 09 Sep 2022 02:47:29 GMT</pubDate>
             <content:encoded><![CDATA[<p>Merge branch 'master' into test-cache-conda</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/84719: Update on "Moving CommTensor from tests to private _spmd folder"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84719</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84719</guid>
-            <pubDate>Fri, 09 Sep 2022 02:30:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/84719: Update on "Moving CommTensor from tests to private _spmd folder"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F84719</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F84719</guid>
-            <pubDate>Fri, 09 Sep 2022 02:30:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/84626: Update on "[NVFuser] Upstream push 0907"]]></title>
@@ -189,16 +967,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-09-08 23:45:14 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/9a99554ed323d07cb75b22c9598d3a6d3d9094cc/hovercard" href="https://github.com/kovidgoyal/kitty/commit/9a99554ed323d07cb75b22c9598d3a6d3d9094cc"><tt>9a99554</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/84675: Update on "[reland] Call jit decomposition in VariableType to increas…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84675</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84675</guid>
-            <pubDate>Thu, 08 Sep 2022 23:14:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…e forward AD coverage (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1352768188" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/84151" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/84151/hovercard" href="https://github.com/pytorch/pytorch/pull/84151">#84151</a>)"</p>
-<p>This reverts commit <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/acb4a09628284201281e262aaee58e3dc6be9c2b/hovercard" href="https://github.com/pytorch/pytorch/commit/acb4a09628284201281e262aaee58e3dc6be9c2b"><tt>acb4a09</tt></a>.</p>
-<p>In addition, we also fix a memory leak in layer norm.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from apollo-client: v3.7.0-beta.7]]></title>
             <link>https://github.com/apollographql/apollo-client/releases/tag/v3.7.0-beta.7</link>
             <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.7.0-beta.7</guid>
@@ -235,26 +1003,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jasham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jasham">@jasham</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Kikobeats/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Kikobeats">@Kikobeats</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wyattjoh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wyattjoh">@wyattjoh</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: nightly: ci: move BSD jobs from sourcehut to Cirrus CI #19616]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Thu, 08 Sep 2022 22:12:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>dispatch.sr.ht is being deprecated, meaning that using sourcehut CI<br>
-won't be possible (see <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1324500619" data-permission-text="Title is private" data-url="https://github.com/neovim/neovim/issues/19609" data-hovercard-type="issue" data-hovercard-url="/neovim/neovim/issues/19609/hovercard" href="https://github.com/neovim/neovim/issues/19609">#19609</a>).<br>
-Since Github Actions doesn't provide any BSD runners an external service<br>
-is required and Cirrus CI seems like a good replacement for sourcehut.</p>
-<p>Initially experimented with using FreeBSD and OpenBSD virtual machines<br>
-in GitHub Actions, but Cirrus has been a much better fit with better<br>
-performance, logs and overall experience.</p>
-<p>Failing tests are automatically skipped on FreeBSD regardless if it's on<br>
-CI or not. Ideally these tests should only be skipped in CI with the<br>
-help of <code>isCI</code> helper function. Unfortunately, the tests don't recognize<br>
-the environment variable CIRRUS_CI even if it's set manually. This<br>
-workaround is good enough for the time being, but we might want to only<br>
-skip tests when using the CI (or even better, fix the failing tests).</p>
-<p>Closes: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1324500619" data-permission-text="Title is private" data-url="https://github.com/neovim/neovim/issues/19609" data-hovercard-type="issue" data-hovercard-url="/neovim/neovim/issues/19609/hovercard" href="https://github.com/neovim/neovim/issues/19609">#19609</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from electron: electron v18.3.12]]></title>
@@ -842,24 +1590,6 @@ Cr-Commit-Position: refs/heads/10.7.150@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7ed1c5a03b70dad775661f6011ff6a1288bd8945/hovercard" href="https://github.com/v8/v8/commit/7ed1c5a03b70dad775661f6011ff6a1288bd8945"><tt>7ed1c5a</tt></a>-refs/heads/main@{#83078}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/84702: Update on "Set up aten/src/ATen/functorch directory; move some files …]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84702</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84702</guid>
-            <pubDate>Thu, 08 Sep 2022 15:49:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…there"</p>
-<p>This PR:</p>
-<ul>
-<li>sets up aten/src/ATen/functorch in PyTorch's build system</li>
-<li>Moves {BatchedTensorImpl.h, and BatchedTensorImpl.cpp}<br>
-there as a test.</li>
-</ul>
-<p>Test Plan:</p>
-<ul>
-<li>functorch build and test should pass</li>
-</ul>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/84708: [FSDP] Optimizer states may be on CPU, copy them to GPU before gathering]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84708</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F84708</guid>
@@ -1064,50 +1794,6 @@ Cr-Commit-Position: refs/heads/10.7.148@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/682947f813e269683b5ec060e1f4ec355f900606/hovercard" href="https://github.com/v8/v8/commit/682947f813e269683b5ec060e1f4ec355f900606"><tt>682947f</tt></a>-refs/heads/main@{#83072}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from crystal: 1.5.1]]></title>
-            <link>https://github.com/crystal-lang/crystal/releases/tag/1.5.1</link>
-            <guid>https://github.com/crystal-lang/crystal/releases/tag/1.5.1</guid>
-            <pubDate>Thu, 08 Sep 2022 13:31:44 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Standard Library</h2>
-<ul>
-<li>Fix <code>Class#nilable?</code> for recursive unions and root types (<a href="https://github.com/crystal-lang/crystal/pull/12353" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12353/hovercard">#12353</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/HertzDevil/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/HertzDevil">@HertzDevil</a>)</li>
-</ul>
-<h3>Numeric</h3>
-<ul>
-<li>Fix <code>Float#abs</code> and <code>Number#format</code> for <code>-0.0</code> (<a href="https://github.com/crystal-lang/crystal/pull/12424" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12424/hovercard">#12424</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
-</ul>
-<h3>Text</h3>
-<ul>
-<li>Fix null dereference when passing empty slice to <code>Base64.encode</code> (<a href="https://github.com/crystal-lang/crystal/pull/12377" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12377/hovercard">#12377</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dscottboggs/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dscottboggs">@dscottboggs</a>)</li>
-</ul>
-<h2>Compiler</h2>
-<ul>
-<li>Do not check abstract def parameter names on abstract types and modules (<a href="https://github.com/crystal-lang/crystal/pull/12434" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12434/hovercard">#12434</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/HertzDevil/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/HertzDevil">@HertzDevil</a>)</li>
-</ul>
-<h3>Codegen</h3>
-<ul>
-<li>Compiler/codegen: reset <code>@needs_value</code> (<a href="https://github.com/crystal-lang/crystal/pull/12444" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12444/hovercard">#12444</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asterite/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asterite">@asterite</a>)</li>
-<li>Fix <code>homogeneous_aggregate?</code> check for aarch64 types (<a href="https://github.com/crystal-lang/crystal/pull/12445" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12445/hovercard">#12445</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mattrberry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mattrberry">@mattrberry</a>)</li>
-</ul>
-<h3>Semantic</h3>
-<ul>
-<li>Compiler: don't eagerly check cast type (<a href="https://github.com/crystal-lang/crystal/pull/12272" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12272/hovercard">#12272</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asterite/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asterite">@asterite</a>)</li>
-<li>Fix type restriction augmenter for <code>Union(*T)</code> and similar (<a href="https://github.com/crystal-lang/crystal/pull/12438" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12438/hovercard">#12438</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asterite/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asterite">@asterite</a>)</li>
-</ul>
-<h2>Tools</h2>
-<h3>Formatter</h3>
-<ul>
-<li>Formatter: Fix assign followed by comment (<a href="https://github.com/crystal-lang/crystal/pull/12319" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12319/hovercard">#12319</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
-<li>Handle formatting annotated method parameters (<a href="https://github.com/crystal-lang/crystal/pull/12446" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12446/hovercard">#12446</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Blacksmoke16/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Blacksmoke16">@Blacksmoke16</a>)</li>
-</ul>
-<h2>Other</h2>
-<ul>
-<li>Update distribution-scripts (<a href="https://github.com/crystal-lang/crystal/pull/12359" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12359/hovercard">#12359</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
-<li>Update distribution-scripts (<a href="https://github.com/crystal-lang/crystal/pull/12333" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12333/hovercard">#12333</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/straight-shoota/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/straight-shoota">@straight-shoota</a>)</li>
-<li>[CI] Bumping xcode to 13.4.1 (<a href="https://github.com/crystal-lang/crystal/pull/12264" data-hovercard-type="pull_request" data-hovercard-url="/crystal-lang/crystal/pull/12264/hovercard">#12264</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/beta-ziliani/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/beta-ziliani">@beta-ziliani</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 10.7.147]]></title>
             <link>https://github.com/v8/v8/releases/tag/10.7.147</link>
             <guid>https://github.com/v8/v8/releases/tag/10.7.147</guid>
@@ -1226,13 +1912,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v0.9.0-next...cli/v0.9.1-next"><tt>cli/v0.9.0-next...cli/v0.9.1-next</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2920]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2920</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2920</guid>
-            <pubDate>Thu, 08 Sep 2022 09:50:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from swc: v1.2.249: Bug Fixes]]></title>
             <link>https://github.com/swc-project/swc/releases/tag/v1.2.249</link>
             <guid>https://github.com/swc-project/swc/releases/tag/v1.2.249</guid>
@@ -1276,46 +1955,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p> - (es/tsc) Handle tsx (<a class="issue-link js-issue-link" href="https://github.com/swc-project/swc/pull/5764">#5764</a>) (<a class="commit-link" href="https://github.com/swc-project/swc/commit/52f6ca5fb826b9952b32946379cd696afb58867b"><tt>52f6ca5</tt></a>)</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@4.24.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%404.24.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%404.24.0-next.0</guid>
-            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-toml@4.24.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@7.24.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%407.24.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%407.24.0-next.0</guid>
             <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@7.24.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@4.24.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%404.24.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%404.24.0-next.0</guid>
-            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@4.24.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@4.24.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%404.24.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%404.24.0-next.0</guid>
-            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@4.24.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@4.24.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%404.24.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%404.24.0-next.0</guid>
-            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@4.24.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@4.24.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%404.24.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%404.24.0-next.0</guid>
-            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@4.24.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@5.24.0-next.0]]></title>
@@ -1332,6 +1976,20 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-transformer-xml@4.24.0-next.0</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@4.24.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%404.24.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%404.24.0-next.0</guid>
+            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@4.24.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@4.24.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%404.24.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%404.24.0-next.0</guid>
+            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@4.24.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-worker@1.24.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%401.24.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%401.24.0-next.0</guid>
@@ -1339,102 +1997,32 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-worker@1.24.0-next.0</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@4.24.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%404.24.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%404.24.0-next.0</guid>
+            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@4.24.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@4.24.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%404.24.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%404.24.0-next.0</guid>
+            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@4.24.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@4.24.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%404.24.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%404.24.0-next.0</guid>
+            <pubDate>Thu, 08 Sep 2022 08:14:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-toml@4.24.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@1.9.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%401.9.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%401.9.0-next.0</guid>
             <pubDate>Thu, 08 Sep 2022 08:14:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>@gatsbyjs/parcel-namer-relative-to-cwd@1.9.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: Kotlin 1.7.20-RC]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/v1.7.20-RC</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/v1.7.20-RC</guid>
-            <pubDate>Thu, 08 Sep 2022 06:16:46 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Changelog</h2>
-<h3>Compiler</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53739" rel="nofollow"><code>KT-53739</code></a> Builder inference, extension hides members</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53733" rel="nofollow"><code>KT-53733</code></a> Kotlin/Native: update source documentation for the new default memory manager</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53667" rel="nofollow"><code>KT-53667</code></a> Compiler crashes on attempt to alloc a string on the stack in new MM</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53480" rel="nofollow"><code>KT-53480</code></a> Internal error in file lowering: java.lang.ClassNotFoundException: com.android.systemui.R$string</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-52843" rel="nofollow"><code>KT-52843</code></a> Compose: NPE at Parameters.getParameterByDeclarationSlot if inline function with default arguments takes a lambda which captures value class represented by Long</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-51868" rel="nofollow"><code>KT-51868</code></a> JVM / IR: Inconsistent behaviour between lambda expression and SAM interface conversion for the same interface</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53475" rel="nofollow"><code>KT-53475</code></a> Kotlin/Native for iOS: "IllegalArgumentException: Sequence has more than one element"</li>
-</ul>
-<h3>Libraries</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-52910" rel="nofollow"><code>KT-52910</code></a> Provide visit extension functions for java.nio.file.Path</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-52909" rel="nofollow"><code>KT-52909</code></a> Implement a walk extension function for java.nio.file.Path</li>
-</ul>
-<h3>Native</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53346" rel="nofollow"><code>KT-53346</code></a> MPP project with kotlinx-serialization-json:1.4.0-RC is not built</li>
-</ul>
-<h3>Native. C and ObjC Import</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53373" rel="nofollow"><code>KT-53373</code></a> Native: @ExportObjCClass doesn't work with the new memory manager</li>
-</ul>
-<h3>Native. Runtime</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53534" rel="nofollow"><code>KT-53534</code></a> Kotlin/Native: <code>-Xruntime-logs=gc=info</code> flag doesn't with compiler caches in 1.7.20-beta</li>
-</ul>
-<h3>Tools. Gradle</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53670" rel="nofollow"><code>KT-53670</code></a> Gradle: Cyclic dependency between kotlin-gradle-plugin-idea-1.7.20-Beta and kotlin-gradle-plugin-idea-proto-1.7.20-Beta</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53615" rel="nofollow"><code>KT-53615</code></a> Gradle: Fix deprecation warnings in CleanableStoreImpl</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53118" rel="nofollow"><code>KT-53118</code></a> Fully up-to-date builds are slower with Kotlin 1.7.0</li>
-</ul>
-<h3>Tools. Gradle. Cocoapods</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53337" rel="nofollow"><code>KT-53337</code></a> Add warning about future changing default linking type of framework provided via cocoapods plugin</li>
-</ul>
-<h3>Tools. Incremental Compile</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53266" rel="nofollow"><code>KT-53266</code></a> Increment Compilation: "IllegalStateException: The following LookupSymbols are not yet converted to ProgramSymbols" when changing companion object constant field</li>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-53231" rel="nofollow"><code>KT-53231</code></a> New IC reports build failures for missing classpath snapshots</li>
-</ul>
-<h3>Tools. Kapt</h3>
-<ul>
-<li><a href="https://youtrack.jetbrains.com/issue/KT-52761" rel="nofollow"><code>KT-52761</code></a> Kotlin 1.7.0 breaks kapt processing for protobuf generated java sources</li>
-</ul>
-<h2>Checksums</h2>
-<table>
-<thead>
-<tr>
-<th>File</th>
-<th>Sha256</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>kotlin-compiler-1.7.20-RC.zip</td>
-<td>da9a362df57da5d6bfa99cad0513489837891afb70efd365abd0a572efd26772</td>
-</tr>
-<tr>
-<td>kotlin-native-linux-x86_64-1.7.20-RC.tar.gz</td>
-<td>1d0a2b5b6f580688a92141cd87adf102104ee7a945eab7e0b17185bd2d985485</td>
-</tr>
-<tr>
-<td>kotlin-native-macos-x86_64-1.7.20-RC.tar.gz</td>
-<td>4c107f1256e8078b5132d22ae5421c80b52653a66ce8689e627da9a9e1eab2b7</td>
-</tr>
-<tr>
-<td>kotlin-native-macos-aarch64-1.7.20-RC.tar.gz</td>
-<td>4d1b68fb205d2e41a9f2fc80a584b1c045805983971d3dc0d5a6522fe73cba35</td>
-</tr>
-<tr>
-<td>kotlin-native-windows-x86_64-1.7.20-RC.zip</td>
-<td>280586dc3491616923e7dd19edce1636e77be00cde084bdea9a1d7090d30f7aa</td>
-</tr>
-</tbody>
-</table>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2911]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2911</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2911</guid>
-            <pubDate>Thu, 08 Sep 2022 05:56:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.477]]></title>
@@ -1741,13 +2329,6 @@ when trying to determine the current transaction isolation level.</p>
             <guid>https://github.com/mongodb/mongo/releases/tag/r6.1.0-rc1</guid>
             <pubDate>Wed, 07 Sep 2022 18:21:09 GMT</pubDate>
             <content:encoded><![CDATA[<p>'6.1.0-rc1'</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.0-dev-2901]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2901</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.0-dev-2901</guid>
-            <pubDate>Wed, 07 Sep 2022 18:11:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from aws-cli: 1.25.69]]></title>
@@ -2414,16 +2995,6 @@ when trying to determine the current transaction isolation level.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: create-svelte@2.0.0-next.174]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/create-svelte%402.0.0-next.174</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/create-svelte%402.0.0-next.174</guid>
-            <pubDate>Tue, 06 Sep 2022 20:29:58 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>Remove cookie package from demo app (<a href="https://github.com/sveltejs/kit/pull/6602" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6602/hovercard">#6602</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from ember.js: v4.7.0]]></title>
             <link>https://github.com/emberjs/ember.js/releases/tag/v4.7.0</link>
             <guid>https://github.com/emberjs/ember.js/releases/tag/v4.7.0</guid>
@@ -2867,157 +3438,6 @@ Auto-Submit: Gopher Robot <a href="mailto:gobot@golang.org">gobot@golang.org</a>
 <li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/AkifumiSato/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/AkifumiSato">@AkifumiSato</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360859121" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/3153" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/3153/hovercard" href="https://github.com/rome/tools/pull/3153">#3153</a></li>
 </ul>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v0.8.0-next.ff4153b...lsp/v0.14.0"><tt>cli/v0.8.0-next.ff4153b...lsp/v0.14.0</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: create-svelte@2.0.0-next.173]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/create-svelte%402.0.0-next.173</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/create-svelte%402.0.0-next.173</guid>
-            <pubDate>Tue, 06 Sep 2022 12:26:59 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>[breaking] Replace <code>POST</code>/<code>PUT</code>/<code>PATCH</code>/<code>DELETE</code> in <code>+page.server.js</code> with <code>export const actions</code> (<a href="https://github.com/sveltejs/kit/pull/6469" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6469/hovercard">#6469</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.0.0-next.472]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.472</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.0.0-next.472</guid>
-            <pubDate>Tue, 06 Sep 2022 12:26:59 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>[breaking] add API for interacting with cookies (<a href="https://github.com/sveltejs/kit/pull/6593" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6593/hovercard">#6593</a>)</p>
-</li>
-<li>
-<p>[breaking] Replace <code>POST</code>/<code>PUT</code>/<code>PATCH</code>/<code>DELETE</code> in <code>+page.server.js</code> with <code>export const actions</code> (<a href="https://github.com/sveltejs/kit/pull/6469" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/6469/hovercard">#6469</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from grafana: 9.1.3 (2022-09-05)]]></title>
-            <link>https://github.com/grafana/grafana/releases/tag/v9.1.3</link>
-            <guid>https://github.com/grafana/grafana/releases/tag/v9.1.3</guid>
-            <pubDate>Tue, 06 Sep 2022 11:05:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p><a href="https://grafana.com/grafana/download/9.1.3" rel="nofollow">Download page</a><br>
-<a href="https://grafana.com/docs/grafana/latest/whatsnew/" rel="nofollow">What's new highlights</a></p>
-<h3>Features and enhancements</h3>
-<ul>
-<li><strong>API:</strong> Do not expose user input in datasource error responses. <a href="https://github.com/grafana/grafana/pull/53483" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/53483/hovercard">#53483</a>, <a href="https://github.com/papagian">@papagian</a></li>
-<li><strong>Alerting:</strong> Write and Delete multiple alert instances. <a href="https://github.com/grafana/grafana/pull/54072" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54072/hovercard">#54072</a>, <a href="https://github.com/joeblubaugh">@joeblubaugh</a></li>
-<li><strong>Library Panel:</strong> Allow to delete them when deprecated. <a href="https://github.com/grafana/grafana/pull/54662" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54662/hovercard">#54662</a>, <a href="https://github.com/ivanortegaalba">@ivanortegaalba</a></li>
-<li><strong>Plugins Catalog:</strong> Allow to filter plugins using special characters. <a href="https://github.com/grafana/grafana/pull/54474" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54474/hovercard">#54474</a>, <a href="https://github.com/murtazaqa">@murtazaqa</a></li>
-</ul>
-<h3>Bug fixes</h3>
-<ul>
-<li><strong>Alerting:</strong> Fix UI bug when setting custom notification policy group by. <a href="https://github.com/grafana/grafana/pull/54607" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54607/hovercard">#54607</a>, <a href="https://github.com/JacobsonMT">@JacobsonMT</a></li>
-<li><strong>AppRootPage:</strong> Fix issue navigating between two app plugin pages. <a href="https://github.com/grafana/grafana/pull/54519" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54519/hovercard">#54519</a>, <a href="https://github.com/torkelo">@torkelo</a></li>
-<li><strong>Correlations:</strong> Use correct fallback handlers. <a href="https://github.com/grafana/grafana/pull/54511" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54511/hovercard">#54511</a>, <a href="https://github.com/kalleep">@kalleep</a></li>
-<li><strong>FIX:</strong> RBAC prevents deleting empty snapshots (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354175980" data-permission-text="Title is private" data-url="https://github.com/grafana/grafana/issues/54385" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54385/hovercard" href="https://github.com/grafana/grafana/pull/54385">#54385</a>). <a href="https://github.com/grafana/grafana/pull/54510" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54510/hovercard">#54510</a>, <a href="https://github.com/gamab">@gamab</a></li>
-<li><strong>LibraryElements:</strong> Fix inability to delete library panels under MySQL. <a href="https://github.com/grafana/grafana/pull/54600" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54600/hovercard">#54600</a>, <a href="https://github.com/kaydelaney">@kaydelaney</a></li>
-<li><strong>Metrics:</strong> fix <code>grafana_database_conn_*</code> metrics, and add new <code>go_sql_stats_*</code> metrics as eventual replacement. <a href="https://github.com/grafana/grafana/pull/54405" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54405/hovercard">#54405</a>, <a href="https://github.com/hairyhenderson">@hairyhenderson</a></li>
-<li><strong>TestData DB:</strong> Fix node graph not showing when the <code>Data type</code> field is set to <code>random</code>. <a href="https://github.com/grafana/grafana/pull/54298" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54298/hovercard">#54298</a>, <a href="https://github.com/CrypticSignal">@CrypticSignal</a></li>
-</ul>
-<h3>Deprecations</h3>
-<p>The <code>grafana_database_conn_*</code> metrics are deprecated, and will be removed in a future version of Grafana. Use the <code>go_sql_stats_*</code> metrics instead. Issue <a href="https://github.com/grafana/grafana/issues/54405" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/54405/hovercard">#54405</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from Ghost: 5.13.1]]></title>
-            <link>https://github.com/TryGhost/Ghost/releases/tag/v5.13.1</link>
-            <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.13.1</guid>
-            <pubDate>Tue, 06 Sep 2022 09:00:15 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed paid subscription alert showing incorrect offer amount - Rishabh</li>
-</ul>
-<hr>
-<p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.13.0...v5.13.1"><tt>v5.13.0...v5.13.1</tt></a></p>
-<p><g-emoji class="g-emoji" alias="magic_wand" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1fa84.png">🪄</g-emoji> Love open source? We're hiring <a href="https://careers.ghost.org/product-engineer-node-js" rel="nofollow">Node.js Engineers</a> to work on Ghost full-time</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from YouTube.js: v2.0.0]]></title>
-            <link>https://github.com/LuanRT/YouTube.js/releases/tag/v2.0.0</link>
-            <guid>https://github.com/LuanRT/YouTube.js/releases/tag/v2.0.0</guid>
-            <pubDate>Tue, 06 Sep 2022 08:54:28 GMT</pubDate>
-            <content:encoded><![CDATA[
-<h2>What's Changed</h2>
-<h3>Breaking Changes</h3>
-<ul>
-<li>feat!: feature complete contents parser by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1221472574" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/44" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/44/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/44">#44</a></li>
-<li>refactor: rewrite Live Chat logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1289202400" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/85" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/85/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/85">#85</a></li>
-<li>refactor: rewrite Comments Section logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1291930137" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/88" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/88/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/88">#88</a></li>
-<li>refactor: rewrite search suggestions logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1297025050" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/92" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/92/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/92">#92</a></li>
-<li>refactor!: better cross runtime support by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1301241092" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/97" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/97/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/97">#97</a></li>
-<li>refactor!: rewrite <code>Analytics</code> to TypeScript by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1321932003" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/122" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/122/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/122">#122</a></li>
-<li>refactor: migrate parsers to TS by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333663256" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/133" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/133/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/133">#133</a></li>
-<li>feat: add settings page parser by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1352983296" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/154" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/154/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/154">#154</a></li>
-<li>feat(download): bring back <code>WEB</code> client by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1353586460" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/156" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/156/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/156">#156</a></li>
-</ul>
-<h3>New Features</h3>
-<ul>
-<li>feat: download video directly from VideoInfo by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1272894457" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/76" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/76/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/76">#76</a></li>
-<li>fix(ytmusic): Multiple authors/artists by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DanielKrasny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DanielKrasny">@DanielKrasny</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1286064037" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/82" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/82/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/82">#82</a></li>
-<li>feat(contents): Multiple video authors by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DanielKrasny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DanielKrasny">@DanielKrasny</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1286468504" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/83" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/83/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/83">#83</a></li>
-<li>feat: add <code>Studio#setThumbnail()</code> method by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315382042" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/111" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/111/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/111">#111</a></li>
-<li>refactor: smaller user-agent list (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315575493" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/112" data-hovercard-type="issue" data-hovercard-url="/LuanRT/YouTube.js/issues/112/hovercard" href="https://github.com/LuanRT/YouTube.js/issues/112">#112</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315583555" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/113" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/113/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/113">#113</a></li>
-<li>refactor: generate typescript protobuf encoders by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315629075" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/114" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/114/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/114">#114</a></li>
-<li>feat: add support for uploading videos by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315838546" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/115" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/115/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/115">#115</a></li>
-<li>refactor: allow uploads of streams by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1317197886" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/117" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/117/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/117">#117</a></li>
-<li>feat: allow users to cache OAuth credentials by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1320055748" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/121" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/121/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/121">#121</a></li>
-<li>Migrate <code>MusicCarouselShelfBasicHeader</code> to TypeScript and add <code>more_content</code> prop by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333534447" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/132" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/132/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/132">#132</a></li>
-<li>feat(ytmusic): add music#getPlaylist() by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333113618" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/131" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/131/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/131">#131</a></li>
-<li>feat(ytmusic): <code>music#Playlist</code> fixes and additions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1338328286" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/138" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/138/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/138">#138</a></li>
-<li>Misc fixes and additions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1341712843" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/142" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/142/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/142">#142</a></li>
-<li>feat: improve parsing by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1343663168" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/145" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/145/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/145">#145</a></li>
-<li>Add <code>end_icons</code> to <code>MusicCarouselShelfBasicHeader</code> and fix <code>music#getPlaylist()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1346326075" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/149" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/149/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/149">#149</a></li>
-<li>feat: add <code>MusicSortFilterButton</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1349560799" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/151" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/151/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/151">#151</a></li>
-<li>feat: add <code>MusicVisualHeader</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354799998" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/157" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/157/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/157">#157</a></li>
-<li>feat: Add paid chat color info by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akkadaska/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akkadaska">@akkadaska</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361070009" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/164" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/164/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/164">#164</a></li>
-<li>feat: add <code>music#getRecap()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361583870" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/165" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/165/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/165">#165</a></li>
-<li>feat: add <code>&lt;info&gt;#addToWatchHistory()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1362727146" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/169" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/169/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/169">#169</a></li>
-</ul>
-<h3>Other Changes</h3>
-<ul>
-<li>docs: fix sample code for download example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iShibi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iShibi">@iShibi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1251951439" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/59/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/59">#59</a></li>
-<li>Socks and http(s) proxy support for each session by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xrip/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xrip">@xrip</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1253418055" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/62" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/62/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/62">#62</a></li>
-<li>docs(download): examples for downloading videos by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1273441090" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/77" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/77/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/77">#77</a></li>
-<li>fix(VideoInfo): Fix the problem that chooseFormat still returns empty, even though there are videos to adapt by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EveCoffee/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EveCoffee">@EveCoffee</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1277799789" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/80" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/80/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/80">#80</a></li>
-<li>feat(player): improved decipher logic by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1277318499" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/79" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/79/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/79">#79</a></li>
-<li>Remove confusing code practices  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MasterOfBob777/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MasterOfBob777">@MasterOfBob777</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1291709478" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/87" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/87/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/87">#87</a></li>
-<li>refactor: rewrite OAuth and Requester by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1293509916" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/90" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/90/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/90">#90</a></li>
-<li>Make project multiplatform by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MasterOfBob777/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MasterOfBob777">@MasterOfBob777</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1294369535" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/91" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/91/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/91">#91</a></li>
-<li>chore(deps): bump undici from 5.7.0 to 5.8.0 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1313808021" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/109" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/109/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/109">#109</a></li>
-<li>fix: add missing playlist_length by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315346237" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/110" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/110/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/110">#110</a></li>
-<li>refactor: replace xmlbuilder2 with linkedom by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1317276677" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/119" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/119/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/119">#119</a></li>
-<li>fix: TabbedFeed#getTab to parse response. by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1318561816" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/120" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/120/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/120">#120</a></li>
-<li>docs: OAuth example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1332053799" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/130" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/130/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/130">#130</a></li>
-<li>Fix build error caused by <code>music#Playlist.getRelated()</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1336466601" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/135" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/135/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/135">#135</a></li>
-<li>feat(ytmusic): implement music#Library by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1337953053" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/136" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/136/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/136">#136</a></li>
-<li>fix(music#Library): sort_by err when items  &lt;= 1 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1338060502" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/137" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/137/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/137">#137</a></li>
-<li>chore(deps): bump undici from 5.8.0 to 5.8.2 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1343574688" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/144" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/144/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/144">#144</a></li>
-<li><code>PlaylistPanel</code> fixes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1344177890" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/146" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/146/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/146">#146</a></li>
-<li>fix: playlist radios misidentified as videos by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1345438062" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/147" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/147/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/147">#147</a></li>
-<li>fix: captions should be a PlayerCaptionsTracklist by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/BGerard/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/BGerard">@BGerard</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1345597248" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/148" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/148/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/148">#148</a></li>
-<li>Fix <code>music#library.getArtists()</code> and add <code>MusicShelf.bottom_button</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1350006962" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/152" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/152/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/152">#152</a></li>
-<li>fix: <code>Music#Artist</code>parse err if missing shelves by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1353399578" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/155" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/155/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/155">#155</a></li>
-<li>Fix <code>DidYouMean</code> endpoints and add <code>text</code> prop by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1354810501" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/158" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/158/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/158">#158</a></li>
-<li>Minor fixes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360320304" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/159" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/159/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/159">#159</a></li>
-<li>docs: add parser info and examples  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360585943" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/160" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/160/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/160">#160</a></li>
-<li>fix: ytmusic formats returning 403 when deciphered by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360744536" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/161" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/161/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/161">#161</a></li>
-<li>fix: <code>Music#getAlbum()</code>fails for private album ID by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1360792142" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/162" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/162/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/162">#162</a></li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iShibi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iShibi">@iShibi</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1251951439" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/59" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/59/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/59">#59</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xrip/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xrip">@xrip</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1253418055" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/62" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/62/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/62">#62</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Wykerd/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Wykerd">@Wykerd</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1221472574" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/44" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/44/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/44">#44</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EveCoffee/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EveCoffee">@EveCoffee</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1277799789" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/80" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/80/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/80">#80</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DanielKrasny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DanielKrasny">@DanielKrasny</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1286064037" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/82" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/82/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/82">#82</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LuanRT/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LuanRT">@LuanRT</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1289202400" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/85" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/85/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/85">#85</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MasterOfBob777/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MasterOfBob777">@MasterOfBob777</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1291709478" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/87" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/87/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/87">#87</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/patrickkfkan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/patrickkfkan">@patrickkfkan</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1333534447" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/132" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/132/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/132">#132</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/BGerard/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/BGerard">@BGerard</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1345597248" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/148" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/148/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/148">#148</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akkadaska/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akkadaska">@akkadaska</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1361070009" data-permission-text="Title is private" data-url="https://github.com/LuanRT/YouTube.js/issues/164" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/164/hovercard" href="https://github.com/LuanRT/YouTube.js/pull/164">#164</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/LuanRT/YouTube.js/compare/V1.4.3...v2.0.0"><tt>V1.4.3...v2.0.0</tt></a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
