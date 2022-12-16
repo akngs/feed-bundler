@@ -4,16 +4,489 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 15 Dec 2022 18:06:36 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 16 Dec 2022 00:22:08 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90929]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90929</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90929</guid>
-            <pubDate>Thu, 15 Dec 2022 17:12:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[TEST] rando change</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90933: Update on "[FSDP] Introduce "fully sharded module"; remove comm. module"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90933</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90933</guid>
+            <pubDate>Fri, 16 Dec 2022 00:20:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR removes the "communication module" (comm. module / <code>comm_module</code>) concept from the FSDP code base since it causes disproportionate confusion compared to its benefit for now.</p>
+<p>Instead, we introduce the term "fully sharded module" as the single concept to unify the wrapper and non-wrapper code paths. The definition is presented in a note at the top of <code>flat_param.py</code>. I reproduce it here:</p>
+<hr>
+<p>We define the <strong>"fully sharded module"</strong> to be the original <code>nn.Module</code> that owns a <code>FlatParamHandle</code>. It is the <em>single</em> module logically responsible for the <em>single</em> unshard/reshard pair for the handle's <code>FlatParameter</code> for a given forward or backward pass. The fully sharded module should be passed to the <code>FlatParamHandle</code> constructor.</p>
+<p>For the wrapper code path:</p>
+<ul>
+<li>The <code>FullyShardedDataParallel</code> module wrapping the fully sharded module runs the unshard/reshard on behalf of the fully sharded module by overriding <code>nn.Module.forward</code>.</li>
+<li>The fully sharded module is exactly the module passed to the <code>FullyShardedDataParallel</code> constructor's <code>module</code> argument.</li>
+</ul>
+<p>For the non-wrapper code path:</p>
+<ul>
+<li>Hooks registered on the fully sharded module run the unshard/reshard.</li>
+<li>The fully sharded module may either be the direct argument to <code>fully_shard</code> or a submodule chosen by the provided wrapping policy.</li>
+</ul>
+<hr>
+<p>After this PR, <code>handle.flat_param._fqns</code>, <code>_param_infos</code>, and <code>_shared_param_infos</code> all prefix names from the same module, namely the fully sharded module. This should make state dict less confusing.</p>
+<hr>
+<p>As an example, consider:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="mod: Module(
+  sub1: Submodule(
+    subsub1: Subsubmodule(),
+    subsub2: Subsubmodule(),
+  ),
+  sub2: Submodule(
+    subsub1: Subsubmodule(),
+    subsub2: Subsubmodule(),
+  ),
+)"><pre class="notranslate"><code>mod: Module(
+  sub1: Submodule(
+    subsub1: Subsubmodule(),
+    subsub2: Subsubmodule(),
+  ),
+  sub2: Submodule(
+    subsub1: Subsubmodule(),
+    subsub2: Subsubmodule(),
+  ),
+)
+</code></pre></div>
+<p>For wrapper FSDP manual wrap:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="mod.sub1 = FSDP(mod.sub1)
+mod.sub2 = FSDP(mod.sub2)
+mod = FSDP(mod)"><pre class="notranslate"><code>mod.sub1 = FSDP(mod.sub1)
+mod.sub2 = FSDP(mod.sub2)
+mod = FSDP(mod)
+</code></pre></div>
+<p>For wrapper FSDP auto wrap:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="mod = FSDP(mod, auto_wrap_policy=ModuleWrapPolicy({Submodule}))"><pre class="notranslate"><code>mod = FSDP(mod, auto_wrap_policy=ModuleWrapPolicy({Submodule}))
+</code></pre></div>
+<p>(WIP) For non-wrapper FSDP manual wrap:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="fully_shard(mod.sub1)
+fully_shard(mod.sub2)
+fully_shard(mod)"><pre class="notranslate"><code>fully_shard(mod.sub1)
+fully_shard(mod.sub2)
+fully_shard(mod)
+</code></pre></div>
+<p>For non-wrapper FSDP auto wrap:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="fully_shard(mod, policy=ModuleWrapPolicy({Submodule}))"><pre class="notranslate"><code>fully_shard(mod, policy=ModuleWrapPolicy({Submodule}))
+</code></pre></div>
+<p>The fully sharded module <strong>in all cases</strong> are <code>mod</code>, <code>mod.sub1</code>, <code>mod.sub2</code>, and notably, <code>subsub1</code> and <code>subsub2</code>s are not fully sharded modules.</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/90956]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F90956</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F90956</guid>
+            <pubDate>Fri, 16 Dec 2022 00:20:01 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Merge remote-tracking branch 'origin' into mlazos/eager-optims</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/88449]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F88449</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F88449</guid>
+            <pubDate>Fri, 16 Dec 2022 00:17:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>training support for dynamo/torchxla integration</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90818: Update on "[Quant] Use the true src zero point to query and create co…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90818</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90818</guid>
+            <pubDate>Fri, 16 Dec 2022 00:14:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…nv pd"</p>
+<p><strong>Summary</strong><br>
+Previously, we use <code>DNNL_RUNTIME_S32_VAL</code> as the <code>zero point</code> for <code>src</code> in both weight prepack and convolution forward to ensure the same block format of weight is used. The problem is <code>DNNL_RUNTIME_S32_VAL</code> may query out a different block format weight comparing with the true <code>zero point</code> for <code>src</code>. It makes oneDNN convolution into <code>jit</code> path instead of <code>brgconv</code> path. Here we will use the true <code>zero point</code> for <code>src</code> to create pd and make reorder if it's a different block format weight as weight prepack generated.</p>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest quantization/core/test_quantized_op.py::TestQuantizedConv::test_conv_reorder_issue_onednn"><pre class="notranslate"><code>python -m pytest quantization/core/test_quantized_op.py::TestQuantizedConv::test_conv_reorder_issue_onednn
+</code></pre></div>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90364: Update on "[Quant] Add fused conv2d_add_relu op for onednn backend"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90364</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90364</guid>
+            <pubDate>Fri, 16 Dec 2022 00:14:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Post op fusion can reduce data movement overhead and improve inference performance. This PR adds fused conv2d_add_relu op for onednn backend, which will be used for int8 inference with onednn backend. Cannot call this op with other quantization backends otherwise an error is thrown.</p>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest test_quantization.py::TestQuantizedConv"><pre class="notranslate"><code>python -m pytest test_quantization.py::TestQuantizedConv
+</code></pre></div>
+<p><strong>TODO</strong><br>
+There is a oneDNN issue which may cause the kernel core dump with some input shapes. This PR should be merged after the issue resolved.</p>
+<p>cc VitalyFedyunin jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90262: Update on "[Quant] Add fused conv2d_add op for onednn backend"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90262</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90262</guid>
+            <pubDate>Fri, 16 Dec 2022 00:14:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Post op fusion can reduce data movement overhead and improve inference performance. This PR adds fused <code>conv2d_add</code> op for onednn backend, which will be used for int8 inference with onednn backend. Cannot call this op with other quantization backends otherwise an error is thrown.</p>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest test_quantization.py::TestQuantizedConv"><pre class="notranslate"><code>python -m pytest test_quantization.py::TestQuantizedConv
+</code></pre></div>
+<p>cc VitalyFedyunin jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 gujinghui PenghuiCheng jianyuh min-jean-cho yanbing-j Guobing-Chen Xia-Weiwen</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90605: Update on "[Quant] Update IDeep to support oneDNN conv add fusion"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90605</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90605</guid>
+            <pubDate>Fri, 16 Dec 2022 00:14:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+This PR updates IDeep to support oneDNN conv add fusion.</p>
+<p><strong>TODO</strong><br>
+The IDeep change in this PR points to my personal repo currently for test purpose. After the changes landed in IDeep main branch, need to point IDeep changes to the main branch.</p>
+<p>cc jerryzh168 jianyuh raghuramank100 jamesr66a vkuzo jgong5 Xia-Weiwen gujinghui PenghuiCheng XiaobingSuper mingfeima sanchitintel ashokei jingxu10 min-jean-cho yanbing-j Guobing-Chen</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90157: Update on "[Quant] Remove all the dequant nodes when the ref module h…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90157</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90157</guid>
+            <pubDate>Fri, 16 Dec 2022 00:09:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…as multi input args"</p>
+<p><strong>Summary</strong>:<br>
+When converting a ref module into a quant module, <code>_lower_static_weighted_ref_module</code> pass assumes the <code>ref_node</code> only has 1 input node, and only remove the first <code>dequant</code> node. However, when we enable the <code>conv add</code> fusion, there will be a extra input node from <code>add</code> node besides the original input node from <code>conv</code>. Similar as did in the <code>_lower_quantized_binary_op</code> pass <a href="https://github.com/pytorch/pytorch/blob/41c3b41b92f5019f8d5e2f2846a06b87db01ca4e/torch/ao/quantization/fx/_lower_to_native_backend.py#L766-L775">https://github.com/pytorch/pytorch/blob/41c3b41b92f5019f8d5e2f2846a06b87db01ca4e/torch/ao/quantization/fx/_lower_to_native_backend.py#L766-L775</a>, We should remove all the <code>dequant</code> nodes in the  <code>_lower_static_weighted_ref_module</code> pass.</p>
+<p><strong>Test Plan</strong>:<br>
+It's a bug fix instead of a new feature. When we enable the <code>conv add</code> fusion PR later, we will add test cases accordingly.</p>
+<p>cc jerryzh168 jianyuh raghuramank100 jamesr66a vkuzo jgong5 Xia-Weiwen mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/90575: Update on "Handle tensor default func args when inlining"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F90575</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F90575</guid>
+            <pubDate>Fri, 16 Dec 2022 00:05:10 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="Handle tensor default func/method args when inlining
+
+Previously, when inlining a function, its default arguments
+were only wrapped with VariableTrackers if non-tensor. Now,
+tensor default args are also handled by adding them to the
+parent InstructionTranslator as an attribute.
+
+- also patches up a missing source in nnmodule call_function,
+  needed to properly guard on a default arg in its methods
+- adds new 'DefaultsSource' type which guards either a `__defaults__`
+  or `__kwdefaults__` entry on a function"><pre class="notranslate"><code>Handle tensor default func/method args when inlining
+
+Previously, when inlining a function, its default arguments
+were only wrapped with VariableTrackers if non-tensor. Now,
+tensor default args are also handled by adding them to the
+parent InstructionTranslator as an attribute.
+
+- also patches up a missing source in nnmodule call_function,
+  needed to properly guard on a default arg in its methods
+- adds new 'DefaultsSource' type which guards either a `__defaults__`
+  or `__kwdefaults__` entry on a function
+</code></pre></div>
+<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1481146422" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/90361" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/90361/hovercard" href="https://github.com/pytorch/pytorch/issues/90361">#90361</a>  <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1482364903" data-permission-text="Title is private" data-url="https://github.com/pytorch/torchdynamo/issues/1968" data-hovercard-type="issue" data-hovercard-url="/pytorch/torchdynamo/issues/1968/hovercard" href="https://github.com/pytorch/torchdynamo/issues/1968">pytorch/torchdynamo#1968</a></p>
+<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90575: Update on "Handle tensor default func args when inlining"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90575</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90575</guid>
+            <pubDate>Fri, 16 Dec 2022 00:05:10 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="Handle tensor default func/method args when inlining
+
+Previously, when inlining a function, its default arguments
+were only wrapped with VariableTrackers if non-tensor. Now,
+tensor default args are also handled by adding them to the
+parent InstructionTranslator as an attribute.
+
+- also patches up a missing source in nnmodule call_function,
+  needed to properly guard on a default arg in its methods
+- adds new 'DefaultsSource' type which guards either a `__defaults__`
+  or `__kwdefaults__` entry on a function"><pre class="notranslate"><code>Handle tensor default func/method args when inlining
+
+Previously, when inlining a function, its default arguments
+were only wrapped with VariableTrackers if non-tensor. Now,
+tensor default args are also handled by adding them to the
+parent InstructionTranslator as an attribute.
+
+- also patches up a missing source in nnmodule call_function,
+  needed to properly guard on a default arg in its methods
+- adds new 'DefaultsSource' type which guards either a `__defaults__`
+  or `__kwdefaults__` entry on a function
+</code></pre></div>
+<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1481146422" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/90361" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/90361/hovercard" href="https://github.com/pytorch/pytorch/issues/90361">#90361</a>  <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1482364903" data-permission-text="Title is private" data-url="https://github.com/pytorch/torchdynamo/issues/1968" data-hovercard-type="issue" data-hovercard-url="/pytorch/torchdynamo/issues/1968/hovercard" href="https://github.com/pytorch/torchdynamo/issues/1968">pytorch/torchdynamo#1968</a></p>
+<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from grafana: 9.3.2 (unreleased)]]></title>
+            <link>https://github.com/grafana/grafana/releases/tag/v9.3.2</link>
+            <guid>https://github.com/grafana/grafana/releases/tag/v9.3.2</guid>
+            <pubDate>Thu, 15 Dec 2022 22:52:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p><a href="https://grafana.com/grafana/download/9.3.2" rel="nofollow">Download page</a><br>
+<a href="https://grafana.com/docs/grafana/latest/whatsnew/" rel="nofollow">What's new highlights</a></p>
+<h3>Features and enhancements</h3>
+<ul>
+<li><strong>Graphite:</strong> Process multiple queries to Graphite plugin. <a href="https://github.com/grafana/grafana/pull/59608" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59608/hovercard">#59608</a>, <a href="https://github.com/mmandrus">@mmandrus</a></li>
+</ul>
+<h3>Bug fixes</h3>
+<ul>
+<li><strong>API:</strong> Fix delete user failure due to quota not enabled. <a href="https://github.com/grafana/grafana/pull/59875" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59875/hovercard">#59875</a>, <a href="https://github.com/papagian">@papagian</a></li>
+<li><strong>Accessibility:</strong> Improved keyboard accessibility in BarGauge. <a href="https://github.com/grafana/grafana/pull/59382" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59382/hovercard">#59382</a>, <a href="https://github.com/lpskdl">@lpskdl</a></li>
+<li><strong>Accessibility:</strong> Improved keyboard accessibility in BigValue. <a href="https://github.com/grafana/grafana/pull/59830" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59830/hovercard">#59830</a>, <a href="https://github.com/lpskdl">@lpskdl</a></li>
+<li><strong>Alerting:</strong> Use the QuotaTargetSrv instead of the QuotaTarget in quota check. <a href="https://github.com/grafana/grafana/pull/60026" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60026/hovercard">#60026</a>, <a href="https://github.com/joeblubaugh">@joeblubaugh</a></li>
+<li><strong>AzureMonitor:</strong> Automate location retrieval. <a href="https://github.com/grafana/grafana/pull/59602" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59602/hovercard">#59602</a>, <a href="https://github.com/aangelisc">@aangelisc</a></li>
+<li><strong>AzureMonitor:</strong> Fix bad request when setting dimensions. <a href="https://github.com/grafana/grafana/pull/59700" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59700/hovercard">#59700</a>, <a href="https://github.com/andresmgot">@andresmgot</a></li>
+<li><strong>BarChart:</strong> Fix value mappings. <a href="https://github.com/grafana/grafana/pull/60066" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60066/hovercard">#60066</a>, <a href="https://github.com/leeoniya">@leeoniya</a></li>
+<li><strong>Build:</strong> Streamline and sync dockerfiles. <a href="https://github.com/grafana/grafana/pull/58101" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/58101/hovercard">#58101</a>, <a href="https://github.com/DanCech">@DanCech</a></li>
+<li><strong>Build:</strong> Unified dockerfile for all builds. <a href="https://github.com/grafana/grafana/pull/59173" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59173/hovercard">#59173</a>, <a href="https://github.com/DanCech">@DanCech</a></li>
+<li><strong>CloudWatch:</strong> Fix - make sure dimensions are propagated to alert query editor. <a href="https://github.com/grafana/grafana/pull/58281" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/58281/hovercard">#58281</a>, <a href="https://github.com/conorevans">@conorevans</a></li>
+<li><strong>Cloudwatch:</strong> Fix deeplink with default region (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1494635166" data-permission-text="Title is private" data-url="https://github.com/grafana/grafana/issues/60260" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60260/hovercard" href="https://github.com/grafana/grafana/pull/60260">#60260</a>). <a href="https://github.com/grafana/grafana/pull/60274" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60274/hovercard">#60274</a>, <a href="https://github.com/iwysiu">@iwysiu</a></li>
+<li><strong>Command Palette:</strong> Fix not being able to type if triggered whilst another modal is open. <a href="https://github.com/grafana/grafana/pull/59728" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59728/hovercard">#59728</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>Command Palette:</strong> Maintain page state when changing theme. <a href="https://github.com/grafana/grafana/pull/59787" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59787/hovercard">#59787</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>Dashboards:</strong> Fix 'Make Editable' button not working in Dashboard Settings. <a href="https://github.com/grafana/grafana/pull/60306" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60306/hovercard">#60306</a>, <a href="https://github.com/joshhunt">@joshhunt</a></li>
+<li><strong>Dashboards:</strong> Show error when data source is missing. <a href="https://github.com/grafana/grafana/pull/60099" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60099/hovercard">#60099</a>, <a href="https://github.com/joshhunt">@joshhunt</a></li>
+<li><strong>Datasource:</strong> Fix - apply default query also to queries in new panels. <a href="https://github.com/grafana/grafana/pull/59625" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59625/hovercard">#59625</a>, <a href="https://github.com/sunker">@sunker</a></li>
+<li><strong>Dropdown:</strong> Menu now closes correctly when selecting options on touch devices. <a href="https://github.com/grafana/grafana/pull/60181" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60181/hovercard">#60181</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>Influx:</strong> Query segment menus now position correctly near the bottom of the screen. <a href="https://github.com/grafana/grafana/pull/60087" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60087/hovercard">#60087</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>Login:</strong> Fix failure to login a new user via an external provider if quota are enabled. <a href="https://github.com/grafana/grafana/pull/60015" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60015/hovercard">#60015</a>, <a href="https://github.com/papagian">@papagian</a></li>
+<li><strong>Loki/Prometheus:</strong> Fix wrong queries executed in split view. <a href="https://github.com/grafana/grafana/pull/60172" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60172/hovercard">#60172</a>, <a href="https://github.com/svennergr">@svennergr</a></li>
+<li><strong>Loki:</strong> Fix wrongly escaped label values when using LabelFilter. <a href="https://github.com/grafana/grafana/pull/59812" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59812/hovercard">#59812</a>, <a href="https://github.com/svennergr">@svennergr</a></li>
+<li><strong>Navigation:</strong> Prevent app crash when importing a dashboard with a uid of <code>home</code>. <a href="https://github.com/grafana/grafana/pull/59874" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59874/hovercard">#59874</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>Panel Edit:</strong> Fix data links edit icons being off screen when provided title is too long. <a href="https://github.com/grafana/grafana/pull/59829" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59829/hovercard">#59829</a>, <a href="https://github.com/dprokop">@dprokop</a></li>
+<li><strong>Prometheus:</strong> Fix exemplar fill color to match series color in time series. <a href="https://github.com/grafana/grafana/pull/59908" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59908/hovercard">#59908</a>, <a href="https://github.com/gtk-grafana">@gtk-grafana</a></li>
+<li><strong>Prometheus:</strong> Fix exemplars not respecting corresponding series display status. <a href="https://github.com/grafana/grafana/pull/59743" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59743/hovercard">#59743</a>, <a href="https://github.com/gtk-grafana">@gtk-grafana</a></li>
+<li><strong>StateTimeline:</strong> Fix negative infinity legend/tooltip from thresholds. <a href="https://github.com/grafana/grafana/pull/60279" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60279/hovercard">#60279</a>, <a href="https://github.com/leeoniya">@leeoniya</a></li>
+<li><strong>Table:</strong> Fixes row border style not showing and colored rows blending together. <a href="https://github.com/grafana/grafana/pull/59660" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59660/hovercard">#59660</a>, <a href="https://github.com/torkelo">@torkelo</a></li>
+<li><strong>Tempo:</strong> Fix TraceQL autocomplete issues (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1485435436" data-permission-text="Title is private" data-url="https://github.com/grafana/grafana/issues/60058" data-hovercard-type="issue" data-hovercard-url="/grafana/grafana/issues/60058/hovercard" href="https://github.com/grafana/grafana/issues/60058">#60058</a>). <a href="https://github.com/grafana/grafana/pull/60125" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60125/hovercard">#60125</a>, <a href="https://github.com/CrypticSignal">@CrypticSignal</a></li>
+<li><strong>TimePicker:</strong> Prevent TimePicker overflowing viewport on small screens. <a href="https://github.com/grafana/grafana/pull/59808" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59808/hovercard">#59808</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+<li><strong>TimeRangePicker:</strong> Fix recently ranges only not showing all recent ranges. <a href="https://github.com/grafana/grafana/pull/59836" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59836/hovercard">#59836</a>, <a href="https://github.com/joshhunt">@joshhunt</a></li>
+<li><strong>TimeZonePicker:</strong> Scroll menu correctly when using keyboard controls. <a href="https://github.com/grafana/grafana/pull/60008" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60008/hovercard">#60008</a>, <a href="https://github.com/ashharrison90">@ashharrison90</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cargo: 0.67.0]]></title>
+            <link>https://github.com/rust-lang/cargo/releases/tag/0.67.0</link>
+            <guid>https://github.com/rust-lang/cargo/releases/tag/0.67.0</guid>
+            <pubDate>Thu, 15 Dec 2022 22:44:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>0.67.0 release</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from grafana: 9.2.8 (unreleased)]]></title>
+            <link>https://github.com/grafana/grafana/releases/tag/v9.2.8</link>
+            <guid>https://github.com/grafana/grafana/releases/tag/v9.2.8</guid>
+            <pubDate>Thu, 15 Dec 2022 21:58:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p><a href="https://grafana.com/grafana/download/9.2.8" rel="nofollow">Download page</a><br>
+<a href="https://grafana.com/docs/grafana/latest/whatsnew/" rel="nofollow">What's new highlights</a></p>
+<h3>Bug fixes</h3>
+<ul>
+<li><strong>AzureMonitor:</strong> Fix panic from empty response in ARG. <a href="https://github.com/grafana/grafana/pull/59691" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59691/hovercard">#59691</a>, <a href="https://github.com/andresmgot">@andresmgot</a></li>
+<li><strong>Cloudwatch:</strong> Fix deeplink with default region. <a href="https://github.com/grafana/grafana/pull/60260" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60260/hovercard">#60260</a>, <a href="https://github.com/iwysiu">@iwysiu</a></li>
+<li><strong>Cloudwatch:</strong> Fix deeplink with default region (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1494635166" data-permission-text="Title is private" data-url="https://github.com/grafana/grafana/issues/60260" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60260/hovercard" href="https://github.com/grafana/grafana/pull/60260">#60260</a>). <a href="https://github.com/grafana/grafana/pull/60273" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/60273/hovercard">#60273</a>, <a href="https://github.com/iwysiu">@iwysiu</a></li>
+<li><strong>DataSourcePermissions:</strong> Handle licensing properly for ds permissions. <a href="https://github.com/grafana/grafana/pull/59694" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59694/hovercard">#59694</a>, <a href="https://github.com/kalleep">@kalleep</a></li>
+<li><strong>DataSourcePermissions:</strong> Handle licensing properly for ds permissions. (Enterprise)</li>
+<li><strong>FIX:</strong> Remove service accounts from quota count. <a href="https://github.com/grafana/grafana/pull/59878" data-hovercard-type="pull_request" data-hovercard-url="/grafana/grafana/pull/59878/hovercard">#59878</a>, <a href="https://github.com/gamab">@gamab</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from apollo-client: v3.7.3]]></title>
+            <link>https://github.com/apollographql/apollo-client/releases/tag/v3.7.3</link>
+            <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.7.3</guid>
+            <pubDate>Thu, 15 Dec 2022 21:54:29 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><g-emoji class="g-emoji" alias="stop_sign" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6d1.png">🛑</g-emoji> IMPORTANT <g-emoji class="g-emoji" alias="stop_sign" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6d1.png">🛑</g-emoji> Version <code>3.7.3</code> is not installable due to an issue with our release process which caused a mismatch between <code>package-lock.json</code> and <code>package.json</code> version numbers.</h2>
+<p>I (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alessbell/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alessbell">@alessbell</a>) apologize for the inconvenience! Version <code>3.7.4</code> should be out within 1 business day containing the changes that were targeted for <code>3.7.3</code>. Thank you so much for your patience.</p>
+<h3>Patch Changes</h3>
+<ul>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/10334" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/10334/hovercard">#10334</a> <a href="https://github.com/apollographql/apollo-client/commit/7d923939dd7e6db7d69f04f598c666104b076e78"><code>7d923939d</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Better handle deferred queries that have cached or partial cached data for them</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/10368" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/10368/hovercard">#10368</a> <a href="https://github.com/apollographql/apollo-client/commit/46b58e9762abbffaee5c9abda8e309bea6d7a785"><code>46b58e976</code></a> Thanks <a href="https://github.com/alessbell">@alessbell</a>! - Fix: unblocks support for defer in mutations</p>
+<p>If the <code>@defer</code> directive is present in the document passed to <code>mutate</code>, the Promise will resolve with the final merged data after the last multipart chunk has arrived in the response.</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Thu, 15 Dec 2022 21:53:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-12-15 21:51:17 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/928becece4a64da3f110de8c6520704c40bdb2e4/hovercard" href="https://github.com/kovidgoyal/kitty/commit/928becece4a64da3f110de8c6520704c40bdb2e4"><tt>928bece</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from prometheus: 2.41.0-rc.0 / 2022-12-14]]></title>
+            <link>https://github.com/prometheus/prometheus/releases/tag/v2.41.0-rc.0</link>
+            <guid>https://github.com/prometheus/prometheus/releases/tag/v2.41.0-rc.0</guid>
+            <pubDate>Thu, 15 Dec 2022 21:14:24 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>[FEATURE] Relabeling: Add <code>keepequal</code> and <code>dropequal</code> relabel actions. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1443909503" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11564" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11564/hovercard" href="https://github.com/prometheus/prometheus/pull/11564">#11564</a></li>
+<li>[FEATURE] Add support for HTTP proxy headers. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1496160238" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11712" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11712/hovercard" href="https://github.com/prometheus/prometheus/pull/11712">#11712</a></li>
+<li>[ENHANCEMENT] Reload private certificates when changed on disk. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1484688304" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11685" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11685/hovercard" href="https://github.com/prometheus/prometheus/pull/11685">#11685</a></li>
+<li>[ENHANCEMENT] Add <code>max_version</code> to specify maximum TLS version in <code>tls_config</code>. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1484688304" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11685" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11685/hovercard" href="https://github.com/prometheus/prometheus/pull/11685">#11685</a></li>
+<li>[ENHANCEMENT] Add <code>goos</code> and <code>goarch</code> labels to <code>prometheus_build_info</code>. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1484688304" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11685" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11685/hovercard" href="https://github.com/prometheus/prometheus/pull/11685">#11685</a></li>
+<li>[ENHANCEMENT] SD: Add proxy support for EC2 and LightSail SDs <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1458954891" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11611" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11611/hovercard" href="https://github.com/prometheus/prometheus/pull/11611">#11611</a></li>
+<li>[ENHANCEMENT] SD: Add new metric <code>prometheus_sd_file_watcher_errors_total</code>. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1320124085" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11066" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11066/hovercard" href="https://github.com/prometheus/prometheus/pull/11066">#11066</a></li>
+<li>[ENHANCEMENT] Remote Read: Use a pool to speed up marshalling. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1387555815" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11357" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11357/hovercard" href="https://github.com/prometheus/prometheus/pull/11357">#11357</a></li>
+<li>[ENHANCEMENT] TSDB: Improve handling of tombstoned chunks in iterators. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1465185100" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11632" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11632/hovercard" href="https://github.com/prometheus/prometheus/pull/11632">#11632</a></li>
+<li>[ENHANCEMENT] TSDB: Optimize postings offset table reading. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1436234032" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11535" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11535/hovercard" href="https://github.com/prometheus/prometheus/pull/11535">#11535</a></li>
+<li>[BUGFIX] Scrape: Validate the metric name, label names, and label values after relabeling. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1322912749" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11074" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11074/hovercard" href="https://github.com/prometheus/prometheus/pull/11074">#11074</a></li>
+<li>[BUGFIX] Remote Write receiver and rule manager: Fix error handling. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498244894" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11727" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11727/hovercard" href="https://github.com/prometheus/prometheus/pull/11727">#11727</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from great_expectations: 0.15.41]]></title>
+            <link>https://github.com/great-expectations/great_expectations/releases/tag/0.15.41</link>
+            <guid>https://github.com/great-expectations/great_expectations/releases/tag/0.15.41</guid>
+            <pubDate>Thu, 15 Dec 2022 20:53:59 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>[FEATURE] enable mostly for expect_compound_columns_to_be_unique (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487159938" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6533" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6533/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6533">#6533</a>) (thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kimfrie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kimfrie">@kimfrie</a>)</li>
+<li>[BUGFIX] Return unique list of batch_definitions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1496412882" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6579" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6579/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6579">#6579</a>) (thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tanelk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tanelk">@tanelk</a>)</li>
+<li>[BUGFIX] convert_to_json_serializable does not accept numpy datetime (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487941901" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6553" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6553/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6553">#6553</a>) (thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tmilitino/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tmilitino">@tmilitino</a>)</li>
+<li>[DOCS] Clean up misc snippet violations (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1496956153" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6582" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6582/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6582">#6582</a>)</li>
+<li>[MAINTENANCE] Update json schema validation on usage stats to filter based on format. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1480526620" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6502" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6502/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6502">#6502</a>)</li>
+<li>[MAINTENANCE] Renaming Metric Name Suffixes using Enum Values for Better Code Readability (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495162602" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6575" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6575/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6575">#6575</a>)</li>
+<li>[MAINTENANCE] M/great 1433/cloud tests to async (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487583931" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6543" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6543/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6543">#6543</a>)</li>
+<li>[MAINTENANCE] Add static type checking to <code>rule.py</code> and <code>rule_based_profiler_result.py</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495051514" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6573" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6573/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6573">#6573</a>)</li>
+<li>[MAINTENANCE] Update most contrib Expectation docstrings to be consistent and decently formatted for gallery (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495316456" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6577" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6577/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6577">#6577</a>)</li>
+<li>[MAINTENANCE] Update changelogs to reflect PyPI yanks (0.15.37-0.15.39) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1496917567" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6581" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6581/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6581">#6581</a>)</li>
+<li>[MAINTENANCE] Refactor ExecutionEngine.resolve_metrics() for better code readability (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1496191738" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6578" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6578/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6578">#6578</a>)</li>
+<li>[MAINTENANCE] adding googletag manager to docusaurus (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497323195" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6584" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6584/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6584">#6584</a>)</li>
+<li>[MAINTENANCE] typo in method name (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497377709" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6585" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6585/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6585">#6585</a>)</li>
+<li>[MAINTENANCE] <code>mypy</code> config update (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498595546" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6589" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6589/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6589">#6589</a>)</li>
+<li>[MAINTENANCE] Small refactor of ExecutionEngine.resolve_metrics() for better code readability (and miscellaneous additional clean up) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498103394" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6587" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6587/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6587">#6587</a>)</li>
+<li>[MAINTENANCE] Remove <code>ExplorerDataContext</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498823476" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6592" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6592/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6592">#6592</a>)</li>
+<li>[MAINTENANCE] Leverage <code>RendererConfiguration</code> in existing prescriptive templates (2 of 3) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1476995421" data-permission-text="Title is private" data-url="https://github.com/great-expectations/great_expectations/issues/6488" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/6488/hovercard" href="https://github.com/great-expectations/great_expectations/pull/6488">#6488</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v13.0.8-canary.0]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v13.0.8-canary.0</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v13.0.8-canary.0</guid>
+            <pubDate>Thu, 15 Dec 2022 19:55:07 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Fix windows slashes for app client entry: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498542624" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44052" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44052/hovercard" href="https://github.com/vercel/next.js/pull/44052">#44052</a></li>
+<li>Hash both pitch and main loader for server CSS imports: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498901050" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44063" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44063/hovercard" href="https://github.com/vercel/next.js/pull/44063">#44063</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Run packing in tests in parallel</li>
+<li>Revert "Run packing in tests in parallel"</li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.27.31]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.27.31</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.27.31</guid>
+            <pubDate>Thu, 15 Dec 2022 19:14:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.27.31 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from sentry: 22.12.0]]></title>
+            <link>https://github.com/getsentry/sentry/releases/tag/22.12.0</link>
+            <guid>https://github.com/getsentry/sentry/releases/tag/22.12.0</guid>
+            <pubDate>Thu, 15 Dec 2022 18:42:04 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Derived Code Mappings (EA release - Python only)</h3>
+<p>This adds the ability of deriving code mappings automatically for all orgs using Python and Github at first.</p>
+<p>See RFC for details: <a href="https://github.com/getsentry/rfcs/blob/main/text/0016-auto-code-mappings.md">https://github.com/getsentry/rfcs/blob/main/text/0016-auto-code-mappings.md</a></p>
+<p>By: <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/armenzg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/armenzg">@armenzg</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1455386364" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41562" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41562/hovercard" href="https://github.com/getsentry/sentry/pull/41562">#41562</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1453948061" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41523" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41523/hovercard" href="https://github.com/getsentry/sentry/pull/41523">#41523</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1452240095" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41466" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41466/hovercard" href="https://github.com/getsentry/sentry/pull/41466">#41466</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1452228267" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41464" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41464/hovercard" href="https://github.com/getsentry/sentry/pull/41464">#41464</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1449833723" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41384" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41384/hovercard" href="https://github.com/getsentry/sentry/pull/41384">#41384</a>)</p>
+<h3>Derived Code Mappings (GA Release - JS and Python) (ongoing)</h3>
+<p>Python is in EA already. We will first add JS to EA and then GA both of them.</p>
+<p>For JS, this will only apply to stacktraces that have source maps applied, otherwise, it is not possible to derive code mappings.</p>
+<p>Read <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1386671316" data-permission-text="Title is private" data-url="https://github.com/getsentry/rfcs/issues/16" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/rfcs/pull/16/hovercard" href="https://github.com/getsentry/rfcs/pull/16">getsentry/rfcs#16</a> for more details.</p>
+<p>By: <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/armenzg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/armenzg">@armenzg</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1494651830" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42293" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42293/hovercard" href="https://github.com/getsentry/sentry/pull/42293">#42293</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1491995833" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42249" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42249/hovercard" href="https://github.com/getsentry/sentry/pull/42249">#42249</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1484738015" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42155" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42155/hovercard" href="https://github.com/getsentry/sentry/pull/42155">#42155</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1485020642" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42161" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42161/hovercard" href="https://github.com/getsentry/sentry/pull/42161">#42161</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1482820698" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42147" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42147/hovercard" href="https://github.com/getsentry/sentry/pull/42147">#42147</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1482214413" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42130" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42130/hovercard" href="https://github.com/getsentry/sentry/pull/42130">#42130</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1479797680" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42082" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42082/hovercard" href="https://github.com/getsentry/sentry/pull/42082">#42082</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1479377708" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42069" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42069/hovercard" href="https://github.com/getsentry/sentry/pull/42069">#42069</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1466567540" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41777" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41777/hovercard" href="https://github.com/getsentry/sentry/pull/41777">#41777</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1471747195" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41933" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41933/hovercard" href="https://github.com/getsentry/sentry/pull/41933">#41933</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1470196742" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41909" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41909/hovercard" href="https://github.com/getsentry/sentry/pull/41909">#41909</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1467065767" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41794" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41794/hovercard" href="https://github.com/getsentry/sentry/pull/41794">#41794</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1464910419" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41771" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41771/hovercard" href="https://github.com/getsentry/sentry/pull/41771">#41771</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1463386289" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41733" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41733/hovercard" href="https://github.com/getsentry/sentry/pull/41733">#41733</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1462167082" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41706" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41706/hovercard" href="https://github.com/getsentry/sentry/pull/41706">#41706</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1462409950" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41718" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41718/hovercard" href="https://github.com/getsentry/sentry/pull/41718">#41718</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1459957336" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41639" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41639/hovercard" href="https://github.com/getsentry/sentry/pull/41639">#41639</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1460504723" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41671" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41671/hovercard" href="https://github.com/getsentry/sentry/pull/41671">#41671</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1460137619" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41648" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41648/hovercard" href="https://github.com/getsentry/sentry/pull/41648">#41648</a>), <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jangjodi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jangjodi">@jangjodi</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1485560558" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42192" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42192/hovercard" href="https://github.com/getsentry/sentry/pull/42192">#42192</a>)</p>
+<h3>Stacktrace linking and code mapping improvements (ongoing)</h3>
+<p>Various improvements to configuring Code Mappings by a customer.</p>
+<p>This milestones is simply to track the various related PRs.</p>
+<p>By: <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/scttcper/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/scttcper">@scttcper</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1455887009" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41582" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41582/hovercard" href="https://github.com/getsentry/sentry/pull/41582">#41582</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1455976285" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41585" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41585/hovercard" href="https://github.com/getsentry/sentry/pull/41585">#41585</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1454012401" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41529" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41529/hovercard" href="https://github.com/getsentry/sentry/pull/41529">#41529</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1453824373" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41512" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41512/hovercard" href="https://github.com/getsentry/sentry/pull/41512">#41512</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1452335194" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41474" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41474/hovercard" href="https://github.com/getsentry/sentry/pull/41474">#41474</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446133896" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41299" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41299/hovercard" href="https://github.com/getsentry/sentry/pull/41299">#41299</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1450227095" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41403" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41403/hovercard" href="https://github.com/getsentry/sentry/pull/41403">#41403</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1448974451" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41372" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41372/hovercard" href="https://github.com/getsentry/sentry/pull/41372">#41372</a>), <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/snigdhas/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/snigdhas">@snigdhas</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1452239269" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41465" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41465/hovercard" href="https://github.com/getsentry/sentry/pull/41465">#41465</a>), <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/armenzg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/armenzg">@armenzg</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1450356156" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41409" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41409/hovercard" href="https://github.com/getsentry/sentry/pull/41409">#41409</a>)</p>
+<h3>Post-GA fixes and improvements for derived code mappings (ongoing)</h3>
+<p>This will track work that are known issues that will be handled after the GA.</p>
+<p>See related RFC: <a href="https://github.com/getsentry/rfcs/blob/main/text/0016-auto-code-mappings.md">https://github.com/getsentry/rfcs/blob/main/text/0016-auto-code-mappings.md</a></p>
+<p>By: <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/armenzg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/armenzg">@armenzg</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497354200" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42348" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42348/hovercard" href="https://github.com/getsentry/sentry/pull/42348">#42348</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1468654457" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41857" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41857/hovercard" href="https://github.com/getsentry/sentry/pull/41857">#41857</a>)</p>
+<h3>Stacktrace linking: Mobile Support (ongoing)</h3>
+<p>By: <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jangjodi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jangjodi">@jangjodi</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1480511753" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42117" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42117/hovercard" href="https://github.com/getsentry/sentry/pull/42117">#42117</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1471768536" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/41936" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/41936/hovercard" href="https://github.com/getsentry/sentry/pull/41936">#41936</a>)</p>
+<h3>Various fixes &amp; improvements</h3>
+<ul>
+<li>ref(js): Remove enforceActOnUseLegacyStoreHook hack (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497940842" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42370" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42370/hovercard" href="https://github.com/getsentry/sentry/pull/42370">#42370</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/evanpurkhiser/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/evanpurkhiser">@evanpurkhiser</a></li>
+<li>feat(java): Add feature flag for deobfuscating java exception values (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497438758" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42353" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42353/hovercard" href="https://github.com/getsentry/sentry/pull/42353">#42353</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/edwardgou-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/edwardgou-sentry">@edwardgou-sentry</a></li>
+<li>feat(profiling): add profiling-flamechart-spans flag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497450433" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42357" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42357/hovercard" href="https://github.com/getsentry/sentry/pull/42357">#42357</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eliashussary/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eliashussary">@eliashussary</a></li>
+<li>feat(node): fix package for windows path (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495331611" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42325" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42325/hovercard" href="https://github.com/getsentry/sentry/pull/42325">#42325</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JonasBa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JonasBa">@JonasBa</a></li>
+<li>feat(profiling): add transaction context (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497289904" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42347" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42347/hovercard" href="https://github.com/getsentry/sentry/pull/42347">#42347</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JonasBa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JonasBa">@JonasBa</a></li>
+<li>ref(replays): Move replay-events-meta test into correct folder (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495323523" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42324" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42324/hovercard" href="https://github.com/getsentry/sentry/pull/42324">#42324</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ryan953/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ryan953">@ryan953</a></li>
+<li>Revert "chore(routes): Remove support for deprecated pre-Sentry 10 routes" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498522249" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42374" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42374/hovercard" href="https://github.com/getsentry/sentry/pull/42374">#42374</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dashed/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dashed">@dashed</a></li>
+<li>chore(anr-rate): Add option for abnormal_mechanism extraction flag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497739225" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42367" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42367/hovercard" href="https://github.com/getsentry/sentry/pull/42367">#42367</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shruthilayaj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shruthilayaj">@shruthilayaj</a></li>
+<li>chore(hybrid-cloud): test model decorators and fk breakage (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492395681" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42254" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42254/hovercard" href="https://github.com/getsentry/sentry/pull/42254">#42254</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/corps/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/corps">@corps</a></li>
+<li>chore(transactions): Set the entity argument to default "false" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497945205" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42371" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42371/hovercard" href="https://github.com/getsentry/sentry/pull/42371">#42371</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/olksdr/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/olksdr">@olksdr</a></li>
+<li>ref(contexts): Convert chunck from class to function (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1491550436" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42246" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42246/hovercard" href="https://github.com/getsentry/sentry/pull/42246">#42246</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
+<li>feat(txnames): Sort rules in project options (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498003903" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42372" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42372/hovercard" href="https://github.com/getsentry/sentry/pull/42372">#42372</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jjbayer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jjbayer">@jjbayer</a></li>
+<li>chore(js): useApi in groupEventDetails (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497444285" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42355" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42355/hovercard" href="https://github.com/getsentry/sentry/pull/42355">#42355</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/evanpurkhiser/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/evanpurkhiser">@evanpurkhiser</a></li>
+<li>fix(profiling): remove wasteful rect  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497429845" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42351" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42351/hovercard" href="https://github.com/getsentry/sentry/pull/42351">#42351</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JonasBa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JonasBa">@JonasBa</a></li>
+<li>feat(issues): Add frontend typings for issue occurrence data (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495408313" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42329" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42329/hovercard" href="https://github.com/getsentry/sentry/pull/42329">#42329</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/malwilley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/malwilley">@malwilley</a></li>
+<li>ref(hybrid-cloud): use organization_slug in MonitorCheckIns (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497446892" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42356" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42356/hovercard" href="https://github.com/getsentry/sentry/pull/42356">#42356</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cathyteng17/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cathyteng17">@cathyteng17</a></li>
+<li>ref(replays): Create NetworkHeaderCell for Replay Details (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487636312" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42240" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42240/hovercard" href="https://github.com/getsentry/sentry/pull/42240">#42240</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ryan953/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ryan953">@ryan953</a></li>
+<li>ref(profiling): rm profiling-onboarding-checklist feature flag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497443926" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42354" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42354/hovercard" href="https://github.com/getsentry/sentry/pull/42354">#42354</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eliashussary/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eliashussary">@eliashussary</a></li>
+<li>ref(replays): Refactor Replay network table sorting (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487562025" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42235" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42235/hovercard" href="https://github.com/getsentry/sentry/pull/42235">#42235</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ryan953/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ryan953">@ryan953</a></li>
+<li>fix(profiling): fix zoom when frame is in view (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497385186" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42350" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42350/hovercard" href="https://github.com/getsentry/sentry/pull/42350">#42350</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JonasBa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JonasBa">@JonasBa</a></li>
+<li>feat(discover-quick-context): Added issue title (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497200991" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42343" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42343/hovercard" href="https://github.com/getsentry/sentry/pull/42343">#42343</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Abdkhan14/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Abdkhan14">@Abdkhan14</a></li>
+<li>chore(hybrid-cloud): use organization_slug in MonitorDetails (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1494985069" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42300" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42300/hovercard" href="https://github.com/getsentry/sentry/pull/42300">#42300</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cathyteng17/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cathyteng17">@cathyteng17</a></li>
+<li>(perf-issues) add fingerprinting to consecutive db detector (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497025868" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42339" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42339/hovercard" href="https://github.com/getsentry/sentry/pull/42339">#42339</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DominikB2014/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DominikB2014">@DominikB2014</a></li>
+<li>frontend(invite): update invite link helper text (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497212386" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/42344" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/42344/hovercard" href="https://github.com/getsentry/sentry/pull/42344">#42344</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mdtro/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mdtro">@mdtro</a></li>
+</ul>
+<p><em>Plus 731 more</em></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from deno: v1.29.1]]></title>
+            <link>https://github.com/denoland/deno/releases/tag/v1.29.1</link>
+            <guid>https://github.com/denoland/deno/releases/tag/v1.29.1</guid>
+            <pubDate>Thu, 15 Dec 2022 18:28:37 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>1.29.1 / 2022.12.15</h3>
+<ul>
+<li>Revert "feat(ops): Fast zero copy string arguments (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1461764133" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/16777" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/16777/hovercard" href="https://github.com/denoland/deno/pull/16777">#16777</a>)" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498591684" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/17063" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/17063/hovercard" href="https://github.com/denoland/deno/pull/17063">#17063</a>)</li>
+<li>fix: re-add types for Response.json static method (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498282115" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/17061" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/17061/hovercard" href="https://github.com/denoland/deno/pull/17061">#17061</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from alembic: 1.9.0]]></title>
+            <link>https://github.com/sqlalchemy/alembic/releases/tag/rel_1_9_0</link>
+            <guid>https://github.com/sqlalchemy/alembic/releases/tag/rel_1_9_0</guid>
+            <pubDate>Thu, 15 Dec 2022 18:09:28 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>1.9.0</h1>
+<p>Released: December 15, 2022</p>
+<h2>feature</h2>
+<ul>
+<li>
+<p><strong>[feature] [commands]</strong> Added new Alembic command <code>alembic check</code>. This performs the widely<br>
+requested feature of running an "autogenerate" comparison between the<br>
+current database and the <code>MetaData</code> that's currently set up for<br>
+autogenerate, returning an error code if the two do not match, based on<br>
+current autogenerate settings. Pull request courtesy Nathan Louie.</p>
+<p>References: <a href="https://github.com/sqlalchemy/alembic/issues/724" data-hovercard-type="issue" data-hovercard-url="/sqlalchemy/alembic/issues/724/hovercard">#724</a></p>
+</li>
+</ul>
+<h2>bug</h2>
+<ul>
+<li>
+<p><strong>[bug] [tests]</strong> Fixed issue in tox.ini file where changes in the tox 4.0 series to the<br>
+format of "passenv" caused tox to not function correctly, in particular<br>
+raising an error as of tox 4.0.6.</p>
+</li>
+<li>
+<p><strong>[bug] [typing]</strong> Fixed typing issue where <code>revision.process_revision_directives</code><br>
+was not fully typed; additionally ensured all <code>Callable</code> and <code>Dict</code><br>
+arguments to <code>EnvironmentContext.configure()</code> include parameters in<br>
+the typing declaration.</p>
+<p>Additionally updated the codebase for Mypy 0.990 compliance.</p>
+<p>References: <a href="https://github.com/sqlalchemy/alembic/issues/1110" data-hovercard-type="issue" data-hovercard-url="/sqlalchemy/alembic/issues/1110/hovercard">#1110</a></p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from flutter: 3.7.0-9.0.pre: Fix typos in scale gesture recognizer docs (#117116)]]></title>
+            <link>https://github.com/flutter/flutter/releases/tag/3.7.0-9.0.pre</link>
+            <guid>https://github.com/flutter/flutter/releases/tag/3.7.0-9.0.pre</guid>
+            <pubDate>Thu, 15 Dec 2022 17:13:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Just two small typo fixes.</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4298]]></title>
@@ -21,20 +494,6 @@
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4298</guid>
             <pubDate>Thu, 15 Dec 2022 17:01:59 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90927: Make it easier to find troubleshooting steps]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90927</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90927</guid>
-            <pubDate>Thu, 15 Dec 2022 16:53:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>People's general tendency is to read from top to bottom. Leverage that at the right moment to help them realize that there's a troubleshooting section they can use if they get stuck</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from great_expectations: 0.15.41]]></title>
-            <link>https://github.com/great-expectations/great_expectations/releases/tag/0.15.41</link>
-            <guid>https://github.com/great-expectations/great_expectations/releases/tag/0.15.41</guid>
-            <pubDate>Thu, 15 Dec 2022 16:43:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>"0.15.41"</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from storybook: v7.0.0-beta.9]]></title>
@@ -60,13 +519,6 @@
 <li>Build: bundle script a bit less repetitive, add a completion indicator <a href="https://github.com/storybooks/storybook/pull/20277" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20277/hovercard">#20277</a></li>
 <li>Build: regen lockfiles <a href="https://github.com/storybooks/storybook/pull/20278" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20278/hovercard">#20278</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from deno: v1.29.1: 1.29.1 (#17064)]]></title>
-            <link>https://github.com/denoland/deno/releases/tag/v1.29.1</link>
-            <guid>https://github.com/denoland/deno/releases/tag/v1.29.1</guid>
-            <pubDate>Thu, 15 Dec 2022 16:32:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Co-authored-by: dsherret <a href="mailto:dsherret@users.noreply.github.com">dsherret@users.noreply.github.com</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from certbot: Certbot 2.1.1]]></title>
@@ -334,15 +786,6 @@ expecting them in the target.</p>
 <p>Co-authored-by: sealesj <a href="mailto:103135467+sealesj@users.noreply.github.com">103135467+sealesj@users.noreply.github.com</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90921: Update on "[FSDP] Fix input grad propagation when using param mixed p…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90921</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90921</guid>
-            <pubDate>Thu, 15 Dec 2022 15:13:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…recision"</p>
-<p>For parameter mixed precision, we cast the inputs to the low precision parameter dtype. If the input has tensors that require gradient, then we must cast them in place in order for them to receive a gradient. Otherwise, the tensor that resulted from the out-of-place cast receives the gradient and is not in scope to the user. To preserve BC as much as possible, this PR only does the in-place cast if the tensor requires gradient.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from meteor: release/METEOR@2.9.1-beta.3]]></title>
             <link>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.9.1-beta.3</link>
             <guid>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%402.9.1-beta.3</guid>
@@ -456,35 +899,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>v0.41.0-rc.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from prometheus: v2.41.0-rc.0]]></title>
-            <link>https://github.com/prometheus/prometheus/releases/tag/v2.41.0-rc.0</link>
-            <guid>https://github.com/prometheus/prometheus/releases/tag/v2.41.0-rc.0</guid>
-            <pubDate>Thu, 15 Dec 2022 13:09:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v2.41.0-rc.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from electron: v24.0.0-nightly.20221215]]></title>
             <link>https://github.com/electron/electron/releases/tag/v24.0.0-nightly.20221215</link>
             <guid>https://github.com/electron/electron/releases/tag/v24.0.0-nightly.20221215</guid>
             <pubDate>Thu, 15 Dec 2022 13:01:06 GMT</pubDate>
             <content:encoded><![CDATA[<p>v24.0.0-nightly.20221215</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90917: Sparse compressed mm: fix for orthogonal inputs]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90917</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90917</guid>
-            <pubDate>Thu, 15 Dec 2022 12:55:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90763: Update on "Sparse compressed mm: fix for empty inputs"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90763</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90763</guid>
-            <pubDate>Thu, 15 Dec 2022 12:55:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fixes <a href="https://github.com/pytorch/pytorch/issues/90693" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/90693/hovercard">#90693<br>
-</a></p>
-<p>cc pearu cpuhrsch amjames bhosmer</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from bitcoin: Bitcoin Core 22.1]]></title>
@@ -548,40 +967,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/janicklas-ralph/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/janicklas-ralph">@janicklas-ralph</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/theevilhead/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/theevilhead">@theevilhead</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nfinished/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nfinished">@Nfinished</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/feugy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/feugy">@feugy</a> for helping!</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90864: Update on "[FSDP][Easy] Rename `entry` -> `fsdp_module` to be more de…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90864</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90864</guid>
-            <pubDate>Thu, 15 Dec 2022 11:03:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…scriptive"</p>
-<p>I started refactoring unit tests to use <code>_get_fsdp_states()</code> instead of <code>FullyShardedDataParallel.fsdp_modules()</code> but realized we should not do that for now. This is just a change I made while doing that. <code>entry</code> is not descriptive. Let us explicitly say <code>fsdp_module</code>. <code>for fsdp_module in FSDP.fsdp_modules(module)</code> is a proper idiom.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90861: Update on "[FSDP][2/N] Move `fsdp_modules(root_only=False)` -> `_get_…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90861</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90861</guid>
-            <pubDate>Thu, 15 Dec 2022 11:03:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…fsdp_states()`"</p>
-<p>This PR migrates all internal usages of <code>FullyShardedDataParallel.fsdp_modules(root_only=False)</code> to <code>_get_fsdp_states()</code>. This is to unify the code paths for composable and wrapper FSDP.</p>
-<p>This PR <em>does not</em> change the usages in test files. This is because we should revisit those usages separately as a way to track which functionality for which we have not tested composable FSDP.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90860: Update on "[FSDP][1/N] Add `_get_fsdp_states()`"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90860</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90860</guid>
-            <pubDate>Thu, 15 Dec 2022 11:03:55 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>This PR introduces <code>_get_fsdp_states(module: nn.Module) -&gt; List[_FSDPState]</code> to prepare for <code>fully_shard</code> manual "wrapping".
-<ul>
-<li><del>I place it in <code>_runtime_utils.py</code>, not <code>_common_utils.py</code>, because in a follow-up PR, I will add <code>_get_root_fsdp_states()</code>, which requires <code>_lazy_init()</code>. I concluded that it would be preferred to have both of these getters be in the same place than to have them split, even if that means that <code>_get_fsdp_states()</code> is in <code>_runtime_utils.py</code>.</del> Due to circular import issues, I think I should still put it in <code>_common_utils.py</code>.</li>
-</ul>
-</li>
-<li>This PR changes <code>FullyShardedDataParallel.fsdp_modules()</code> to be backed by <code>_get_fsdp_states()</code>.</li>
-</ul>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 11.0.226.1]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.0.226.1</link>
             <guid>https://github.com/v8/v8/releases/tag/11.0.226.1</guid>
@@ -611,28 +996,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>For the complete release notes go to <a href="https://code.visualstudio.com/updates/v1_72" rel="nofollow">Updates</a> on <a href="https://code.visualstudio.com" rel="nofollow">code.visualstudio.com</a>.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90907: Update on "Lint rule to forbid direct use of logging.info/etc APIs"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90907</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90907</guid>
-            <pubDate>Thu, 15 Dec 2022 09:38:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang &lt;ezyangfb.com&gt;</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4234]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4234</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4234</guid>
             <pubDate>Thu, 15 Dec 2022 09:04:23 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90904: Suppress RecursionError in sympy; fix logging]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90904</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90904</guid>
-            <pubDate>Thu, 15 Dec 2022 08:53:06 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang <a href="mailto:ezyang@fb.com">ezyang@fb.com</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from jdk: jdk-21+2]]></title>
@@ -997,13 +1365,6 @@ Cr-Commit-Position: refs/heads/11.0.225@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/96bc59aec0f7dc005f1818f5bf85ec87d8bbb927/hovercard" href="https://github.com/v8/v8/commit/96bc59aec0f7dc005f1818f5bf85ec87d8bbb927"><tt>96bc59a</tt></a>-refs/heads/main@{#84854}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Wed, 14 Dec 2022 22:25:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-12-14 22:22:05 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/928becece4a64da3f110de8c6520704c40bdb2e4/hovercard" href="https://github.com/kovidgoyal/kitty/commit/928becece4a64da3f110de8c6520704c40bdb2e4"><tt>928bece</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4223]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4223</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4223</guid>
@@ -1330,24 +1691,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 Starting from now all releases follow semver and changes will be listed as Major/Minor/Patch</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/package@1.0.0]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fpackage%401.0.0</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fpackage%401.0.0</guid>
-            <pubDate>Wed, 14 Dec 2022 17:07:29 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Major Changes</h3>
-<p>First major release, see below for the history of changes that lead up to this.<br>
-Starting from now all releases follow semver and changes will be listed as Major/Minor/Patch</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.0]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0</guid>
-            <pubDate>Wed, 14 Dec 2022 17:07:29 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Major Changes</h3>
-<p>First major release, see below for the history of changes that lead up to this.<br>
-Starting from now all releases follow semver and changes will be listed as Major/Minor/Patch</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kit: @sveltejs/adapter-vercel@1.0.0]]></title>
             <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0</link>
             <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0</guid>
@@ -1360,6 +1703,24 @@ Starting from now all releases follow semver and changes will be listed as Major
             <title><![CDATA[Release notes from kit: @sveltejs/amp@1.0.0]]></title>
             <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Famp%401.0.0</link>
             <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Famp%401.0.0</guid>
+            <pubDate>Wed, 14 Dec 2022 17:07:29 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Major Changes</h3>
+<p>First major release, see below for the history of changes that lead up to this.<br>
+Starting from now all releases follow semver and changes will be listed as Major/Minor/Patch</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/package@1.0.0]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fpackage%401.0.0</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fpackage%401.0.0</guid>
+            <pubDate>Wed, 14 Dec 2022 17:07:29 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Major Changes</h3>
+<p>First major release, see below for the history of changes that lead up to this.<br>
+Starting from now all releases follow semver and changes will be listed as Major/Minor/Patch</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.0]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0</guid>
             <pubDate>Wed, 14 Dec 2022 17:07:29 GMT</pubDate>
             <content:encoded><![CDATA[<h3>Major Changes</h3>
 <p>First major release, see below for the history of changes that lead up to this.<br>
@@ -1849,9 +2210,9 @@ stderr stream usually has logs already written to it.</li>
             <content:encoded><![CDATA[<p>Released Portal v2.22.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.0-next.50]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0-next.50</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0-next.50</guid>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-vercel@1.0.0-next.88]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.88</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.88</guid>
             <pubDate>Wed, 14 Dec 2022 10:32:39 GMT</pubDate>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
@@ -1869,14 +2230,21 @@ stderr stream usually has logs already written to it.</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-vercel@1.0.0-next.88]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.88</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-vercel%401.0.0-next.88</guid>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.0-next.50]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0-next.50</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.0-next.50</guid>
             <pubDate>Wed, 14 Dec 2022 10:32:39 GMT</pubDate>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
 <li>[chore] add peerDependencies, add more specific next version (<a href="https://github.com/sveltejs/kit/pull/8141" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/8141/hovercard">#8141</a>)</li>
 </ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.3.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.3.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.3.1</guid>
+            <pubDate>Wed, 14 Dec 2022 09:33:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.3.1</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.3.1]]></title>
@@ -1891,13 +2259,6 @@ stderr stream usually has logs already written to it.</li>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.3.1</guid>
             <pubDate>Wed, 14 Dec 2022 09:33:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.3.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.3.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.3.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.3.1</guid>
-            <pubDate>Wed, 14 Dec 2022 09:33:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.3.1</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.3.1]]></title>
@@ -1928,18 +2289,18 @@ stderr stream usually has logs already written to it.</li>
             <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.4.0-next.1</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-telemetry@4.4.0-next.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-telemetry%404.4.0-next.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-telemetry%404.4.0-next.1</guid>
-            <pubDate>Wed, 14 Dec 2022 08:29:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-telemetry@4.4.0-next.1</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.4.0-next.1]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.4.0-next.1</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.4.0-next.1</guid>
             <pubDate>Wed, 14 Dec 2022 08:29:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-telemetry@4.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-telemetry%404.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-telemetry%404.4.0-next.1</guid>
+            <pubDate>Wed, 14 Dec 2022 08:29:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-telemetry@4.4.0-next.1</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.4.0-next.1]]></title>
@@ -2790,368 +3151,6 @@ Savings Time (DST) for Fiji and Mexico. For more information, see<br>
 <li><a href="https://github.com/emberjs/ember.js/pull/20296" data-hovercard-type="pull_request" data-hovercard-url="/emberjs/ember.js/pull/20296/hovercard">#20296</a> [BUGFIX] Controller <code>queryParams</code> should support <code>readonly</code> arrays</li>
 <li><a href="https://github.com/emberjs/ember.js/pull/20318" data-hovercard-type="pull_request" data-hovercard-url="/emberjs/ember.js/pull/20318/hovercard">#20318</a> [BUGFIX] Backport <code>Resolver</code> to preview types</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.0.7-canary.5]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.0.7-canary.5</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.0.7-canary.5</guid>
-            <pubDate>Tue, 13 Dec 2022 00:14:09 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Fix error message for invalid <code>runtime</code> option in app dir: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487185898" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43900" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43900/hovercard" href="https://github.com/vercel/next.js/pull/43900">#43900</a></li>
-<li>fix: forwarding props to no ssr dynamic: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487195287" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43901" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43901/hovercard" href="https://github.com/vercel/next.js/pull/43901">#43901</a></li>
-<li>Improve type checking error message for invalid props: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487336077" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43903" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43903/hovercard" href="https://github.com/vercel/next.js/pull/43903">#43903</a></li>
-<li>Improve type checking error message for invalid props: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487336077" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43903" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43903/hovercard" href="https://github.com/vercel/next.js/pull/43903">#43903</a></li>
-<li>Support for named slots in type checking: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487406436" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43906" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43906/hovercard" href="https://github.com/vercel/next.js/pull/43906">#43906</a></li>
-<li>Fix next/dynamic types for resolving named export module: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1488603158" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43923" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43923/hovercard" href="https://github.com/vercel/next.js/pull/43923">#43923</a></li>
-<li>Add auto completion for prop names and types to the TS plugin: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1487603901" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43909" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43909/hovercard" href="https://github.com/vercel/next.js/pull/43909">#43909</a></li>
-<li>Skip creating VSCode config and <code>.gitignore</code> if running in CI: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1489121646" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43935" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43935/hovercard" href="https://github.com/vercel/next.js/pull/43935">#43935</a></li>
-<li>Add helpful error for createContext used in Server Components: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1478346280" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43747" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43747/hovercard" href="https://github.com/vercel/next.js/pull/43747">#43747</a></li>
-<li>Increase stack trace limit on the server: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1481300071" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43800" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43800/hovercard" href="https://github.com/vercel/next.js/pull/43800">#43800</a></li>
-<li>Refactor image optimization util: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1485564546" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43868" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43868/hovercard" href="https://github.com/vercel/next.js/pull/43868">#43868</a></li>
-<li>useSearchParams - bailout to client rendering during static generation: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1471348135" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43603" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43603/hovercard" href="https://github.com/vercel/next.js/pull/43603">#43603</a></li>
-<li>Open server component errors fullscreen: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1486808528" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43887" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43887/hovercard" href="https://github.com/vercel/next.js/pull/43887">#43887</a></li>
-<li>next-dev: restart dev server exceeds the memory limits: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1491623417" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43958" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43958/hovercard" href="https://github.com/vercel/next.js/pull/43958">#43958</a></li>
-<li>Fix: status log when NEXT_TELEMETRY_DISABLED env is set: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1490571275" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43948" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43948/hovercard" href="https://github.com/vercel/next.js/pull/43948">#43948</a></li>
-<li>Erase dynamic ssr:false imports on server: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492520811" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43974" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43974/hovercard" href="https://github.com/vercel/next.js/pull/43974">#43974</a></li>
-<li>use a function expression to access arguments binding: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492840378" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43987" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43987/hovercard" href="https://github.com/vercel/next.js/pull/43987">#43987</a></li>
-<li>Added support for query params on not found pages: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1483117273" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43836" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43836/hovercard" href="https://github.com/vercel/next.js/pull/43836">#43836</a></li>
-</ul>
-<h3>Documentation Changes</h3>
-<ul>
-<li>Update compiler.md: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1485901040" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43872" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43872/hovercard" href="https://github.com/vercel/next.js/pull/43872">#43872</a></li>
-</ul>
-<h3>Example Changes</h3>
-<ul>
-<li>Convert <code>with-gsap</code>, <code>with-mqtt-js</code>, <code>with-mux-video</code> examples to Typescript: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1486147508" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43874" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43874/hovercard" href="https://github.com/vercel/next.js/pull/43874">#43874</a></li>
-<li>Fix <code>with-webassembly</code> example and convert to Typescript: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1474250603" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43677" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43677/hovercard" href="https://github.com/vercel/next.js/pull/43677">#43677</a></li>
-<li>corrected /examples/github-pages readme: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1479115358" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43766" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43766/hovercard" href="https://github.com/vercel/next.js/pull/43766">#43766</a></li>
-<li>chore: add repro links in "verify canary" comment: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492584806" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43979" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43979/hovercard" href="https://github.com/vercel/next.js/pull/43979">#43979</a></li>
-</ul>
-<h3>Misc Changes</h3>
-<ul>
-<li>Update @next/font data: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1486578330" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43883" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43883/hovercard" href="https://github.com/vercel/next.js/pull/43883">#43883</a></li>
-<li>Update flakey dev context tests: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1490834686" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43951" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43951/hovercard" href="https://github.com/vercel/next.js/pull/43951">#43951</a></li>
-<li>Add VSCode settings and recommended extensions for Next.js repository: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1491322317" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43954" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43954/hovercard" href="https://github.com/vercel/next.js/pull/43954">#43954</a></li>
-<li>Add Web Tooling team to codeowners: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492591997" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43981" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43981/hovercard" href="https://github.com/vercel/next.js/pull/43981">#43981</a></li>
-<li>Update docs change files list: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492795710" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43984" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43984/hovercard" href="https://github.com/vercel/next.js/pull/43984">#43984</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/aziyatali/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/aziyatali">@aziyatali</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/maxproske/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/maxproske">@maxproske</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/labyrinthitis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/labyrinthitis">@labyrinthitis</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/hanneslund/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/hanneslund">@hanneslund</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/feedthejim/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/feedthejim">@feedthejim</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/padmaia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/padmaia">@padmaia</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mattpr/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mattpr">@mattpr</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/balazsorban44/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/balazsorban44">@balazsorban44</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gnoff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gnoff">@gnoff</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wyattjoh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wyattjoh">@wyattjoh</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from ember.js: v4.10.0-beta.3]]></title>
-            <link>https://github.com/emberjs/ember.js/releases/tag/v4.10.0-beta.3</link>
-            <guid>https://github.com/emberjs/ember.js/releases/tag/v4.10.0-beta.3</guid>
-            <pubDate>Mon, 12 Dec 2022 22:55:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Release v4.10.0-beta.3</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from filament: v1.29.0]]></title>
-            <link>https://github.com/google/filament/releases/tag/v1.29.0</link>
-            <guid>https://github.com/google/filament/releases/tag/v1.29.0</guid>
-            <pubDate>Mon, 12 Dec 2022 20:50:19 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>gltfio: calculate primitive's AABB correctly.</li>
-<li>gltfio: recompute bounding boxes with morph targets</li>
-<li>engine: add missing getters on <code>MaterialInstance</code></li>
-<li>WebGL: add missing <code>ColorGrading</code> JS bindings</li>
-<li>engine: improvements/cleanup of Shadow mapping code [<g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> <strong>Recompile Materials</strong>]</li>
-<li>engine: fix TransformManager high precision mode when using transactions.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from python-fire: Python Fire v0.5.0]]></title>
-            <link>https://github.com/google/python-fire/releases/tag/v0.5.0</link>
-            <guid>https://github.com/google/python-fire/releases/tag/v0.5.0</guid>
-            <pubDate>Mon, 12 Dec 2022 20:46:23 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Changelist</h2>
-<ul>
-<li>Support for custom serializers with fire.Fire(serializer=your_serializer) <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="939232380" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/345" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/345/hovercard" href="https://github.com/google/python-fire/pull/345">#345</a></li>
-<li>Auto-generated help text now shows short arguments (e.g. -a) when appropriate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="802558040" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/318" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/318/hovercard" href="https://github.com/google/python-fire/pull/318">#318</a></li>
-<li>Documentation improvements (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="866375609" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/334" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/334/hovercard" href="https://github.com/google/python-fire/pull/334">#334</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1292242507" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/399" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/399/hovercard" href="https://github.com/google/python-fire/pull/399">#399</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1092326386" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/372" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/372/hovercard" href="https://github.com/google/python-fire/pull/372">#372</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1123122849" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/383" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/383/hovercard" href="https://github.com/google/python-fire/pull/383">#383</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1182209756" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/387" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/387/hovercard" href="https://github.com/google/python-fire/pull/387">#387</a>)</li>
-<li>Default values are now shown in help for kwonly arguments <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1466802974" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/414" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/414/hovercard" href="https://github.com/google/python-fire/pull/414">#414</a></li>
-<li>Completion script fix where previously completions might not show at all <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="867282813" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/336" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/336/hovercard" href="https://github.com/google/python-fire/pull/336">#336</a></li>
-</ul>
-<h2>Highlighted change: <code>fire.Fire(serialize=custom_serialize_fn)</code> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="939232380" data-permission-text="Title is private" data-url="https://github.com/google/python-fire/issues/345" data-hovercard-type="pull_request" data-hovercard-url="/google/python-fire/pull/345/hovercard" href="https://github.com/google/python-fire/pull/345">#345</a></h2>
-<p>You can now pass a custom serialization function to fire to control how the output is serialized.</p>
-<p>Your serialize function should accept an object as input, and may return a string as output. If it returns a string, Fire will display that string. If it returns None, Fire will display nothing. If it returns something else, Fire will use the default serialization method to convert it to text.</p>
-<p>The default serialization remains unchanged from previous versions. Primitives and collections of primitives are serialized one item per line. Objects that define a custom <code>__str__</code> function are serialized using that. Complex objects that don't define <code>__str__</code> trigger their help screen rather than being serialized and displayed.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from nx: 15.3.3]]></title>
-            <link>https://github.com/nrwl/nx/releases/tag/15.3.3</link>
-            <guid>https://github.com/nrwl/nx/releases/tag/15.3.3</guid>
-            <pubDate>Mon, 12 Dec 2022 20:09:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/nrwl/nx/compare/15.3.2...15.3.3">15.3.3</a> (2022-12-12)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>core:</strong> handle undefined when package.json changes are not in node modules (<a href="https://github.com/nrwl/nx/issues/13681" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/13681/hovercard">#13681</a>) (<a href="https://github.com/nrwl/nx/commit/af157ffa2bf2d9efd2ddaf7a0dd6f3ff5108b4bf">af157ff</a>)</li>
-<li><strong>core:</strong> workspaceRoot is not correctly inrepolated when projectRoo… (<a href="https://github.com/nrwl/nx/issues/13768" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/13768/hovercard">#13768</a>) (<a href="https://github.com/nrwl/nx/commit/dd490c188a82daae2b10a26734b05675cd3922d8">dd490c1</a>)</li>
-<li><strong>vite:</strong> add console.warn nx serve --prod (<a href="https://github.com/nrwl/nx/issues/13597" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/13597/hovercard">#13597</a>) (<a href="https://github.com/nrwl/nx/commit/01e437d237879b62e34ce43c0c429d79025e0795">01e437d</a>)</li>
-</ul>
-<h3>Features</h3>
-<ul>
-<li><strong>core:</strong> rename lock file pruning function to createLockFile (<a href="https://github.com/nrwl/nx/issues/13770" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/13770/hovercard">#13770</a>) (<a href="https://github.com/nrwl/nx/commit/76ee86f7ed69db821b28bb738c98350d8403ed5a">76ee86f</a>)</li>
-<li><strong>core:</strong> support npm workspaces in lock file utils (<a href="https://github.com/nrwl/nx/issues/13695" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/13695/hovercard">#13695</a>) (<a href="https://github.com/nrwl/nx/commit/7a70d529186a8dc9c34dc19a820682f8e242ae72">7a70d52</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from plot: v0.6.1]]></title>
-            <link>https://github.com/observablehq/plot/releases/tag/v0.6.1</link>
-            <guid>https://github.com/observablehq/plot/releases/tag/v0.6.1</guid>
-            <pubDate>Mon, 12 Dec 2022 19:44:06 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Please see the <a href="https://github.com/observablehq/plot/blob/main/CHANGELOG.md#061">0.6.1 release notes</a> for more!</p>
-<ul>
-<li>Add <a href="https://github.com/observablehq/plot/blob/main/README.md#geo">geo mark</a> for rendering GeoJSON geometries.</li>
-<li>Add <a href="https://github.com/observablehq/plot/blob/main/README.md#plotgraticuleoptions">graticule</a> and <a href="https://github.com/observablehq/plot/blob/main/README.md#plotsphereoptions">sphere</a> convenience geo marks.</li>
-<li>Add top-level <a href="https://github.com/observablehq/plot/blob/main/README.md#projection-options">projection option</a> for projecting geographic (and other) coordinate systems.</li>
-<li>Add <em>auto</em> curve to the <a href="https://github.com/observablehq/plot/blob/main/README.md#line">line mark</a> for projecting lines.</li>
-<li>Add <em>mark</em>.fx and <em>mark</em>.fy options for <a href="https://github.com/observablehq/plot/blob/main/README.md#facet-options">mark-level faceting</a>.</li>
-<li>Fix the <em>fx</em> and <em>fy</em> scales to support the <em>scale</em>.transform and <em>scale</em>.percent options.</li>
-<li>Fix <em>quantize</em> scales to support the <em>scale</em>.unknown option.</li>
-<li>Fix initializer transforms to not drop the <em>mark</em>.sort option when used to sort a scale’s domain.</li>
-<li>Fix spurious warning about empty strings appearing to be numbers.</li>
-<li>Fix the <em>mean</em> and <em>median</em> reducers to return dates if the data is temporal.</li>
-<li>Fix the default height to adjust when margins are specified.</li>
-<li>Fix the position of the frame anchor when either the <em>x</em> or <em>y</em> scale is ordinal (band or point).</li>
-<li>Fix the dot mark to not render when a negative constant radius <em>r</em> is specified.</li>
-<li>Improve the error message when an invalid color scheme is specified.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.27.28]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.27.28</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.27.28</guid>
-            <pubDate>Mon, 12 Dec 2022 19:12:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.27.28 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: 3.0.0-beta.2]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/3.0.0-beta.2</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/3.0.0-beta.2</guid>
-            <pubDate>Mon, 12 Dec 2022 18:14:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This release of wasmer includes multiple fixes and improvements on the CLI and extensibility over the memory API.</p>
-<p>Install the beta version of wasmer in your machine:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;3.0.0-beta.2&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>3.0.0-beta.2<span class="pl-pds">"</span></span></pre></div>
-<h2>What's changed</h2>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3176" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3176/hovercard">#3176</a> Add support for <code>cargo-binstall</code></li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3141" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3141/hovercard">#3141</a> The API breaking changes from future WASIX/Network/Threading addition</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3119" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3119/hovercard">#3119</a> Added LinearMemory trait</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3117" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3117/hovercard">#3117</a> Add tests for wasmer-cli create-{exe,obj} commands</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3101" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3101/hovercard">#3101</a> CI/build.yaml: add libwasmer headless in default distribution</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3090" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3090/hovercard">#3090</a> Added version to the wasmer cli</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3089" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3089/hovercard">#3089</a> Add wasi_* C-API function changes in migration guide for 3.0.0</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3076" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3076/hovercard">#3076</a> Add support for cross-compiling in create-exe with zig cc WIP</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3072" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3072/hovercard">#3072</a> Add back <code>Function::*_with_env(…)</code></li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3048" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3048/hovercard">#3048</a> Add cloudcompiler.yaml</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3068" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3068/hovercard">#3068</a> create-{exe,obj}: add documentations and header file generation for create-obj</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3065" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3065/hovercard">#3065</a> Added '.' and '..' special folder t WASI fd_readdir return (for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1313252219" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3033" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3033/hovercard" href="https://github.com/wasmerio/wasmer/issues/3033">#3033</a>)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3184" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3184/hovercard">#3184</a> Test libwasmer.dll on Windows</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3164" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3164/hovercard">#3164</a> Synchronize between -sys and -js tests</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3165" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3165/hovercard">#3165</a> Initial port of make test-js-core (port wasmer API to core)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3138" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3138/hovercard">#3138</a> Js imports revamp</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3142" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3142/hovercard">#3142</a> Bump rust toolchain</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3116" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3116/hovercard">#3116</a> Multithreading, full networking and RPC for WebAssembly</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3130" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3130/hovercard">#3130</a> Remove panics from Artifact::deserialize</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3134" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3134/hovercard">#3134</a> Bring libwasmer-headless.a from 22MiB to 7.2MiB (on my machine)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3131" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3131/hovercard">#3131</a> Update for migration-to-3.0.0 for MemoryView changes</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3123" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3123/hovercard">#3123</a> Lower libwasmer headless size</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3132" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3132/hovercard">#3132</a> Revert "Lower libwasmer headless size"</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3128" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3128/hovercard">#3128</a> scripts/publish.py: validate crates version before publishing</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3126" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3126/hovercard">#3126</a> scripts/publish.py: replace toposort dependency with python std graphlib module</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3122" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3122/hovercard">#3122</a> Update Cargo.lock dependencies</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3118" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3118/hovercard">#3118</a> Refactor Artifact enum into a struct</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3114" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3114/hovercard">#3114</a> Implemented shared memory for Wasmer in preparation for multithreading</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3104" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3104/hovercard">#3104</a> Re-enabled ExternRef tests</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3103" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3103/hovercard">#3103</a> create-exe: prefer libwasmer headless when cross-compiling</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3097" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3097/hovercard">#3097</a> MemoryView lifetime tied to memory and not StoreRef</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3095" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3095/hovercard">#3095</a> create-exe: list supported cross-compilation target triples in help …</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3096" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3096/hovercard">#3096</a> create-exe: use cached wasmer tarballs for network fetches</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3083" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3083/hovercard">#3083</a> Disable wasm build in build CI</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3081" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3081/hovercard">#3081</a> 3.0.0-beta release</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3079" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3079/hovercard">#3079</a> Migrate to clap from structopt</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3075" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3075/hovercard">#3075</a> Remove __wbindgen_thread_id</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3074" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3074/hovercard">#3074</a> Update chrono to 0.4.20, avoiding RUSTSEC-2020-0159</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3070" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3070/hovercard">#3070</a> wasmer-cli: Allow create-exe to receive a static object as input</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3069" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3069/hovercard">#3069</a> Remove native feature entry from docs.rs metadata</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3057" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3057/hovercard">#3057</a> wasmer-cli: create-obj command</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3060" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3060/hovercard">#3060</a> CI: Unset rustup override after usage instead of setting it to stable</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3192" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3192/hovercard">#3192</a> fix the typos</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3185" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3185/hovercard">#3185</a> Fix <code>wasmer compile</code> command for non-x86 target</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3129" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3129/hovercard">#3129</a> Fix differences between -sys and -js API</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3137" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3137/hovercard">#3137</a> Fix cache path not being present during installation of cross-tarball</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3115" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3115/hovercard">#3115</a> Fix static object signature deserialization</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3093" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3093/hovercard">#3093</a> Fixed a potential issue when renaming a file</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3088" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3088/hovercard">#3088</a> Fixed an issue when renaming a file from a preopened dir directly (for 3084)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3078" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3078/hovercard">#3078</a> Fix errors from "make lint"</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3052" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3052/hovercard">#3052</a> Fixed a memory corruption issue with JS memory operations that were r…</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3058" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3058/hovercard">#3058</a> Fix trap tracking</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: v3.0.0-rc.1]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0-rc.1</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0-rc.1</guid>
-            <pubDate>Mon, 12 Dec 2022 18:13:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install the rc1 version of wasmer in your machine:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;v3.0.0-rc.1&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>v3.0.0-rc.1<span class="pl-pds">"</span></span></pre></div>
-<p>This release includes:</p>
-<ul>
-<li>Ability to automatically download and run packages from wapm.io, for example <code>wasmer run https://wapm.io/python/python</code> or <code>wasmer ls</code></li>
-<li>New functions to get the function and module name from a <code>wasm_frame_t</code> (for prettier stack traces)</li>
-<li>Filesystem now properly respects <code>read</code> and <code>write</code> permissons (previously reading and writing files was always allowed, any file descriptor could be read from)</li>
-<li>Bugfixes regarding popcnt instruction on M1 Macs</li>
-<li>Table imports now properly check for the correct maximum size (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1384090139" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3197" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3197/hovercard" href="https://github.com/wasmerio/wasmer/issues/3197">#3197</a>)</li>
-</ul>
-<h2>What's changed</h2>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3222" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3222/hovercard">#3222</a> Add function to retrieve function name from wasm_frame_t</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3240" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3240/hovercard">#3240</a> Fix filesystem rights on WASI, add integration test for file permissions</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3238" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3238/hovercard">#3238</a> Fixed main README ocaml homepage link and added ocaml in other language README</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3145" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3145/hovercard">#3145</a> C-API: add functions to overwrite stdin / stdout / stderr handlers</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3215" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3215/hovercard">#3215</a> Update wasmer --version logic, integrate wapm-cli</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3248" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3248/hovercard">#3248</a> Move loupe CHANGELOG entry from 2.3.0 to 3.x</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3230" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3230/hovercard">#3230</a> Remove test if dest file exist on path_rename wasi syscall (for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1408740186" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3228" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3228/hovercard" href="https://github.com/wasmerio/wasmer/issues/3228">#3228</a>)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3061" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3061/hovercard">#3061</a> Removed trailing zero in WASI::fd_prestat_dir_name name return (for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1309189588" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3025" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3025/hovercard" href="https://github.com/wasmerio/wasmer/issues/3025">#3025</a>)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3223" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3223/hovercard">#3223</a> Delete lib/wasi-types-generated directory</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3178" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3178/hovercard">#3178</a> Feat enhanced tinytunable test</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3177" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3177/hovercard">#3177</a> Auto-generate wasi-types from .wit files</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3218" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3218/hovercard">#3218</a> Seal <code>HostFunctionKind</code></li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3221" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3221/hovercard">#3221</a> Fix <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1384090139" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3197" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3197/hovercard" href="https://github.com/wasmerio/wasmer/issues/3197">#3197</a></li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3229" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3229/hovercard">#3229</a> Fixed version to nightly-2022-10-09 for the CI build Minimal Wasmer Headless again</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3227" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3227/hovercard">#3227</a> Fixed version to nightly-2022-10-09 for the CI build Minimal Wasmer Headless</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3226" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3226/hovercard">#3226</a> Fixed version to nightly-2002-10-09 for the CI build Minimal Wasmer Headless</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3211" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3211/hovercard">#3211</a> fix popcnt for aarch64</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3204" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3204/hovercard">#3204</a> Fixed a typo in README</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: v3.0.0-rc.2]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0-rc.2</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0-rc.2</guid>
-            <pubDate>Mon, 12 Dec 2022 18:12:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install the rc2 version of wasmer in your machine:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;v3.0.0-rc.2&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>v3.0.0-rc.2<span class="pl-pds">"</span></span></pre></div>
-<h2>What's Changed</h2>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3258" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3258/hovercard">#3258</a> Migrate pirita / native executables feature from wasmer-private</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3268" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3268/hovercard">#3268</a> Fix fd_right nightly test to avoid foo.txt file leftover</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3260" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3260/hovercard">#3260</a> Fix bug in wasmer run</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3257" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3257/hovercard">#3257</a> Fix linux-aarch64 build</li>
-</ul>
-<p>See full list of changes in the <a href="https://github.com/wasmerio/wasmer/blob/master/CHANGELOG.md#300-rc2---20221102">CHANGELOG</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: v3.0.0-rc.3]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0-rc.3</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0-rc.3</guid>
-            <pubDate>Mon, 12 Dec 2022 18:09:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install the rc3 version of wasmer in your machine:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;v3.0.0-rc.3&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>v3.0.0-rc.3<span class="pl-pds">"</span></span></pre></div>
-<h2>What's Changed</h2>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3314" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3314/hovercard">#3314</a> Add windows-gnu workflow</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3317" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3317/hovercard">#3317</a> Port "wapm install" to Wasmer</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3318" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3318/hovercard">#3318</a> Bump the MSRV to 1.63</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3319" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3319/hovercard">#3319</a> Disable 'Test integration CLI' on CI for the Windows platform as it's not working at all</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3297" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3297/hovercard">#3297</a> Implement wasmer login</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3311" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3311/hovercard">#3311</a> Export Module::IoCompileError as it's an error returned by an exported function</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/2800" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/2800/hovercard">#2800</a> RISC-V support</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3293" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3293/hovercard">#3293</a> Removed call to to_vec() on assembler.finalise()</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3288" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3288/hovercard">#3288</a> Rollback all the TARGET_DIR changes</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3284" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3284/hovercard">#3284</a> Makefile now handle TARGET_DIR env. var. for build too</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3276" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3276/hovercard">#3276</a> Remove unnecessary checks to test internet connection</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3266" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3266/hovercard">#3266</a> Return ENotCapable error when accessing unknown files on root (for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1425781812" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3263" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3263/hovercard" href="https://github.com/wasmerio/wasmer/issues/3263">#3263</a> and <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1425790238" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3264" data-hovercard-type="issue" data-hovercard-url="/wasmerio/wasmer/issues/3264/hovercard" href="https://github.com/wasmerio/wasmer/issues/3264">#3264</a>)</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3275" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3275/hovercard">#3275</a> Disable printing "local package ... not found" in release mode</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3273" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3273/hovercard">#3273</a> Undo Makefile commit</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3299" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3299/hovercard">#3299</a> Fix "create-exe" for windows-x86_64 target</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3294" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3294/hovercard">#3294</a> Fix test sys yaml syntax</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3287" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3287/hovercard">#3287</a> Fix Makefile with TARGET_DIR end with release folder, removing it</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3286" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3286/hovercard">#3286</a> Fix Makefile with TARGET_DIR end with release folder</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3285" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3285/hovercard">#3285</a> Fix CI to setup TARGET_DIR to target/release directly</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3277" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3277/hovercard">#3277</a> Fix red CI on master</li>
-</ul>
-<p>See full list of changes in the <a href="https://github.com/wasmerio/wasmer/blob/master/CHANGELOG.md#300-rc3---20221118">CHANGELOG</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: v3.0.0]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.0.0</guid>
-            <pubDate>Mon, 12 Dec 2022 18:08:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install this version of wasmer:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;v3.0.0&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>v3.0.0<span class="pl-pds">"</span></span></pre></div>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3339" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3339/hovercard">#3339</a> Fixes for wasmer login / wasmer add</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3337" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3337/hovercard">#3337</a> Add automation script to automate deploying releases on GitHub</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3338" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3338/hovercard">#3338</a> Re-add codecov to get coverage reports</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3295" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3295/hovercard">#3295</a> Implement wasmer run {url}</li>
-</ul>
-<p>See full list of changes in the <a href="https://github.com/wasmerio/wasmer/blob/master/CHANGELOG.md#300---20112022">CHANGELOG</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: v3.0.1]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.0.1</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.0.1</guid>
-            <pubDate>Mon, 12 Dec 2022 18:08:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install this version of wasmer:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh</pre></div>
-<h2>What's Changed</h2>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3361" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3361/hovercard">#3361</a> Give users feedback when they are running "wasmer add ..."</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3360" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3360/hovercard">#3360</a> Introduce a "wasmer_registry::queries" module with all GraphQL queries</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3355" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3355/hovercard">#3355</a> Fetch the pirita download URL</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3344" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3344/hovercard">#3344</a> Revert <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1355665902" data-permission-text="Title is private" data-url="https://github.com/wasmerio/wasmer/issues/3145" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3145/hovercard" href="https://github.com/wasmerio/wasmer/pull/3145">#3145</a></li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3302" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3302/hovercard">#3302</a> Some Refactor of Singlepass compiler to have better error and cpu features handling</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3296" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3296/hovercard">#3296</a> Use the right collection when parsing type section</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3292" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3292/hovercard">#3292</a> Precompute offsets in VMOffsets</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3290" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3290/hovercard">#3290</a> Limit the use of clone when handling Compilation object</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3316" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3316/hovercard">#3316</a> Implement wasmer whoami</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3341" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3341/hovercard">#3341</a> Update CHANGELOG.md</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3342" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3342/hovercard">#3342</a> Fixes for 3.0.0 release</li>
-</ul>
-<p>See full list of changes in the <a href="https://github.com/wasmerio/wasmer/blob/master/CHANGELOG.md#301---23112022">CHANGELOG</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: v3.0.2]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.0.2</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.0.2</guid>
-            <pubDate>Mon, 12 Dec 2022 18:07:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install this version of wasmer:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;v3.0.2&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>v3.0.2<span class="pl-pds">"</span></span></pre></div>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3364" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3364/hovercard">#3364</a> Added the actual LZCNT / TZCNT implementation</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3365" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3365/hovercard">#3365</a> Improve FreeBSD support</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3368" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3368/hovercard">#3368</a> Remove wasi conditional compilation from wasmer-registry</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3367" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3367/hovercard">#3367</a> Change LLVM detection in Makefile</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3370" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3370/hovercard">#3370</a> Fix wasmer run not interpreting URLs correctly + display fixes</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3371" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3371/hovercard">#3371</a> Fix cargo binstall</li>
-</ul>
-<p>See full list of changes in the <a href="https://github.com/wasmerio/wasmer/blob/master/CHANGELOG.md#302---27112022">CHANGELOG</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from wasmer: Release v3.1.0]]></title>
-            <link>https://github.com/wasmerio/wasmer/releases/tag/v3.1.0</link>
-            <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.1.0</guid>
-            <pubDate>Mon, 12 Dec 2022 18:06:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Install this version of wasmer:</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl https://get.wasmer.io -sSfL | sh -s &quot;v3.1.0&quot;"><pre>curl https://get.wasmer.io -sSfL <span class="pl-k">|</span> sh -s <span class="pl-s"><span class="pl-pds">"</span>v3.1.0<span class="pl-pds">"</span></span></pre></div>
-<h2>What's Changed</h2>
-<ul>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3403" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3403/hovercard">#3403</a> Add wasm_importtype_copy to C API</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3416" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3416/hovercard">#3416</a> Download and install packages via .tar.gz URLs and improve installation error message</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3402" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3402/hovercard">#3402</a> Do not run first command of wapm file and print all commands instead</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3400" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3400/hovercard">#3400</a> Use the wasm_bindgen_downcast crate for downcasting JsValues</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3363" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3363/hovercard">#3363</a> Store Used CpuFeature in Artifact instead of Present CpuFeatures for Singlepass</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3378" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3378/hovercard">#3378</a> Introduced EngineRef and AsEngineRef trait</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3386" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3386/hovercard">#3386</a> Restore Support For All Wasi Clock Types</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3153" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3153/hovercard">#3153</a> Implement SharedMemory &amp; Atomics</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3415" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3415/hovercard">#3415</a> Fix singlepass for Aarch64</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3395" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3395/hovercard">#3395</a> Fix create-exe to be able to cross-compile on Windows</li>
-<li><a href="https://github.com/wasmerio/wasmer/pull/3396" data-hovercard-type="pull_request" data-hovercard-url="/wasmerio/wasmer/pull/3396/hovercard">#3396</a> Fix build doc and minimum-sys build</li>
-</ul>
-<p>See full list of changes in the <a href="https://github.com/wasmerio/wasmer/blob/master/CHANGELOG.md#310---12122022">CHANGELOG</a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
