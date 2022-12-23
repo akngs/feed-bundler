@@ -4,29 +4,313 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 23 Dec 2022 00:22:05 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 23 Dec 2022 06:06:37 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91272]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91272</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91272</guid>
-            <pubDate>Thu, 22 Dec 2022 23:32:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fix remaining rebase conflicts</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/88729: Update on "use scatter_add for index_add when dim is the most inner dim"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F88729</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F88729</guid>
+            <pubDate>Fri, 23 Dec 2022 18:06:06 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Motivation</h3>
+<p>When dim is -1 and the slice of source or result is noncontiguous, original <code>index_add</code> is slow as it uses add for the sliced tensor, which is serial on index and parallel on sliced tensor to avoid write conflict. Doing parallel on the sliced tensor is not optimal as the size of sliced tensor may be not big enough to parallel and also causes multiple parallelizations.</p>
+<p><code>scatter_add </code> is used to speedup for this case as <code>scatter_add </code> parallels on the outer dimension of input and is serial on the inner dimension to avoid write conflict. <code>scatter_add </code> only need one parallel and the size of outer dimensions is bigger to do parallel.</p>
+<h3>Testing</h3>
+<ul>
+<li>Single core:</li>
+</ul>
+<p>Before:</p>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>fp32 / s</th>
+<th>bf16 / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>2.82E-03</td>
+<td>2.11E-03</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.023604</td>
+<td>0.023794</td>
+</tr>
+</tbody>
+</table>
+<p>After:</p>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>fp32 / s</th>
+<th>bf16 / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>9.30E-04</td>
+<td>1.66E-03</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.005995</td>
+<td>0.010003</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Single socket (28 cores):</li>
+</ul>
+<p>Before:</p>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>fp32 / s</th>
+<th>bf16 / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>2.96E-03</td>
+<td>2.52E-03</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.012208</td>
+<td>0.012568</td>
+</tr>
+</tbody>
+</table>
+<p>After:</p>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>fp32 / s</th>
+<th>bf16 / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>7.44E-05</td>
+<td>1.33E-04</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.000333</td>
+<td>0.000469</td>
+</tr>
+</tbody>
+</table>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91316: Update on "Populate the eviction_policy field for load/store properly"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91316</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91316</guid>
-            <pubDate>Thu, 22 Dec 2022 22:30:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This helps with kernels that make use of caching like mid-range softmax<br>
-which reads the data three times.</p>
-<p>Selecting <code>eviction_policy=evict_first</code> in the last loop of the softmax<br>
-operation seems to give a 7-10% speed-up vs. selecting <code>evict_last</code> which<br>
-was the previous option. I'll put up some benchmarks soon™.</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91137]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91137</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91137</guid>
+            <pubDate>Fri, 23 Dec 2022 05:57:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>relax ROCm GHA 2- or 4-GPU restriction to &gt;=2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/91137]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F91137</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F91137</guid>
+            <pubDate>Fri, 23 Dec 2022 05:57:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>relax ROCm GHA 2- or 4-GPU restriction to &gt;=2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Fri, 23 Dec 2022 05:18:05 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.9.0-dev-546+g98daaa798%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A"><pre class="notranslate"><code>NVIM v0.9.0-dev-546+g98daaa798%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip.</li>
+<li>Run <code>nvim-qt.exe</code></li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice.</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h4>Debian Package</h4>
+<ol>
+<li>Download <strong>nvim-linux64.deb</strong></li>
+<li>Install the package using <code>sudo apt install ./nvim-linux64.deb</code></li>
+<li>Run <code>nvim</code></li>
+</ol>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="eaf28652978fa935434ea3dc0ddb692115b46242dce48eea3a6823fb14b09a6a  nvim-linux64.tar.gz
+0c15be0b72f3e66e8a4509de3b8de7dae4dec986b238bfcb41c7a769305d3fa1  nvim-linux64.deb
+88d1b80351354ad11bdacce0c9335a9e869ebc30e85ece47c04647020ac32975  nvim.appimage
+79921923f1249ee92441e7ad9697f2ac1bed4e7cd96f222f0dfe45f835511494  nvim.appimage.zsync
+490150de7171ce8ca560c57f77c334800368133c4ce44889564e90773b850dc9  nvim-macos.tar.gz
+c849516480b5aecfcc53a49e515b4bdaeaac0bcddf949f1e3990f80bda04977c  nvim-win64.zip
+93ada44152bf804d705154c2f8e405cc22415fe8b15c7a872a550b782f578948  nvim-win64.msi"><pre class="notranslate"><code>eaf28652978fa935434ea3dc0ddb692115b46242dce48eea3a6823fb14b09a6a  nvim-linux64.tar.gz
+0c15be0b72f3e66e8a4509de3b8de7dae4dec986b238bfcb41c7a769305d3fa1  nvim-linux64.deb
+88d1b80351354ad11bdacce0c9335a9e869ebc30e85ece47c04647020ac32975  nvim.appimage
+79921923f1249ee92441e7ad9697f2ac1bed4e7cd96f222f0dfe45f835511494  nvim.appimage.zsync
+490150de7171ce8ca560c57f77c334800368133c4ce44889564e90773b850dc9  nvim-macos.tar.gz
+c849516480b5aecfcc53a49e515b4bdaeaac0bcddf949f1e3990f80bda04977c  nvim-win64.zip
+93ada44152bf804d705154c2f8e405cc22415fe8b15c7a872a550b782f578948  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.1.67]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.1.67</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.1.67</guid>
+            <pubDate>Fri, 23 Dec 2022 05:17:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I0d7a967e3ed2c2b0cc7bc62463c9e4d45723be84<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4123630" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4123630</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.1.67@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b74fc574932db0a0daf7d892d8d542c8de6fd560/hovercard" href="https://github.com/v8/v8/commit/b74fc574932db0a0daf7d892d8d542c8de6fd560"><tt>b74fc57</tt></a>-refs/heads/main@{#85006}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.1.66]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.1.66</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.1.66</guid>
+            <pubDate>Fri, 23 Dec 2022 04:32:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ia40b7fb509881d144348dd86ad7af08df93028e1<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4123629" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4123629</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.1.66@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8a795a593ea726d4e49ca00f2a19ab85853ddb4d/hovercard" href="https://github.com/v8/v8/commit/8a795a593ea726d4e49ca00f2a19ab85853ddb4d"><tt>8a795a5</tt></a>-refs/heads/main@{#85005}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90865]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90865</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90865</guid>
+            <pubDate>Fri, 23 Dec 2022 02:58:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Make jit happy</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/79564]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F79564</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F79564</guid>
+            <pubDate>Fri, 23 Dec 2022 02:45:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>only run some stuff</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/mps/91348: Add MPSGenerator to enable custom random number generators on MPS bac…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F91348</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F91348</guid>
+            <pubDate>Fri, 23 Dec 2022 02:18:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…kend (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="183461726" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/131" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/131/hovercard" href="https://github.com/pytorch/pytorch/pull/131">#131</a>)</p>
+<p>This patch will will add support for creating torch.Generator for MPS device,<br>
+and enables its functions such as manual_seed, get_state, and set_state.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from assemblyscript: v0.25.2]]></title>
+            <link>https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.25.2</link>
+            <guid>https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.25.2</guid>
+            <pubDate>Fri, 23 Dec 2022 01:24:59 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>New features</h3>
+<ul>
+<li><strong>Add --uncheckedBehavior to customize the use of unchecked() (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1460401226" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2575" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2575/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2575">#2575</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/7a35ff8def441a800be9e479c18487dd47791645/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/7a35ff8def441a800be9e479c18487dd47791645"><tt>7a35ff8</tt></a>)</li>
+</ul>
+<h3>Bug fixes</h3>
+<ul>
+<li><strong>Fix lifetime confusion in shadow stack pass (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508281471" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2596" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2596/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2596">#2596</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/d3410f49e6738516864202ca6163540885c6b59a/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/d3410f49e6738516864202ca6163540885c6b59a"><tt>d3410f4</tt></a>)</li>
+</ul>
+<h3>Other</h3>
+<ul>
+<li><strong>Integrate Rtrace with ESM bindings (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1507774752" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2595" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2595/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2595">#2595</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/0e0a3c13fa15279b69bdc634f0b61994c5017c5a/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/0e0a3c13fa15279b69bdc634f0b61994c5017c5a"><tt>0e0a3c1</tt></a>)</li>
+<li><strong>Update GitHub actions badges</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/280a8ef2ecd1d2aa85ebfcf262068590e4d3e37c/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/280a8ef2ecd1d2aa85ebfcf262068590e4d3e37c"><tt>280a8ef</tt></a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4786]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4786</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4786</guid>
+            <pubDate>Fri, 23 Dec 2022 01:16:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/89909: Remove Windows compilation dependencies installation from CI/CD scrip…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F89909</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F89909</guid>
+            <pubDate>Fri, 23 Dec 2022 01:15:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ts - they should be already installed in the runner VM</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/89909: Remove Windows compilation dependencies installation from CI/CD scrip…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F89909</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F89909</guid>
+            <pubDate>Fri, 23 Dec 2022 01:15:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ts - they should be already installed in the runner VM</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91222: Update on "Update functorch supported autograd.Function to allow mark…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91222</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91222</guid>
+            <pubDate>Fri, 23 Dec 2022 01:07:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…_dirty"</p>
+<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1477574985" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/90225" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/90225/hovercard" href="https://github.com/pytorch/pytorch/issues/90225">#90225</a><br>
+Uses what was originally in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1468567242" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/89860" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/89860/hovercard" href="https://github.com/pytorch/pytorch/pull/89860">#89860</a></p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91330]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91330</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91330</guid>
+            <pubDate>Fri, 23 Dec 2022 00:55:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix comment</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from babel: v7.20.9]]></title>
+            <link>https://github.com/babel/babel/releases/tag/v7.20.9</link>
+            <guid>https://github.com/babel/babel/releases/tag/v7.20.9</guid>
+            <pubDate>Fri, 23 Dec 2022 00:41:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v7.20.9</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4783]]></title>
@@ -34,13 +318,6 @@ was the previous option. I'll put up some benchmarks soon™.</p>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4783</guid>
             <pubDate>Thu, 22 Dec 2022 22:24:42 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91330]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91330</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91330</guid>
-            <pubDate>Thu, 22 Dec 2022 22:05:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fix wrong committer when rebase and merge</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from spring-boot: v3.0.1]]></title>
@@ -243,42 +520,6 @@ Cr-Commit-Position: refs/heads/11.1.63@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5c7fca4a61ef96a8834adb98aabe29825c6bb3a9/hovercard" href="https://github.com/v8/v8/commit/5c7fca4a61ef96a8834adb98aabe29825c6bb3a9"><tt>5c7fca4</tt></a>-refs/heads/main@{#85002}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91317: Update on "Move sym_int, sym_float, sym_sqrt, sym_ceil, and sym_floor…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91317</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91317</guid>
-            <pubDate>Thu, 22 Dec 2022 19:28:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>… alongside SymInt / SymFloat in base torch package"</p>
-<p>This PR moves the definitions:</p>
-<ul>
-<li><code>sym_int</code></li>
-<li><code>sym_float</code></li>
-<li><code>sym_sqrt</code></li>
-<li><code>sym_ceil</code></li>
-<li><code>sym_floor</code></li>
-</ul>
-<p>from <code>torch/fx/experimental/symbolic_shapes.py</code> to <code>torch/__init__.py</code>, where <code>SymInt</code> and <code>SymFloat</code> are already defined.</p>
-<p>This removes the need for several in-line imports, and enables proper JIT script gating for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508342780" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91318" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91318/hovercard" href="https://github.com/pytorch/pytorch/pull/91318">#91318</a>. I'm very open to doing this in a better way!</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91260: Update on "Decomps and meta registrations for upsample_nearest 1D / 2…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91260</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91260</guid>
-            <pubDate>Thu, 22 Dec 2022 19:28:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…D / 3D"</p>
-<p>Adds decompositions and meta registrations for the 1D, 2D, and 3D implementations of <code>upsample_nearest</code>. All related OpInfo-based tests for AOTAutograd now pass.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91318: Update on "SymIntify F.interpolate() with recompute_scale_factor=True"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91318</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91318</guid>
-            <pubDate>Thu, 22 Dec 2022 19:28:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR makes the minor changes necessary to get <code>F.interpolate()</code> working with symbolic shapes when <code>recompute_scale_factor=True</code> + adds <code>OpInfo</code> samples to test.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 1.27.36]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/1.27.36</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/1.27.36</guid>
@@ -317,13 +558,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4120619
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/11.1.60@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/20183a7916a6225d3b97636948b7acb154c9654e/hovercard" href="https://github.com/v8/v8/commit/20183a7916a6225d3b97636948b7acb154c9654e"><tt>20183a7</tt></a>-refs/heads/main@{#84997}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91277]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91277</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91277</guid>
-            <pubDate>Thu, 22 Dec 2022 18:00:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge branch 'master' into csl/shardmacmore</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from spring-boot: v2.7.7]]></title>
@@ -380,13 +614,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4755</guid>
             <pubDate>Thu, 22 Dec 2022 17:22:16 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91314: Update torch/distributed/distributed_c10d.py]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91314</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91314</guid>
-            <pubDate>Thu, 22 Dec 2022 17:15:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Co-authored-by: Andrew Gu <a href="mailto:31054793+awgu@users.noreply.github.com">31054793+awgu@users.noreply.github.com</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 11.1.59]]></title>
@@ -452,28 +679,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li>reorganize examples into File menu (<a href="https://github.com/swagger-api/swagger-editor/issues/3743" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-editor/pull/3743/hovercard">#3743</a>) (<a href="https://github.com/swagger-api/swagger-editor/commit/7a9b13c8e7f2645c261924b24e9cb5aab6de76f2">7a9b13c</a>), closes <a href="https://github.com/swagger-api/swagger-editor/issues/3627" data-hovercard-type="issue" data-hovercard-url="/swagger-api/swagger-editor/issues/3627/hovercard">#3627</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.1.57]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.1.57</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.1.57</guid>
-            <pubDate>Thu, 22 Dec 2022 15:32:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I08b9d3b96ee5aa7bc8d0f6db8e7430af0bf9af70<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4120615" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4120615</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.1.57@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e17eee4894be67f715a7b2d7f17d8b69724f1cf8/hovercard" href="https://github.com/v8/v8/commit/e17eee4894be67f715a7b2d7f17d8b69724f1cf8"><tt>e17eee4</tt></a>-refs/heads/main@{#84993}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.1.56]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.1.56</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.1.56</guid>
-            <pubDate>Thu, 22 Dec 2022 15:17:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I4c25bd6e4eaa22e68eeab721745d2491661c9395<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4121943" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4121943</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.1.56@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/bd1562caa23a18310dea69f4eb51b686e0a9c235/hovercard" href="https://github.com/v8/v8/commit/bd1562caa23a18310dea69f4eb51b686e0a9c235"><tt>bd1562c</tt></a>-refs/heads/main@{#84992}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v13.1.0]]></title>
@@ -944,13 +1149,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4718]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4718</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4718</guid>
-            <pubDate>Thu, 22 Dec 2022 09:39:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from sequelize: v7.0.0-alpha.20]]></title>
             <link>https://github.com/sequelize/sequelize/releases/tag/v7.0.0-alpha.20</link>
             <guid>https://github.com/sequelize/sequelize/releases/tag/v7.0.0-alpha.20</guid>
@@ -1070,97 +1268,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li><strong>@cubejs-client/core:</strong> expose shortTitle in seriesNames (<a href="https://github.com/cube-js/cube.js/issues/5836" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/5836/hovercard">#5836</a>) Thanks <a href="https://github.com/euljr">@euljr</a> ! (<a href="https://github.com/cube-js/cube.js/commit/1058d5afd2784302b23215d73c679d35ceb785a8">1058d5a</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Thu, 22 Dec 2022 05:20:26 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.9.0-dev-538+gf9c62ce34%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A"><pre class="notranslate"><code>NVIM v0.9.0-dev-538+gf9c62ce34%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip.</li>
-<li>Run <code>nvim-qt.exe</code></li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice.</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h4>Debian Package</h4>
-<ol>
-<li>Download <strong>nvim-linux64.deb</strong></li>
-<li>Install the package using <code>sudo apt install ./nvim-linux64.deb</code></li>
-<li>Run <code>nvim</code></li>
-</ol>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="16383d1a68d70367b9eeb55e021ecbf79b0f9723118e82938d282a7032b0e665  nvim-linux64.tar.gz
-9d2a49311dc2c09462eaa911b337bacf6e1ac0cb8b28596d1a841e3a63fe7e9f  nvim-linux64.deb
-144edfa8e4860bc3c1febd79ae4736f2a6e4356141fd01252794c2c81aca67d6  nvim.appimage
-253ea7e553ad04a477a5f15701690d603d4faee0bd71105ea32cfb7ac39a1024  nvim.appimage.zsync
-d8d045923264fb74b5e737815a87b0a3bbf426d6675140d3a8e8c604d08bf7c8  nvim-macos.tar.gz
-f0c90adb9fec4f20f8d979f4c7094e60ddc234cf9e95372a9e84f0164c63aceb  nvim-win64.zip
-8fe2f96527c956d6c1284fb05b62ae7cea14db219db27a5b442eeaf38cf7ca5a  nvim-win64.msi"><pre class="notranslate"><code>16383d1a68d70367b9eeb55e021ecbf79b0f9723118e82938d282a7032b0e665  nvim-linux64.tar.gz
-9d2a49311dc2c09462eaa911b337bacf6e1ac0cb8b28596d1a841e3a63fe7e9f  nvim-linux64.deb
-144edfa8e4860bc3c1febd79ae4736f2a6e4356141fd01252794c2c81aca67d6  nvim.appimage
-253ea7e553ad04a477a5f15701690d603d4faee0bd71105ea32cfb7ac39a1024  nvim.appimage.zsync
-d8d045923264fb74b5e737815a87b0a3bbf426d6675140d3a8e8c604d08bf7c8  nvim-macos.tar.gz
-f0c90adb9fec4f20f8d979f4c7094e60ddc234cf9e95372a9e84f0164c63aceb  nvim-win64.zip
-8fe2f96527c956d6c1284fb05b62ae7cea14db219db27a5b442eeaf38cf7ca5a  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91262: Update on "[dynamo] support tensor.mT"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91262</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91262</guid>
-            <pubDate>Thu, 22 Dec 2022 03:11:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Special handling for tensor.mT to avoid graph breaks.</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EikanWang/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EikanWang">@EikanWang</a> jgong5 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Guobing-Chen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Guobing-Chen">@Guobing-Chen</a> chunyuan-w <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/XiaobingSuper/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/XiaobingSuper">@XiaobingSuper</a> zhuhaozhe blzheng <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Xia-Weiwen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Xia-Weiwen">@Xia-Weiwen</a> wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91288]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91288</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91288</guid>
-            <pubDate>Thu, 22 Dec 2022 02:00:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>fix typos</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from jdk: jdk-21+3]]></title>
@@ -2213,13 +2320,6 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby@4.25.1]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%404.25.1</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%404.25.1</guid>
-            <pubDate>Tue, 20 Dec 2022 16:28:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby@4.25.1</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@5.25.1]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%405.25.1</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%405.25.1</guid>
@@ -2227,11 +2327,11 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
             <content:encoded><![CDATA[<p>gatsby-transformer-remark@5.25.1</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.3.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.3.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.3.2</guid>
-            <pubDate>Tue, 20 Dec 2022 16:25:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.3.2</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: gatsby@4.25.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%404.25.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%404.25.1</guid>
+            <pubDate>Tue, 20 Dec 2022 16:28:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby@4.25.1</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby@5.3.3]]></title>
@@ -2239,6 +2339,13 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.3.3</guid>
             <pubDate>Tue, 20 Dec 2022 16:25:22 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby@5.3.3</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.3.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.3.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.3.2</guid>
+            <pubDate>Tue, 20 Dec 2022 16:25:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.3.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from prometheus: 2.41.0 / 2022-12-20]]></title>
@@ -2320,9 +2427,9 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.16</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.16</guid>
             <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
@@ -2380,9 +2487,9 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
 <p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.16</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.16</guid>
             <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
@@ -2410,99 +2517,9 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
 <p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.16</guid>
-            <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
-<p>jupyterlite-0.1.0b16-py3-none-any.whl: f58eef2c953d0ba4d9af7207a00bdca8e03b580a09862c585550572c736047f7</p>
-<p>jupyterlite-0.1.0b16.tar.gz: 20b0a8371baf7e29e1cae57220a2c696247355943e49de89bd241c2efdc9d5e2</p>
-<p>jupyterlite-application-0.1.0-beta.16.tgz: 569fa80ac06d74e957ede08ca7d2a31dcb5ad1366d715910c955405542c51bf3</p>
-<p>jupyterlite-application-extension-0.1.0-beta.16.tgz: 5e775606565347b4bb4dfe7af0ff6454e26eb829373fcc4fcd48bdd945868256</p>
-<p>jupyterlite-contents-0.1.0-beta.16.tgz: d6c6569fb8814caad90590ea366a7bf3aadc9a6aa32d44400584c2b36130031d</p>
-<p>jupyterlite-iframe-extension-0.1.0-beta.16.tgz: de0c28c7f527122635fc32702d57474927e022dec2009ad933d8a4fa30f3ce7d</p>
-<p>jupyterlite-javascript-kernel-0.1.0-beta.16.tgz: 877e929b9b28d47aa9ad68d3dc9aa163187b45de6c096ca86648380e89b4ae72</p>
-<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.16.tgz: 5e20eb51b5d0de90f0b1bd4850e6e8a2bb0779ad3998642945d7aefc691747b4</p>
-<p>jupyterlite-kernel-0.1.0-beta.16.tgz: 74a7bf2fb3cef54b030a187b6f2e9efc2e2db21d48515ec19c498aa769e9cfc9</p>
-<p>jupyterlite-licenses-0.1.0-beta.16.tgz: cc21e9c164c5efaa2d67b9ce8ecf42efa763180816d03b4c94b35eb6bce3f668</p>
-<p>jupyterlite-localforage-0.1.0-beta.16.tgz: 0a81bbd2c18f36c2eb6c6597ff99d5a65c918c3b0ef1a6c4018bd6713ff78b46</p>
-<p>jupyterlite-pyolite-kernel-0.1.0-beta.16.tgz: f1971fa5ef53bd8bd277f8c1451429f649c8a15b621538c876a1f7861af9e949</p>
-<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.16.tgz: 68acb5a580244e2a5a6bde6ac43511986fc343d4ec28d6a76ecd7b440e53d635</p>
-<p>jupyterlite-repl-extension-0.1.0-beta.16.tgz: 8fb99df02a2bdb1f0eeb853ad67031d5aaca4f56f83daa9fbd25743741adf5fe</p>
-<p>jupyterlite-retro-application-extension-0.1.0-beta.16.tgz: a3b9067575d4b8f9afb3d2d10fc4d3bac04b6f38645688f302aa25117b40913d</p>
-<p>jupyterlite-server-0.1.0-beta.16.tgz: 08b05251082ad5d56881809725759116f53eda4b38ebb9f3ebbcfb8e7dac4e13</p>
-<p>jupyterlite-server-extension-0.1.0-beta.16.tgz: a21ee21c6dc633a72da756d632ad9b307ba72e81ebbfc4462e51dfa6e5385f7a</p>
-<p>jupyterlite-session-0.1.0-beta.16.tgz: d4bcb056398d68ddb7fc0ccf46ebb7edc4b58f30b8463df352b288d122dfc8b5</p>
-<p>jupyterlite-settings-0.1.0-beta.16.tgz: 5dc92fd88f0839a6f21c18bc4b09d34b112d0056453c0978c23f13be173023f1</p>
-<p>jupyterlite-translation-0.1.0-beta.16.tgz: 2c5c06eb634c60a6f32ef15317c716960c2fb4f54bbbeab2b1f1f97c0266968e</p>
-<p>jupyterlite-types-0.1.0-beta.16.tgz: 5f823ceda6519efecd5e6adebb958c93bf8997cddc16d604ff53fa794102f17f</p>
-<p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/retro-application-extension@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fretro-application-extension%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fretro-application-extension%400.1.0-beta.16</guid>
-            <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
-<p>jupyterlite-0.1.0b16-py3-none-any.whl: f58eef2c953d0ba4d9af7207a00bdca8e03b580a09862c585550572c736047f7</p>
-<p>jupyterlite-0.1.0b16.tar.gz: 20b0a8371baf7e29e1cae57220a2c696247355943e49de89bd241c2efdc9d5e2</p>
-<p>jupyterlite-application-0.1.0-beta.16.tgz: 569fa80ac06d74e957ede08ca7d2a31dcb5ad1366d715910c955405542c51bf3</p>
-<p>jupyterlite-application-extension-0.1.0-beta.16.tgz: 5e775606565347b4bb4dfe7af0ff6454e26eb829373fcc4fcd48bdd945868256</p>
-<p>jupyterlite-contents-0.1.0-beta.16.tgz: d6c6569fb8814caad90590ea366a7bf3aadc9a6aa32d44400584c2b36130031d</p>
-<p>jupyterlite-iframe-extension-0.1.0-beta.16.tgz: de0c28c7f527122635fc32702d57474927e022dec2009ad933d8a4fa30f3ce7d</p>
-<p>jupyterlite-javascript-kernel-0.1.0-beta.16.tgz: 877e929b9b28d47aa9ad68d3dc9aa163187b45de6c096ca86648380e89b4ae72</p>
-<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.16.tgz: 5e20eb51b5d0de90f0b1bd4850e6e8a2bb0779ad3998642945d7aefc691747b4</p>
-<p>jupyterlite-kernel-0.1.0-beta.16.tgz: 74a7bf2fb3cef54b030a187b6f2e9efc2e2db21d48515ec19c498aa769e9cfc9</p>
-<p>jupyterlite-licenses-0.1.0-beta.16.tgz: cc21e9c164c5efaa2d67b9ce8ecf42efa763180816d03b4c94b35eb6bce3f668</p>
-<p>jupyterlite-localforage-0.1.0-beta.16.tgz: 0a81bbd2c18f36c2eb6c6597ff99d5a65c918c3b0ef1a6c4018bd6713ff78b46</p>
-<p>jupyterlite-pyolite-kernel-0.1.0-beta.16.tgz: f1971fa5ef53bd8bd277f8c1451429f649c8a15b621538c876a1f7861af9e949</p>
-<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.16.tgz: 68acb5a580244e2a5a6bde6ac43511986fc343d4ec28d6a76ecd7b440e53d635</p>
-<p>jupyterlite-repl-extension-0.1.0-beta.16.tgz: 8fb99df02a2bdb1f0eeb853ad67031d5aaca4f56f83daa9fbd25743741adf5fe</p>
-<p>jupyterlite-retro-application-extension-0.1.0-beta.16.tgz: a3b9067575d4b8f9afb3d2d10fc4d3bac04b6f38645688f302aa25117b40913d</p>
-<p>jupyterlite-server-0.1.0-beta.16.tgz: 08b05251082ad5d56881809725759116f53eda4b38ebb9f3ebbcfb8e7dac4e13</p>
-<p>jupyterlite-server-extension-0.1.0-beta.16.tgz: a21ee21c6dc633a72da756d632ad9b307ba72e81ebbfc4462e51dfa6e5385f7a</p>
-<p>jupyterlite-session-0.1.0-beta.16.tgz: d4bcb056398d68ddb7fc0ccf46ebb7edc4b58f30b8463df352b288d122dfc8b5</p>
-<p>jupyterlite-settings-0.1.0-beta.16.tgz: 5dc92fd88f0839a6f21c18bc4b09d34b112d0056453c0978c23f13be173023f1</p>
-<p>jupyterlite-translation-0.1.0-beta.16.tgz: 2c5c06eb634c60a6f32ef15317c716960c2fb4f54bbbeab2b1f1f97c0266968e</p>
-<p>jupyterlite-types-0.1.0-beta.16.tgz: 5f823ceda6519efecd5e6adebb958c93bf8997cddc16d604ff53fa794102f17f</p>
-<p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.1.0-beta.16</guid>
-            <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
-<p>jupyterlite-0.1.0b16-py3-none-any.whl: f58eef2c953d0ba4d9af7207a00bdca8e03b580a09862c585550572c736047f7</p>
-<p>jupyterlite-0.1.0b16.tar.gz: 20b0a8371baf7e29e1cae57220a2c696247355943e49de89bd241c2efdc9d5e2</p>
-<p>jupyterlite-application-0.1.0-beta.16.tgz: 569fa80ac06d74e957ede08ca7d2a31dcb5ad1366d715910c955405542c51bf3</p>
-<p>jupyterlite-application-extension-0.1.0-beta.16.tgz: 5e775606565347b4bb4dfe7af0ff6454e26eb829373fcc4fcd48bdd945868256</p>
-<p>jupyterlite-contents-0.1.0-beta.16.tgz: d6c6569fb8814caad90590ea366a7bf3aadc9a6aa32d44400584c2b36130031d</p>
-<p>jupyterlite-iframe-extension-0.1.0-beta.16.tgz: de0c28c7f527122635fc32702d57474927e022dec2009ad933d8a4fa30f3ce7d</p>
-<p>jupyterlite-javascript-kernel-0.1.0-beta.16.tgz: 877e929b9b28d47aa9ad68d3dc9aa163187b45de6c096ca86648380e89b4ae72</p>
-<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.16.tgz: 5e20eb51b5d0de90f0b1bd4850e6e8a2bb0779ad3998642945d7aefc691747b4</p>
-<p>jupyterlite-kernel-0.1.0-beta.16.tgz: 74a7bf2fb3cef54b030a187b6f2e9efc2e2db21d48515ec19c498aa769e9cfc9</p>
-<p>jupyterlite-licenses-0.1.0-beta.16.tgz: cc21e9c164c5efaa2d67b9ce8ecf42efa763180816d03b4c94b35eb6bce3f668</p>
-<p>jupyterlite-localforage-0.1.0-beta.16.tgz: 0a81bbd2c18f36c2eb6c6597ff99d5a65c918c3b0ef1a6c4018bd6713ff78b46</p>
-<p>jupyterlite-pyolite-kernel-0.1.0-beta.16.tgz: f1971fa5ef53bd8bd277f8c1451429f649c8a15b621538c876a1f7861af9e949</p>
-<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.16.tgz: 68acb5a580244e2a5a6bde6ac43511986fc343d4ec28d6a76ecd7b440e53d635</p>
-<p>jupyterlite-repl-extension-0.1.0-beta.16.tgz: 8fb99df02a2bdb1f0eeb853ad67031d5aaca4f56f83daa9fbd25743741adf5fe</p>
-<p>jupyterlite-retro-application-extension-0.1.0-beta.16.tgz: a3b9067575d4b8f9afb3d2d10fc4d3bac04b6f38645688f302aa25117b40913d</p>
-<p>jupyterlite-server-0.1.0-beta.16.tgz: 08b05251082ad5d56881809725759116f53eda4b38ebb9f3ebbcfb8e7dac4e13</p>
-<p>jupyterlite-server-extension-0.1.0-beta.16.tgz: a21ee21c6dc633a72da756d632ad9b307ba72e81ebbfc4462e51dfa6e5385f7a</p>
-<p>jupyterlite-session-0.1.0-beta.16.tgz: d4bcb056398d68ddb7fc0ccf46ebb7edc4b58f30b8463df352b288d122dfc8b5</p>
-<p>jupyterlite-settings-0.1.0-beta.16.tgz: 5dc92fd88f0839a6f21c18bc4b09d34b112d0056453c0978c23f13be173023f1</p>
-<p>jupyterlite-translation-0.1.0-beta.16.tgz: 2c5c06eb634c60a6f32ef15317c716960c2fb4f54bbbeab2b1f1f97c0266968e</p>
-<p>jupyterlite-types-0.1.0-beta.16.tgz: 5f823ceda6519efecd5e6adebb958c93bf8997cddc16d604ff53fa794102f17f</p>
-<p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.16</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.16</guid>
             <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
@@ -2560,9 +2577,99 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
 <p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.1.0-beta.16: Publish 0.1.0b16]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.16</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.16</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.1.0-beta.16</guid>
+            <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
+<p>jupyterlite-0.1.0b16-py3-none-any.whl: f58eef2c953d0ba4d9af7207a00bdca8e03b580a09862c585550572c736047f7</p>
+<p>jupyterlite-0.1.0b16.tar.gz: 20b0a8371baf7e29e1cae57220a2c696247355943e49de89bd241c2efdc9d5e2</p>
+<p>jupyterlite-application-0.1.0-beta.16.tgz: 569fa80ac06d74e957ede08ca7d2a31dcb5ad1366d715910c955405542c51bf3</p>
+<p>jupyterlite-application-extension-0.1.0-beta.16.tgz: 5e775606565347b4bb4dfe7af0ff6454e26eb829373fcc4fcd48bdd945868256</p>
+<p>jupyterlite-contents-0.1.0-beta.16.tgz: d6c6569fb8814caad90590ea366a7bf3aadc9a6aa32d44400584c2b36130031d</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.16.tgz: de0c28c7f527122635fc32702d57474927e022dec2009ad933d8a4fa30f3ce7d</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.16.tgz: 877e929b9b28d47aa9ad68d3dc9aa163187b45de6c096ca86648380e89b4ae72</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.16.tgz: 5e20eb51b5d0de90f0b1bd4850e6e8a2bb0779ad3998642945d7aefc691747b4</p>
+<p>jupyterlite-kernel-0.1.0-beta.16.tgz: 74a7bf2fb3cef54b030a187b6f2e9efc2e2db21d48515ec19c498aa769e9cfc9</p>
+<p>jupyterlite-licenses-0.1.0-beta.16.tgz: cc21e9c164c5efaa2d67b9ce8ecf42efa763180816d03b4c94b35eb6bce3f668</p>
+<p>jupyterlite-localforage-0.1.0-beta.16.tgz: 0a81bbd2c18f36c2eb6c6597ff99d5a65c918c3b0ef1a6c4018bd6713ff78b46</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.16.tgz: f1971fa5ef53bd8bd277f8c1451429f649c8a15b621538c876a1f7861af9e949</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.16.tgz: 68acb5a580244e2a5a6bde6ac43511986fc343d4ec28d6a76ecd7b440e53d635</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.16.tgz: 8fb99df02a2bdb1f0eeb853ad67031d5aaca4f56f83daa9fbd25743741adf5fe</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.16.tgz: a3b9067575d4b8f9afb3d2d10fc4d3bac04b6f38645688f302aa25117b40913d</p>
+<p>jupyterlite-server-0.1.0-beta.16.tgz: 08b05251082ad5d56881809725759116f53eda4b38ebb9f3ebbcfb8e7dac4e13</p>
+<p>jupyterlite-server-extension-0.1.0-beta.16.tgz: a21ee21c6dc633a72da756d632ad9b307ba72e81ebbfc4462e51dfa6e5385f7a</p>
+<p>jupyterlite-session-0.1.0-beta.16.tgz: d4bcb056398d68ddb7fc0ccf46ebb7edc4b58f30b8463df352b288d122dfc8b5</p>
+<p>jupyterlite-settings-0.1.0-beta.16.tgz: 5dc92fd88f0839a6f21c18bc4b09d34b112d0056453c0978c23f13be173023f1</p>
+<p>jupyterlite-translation-0.1.0-beta.16.tgz: 2c5c06eb634c60a6f32ef15317c716960c2fb4f54bbbeab2b1f1f97c0266968e</p>
+<p>jupyterlite-types-0.1.0-beta.16.tgz: 5f823ceda6519efecd5e6adebb958c93bf8997cddc16d604ff53fa794102f17f</p>
+<p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/retro-application-extension@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fretro-application-extension%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fretro-application-extension%400.1.0-beta.16</guid>
+            <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
+<p>jupyterlite-0.1.0b16-py3-none-any.whl: f58eef2c953d0ba4d9af7207a00bdca8e03b580a09862c585550572c736047f7</p>
+<p>jupyterlite-0.1.0b16.tar.gz: 20b0a8371baf7e29e1cae57220a2c696247355943e49de89bd241c2efdc9d5e2</p>
+<p>jupyterlite-application-0.1.0-beta.16.tgz: 569fa80ac06d74e957ede08ca7d2a31dcb5ad1366d715910c955405542c51bf3</p>
+<p>jupyterlite-application-extension-0.1.0-beta.16.tgz: 5e775606565347b4bb4dfe7af0ff6454e26eb829373fcc4fcd48bdd945868256</p>
+<p>jupyterlite-contents-0.1.0-beta.16.tgz: d6c6569fb8814caad90590ea366a7bf3aadc9a6aa32d44400584c2b36130031d</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.16.tgz: de0c28c7f527122635fc32702d57474927e022dec2009ad933d8a4fa30f3ce7d</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.16.tgz: 877e929b9b28d47aa9ad68d3dc9aa163187b45de6c096ca86648380e89b4ae72</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.16.tgz: 5e20eb51b5d0de90f0b1bd4850e6e8a2bb0779ad3998642945d7aefc691747b4</p>
+<p>jupyterlite-kernel-0.1.0-beta.16.tgz: 74a7bf2fb3cef54b030a187b6f2e9efc2e2db21d48515ec19c498aa769e9cfc9</p>
+<p>jupyterlite-licenses-0.1.0-beta.16.tgz: cc21e9c164c5efaa2d67b9ce8ecf42efa763180816d03b4c94b35eb6bce3f668</p>
+<p>jupyterlite-localforage-0.1.0-beta.16.tgz: 0a81bbd2c18f36c2eb6c6597ff99d5a65c918c3b0ef1a6c4018bd6713ff78b46</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.16.tgz: f1971fa5ef53bd8bd277f8c1451429f649c8a15b621538c876a1f7861af9e949</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.16.tgz: 68acb5a580244e2a5a6bde6ac43511986fc343d4ec28d6a76ecd7b440e53d635</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.16.tgz: 8fb99df02a2bdb1f0eeb853ad67031d5aaca4f56f83daa9fbd25743741adf5fe</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.16.tgz: a3b9067575d4b8f9afb3d2d10fc4d3bac04b6f38645688f302aa25117b40913d</p>
+<p>jupyterlite-server-0.1.0-beta.16.tgz: 08b05251082ad5d56881809725759116f53eda4b38ebb9f3ebbcfb8e7dac4e13</p>
+<p>jupyterlite-server-extension-0.1.0-beta.16.tgz: a21ee21c6dc633a72da756d632ad9b307ba72e81ebbfc4462e51dfa6e5385f7a</p>
+<p>jupyterlite-session-0.1.0-beta.16.tgz: d4bcb056398d68ddb7fc0ccf46ebb7edc4b58f30b8463df352b288d122dfc8b5</p>
+<p>jupyterlite-settings-0.1.0-beta.16.tgz: 5dc92fd88f0839a6f21c18bc4b09d34b112d0056453c0978c23f13be173023f1</p>
+<p>jupyterlite-translation-0.1.0-beta.16.tgz: 2c5c06eb634c60a6f32ef15317c716960c2fb4f54bbbeab2b1f1f97c0266968e</p>
+<p>jupyterlite-types-0.1.0-beta.16.tgz: 5f823ceda6519efecd5e6adebb958c93bf8997cddc16d604ff53fa794102f17f</p>
+<p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.16</guid>
+            <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
+<p>jupyterlite-0.1.0b16-py3-none-any.whl: f58eef2c953d0ba4d9af7207a00bdca8e03b580a09862c585550572c736047f7</p>
+<p>jupyterlite-0.1.0b16.tar.gz: 20b0a8371baf7e29e1cae57220a2c696247355943e49de89bd241c2efdc9d5e2</p>
+<p>jupyterlite-application-0.1.0-beta.16.tgz: 569fa80ac06d74e957ede08ca7d2a31dcb5ad1366d715910c955405542c51bf3</p>
+<p>jupyterlite-application-extension-0.1.0-beta.16.tgz: 5e775606565347b4bb4dfe7af0ff6454e26eb829373fcc4fcd48bdd945868256</p>
+<p>jupyterlite-contents-0.1.0-beta.16.tgz: d6c6569fb8814caad90590ea366a7bf3aadc9a6aa32d44400584c2b36130031d</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.16.tgz: de0c28c7f527122635fc32702d57474927e022dec2009ad933d8a4fa30f3ce7d</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.16.tgz: 877e929b9b28d47aa9ad68d3dc9aa163187b45de6c096ca86648380e89b4ae72</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.16.tgz: 5e20eb51b5d0de90f0b1bd4850e6e8a2bb0779ad3998642945d7aefc691747b4</p>
+<p>jupyterlite-kernel-0.1.0-beta.16.tgz: 74a7bf2fb3cef54b030a187b6f2e9efc2e2db21d48515ec19c498aa769e9cfc9</p>
+<p>jupyterlite-licenses-0.1.0-beta.16.tgz: cc21e9c164c5efaa2d67b9ce8ecf42efa763180816d03b4c94b35eb6bce3f668</p>
+<p>jupyterlite-localforage-0.1.0-beta.16.tgz: 0a81bbd2c18f36c2eb6c6597ff99d5a65c918c3b0ef1a6c4018bd6713ff78b46</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.16.tgz: f1971fa5ef53bd8bd277f8c1451429f649c8a15b621538c876a1f7861af9e949</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.16.tgz: 68acb5a580244e2a5a6bde6ac43511986fc343d4ec28d6a76ecd7b440e53d635</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.16.tgz: 8fb99df02a2bdb1f0eeb853ad67031d5aaca4f56f83daa9fbd25743741adf5fe</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.16.tgz: a3b9067575d4b8f9afb3d2d10fc4d3bac04b6f38645688f302aa25117b40913d</p>
+<p>jupyterlite-server-0.1.0-beta.16.tgz: 08b05251082ad5d56881809725759116f53eda4b38ebb9f3ebbcfb8e7dac4e13</p>
+<p>jupyterlite-server-extension-0.1.0-beta.16.tgz: a21ee21c6dc633a72da756d632ad9b307ba72e81ebbfc4462e51dfa6e5385f7a</p>
+<p>jupyterlite-session-0.1.0-beta.16.tgz: d4bcb056398d68ddb7fc0ccf46ebb7edc4b58f30b8463df352b288d122dfc8b5</p>
+<p>jupyterlite-settings-0.1.0-beta.16.tgz: 5dc92fd88f0839a6f21c18bc4b09d34b112d0056453c0978c23f13be173023f1</p>
+<p>jupyterlite-translation-0.1.0-beta.16.tgz: 2c5c06eb634c60a6f32ef15317c716960c2fb4f54bbbeab2b1f1f97c0266968e</p>
+<p>jupyterlite-types-0.1.0-beta.16.tgz: 5f823ceda6519efecd5e6adebb958c93bf8997cddc16d604ff53fa794102f17f</p>
+<p>jupyterlite-ui-components-0.1.0-beta.16.tgz: 1c40effc89abcdae3c39d15636b91a3afcff7f746986e2ecdfeff4f61ceb99fa</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.1.0-beta.16: Publish 0.1.0b16]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.16</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.16</guid>
             <pubDate>Tue, 20 Dec 2022 15:02:09 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: aa8c2c6dcc71d9bf052d3173ea1b4efb02d5ba20973f36bb67f8f8ab32dc26ba</p>
@@ -2855,70 +2962,6 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.23 /bin/sh -c <span class="
 <li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gferon/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gferon">@gferon</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1478595190" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10044" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10044/hovercard" href="https://github.com/docker/compose/pull/10044">#10044</a></li>
 </ul>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/docker/compose/compare/v2.14.0...v2.14.1"><tt>v2.14.0...v2.14.1</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.0.8-canary.1]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.0.8-canary.1</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.0.8-canary.1</guid>
-            <pubDate>Tue, 20 Dec 2022 01:27:11 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Add tracing for testing tools: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498295417" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44046" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44046/hovercard" href="https://github.com/vercel/next.js/pull/44046">#44046</a></li>
-<li>Run packing in tests in parallel: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498346860" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44048" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44048/hovercard" href="https://github.com/vercel/next.js/pull/44048">#44048</a></li>
-<li>feat: app dir error-global component: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1499211492" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44066" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44066/hovercard" href="https://github.com/vercel/next.js/pull/44066">#44066</a></li>
-<li>Fix ignoring dev warning for preload component: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498999280" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44065" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44065/hovercard" href="https://github.com/vercel/next.js/pull/44065">#44065</a></li>
-<li>refactor(next-swc): introduce next-binding to consolidate dependencies.: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1466862382" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43473" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43473/hovercard" href="https://github.com/vercel/next.js/pull/43473">#43473</a></li>
-<li>Add lodash to server components external packages: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1496363859" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44022" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44022/hovercard" href="https://github.com/vercel/next.js/pull/44022">#44022</a></li>
-<li>Fix dev session stopped handling: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1501624863" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44112" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44112/hovercard" href="https://github.com/vercel/next.js/pull/44112">#44112</a></li>
-<li>Add jsdoc/no-types eslint rule for TypeScript files: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1498422921" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44049" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44049/hovercard" href="https://github.com/vercel/next.js/pull/44049">#44049</a></li>
-<li>Revert "Remove <code>useState</code> from <code>next/image</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1470372428" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43587" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43587/hovercard" href="https://github.com/vercel/next.js/pull/43587">#43587</a>)": <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1501013278" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44094" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44094/hovercard" href="https://github.com/vercel/next.js/pull/44094">#44094</a></li>
-<li>should not contain pages css in app dir: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503085280" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44151" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44151/hovercard" href="https://github.com/vercel/next.js/pull/44151">#44151</a></li>
-<li>Upgrade undici to 5.14.0 to fix fetch redirect bug: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1502521994" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44133" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44133/hovercard" href="https://github.com/vercel/next.js/pull/44133">#44133</a></li>
-<li>build(cargo): fix turbopack + next-swc build: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492647371" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43983" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43983/hovercard" href="https://github.com/vercel/next.js/pull/43983">#43983</a></li>
-<li>Align onRecoverableError callback between pages and app dir: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503447490" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44161" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44161/hovercard" href="https://github.com/vercel/next.js/pull/44161">#44161</a></li>
-<li>build(cargo): update turbopack: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503629477" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44167" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44167/hovercard" href="https://github.com/vercel/next.js/pull/44167">#44167</a></li>
-<li>Update styled-jsx: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1499319417" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44070" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44070/hovercard" href="https://github.com/vercel/next.js/pull/44070">#44070</a></li>
-</ul>
-<h3>Documentation Changes</h3>
-<ul>
-<li>docs: Add explanation about font-display: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1494258994" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44001" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44001/hovercard" href="https://github.com/vercel/next.js/pull/44001">#44001</a></li>
-<li>Test that adding query can be detected by useSearchParams: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492198587" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43969" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43969/hovercard" href="https://github.com/vercel/next.js/pull/43969">#43969</a></li>
-<li>Add static test for useSelectedLayoutSegments: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1491478495" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43955" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43955/hovercard" href="https://github.com/vercel/next.js/pull/43955">#43955</a></li>
-<li>Docs: Update deployment.md with Firebase, Amplify and Cloudflare: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1500697557" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44092" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44092/hovercard" href="https://github.com/vercel/next.js/pull/44092">#44092</a></li>
-<li>Add test for rewriting in middleware in app-dir: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1492418668" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43971" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43971/hovercard" href="https://github.com/vercel/next.js/pull/43971">#43971</a></li>
-<li>docs: Add missing type to import statement: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1501593082" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44111" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44111/hovercard" href="https://github.com/vercel/next.js/pull/44111">#44111</a></li>
-<li>docs: update next/dynamic docs: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1499221407" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44067" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44067/hovercard" href="https://github.com/vercel/next.js/pull/44067">#44067</a></li>
-<li>Update disabling-http-keep-alive.md for server-side only: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1464362977" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/43374" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/43374/hovercard" href="https://github.com/vercel/next.js/pull/43374">#43374</a></li>
-</ul>
-<h3>Example Changes</h3>
-<ul>
-<li>Updates with-supertokens example: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1497840463" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44042" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44042/hovercard" href="https://github.com/vercel/next.js/pull/44042">#44042</a></li>
-<li>Fix styled-components setup in turbo example: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503529088" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44165" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44165/hovercard" href="https://github.com/vercel/next.js/pull/44165">#44165</a></li>
-</ul>
-<h3>Misc Changes</h3>
-<ul>
-<li>Remove extra turbo test: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1499725213" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44073" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44073/hovercard" href="https://github.com/vercel/next.js/pull/44073">#44073</a></li>
-<li>Implement new core test API: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1500507472" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44086" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44086/hovercard" href="https://github.com/vercel/next.js/pull/44086">#44086</a></li>
-<li>Refactor more tests to createNextDescribe: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1501280266" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44104" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44104/hovercard" href="https://github.com/vercel/next.js/pull/44104">#44104</a></li>
-<li>Add types as a default dependency into tests: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1502683608" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44140" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44140/hovercard" href="https://github.com/vercel/next.js/pull/44140">#44140</a></li>
-<li>Suggest contributors to use shallow clone: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503303954" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44158" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44158/hovercard" href="https://github.com/vercel/next.js/pull/44158">#44158</a></li>
-<li>Update pnpm new-test to use createNextDescribe: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1502982768" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44147" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44147/hovercard" href="https://github.com/vercel/next.js/pull/44147">#44147</a></li>
-<li>Update README templates to include snippet on <code>next/font</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1500627738" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44088" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44088/hovercard" href="https://github.com/vercel/next.js/pull/44088">#44088</a></li>
-<li>Wrap CSS variable in var: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503119140" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44153" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44153/hovercard" href="https://github.com/vercel/next.js/pull/44153">#44153</a></li>
-<li>Ensure next.url is used instead of next.appPort: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503467463" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44163" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44163/hovercard" href="https://github.com/vercel/next.js/pull/44163">#44163</a></li>
-<li>test: add test for notFound during streaming: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1500200513" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44078" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44078/hovercard" href="https://github.com/vercel/next.js/pull/44078">#44078</a></li>
-<li>Fix test template example: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503791003" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44170" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44170/hovercard" href="https://github.com/vercel/next.js/pull/44170">#44170</a></li>
-<li>Remove devcontainer network host argument: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503246779" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/44157" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/44157/hovercard" href="https://github.com/vercel/next.js/pull/44157">#44157</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/hanneslund/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/hanneslund">@hanneslund</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rishabhpoddar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rishabhpoddar">@rishabhpoddar</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JanKaifer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JanKaifer">@JanKaifer</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kwonoj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kwonoj">@kwonoj</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/IamManchanda/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/IamManchanda">@IamManchanda</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nyedidikeke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nyedidikeke">@nyedidikeke</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jaslong/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jaslong">@jaslong</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jueungrace/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jueungrace">@jueungrace</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/longzheng/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/longzheng">@longzheng</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshitsinha/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshitsinha">@akshitsinha</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.7.0-1.2.pre: Update Engine revision to 8c99b0feaf9715af490612f00954c6a76374a907 fo…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.7.0-1.2.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.7.0-1.2.pre</guid>
-            <pubDate>Tue, 20 Dec 2022 00:30:12 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…r beta release 3.7.0-1.2.pre (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503785434" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/117351" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/117351/hovercard" href="https://github.com/flutter/flutter/pull/117351">#117351</a>)</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
