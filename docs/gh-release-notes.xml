@@ -4,10 +4,433 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 28 Dec 2022 00:21:12 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 28 Dec 2022 06:06:26 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91350: Update on "[inductor] optimize lowering for empty-related operators"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91350</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91350</guid>
+            <pubDate>Wed, 28 Dec 2022 13:03:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>For micro-benchmark, <code>new_empty_strided</code> and <code>new_empty</code> have poor performance with inductor compared to eager. The main reason is that inductor initializes new tensor with 0 during lowering, which generates a useless cpp kernel. Actually, it is not needed for operator semantics, but costs additional time. The same problem is also found in lowerings of <code>empty_strided</code> and <code>empty</code>. This PR tends to remove useless cpp kernel of tensor initialization by generating a NopKernelSchedulerNode instead of a SchedulerNode. The lowering functions of following operators are optimized:</p>
+<ul>
+<li><code>torch.empty</code></li>
+<li><code>aten.empty</code></li>
+<li><code>aten.new_empty</code></li>
+<li><code>aten.empty_strided</code></li>
+<li><code>aten.new_empty_strided</code></li>
+</ul>
+<p>We take output code of <code>new_empty_strided</code> as example.</p>
+<p><em>Before change</em></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="kernel_cpp_0 = async_compile.cpp('''
+#include &quot;/tmp/torchinductor_root/77/c7773nj5pwikpmm2pwa62rcudlf7p3if7eyqb5k4sjsvewwje4le.h&quot;
+extern &quot;C&quot; void kernel(float* __restrict__ out_ptr0)
+{
+    #pragma omp parallel num_threads(28)
+    {
+        #pragma omp for
+        for(long i0=0; i0&lt;57600; i0+=1)
+        {
+            auto tmp0 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0));
+            tmp0.store(out_ptr0 + 16*i0);
+        }
+        #pragma omp for simd simdlen(8)
+        for(long i0=921600; i0&lt;921600; i0+=1)
+        {
+            auto tmp0 = static_cast&lt;float&gt;(0);
+            out_ptr0[i0] = tmp0;
+        }
+    }
+}
+''')
+
+async_compile.wait(globals())
+del async_compile
+
+def call(args):
+    arg0_1, = args
+    args.clear()
+    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
+    kernel_cpp_0(c_void_p(buf0.data_ptr()))
+    return (buf0, )
+
+if __name__ == &quot;__main__&quot;:
+    from torch._dynamo.testing import rand_strided
+    from torch._inductor.utils import print_performance
+    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
+    print_performance(lambda: call([arg0_1]))"><pre class="notranslate"><code>kernel_cpp_0 = async_compile.cpp('''
+#include "/tmp/torchinductor_root/77/c7773nj5pwikpmm2pwa62rcudlf7p3if7eyqb5k4sjsvewwje4le.h"
+extern "C" void kernel(float* __restrict__ out_ptr0)
+{
+    #pragma omp parallel num_threads(28)
+    {
+        #pragma omp for
+        for(long i0=0; i0&lt;57600; i0+=1)
+        {
+            auto tmp0 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0));
+            tmp0.store(out_ptr0 + 16*i0);
+        }
+        #pragma omp for simd simdlen(8)
+        for(long i0=921600; i0&lt;921600; i0+=1)
+        {
+            auto tmp0 = static_cast&lt;float&gt;(0);
+            out_ptr0[i0] = tmp0;
+        }
+    }
+}
+''')
+
+async_compile.wait(globals())
+del async_compile
+
+def call(args):
+    arg0_1, = args
+    args.clear()
+    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
+    kernel_cpp_0(c_void_p(buf0.data_ptr()))
+    return (buf0, )
+
+if __name__ == "__main__":
+    from torch._dynamo.testing import rand_strided
+    from torch._inductor.utils import print_performance
+    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
+    print_performance(lambda: call([arg0_1]))
+</code></pre></div>
+<p><em>After change</em></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="async_compile.wait(globals())
+del async_compile
+
+def call(args):
+    arg0_1, = args
+    args.clear()
+    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
+    return (buf0, )
+
+if __name__ == &quot;__main__&quot;:
+    from torch._dynamo.testing import rand_strided
+    from torch._inductor.utils import print_performance
+    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
+    print_performance(lambda: call([arg0_1]))"><pre class="notranslate"><code>async_compile.wait(globals())
+del async_compile
+
+def call(args):
+    arg0_1, = args
+    args.clear()
+    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
+    return (buf0, )
+
+if __name__ == "__main__":
+    from torch._dynamo.testing import rand_strided
+    from torch._inductor.utils import print_performance
+    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
+    print_performance(lambda: call([arg0_1]))
+</code></pre></div>
+<p>Performance data for eager v.s. inductor:</p>
+
+
+
+
+
+
+
+
+<table>
+<thead>
+<tr>
+<th>suite</th>
+<th>op_name</th>
+<th>improved_ratio_speedup0.2</th>
+<th>improved_ratio_speedup0.5</th>
+<th>improved_ratio_speedup0.8</th>
+<th>speedup_old_0.2</th>
+<th>RSD(3)</th>
+<th>speedup_old_0.5</th>
+<th>RSD(3)</th>
+<th>speedup_old_0.8</th>
+<th>RSD(3)</th>
+<th>speedup_new_0.2</th>
+<th>RSD(3)</th>
+<th>speedup_new_0.5</th>
+<th>RSD(3)</th>
+<th>speedup_new_0.8</th>
+<th>RSD(3)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>torchbench</td>
+<td>aten.new_empty_strided.default</td>
+<td>235.94%</td>
+<td>100.94%</td>
+<td>50.23%</td>
+<td>0.325947</td>
+<td>2.96%</td>
+<td>0.550267</td>
+<td>2.03%</td>
+<td>0.747997</td>
+<td>2.93%</td>
+<td>1.094985</td>
+<td>0.81%</td>
+<td>1.105722</td>
+<td>0.55%</td>
+<td>1.12372</td>
+<td>0.68%</td>
+</tr>
+<tr>
+<td>huggingface</td>
+<td>aten.new_empty_strided.default</td>
+<td>120.58%</td>
+<td>81.16%</td>
+<td>87.41%</td>
+<td>0.503116</td>
+<td>28.27%</td>
+<td>0.668831</td>
+<td>5.85%</td>
+<td>0.705637</td>
+<td>2.76%</td>
+<td>1.109785</td>
+<td>1.70%</td>
+<td>1.211641</td>
+<td>0.74%</td>
+<td>1.322434</td>
+<td>0.82%</td>
+</tr>
+<tr>
+<td>timm</td>
+<td>aten.new_empty_strided.default</td>
+<td>129.24%</td>
+<td>72.75%</td>
+<td>47.91%</td>
+<td>0.490658</td>
+<td>15.87%</td>
+<td>0.76711</td>
+<td>13.11%</td>
+<td>0.904033</td>
+<td>4.44%</td>
+<td>1.124806</td>
+<td>1.19%</td>
+<td>1.325182</td>
+<td>0.65%</td>
+<td>1.337114</td>
+<td>1.01%</td>
+</tr>
+<tr>
+<td>torchbench</td>
+<td>aten.new_empty.default</td>
+<td>69.41%</td>
+<td>1.60%</td>
+<td>0.90%</td>
+<td>0.732117</td>
+<td>5.24%</td>
+<td>1.228356</td>
+<td>1.18%</td>
+<td>1.241341</td>
+<td>0.81%</td>
+<td>1.24031</td>
+<td>1.96%</td>
+<td>1.248061</td>
+<td>1.70%</td>
+<td>1.252525</td>
+<td>1.84%</td>
+</tr>
+<tr>
+<td>huggingface</td>
+<td>aten.new_empty.default</td>
+<td>150.01%</td>
+<td>79.29%</td>
+<td>39.91%</td>
+<td>0.49547</td>
+<td>12.67%</td>
+<td>0.692498</td>
+<td>22.11%</td>
+<td>0.889526</td>
+<td>27.37%</td>
+<td>1.238706</td>
+<td>1.58%</td>
+<td>1.241606</td>
+<td>1.49%</td>
+<td>1.244506</td>
+<td>1.41%</td>
+</tr>
+<tr>
+<td>timm</td>
+<td>aten.new_empty.default</td>
+<td>11.61%</td>
+<td>11.13%</td>
+<td>11.07%</td>
+<td>1.115127</td>
+<td>0.65%</td>
+<td>1.124302</td>
+<td>0.80%</td>
+<td>1.132986</td>
+<td>1.38%</td>
+<td>1.244582</td>
+<td>1.12%</td>
+<td>1.249459</td>
+<td>1.31%</td>
+<td>1.258416</td>
+<td>1.14%</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cube.js: v0.31.32]]></title>
+            <link>https://github.com/cube-js/cube.js/releases/tag/v0.31.32</link>
+            <guid>https://github.com/cube-js/cube.js/releases/tag/v0.31.32</guid>
+            <pubDate>Wed, 28 Dec 2022 06:04:12 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube.js/compare/v0.31.31...v0.31.32">0.31.32</a> (2022-12-28)</h2>
+<h3>Features</h3>
+<ul>
+<li><strong>cubesql:</strong> Allow postprocessing with JOIN below Cube query limit (<a href="https://github.com/cube-js/cube.js/commit/56f5399fb37dbb7b388951b1db0be21dda2a94d4">56f5399</a>)</li>
+<li><strong>cubesql:</strong> Support <code>LEFT</code>, <code>RIGHT</code> in projection (<a href="https://github.com/cube-js/cube.js/commit/282ad3ab3106d81a1361f94a499cfc7dc716f3e6">282ad3a</a>)</li>
+<li><strong>cubestore:</strong> Direct kafka download support for ksql streams and t… (<a href="https://github.com/cube-js/cube.js/issues/5880" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/5880/hovercard">#5880</a>) (<a href="https://github.com/cube-js/cube.js/commit/fcb5c5e7825df32249a8021580b582821761c7b1">fcb5c5e</a>)</li>
+<li><strong>cubestore:</strong> Installer - download binary without GH API (<a href="https://github.com/cube-js/cube.js/issues/5885" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/5885/hovercard">#5885</a>) (<a href="https://github.com/cube-js/cube.js/commit/51a0f3951caf62fdf8e88d80faf16d11a2b9158b">51a0f39</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Wed, 28 Dec 2022 05:21:17 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.9.0-dev-566+gbf459641a%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A"><pre class="notranslate"><code>NVIM v0.9.0-dev-566+gbf459641a%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip.</li>
+<li>Run <code>nvim-qt.exe</code></li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice.</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h4>Debian Package</h4>
+<ol>
+<li>Download <strong>nvim-linux64.deb</strong></li>
+<li>Install the package using <code>sudo apt install ./nvim-linux64.deb</code></li>
+<li>Run <code>nvim</code></li>
+</ol>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="09d8e8ac7e8fd9a31ec68370fec7295b40012406573cd2b02e718869fc5aaa63  nvim-linux64.tar.gz
+1b90d3d9ce0e6e3462f34b502f4d413fc1acc8533f1116ea70364d176d98a4f9  nvim-linux64.deb
+f5f455f79a18d575d9853881dae98176ac748d4269dacd6c268c50bbcda01e72  nvim.appimage
+5b59475eeaf7781aef8f5d378ab1c46be214d71decdca9bdc11e810655e7626e  nvim.appimage.zsync
+af7abdaea2a6fafd84ed0371522dd793155b5ba4f00647b790b3811f255a2e4b  nvim-macos.tar.gz
+c3d815f71f2e70eb583d379e94550a098adb45e69ee98360d768ebf58f783d2d  nvim-win64.zip
+a3952b56f3a2e38d46eee7108c494c8be7e895fb12cebe58b9c1b216360d568d  nvim-win64.msi"><pre class="notranslate"><code>09d8e8ac7e8fd9a31ec68370fec7295b40012406573cd2b02e718869fc5aaa63  nvim-linux64.tar.gz
+1b90d3d9ce0e6e3462f34b502f4d413fc1acc8533f1116ea70364d176d98a4f9  nvim-linux64.deb
+f5f455f79a18d575d9853881dae98176ac748d4269dacd6c268c50bbcda01e72  nvim.appimage
+5b59475eeaf7781aef8f5d378ab1c46be214d71decdca9bdc11e810655e7626e  nvim.appimage.zsync
+af7abdaea2a6fafd84ed0371522dd793155b5ba4f00647b790b3811f255a2e4b  nvim-macos.tar.gz
+c3d815f71f2e70eb583d379e94550a098adb45e69ee98360d768ebf58f783d2d  nvim-win64.zip
+a3952b56f3a2e38d46eee7108c494c8be7e895fb12cebe58b9c1b216360d568d  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.1.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.1.78</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.1.78</guid>
+            <pubDate>Wed, 28 Dec 2022 05:02:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ic6f92f59e9efc860a8d26f6a3fa38f8bca5d5a4b<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4126758" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4126758</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.1.78@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a788519ab7c36cf085d444f3cd07d2ed2eb6fedd/hovercard" href="https://github.com/v8/v8/commit/a788519ab7c36cf085d444f3cd07d2ed2eb6fedd"><tt>a788519</tt></a>-refs/heads/main@{#85023}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neo-tree.nvim: 2.48]]></title>
+            <link>https://github.com/nvim-neo-tree/neo-tree.nvim/releases/tag/2.48</link>
+            <guid>https://github.com/nvim-neo-tree/neo-tree.nvim/releases/tag/2.48</guid>
+            <pubDate>Wed, 28 Dec 2022 03:28:07 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>What's Changed</h2>
+<ul>
+<li>feat (fs_actions): add brace expansion for creating files / folders by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pysan3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pysan3">@pysan3</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1501509683" data-permission-text="Title is private" data-url="https://github.com/nvim-neo-tree/neo-tree.nvim/issues/661" data-hovercard-type="pull_request" data-hovercard-url="/nvim-neo-tree/neo-tree.nvim/pull/661/hovercard" href="https://github.com/nvim-neo-tree/neo-tree.nvim/pull/661">#661</a></li>
+<li>fix: prevent error caused by not using all built-in sources by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cseickel/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cseickel">@cseickel</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1511075828" data-permission-text="Title is private" data-url="https://github.com/nvim-neo-tree/neo-tree.nvim/issues/669" data-hovercard-type="pull_request" data-hovercard-url="/nvim-neo-tree/neo-tree.nvim/pull/669/hovercard" href="https://github.com/nvim-neo-tree/neo-tree.nvim/pull/669">#669</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/nvim-neo-tree/neo-tree.nvim/compare/2.47...2.48"><tt>2.47...2.48</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91429]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91429</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91429</guid>
+            <pubDate>Wed, 28 Dec 2022 02:58:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Update CUDAGraph.cpp</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91327: [inductor] Fix "RuntimeError: Tried to erase Node permute but it stil…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91327</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91327</guid>
+            <pubDate>Wed, 28 Dec 2022 02:51:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…l had 3 users in the graph" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a>)</p>
+<p>Summary:<br>
+Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a></p>
+<p>Fix "RuntimeError: Tried to erase Node permute but it still had 3 users in the graph" to unblock internal models</p>
+<p>Reviewed By: anijain2305, jianyuh, ngimel</p>
+<p>Differential Revision: D42213859</p>
+<p>fbshipit-source-id: ae02b2c75cf67e275fb5dd841a238847904a53d9</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91327: [inductor] Fix "RuntimeError: Tried to erase Node permute but it stil…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91327</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91327</guid>
+            <pubDate>Wed, 28 Dec 2022 02:51:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…l had 3 users in the graph" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a>)</p>
+<p>Summary:<br>
+Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a></p>
+<p>Fix "RuntimeError: Tried to erase Node permute but it still had 3 users in the graph" to unblock internal models</p>
+<p>Reviewed By: anijain2305, jianyuh, ngimel</p>
+<p>Differential Revision: D42213859</p>
+<p>fbshipit-source-id: ae02b2c75cf67e275fb5dd841a238847904a53d9</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91427]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91427</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91427</guid>
+            <pubDate>Wed, 28 Dec 2022 01:02:42 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Update build.sh</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/91058: Update on "Properly resolve source_ref when constructing shape guards"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91058</link>
@@ -67,14 +490,11 @@
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91222: Update on "Update functorch supported autograd.Function to allow mark…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91222</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91222</guid>
-            <pubDate>Wed, 28 Dec 2022 00:08:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…_dirty"</p>
-<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1477574985" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/90225" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/90225/hovercard" href="https://github.com/pytorch/pytorch/issues/90225">#90225</a><br>
-Uses what was originally in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1468567242" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/89860" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/89860/hovercard" href="https://github.com/pytorch/pytorch/pull/89860">#89860</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91426]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91426</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91426</guid>
+            <pubDate>Wed, 28 Dec 2022 00:17:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Adds a comment</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from julia: v1.9.0-beta1]]></title>
@@ -94,13 +514,6 @@ Uses what was originally in <a class="issue-link js-issue-link" data-error-text=
             <guid>https://github.com/pubkey/rxdb/releases/tag/13.16.1</guid>
             <pubDate>Tue, 27 Dec 2022 22:00:50 GMT</pubDate>
             <content:encoded><![CDATA[<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91414]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91414</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91414</guid>
-            <pubDate>Tue, 27 Dec 2022 21:49:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Rename <code>Tensor._storage</code> to <code>Tensor.untyped_storage</code> and update docs</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
@@ -131,13 +544,6 @@ Uses what was originally in <a class="issue-link js-issue-link" data-error-text=
 <ul>
 <li><strong>aws-redshift:</strong> Columns are not dropped on removal from array (<a href="https://github.com/aws/aws-cdk/issues/23011" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/23011/hovercard">#23011</a>) (<a href="https://github.com/aws/aws-cdk/commit/298131312b513c0e73865e6fff74c189ee99e328">2981313</a>), closes <a href="https://github.com/aws/aws-cdk/issues/22208" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/22208/hovercard">#22208</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91409: Update on "check_forward_backward_compatibility C10D APIs"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91409</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91409</guid>
-            <pubDate>Tue, 27 Dec 2022 19:20:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from aws-cli: 1.27.38]]></title>
@@ -291,95 +697,6 @@ be working towards go module compatibility in a future release.</p>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91389: Merge branch 'master' of https://github.com/pytorch/pytorch into niki…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91389</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91389</guid>
-            <pubDate>Tue, 27 Dec 2022 10:53:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…taved/compressed_to_sparse_optimization</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91399: initialise the members boolean_ and integer_ of at::indexing::TensorI…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91399</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91399</guid>
-            <pubDate>Tue, 27 Dec 2022 08:54:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…ndex to false and 0 respectively, because the compiler generated copy-ctor accesses them.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Tue, 27 Dec 2022 05:22:18 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.9.0-dev-561+gd4af8c620%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A"><pre class="notranslate"><code>NVIM v0.9.0-dev-561+gd4af8c620%0ABuild type: RelWithDebInfo%0ALuaJIT 2.1.0-beta3%0A
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip.</li>
-<li>Run <code>nvim-qt.exe</code></li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice.</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h4>Debian Package</h4>
-<ol>
-<li>Download <strong>nvim-linux64.deb</strong></li>
-<li>Install the package using <code>sudo apt install ./nvim-linux64.deb</code></li>
-<li>Run <code>nvim</code></li>
-</ol>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="605695cee9358d36fc3ec530444bde0ef9744a2f4affac6b7ab4be8ef46439ea  nvim-linux64.tar.gz
-9f957d67835f2fe177bd0ea817cfc114b89f3f0db51a0be375ecc6b1b9220ff2  nvim-linux64.deb
-544ba62a932b29dbc78f6c3f81250c46a0b0d261dcba53eff5f3f7b70e2c9c8a  nvim.appimage
-62dc3de12d10f8695d10225dc0765c46a30db8aee8501c8fd6f391df39204103  nvim.appimage.zsync
-543947e90a0b10bdd9adbcf0541849251a8d1ebc672c3daa8956833e41ad0ba0  nvim-macos.tar.gz
-1a669f4be218dd1bf542a30e7b4cff98a1bcc3cfb5fcb760b63d88e409b33dd9  nvim-win64.zip
-38d4be126605b6873e8d35012839d08b88e7aee187267c9ca5d6f16e90b22de3  nvim-win64.msi"><pre class="notranslate"><code>605695cee9358d36fc3ec530444bde0ef9744a2f4affac6b7ab4be8ef46439ea  nvim-linux64.tar.gz
-9f957d67835f2fe177bd0ea817cfc114b89f3f0db51a0be375ecc6b1b9220ff2  nvim-linux64.deb
-544ba62a932b29dbc78f6c3f81250c46a0b0d261dcba53eff5f3f7b70e2c9c8a  nvim.appimage
-62dc3de12d10f8695d10225dc0765c46a30db8aee8501c8fd6f391df39204103  nvim.appimage.zsync
-543947e90a0b10bdd9adbcf0541849251a8d1ebc672c3daa8956833e41ad0ba0  nvim-macos.tar.gz
-1a669f4be218dd1bf542a30e7b4cff98a1bcc3cfb5fcb760b63d88e409b33dd9  nvim-win64.zip
-38d4be126605b6873e8d35012839d08b88e7aee187267c9ca5d6f16e90b22de3  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 11.1.77]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.1.77</link>
             <guid>https://github.com/v8/v8/releases/tag/11.1.77</guid>
@@ -389,15 +706,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4124571
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/11.1.77@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/cdcb3caf2deacecfe4c4fbd70ce78fdb96b3c208/hovercard" href="https://github.com/v8/v8/commit/cdcb3caf2deacecfe4c4fbd70ce78fdb96b3c208"><tt>cdcb3ca</tt></a>-refs/heads/main@{#85020}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91385: Update on "Revise error reporting when TorchInductor cannot access /t…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91385</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91385</guid>
-            <pubDate>Tue, 27 Dec 2022 04:14:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…mp folder"</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from opencv: 3.4.19]]></title>
@@ -833,17 +1141,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li>Updated numerous devDependencies: <a href="https://github.com/twbs/bootstrap/pulls?q=is%3Apr+label%3Adependencies+project%3Atwbs%2F9+is%3Aclosed">https://github.com/twbs/bootstrap/pulls?q=is%3Apr+label%3Adependencies+project%3Atwbs%2F9+is%3Aclosed</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.1.75]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.1.75</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.1.75</guid>
-            <pubDate>Sun, 25 Dec 2022 05:02:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I1f6b907639df5ba0b5050de9162caa3496e87669<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4124557" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4124557</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.1.75@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/eef61dadf467b4c36c93d189319c6a246473976d/hovercard" href="https://github.com/v8/v8/commit/eef61dadf467b4c36c93d189319c6a246473976d"><tt>eef61da</tt></a>-refs/heads/main@{#85018}</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
