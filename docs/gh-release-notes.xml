@@ -4,286 +4,229 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 28 Dec 2022 06:06:26 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 28 Dec 2022 12:07:42 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91350: Update on "[inductor] optimize lowering for empty-related operators"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91350</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91350</guid>
-            <pubDate>Wed, 28 Dec 2022 13:03:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>For micro-benchmark, <code>new_empty_strided</code> and <code>new_empty</code> have poor performance with inductor compared to eager. The main reason is that inductor initializes new tensor with 0 during lowering, which generates a useless cpp kernel. Actually, it is not needed for operator semantics, but costs additional time. The same problem is also found in lowerings of <code>empty_strided</code> and <code>empty</code>. This PR tends to remove useless cpp kernel of tensor initialization by generating a NopKernelSchedulerNode instead of a SchedulerNode. The lowering functions of following operators are optimized:</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/89485: Update on "add channels last with mixed data type support for GroupNo…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F89485</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F89485</guid>
+            <pubDate>Thu, 29 Dec 2022 04:02:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…rm backward"</p>
+<h3>Motivation</h3>
+<ol>
+<li>Add channels last support for GroupNorm backward to make sure GroupNorm fully support channels last.</li>
+<li>Same as <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1439822653" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/88663" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/88663/hovercard" href="https://github.com/pytorch/pytorch/pull/88663">#88663</a>, mixed data type support is also needed for channels last implementation of GroupNorm backward.</li>
+</ol>
+<h3>Testing</h3>
+<p>Single socket (28cores):</p>
 <ul>
-<li><code>torch.empty</code></li>
-<li><code>aten.empty</code></li>
-<li><code>aten.new_empty</code></li>
-<li><code>aten.empty_strided</code></li>
-<li><code>aten.new_empty_strided</code></li>
+<li>Contiguous:</li>
 </ul>
-<p>We take output code of <code>new_empty_strided</code> as example.</p>
-<p><em>Before change</em></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="kernel_cpp_0 = async_compile.cpp('''
-#include &quot;/tmp/torchinductor_root/77/c7773nj5pwikpmm2pwa62rcudlf7p3if7eyqb5k4sjsvewwje4le.h&quot;
-extern &quot;C&quot; void kernel(float* __restrict__ out_ptr0)
-{
-    #pragma omp parallel num_threads(28)
-    {
-        #pragma omp for
-        for(long i0=0; i0&lt;57600; i0+=1)
-        {
-            auto tmp0 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0));
-            tmp0.store(out_ptr0 + 16*i0);
-        }
-        #pragma omp for simd simdlen(8)
-        for(long i0=921600; i0&lt;921600; i0+=1)
-        {
-            auto tmp0 = static_cast&lt;float&gt;(0);
-            out_ptr0[i0] = tmp0;
-        }
-    }
-}
-''')
-
-async_compile.wait(globals())
-del async_compile
-
-def call(args):
-    arg0_1, = args
-    args.clear()
-    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
-    kernel_cpp_0(c_void_p(buf0.data_ptr()))
-    return (buf0, )
-
-if __name__ == &quot;__main__&quot;:
-    from torch._dynamo.testing import rand_strided
-    from torch._inductor.utils import print_performance
-    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
-    print_performance(lambda: call([arg0_1]))"><pre class="notranslate"><code>kernel_cpp_0 = async_compile.cpp('''
-#include "/tmp/torchinductor_root/77/c7773nj5pwikpmm2pwa62rcudlf7p3if7eyqb5k4sjsvewwje4le.h"
-extern "C" void kernel(float* __restrict__ out_ptr0)
-{
-    #pragma omp parallel num_threads(28)
-    {
-        #pragma omp for
-        for(long i0=0; i0&lt;57600; i0+=1)
-        {
-            auto tmp0 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0));
-            tmp0.store(out_ptr0 + 16*i0);
-        }
-        #pragma omp for simd simdlen(8)
-        for(long i0=921600; i0&lt;921600; i0+=1)
-        {
-            auto tmp0 = static_cast&lt;float&gt;(0);
-            out_ptr0[i0] = tmp0;
-        }
-    }
-}
-''')
-
-async_compile.wait(globals())
-del async_compile
-
-def call(args):
-    arg0_1, = args
-    args.clear()
-    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
-    kernel_cpp_0(c_void_p(buf0.data_ptr()))
-    return (buf0, )
-
-if __name__ == "__main__":
-    from torch._dynamo.testing import rand_strided
-    from torch._inductor.utils import print_performance
-    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
-    print_performance(lambda: call([arg0_1]))
-</code></pre></div>
-<p><em>After change</em></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="async_compile.wait(globals())
-del async_compile
-
-def call(args):
-    arg0_1, = args
-    args.clear()
-    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
-    return (buf0, )
-
-if __name__ == &quot;__main__&quot;:
-    from torch._dynamo.testing import rand_strided
-    from torch._inductor.utils import print_performance
-    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
-    print_performance(lambda: call([arg0_1]))"><pre class="notranslate"><code>async_compile.wait(globals())
-del async_compile
-
-def call(args):
-    arg0_1, = args
-    args.clear()
-    buf0 = empty_strided((60, 60, 256), (15360, 256, 1), device='cpu', dtype=torch.float32)
-    return (buf0, )
-
-if __name__ == "__main__":
-    from torch._dynamo.testing import rand_strided
-    from torch._inductor.utils import print_performance
-    arg0_1 = rand_strided((60, 60, 256), (60, 1, 3600), device='cpu', dtype=torch.float32)
-    print_performance(lambda: call([arg0_1]))
-</code></pre></div>
-<p>Performance data for eager v.s. inductor:</p>
-
-
-
-
-
-
-
-
 <table>
 <thead>
 <tr>
-<th>suite</th>
-<th>op_name</th>
-<th>improved_ratio_speedup0.2</th>
-<th>improved_ratio_speedup0.5</th>
-<th>improved_ratio_speedup0.8</th>
-<th>speedup_old_0.2</th>
-<th>RSD(3)</th>
-<th>speedup_old_0.5</th>
-<th>RSD(3)</th>
-<th>speedup_old_0.8</th>
-<th>RSD(3)</th>
-<th>speedup_new_0.2</th>
-<th>RSD(3)</th>
-<th>speedup_new_0.5</th>
-<th>RSD(3)</th>
-<th>speedup_new_0.8</th>
-<th>RSD(3)</th>
+<th>shape</th>
+<th>forward / s</th>
+<th>forward / s</th>
+<th>backward / s</th>
+<th>backward / s</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>torchbench</td>
-<td>aten.new_empty_strided.default</td>
-<td>235.94%</td>
-<td>100.94%</td>
-<td>50.23%</td>
-<td>0.325947</td>
-<td>2.96%</td>
-<td>0.550267</td>
-<td>2.03%</td>
-<td>0.747997</td>
-<td>2.93%</td>
-<td>1.094985</td>
-<td>0.81%</td>
-<td>1.105722</td>
-<td>0.55%</td>
-<td>1.12372</td>
-<td>0.68%</td>
+<td> </td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
 </tr>
 <tr>
-<td>huggingface</td>
-<td>aten.new_empty_strided.default</td>
-<td>120.58%</td>
-<td>81.16%</td>
-<td>87.41%</td>
-<td>0.503116</td>
-<td>28.27%</td>
-<td>0.668831</td>
-<td>5.85%</td>
-<td>0.705637</td>
-<td>2.76%</td>
-<td>1.109785</td>
-<td>1.70%</td>
-<td>1.211641</td>
-<td>0.74%</td>
-<td>1.322434</td>
-<td>0.82%</td>
+<td>[10, 128, 20, 20]</td>
+<td>3.20E-05</td>
+<td>3.60E-05</td>
+<td>8.31E-05</td>
+<td>8.13E-05</td>
 </tr>
 <tr>
-<td>timm</td>
-<td>aten.new_empty_strided.default</td>
-<td>129.24%</td>
-<td>72.75%</td>
-<td>47.91%</td>
-<td>0.490658</td>
-<td>15.87%</td>
-<td>0.76711</td>
-<td>13.11%</td>
-<td>0.904033</td>
-<td>4.44%</td>
-<td>1.124806</td>
-<td>1.19%</td>
-<td>1.325182</td>
-<td>0.65%</td>
-<td>1.337114</td>
-<td>1.01%</td>
-</tr>
-<tr>
-<td>torchbench</td>
-<td>aten.new_empty.default</td>
-<td>69.41%</td>
-<td>1.60%</td>
-<td>0.90%</td>
-<td>0.732117</td>
-<td>5.24%</td>
-<td>1.228356</td>
-<td>1.18%</td>
-<td>1.241341</td>
-<td>0.81%</td>
-<td>1.24031</td>
-<td>1.96%</td>
-<td>1.248061</td>
-<td>1.70%</td>
-<td>1.252525</td>
-<td>1.84%</td>
-</tr>
-<tr>
-<td>huggingface</td>
-<td>aten.new_empty.default</td>
-<td>150.01%</td>
-<td>79.29%</td>
-<td>39.91%</td>
-<td>0.49547</td>
-<td>12.67%</td>
-<td>0.692498</td>
-<td>22.11%</td>
-<td>0.889526</td>
-<td>27.37%</td>
-<td>1.238706</td>
-<td>1.58%</td>
-<td>1.241606</td>
-<td>1.49%</td>
-<td>1.244506</td>
-<td>1.41%</td>
-</tr>
-<tr>
-<td>timm</td>
-<td>aten.new_empty.default</td>
-<td>11.61%</td>
-<td>11.13%</td>
-<td>11.07%</td>
-<td>1.115127</td>
-<td>0.65%</td>
-<td>1.124302</td>
-<td>0.80%</td>
-<td>1.132986</td>
-<td>1.38%</td>
-<td>1.244582</td>
-<td>1.12%</td>
-<td>1.249459</td>
-<td>1.31%</td>
-<td>1.258416</td>
-<td>1.14%</td>
+<td>[10, 128, 50, 50]</td>
+<td>0.000126</td>
+<td>0.000115</td>
+<td>0.000356</td>
+<td>0.000257</td>
 </tr>
 </tbody>
 </table>
-
-
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<ul>
+<li>Channels Last:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>forward / s</th>
+<th>forward / s</th>
+<th>backward / s</th>
+<th>backward / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> </td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+</tr>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>4.11E-05</td>
+<td>4.12E-05</td>
+<td>9.74E-05</td>
+<td>9.66E-05</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.000179</td>
+<td>0.000178</td>
+<td>0.000393</td>
+<td>0.000317</td>
+</tr>
+</tbody>
+</table>
+<p>Single core:</p>
+<ul>
+<li>Contiguous:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>forward / s</th>
+<th>forward / s</th>
+<th>backward / s</th>
+<th>backward / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> </td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+</tr>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>2.47E-04</td>
+<td>2.53E-04</td>
+<td>5.92E-04</td>
+<td>4.50E-04</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.001559</td>
+<td>0.001384</td>
+<td>0.004343</td>
+<td>0.002436</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Channels Last:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>shape</th>
+<th>forward / s</th>
+<th>forward / s</th>
+<th>backward / s</th>
+<th>backward / s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td> </td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+<td>fp32</td>
+<td>mixed fp32 bf16</td>
+</tr>
+<tr>
+<td>[10, 128, 20, 20]</td>
+<td>2.27E-04</td>
+<td>3.24E-04</td>
+<td>0.0006224</td>
+<td>0.000459</td>
+</tr>
+<tr>
+<td>[10, 128, 50, 50]</td>
+<td>0.00167</td>
+<td>0.001278</td>
+<td>0.0041858</td>
+<td>0.003027</td>
+</tr>
+</tbody>
+</table>
+<p>cc VitalyFedyunin jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4885]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4885</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4885</guid>
+            <pubDate>Wed, 28 Dec 2022 11:24:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4884]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4884</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4884</guid>
+            <pubDate>Wed, 28 Dec 2022 11:17:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.1.79]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.1.79</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.1.79</guid>
+            <pubDate>Wed, 28 Dec 2022 11:01:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I24e3a5c030402f9567aa4f68548f38a3dd21ef0c<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4126759" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4126759</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.1.79@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4914da9d013de83c222b518253cc284773beceb5/hovercard" href="https://github.com/v8/v8/commit/4914da9d013de83c222b518253cc284773beceb5"><tt>4914da9</tt></a>-refs/heads/main@{#85025}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/89759]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F89759</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F89759</guid>
+            <pubDate>Wed, 28 Dec 2022 10:04:07 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix negation operator/flip logic</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cdk: v1.185.0]]></title>
+            <link>https://github.com/aws/aws-cdk/releases/tag/v1.185.0</link>
+            <guid>https://github.com/aws/aws-cdk/releases/tag/v1.185.0</guid>
+            <pubDate>Wed, 28 Dec 2022 09:48:36 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Features</h3>
+<ul>
+<li><strong>cfnspec:</strong> cloudformation spec v103.0.0 (<a href="https://github.com/aws/aws-cdk/issues/23451" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/23451/hovercard">#23451</a>) (<a href="https://github.com/aws/aws-cdk/commit/865d0943e892e351fdd95a004ab74155dd0d2a9b">865d094</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/mps/26921]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F26921</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F26921</guid>
+            <pubDate>Wed, 28 Dec 2022 08:03:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>2022-12-28 nightly release (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/2e79d46708fb53c1a92bf0c2840d47a39e13e400/hovercard" href="https://github.com/pytorch/pytorch/commit/2e79d46708fb53c1a92bf0c2840d47a39e13e400"><tt>2e79d46</tt></a>)</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from cube.js: v0.31.32]]></title>
             <link>https://github.com/cube-js/cube.js/releases/tag/v0.31.32</link>
             <guid>https://github.com/cube-js/cube.js/releases/tag/v0.31.32</guid>
-            <pubDate>Wed, 28 Dec 2022 06:04:12 GMT</pubDate>
+            <pubDate>Wed, 28 Dec 2022 07:56:39 GMT</pubDate>
             <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube.js/compare/v0.31.31...v0.31.32">0.31.32</a> (2022-12-28)</h2>
 <h3>Features</h3>
 <ul>
@@ -292,6 +235,28 @@ if __name__ == "__main__":
 <li><strong>cubestore:</strong> Direct kafka download support for ksql streams and t… (<a href="https://github.com/cube-js/cube.js/issues/5880" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/5880/hovercard">#5880</a>) (<a href="https://github.com/cube-js/cube.js/commit/fcb5c5e7825df32249a8021580b582821761c7b1">fcb5c5e</a>)</li>
 <li><strong>cubestore:</strong> Installer - download binary without GH API (<a href="https://github.com/cube-js/cube.js/issues/5885" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube.js/pull/5885/hovercard">#5885</a>) (<a href="https://github.com/cube-js/cube.js/commit/51a0f3951caf62fdf8e88d80faf16d11a2b9158b">51a0f39</a>)</li>
 </ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91434: [Inductor] fix undefined `MockHandler` use]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91434</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91434</guid>
+            <pubDate>Wed, 28 Dec 2022 07:26:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91434: [Inductor] fix undefined `MockHandler` use]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91434</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91434</guid>
+            <pubDate>Wed, 28 Dec 2022 07:26:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91433: Update on "inductor: add conv+hardsigmoid fusion for cpu path"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91433</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91433</guid>
+            <pubDate>Wed, 28 Dec 2022 07:06:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc jgong5 mingfeima sanchitintel ashokei jingxu10 mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang Guobing-Chen chunyuan-w zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
@@ -399,32 +364,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>Update CUDAGraph.cpp</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91327: [inductor] Fix "RuntimeError: Tried to erase Node permute but it stil…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91327</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91327</guid>
-            <pubDate>Wed, 28 Dec 2022 02:51:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…l had 3 users in the graph" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a>)</p>
-<p>Summary:<br>
-Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a></p>
-<p>Fix "RuntimeError: Tried to erase Node permute but it still had 3 users in the graph" to unblock internal models</p>
-<p>Reviewed By: anijain2305, jianyuh, ngimel</p>
-<p>Differential Revision: D42213859</p>
-<p>fbshipit-source-id: ae02b2c75cf67e275fb5dd841a238847904a53d9</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91327: [inductor] Fix "RuntimeError: Tried to erase Node permute but it stil…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91327</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91327</guid>
-            <pubDate>Wed, 28 Dec 2022 02:51:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…l had 3 users in the graph" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a>)</p>
-<p>Summary:<br>
-Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1508545613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91327" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/91327/hovercard" href="https://github.com/pytorch/pytorch/pull/91327">#91327</a></p>
-<p>Fix "RuntimeError: Tried to erase Node permute but it still had 3 users in the graph" to unblock internal models</p>
-<p>Reviewed By: anijain2305, jianyuh, ngimel</p>
-<p>Differential Revision: D42213859</p>
-<p>fbshipit-source-id: ae02b2c75cf67e275fb5dd841a238847904a53d9</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/91427]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91427</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91427</guid>
@@ -435,18 +374,6 @@ Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Fail
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/91058: Update on "Properly resolve source_ref when constructing shape guards"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91058</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91058</guid>
-            <pubDate>Wed, 28 Dec 2022 00:18:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Whenever you guard on something, you're supposed to tell GuardBuilder about it, so GuardBuilder knows that it has to actually bind it in scope when it creates the guard function. But shape env guards bypass that mechanism completely. Well, now they don't.</p>
-<p>For the most part, this didn't matter in practice, because we usually had a <code>TENSOR_MATCH</code> guard floating around that made sure that the guard stayed live. But if we ever eliminate those guards (e.g., because we build it into the shape guard directly; something we'll probably want to do when <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1465126737" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/89707" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/89707/hovercard" href="https://github.com/pytorch/pytorch/pull/89707">#89707</a> goes online) then this will indeed matter.</p>
-<p>One complication: some of the shape env guards are on globals. You have to make sure to shunt the usage to the correct guard builder in that case. Maybe it would be better if we refactored things so there is only one GuardBuilder. Not sure.</p>
-<p>Signed-off-by: Edward Z. Yang &lt;ezyangfb.com&gt;</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91058: Update on "Properly resolve source_ref when constructing shape guards"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91058</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91058</guid>
             <pubDate>Wed, 28 Dec 2022 00:18:08 GMT</pubDate>
             <content:encoded><![CDATA[<p>Whenever you guard on something, you're supposed to tell GuardBuilder about it, so GuardBuilder knows that it has to actually bind it in scope when it creates the guard function. But shape env guards bypass that mechanism completely. Well, now they don't.</p>
 <p>For the most part, this didn't matter in practice, because we usually had a <code>TENSOR_MATCH</code> guard floating around that made sure that the guard stayed live. But if we ever eliminate those guards (e.g., because we build it into the shape guard directly; something we'll probably want to do when <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1465126737" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/89707" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/89707/hovercard" href="https://github.com/pytorch/pytorch/pull/89707">#89707</a> goes online) then this will indeed matter.</p>
@@ -471,30 +398,6 @@ Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Fail
 <p>Signed-off-by: Edward Z. Yang &lt;ezyangfb.com&gt;</p>
 <p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/91057: Update on "Store source, not sname, in Symbol"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91057</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F91057</guid>
-            <pubDate>Wed, 28 Dec 2022 00:18:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p>I'm going to need this in the follow up PR. Instead of storing only Source.name() in Symbol, I now store a full on Source. Lots of replumbing reoccurs. In particular:</p>
-<ul>
-<li>Move Source to torch._guards to break cycles</li>
-<li>I have to add TensorPropertySource and NegateSource to handle x.size()[0] and -x codegen that I was doing with string manipulation previously</li>
-<li>I tighten up invariants so that I never pass source=None; instead I pass ConstantSource (these are constant sources right) and test for that rather than source being missing. I think this is more parsimonious</li>
-<li>Some mypy wobbles from new imports</li>
-</ul>
-<p>I didn't move LocalSource and friends to torch._guards, but I ended up needing to access them in a few places. The main annoyance with moving these is that then I also need to move the bytecode codegen stuff, and that's not so easy to move without bringing in the kitchen sink.</p>
-<p>Signed-off-by: Edward Z. Yang &lt;ezyangfb.com&gt;</p>
-<p>cc mlazos soumith voznesenskym yanboliang penguinwu anijain2305 EikanWang jgong5 Guobing-Chen chunyuan-w XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91426]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91426</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91426</guid>
-            <pubDate>Wed, 28 Dec 2022 00:17:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Adds a comment</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from julia: v1.9.0-beta1]]></title>
@@ -673,13 +576,6 @@ be working towards go module compatibility in a future release.</p>
 <p>When reporting issues, include <code>[23.0.0-rc]</code> in the issue title</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4833]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4833</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4833</guid>
-            <pubDate>Tue, 27 Dec 2022 13:30:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from oclif: 3.4.3]]></title>
             <link>https://github.com/oclif/oclif/releases/tag/3.4.3</link>
             <guid>https://github.com/oclif/oclif/releases/tag/3.4.3</guid>
@@ -688,13 +584,6 @@ be working towards go module compatibility in a future release.</p>
 <ul>
 <li>make oclif.s3.folder optional for --indexes (<a href="https://github.com/oclif/oclif/issues/1063" data-hovercard-type="pull_request" data-hovercard-url="/oclif/oclif/pull/1063/hovercard">#1063</a>) (<a href="https://github.com/oclif/oclif/commit/df9db2fa2906f5e0322c5e8fd8eddacfecee24ca">df9db2f</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4828]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4828</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4828</guid>
-            <pubDate>Tue, 27 Dec 2022 12:52:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 11.1.77]]></title>
@@ -1013,134 +902,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4124569
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/11.1.76@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8e063b80663b419ff8a984ff96aa61ab78b7dc37/hovercard" href="https://github.com/v8/v8/commit/8e063b80663b419ff8a984ff96aa61ab78b7dc37"><tt>8e063b8</tt></a>-refs/heads/main@{#85019}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from bootstrap: v5.3.0-alpha1]]></title>
-            <link>https://github.com/twbs/bootstrap/releases/tag/v5.3.0-alpha1</link>
-            <guid>https://github.com/twbs/bootstrap/releases/tag/v5.3.0-alpha1</guid>
-            <pubDate>Sun, 25 Dec 2022 07:15:05 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji> Highlights</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1083502395" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/35566" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/35566/hovercard" href="https://github.com/twbs/bootstrap/pull/35566">#35566</a>: Properly escape IDs in <code>getSelector()</code> to handle weird IDs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1083494240" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/35565" data-hovercard-type="issue" data-hovercard-url="/twbs/bootstrap/issues/35565/hovercard" href="https://github.com/twbs/bootstrap/issues/35565">#35565</a>)</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1140669962" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/35857" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/35857/hovercard" href="https://github.com/twbs/bootstrap/pull/35857">#35857</a>: Add dark mode support</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1319439807" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36854" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36854/hovercard" href="https://github.com/twbs/bootstrap/pull/36854">#36854</a>: Use explicit imports in our JavaScript source files</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji> Features</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1267030280" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36540" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36540/hovercard" href="https://github.com/twbs/bootstrap/pull/36540">#36540</a>: Add new <code>border-radius</code> utilities</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1310307449" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36781" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36781/hovercard" href="https://github.com/twbs/bootstrap/pull/36781">#36781</a>: add <code>font-weight-medium</code> (500) / <code>fw-medium</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1408273166" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37317" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37317/hovercard" href="https://github.com/twbs/bootstrap/pull/37317">#37317</a>: Add <code>z-index</code> utilities, <code>.z-*</code></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="art" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3a8.png">🎨</g-emoji> CSS</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1188558759" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36095" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36095/hovercard" href="https://github.com/twbs/bootstrap/pull/36095">#36095</a>: Added CSS variables for breakpoints</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1251511959" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36456" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36456/hovercard" href="https://github.com/twbs/bootstrap/pull/36456">#36456</a>: Add color CSS variables for <code>.alert-link</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1251558158" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36457" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36457/hovercard" href="https://github.com/twbs/bootstrap/pull/36457">#36457</a>: Add color CSS variables for <code>.btn-close</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1261353853" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36511" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36511/hovercard" href="https://github.com/twbs/bootstrap/pull/36511">#36511</a>: Add parameters to caret-related mixins</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1267030280" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36540" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36540/hovercard" href="https://github.com/twbs/bootstrap/pull/36540">#36540</a>: Add new <code>border-radius</code> utilities</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1310307449" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36781" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36781/hovercard" href="https://github.com/twbs/bootstrap/pull/36781">#36781</a>: add <code>font-weight-medium</code> (500) / <code>fw-medium</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315132458" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36815" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36815/hovercard" href="https://github.com/twbs/bootstrap/pull/36815">#36815</a>: Add new CSS variables for Offcanvas</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315910439" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36831" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36831/hovercard" href="https://github.com/twbs/bootstrap/pull/36831">#36831</a>: Rework progress bar markup and styles</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1318070140" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36848" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36848/hovercard" href="https://github.com/twbs/bootstrap/pull/36848">#36848</a>: Add utilities for overflow and object fit</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1342016719" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36979" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36979/hovercard" href="https://github.com/twbs/bootstrap/pull/36979">#36979</a>: Add support for customizing a card title color</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1369671525" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37125" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37125/hovercard" href="https://github.com/twbs/bootstrap/pull/37125">#37125</a>: Floating labels: Add an artificial background to label</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1395234845" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37252" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37252/hovercard" href="https://github.com/twbs/bootstrap/pull/37252">#37252</a>: Add <code>$enable-important-utilities</code> condition in colored links</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1396095467" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37257" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37257/hovercard" href="https://github.com/twbs/bootstrap/pull/37257">#37257</a>: Remove duplicate CSS variable</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1405159097" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37299" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37299/hovercard" href="https://github.com/twbs/bootstrap/pull/37299">#37299</a>: Fix disabled floating labels and add some examples of it in the docs</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1408273166" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37317" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37317/hovercard" href="https://github.com/twbs/bootstrap/pull/37317">#37317</a>: Add <code>z-index</code> utilities, <code>.z-*</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1416191945" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37344" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37344/hovercard" href="https://github.com/twbs/bootstrap/pull/37344">#37344</a>: Use <code>--bs-border-width</code> for some components</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1418094194" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37350" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37350/hovercard" href="https://github.com/twbs/bootstrap/pull/37350">#37350</a>: Prevent extraneous whitespace around date time inputs in WebKit</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1419664137" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37356" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37356/hovercard" href="https://github.com/twbs/bootstrap/pull/37356">#37356</a>: fix negative <code>border-width</code> on inputgroup and buttongroup</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1430304006" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37408" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37408/hovercard" href="https://github.com/twbs/bootstrap/pull/37408">#37408</a>: Fix disabled floating labels color</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1431164687" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37413" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37413/hovercard" href="https://github.com/twbs/bootstrap/pull/37413">#37413</a>: Grid Gap Updates</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1458528722" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37526" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37526/hovercard" href="https://github.com/twbs/bootstrap/pull/37526">#37526</a>: Fix var <code>--bs-body-font-family</code>; keep quotes in the font stack</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1486552771" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37617" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37617/hovercard" href="https://github.com/twbs/bootstrap/pull/37617">#37617</a>: CSS: <code>$prefix</code> to the whole assets</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1488327113" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37621" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37621/hovercard" href="https://github.com/twbs/bootstrap/pull/37621">#37621</a>: Fix <code>--bs-form-check-bg</code> definition</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1495950227" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37644" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37644/hovercard" href="https://github.com/twbs/bootstrap/pull/37644">#37644</a>: <code>list-group-border-width</code> variables</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1504982170" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37687" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37687/hovercard" href="https://github.com/twbs/bootstrap/pull/37687">#37687</a>: Fix Sass compilation when <code>$color-mode-type</code> is set to <code>media-query</code></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="coffee" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2615.png">☕️</g-emoji> JavaScript</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1083502395" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/35566" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/35566/hovercard" href="https://github.com/twbs/bootstrap/pull/35566">#35566</a>: Properly escape IDs in getSelector() to handle weird IDs</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1170798626" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36027" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36027/hovercard" href="https://github.com/twbs/bootstrap/pull/36027">#36027</a>: Move <code>getElementFromSelector</code> &amp; <code>getSelectorFromElement</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1290719912" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36652" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36652/hovercard" href="https://github.com/twbs/bootstrap/pull/36652">#36652</a>: Boost <code>execute</code> function, being able to handle arguments</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1319439807" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36854" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36854/hovercard" href="https://github.com/twbs/bootstrap/pull/36854">#36854</a>: Use explicit imports in our JavaScript source files</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1437617602" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37438" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37438/hovercard" href="https://github.com/twbs/bootstrap/pull/37438">#37438</a>: refactor <code>getSelector</code> not to be exported</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1445127255" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37473" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37473/hovercard" href="https://github.com/twbs/bootstrap/pull/37473">#37473</a>: fix: change <code>replaceAll</code> usage introduced in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1083502395" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/35566" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/35566/hovercard" href="https://github.com/twbs/bootstrap/pull/35566">#35566</a></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446308363" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37482" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37482/hovercard" href="https://github.com/twbs/bootstrap/pull/37482">#37482</a>: Use <code>Object.entries</code> in more places</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446310677" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37483" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37483/hovercard" href="https://github.com/twbs/bootstrap/pull/37483">#37483</a>: hydrateObj: use default param</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446311083" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37484" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37484/hovercard" href="https://github.com/twbs/bootstrap/pull/37484">#37484</a>: ESLint: enable <code>prefer-template</code> rule</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="book" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4d6.png">📖</g-emoji> Docs</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1263626801" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36523" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36523/hovercard" href="https://github.com/twbs/bootstrap/pull/36523">#36523</a>: Update navbars example to include a centered nav with utilities</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315910439" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36831" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36831/hovercard" href="https://github.com/twbs/bootstrap/pull/36831">#36831</a>: Rework progress bar markup and styles</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1394659242" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37247" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37247/hovercard" href="https://github.com/twbs/bootstrap/pull/37247">#37247</a>: Docs: Minor grammatical fixes for Form validation page</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1395140243" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37250" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37250/hovercard" href="https://github.com/twbs/bootstrap/pull/37250">#37250</a>: Fix typo in documentation for hiding elements</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1395759948" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37255" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37255/hovercard" href="https://github.com/twbs/bootstrap/pull/37255">#37255</a>: Markdownlint fixes</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1399166855" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37267" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37267/hovercard" href="https://github.com/twbs/bootstrap/pull/37267">#37267</a>: Rename examples CSS/JS files for consistency</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1401227194" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37271" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37271/hovercard" href="https://github.com/twbs/bootstrap/pull/37271">#37271</a>: Docs: Slightly improve tooling setup description</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1402293036" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37277" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37277/hovercard" href="https://github.com/twbs/bootstrap/pull/37277">#37277</a>: Doc: add Sass vars for switches</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1402680659" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37279" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37279/hovercard" href="https://github.com/twbs/bootstrap/pull/37279">#37279</a>: Improve example of .flex-wrap and -reverse</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1403609901" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37282" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37282/hovercard" href="https://github.com/twbs/bootstrap/pull/37282">#37282</a>: Docs: standardize usage of <code>&lt;kbd&gt;</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1405159097" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37299" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37299/hovercard" href="https://github.com/twbs/bootstrap/pull/37299">#37299</a>: Fix disabled floating labels and add some examples of it in the docs</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1405774937" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37301" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37301/hovercard" href="https://github.com/twbs/bootstrap/pull/37301">#37301</a>: docs: fix text buttons to match behavior</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1408301228" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37318" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37318/hovercard" href="https://github.com/twbs/bootstrap/pull/37318">#37318</a>: Home imports</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1408309241" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37320" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37320/hovercard" href="https://github.com/twbs/bootstrap/pull/37320">#37320</a>: Organize callouts in partials</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1414618043" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37341" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37341/hovercard" href="https://github.com/twbs/bootstrap/pull/37341">#37341</a>: Docs: use 'added' page information to display a tag on top of the pages</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1418972398" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37354" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37354/hovercard" href="https://github.com/twbs/bootstrap/pull/37354">#37354</a>: Docs: rewrite/reorganize carousel docs page</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1420338438" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37361" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37361/hovercard" href="https://github.com/twbs/bootstrap/pull/37361">#37361</a>: Font style utilities did not contain "-style-" in BS4</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1429031066" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37397" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37397/hovercard" href="https://github.com/twbs/bootstrap/pull/37397">#37397</a>: Change title of color-background.md page</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1429088939" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37399" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37399/hovercard" href="https://github.com/twbs/bootstrap/pull/37399">#37399</a>: Only show added in page badge if relevant</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1430179714" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37406" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37406/hovercard" href="https://github.com/twbs/bootstrap/pull/37406">#37406</a>: Update input-group.md with form text example</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1436752785" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37432" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37432/hovercard" href="https://github.com/twbs/bootstrap/pull/37432">#37432</a>: Docs: use <code>&lt;button&gt;</code> for dropdown/popover examples, explain preference over <code>&lt;a&gt;</code> for dropdowns, tweak collapse prose</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1447318534" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37491" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37491/hovercard" href="https://github.com/twbs/bootstrap/pull/37491">#37491</a>: Make added-in badge page-level for z-index utilities</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1447544581" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37492" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37492/hovercard" href="https://github.com/twbs/bootstrap/pull/37492">#37492</a>: Docs: add margin between buttons in tooltip examples</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1447997858" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37493" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37493/hovercard" href="https://github.com/twbs/bootstrap/pull/37493">#37493</a>: Docs: fix margins between cards in examples</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1450061662" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37498" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37498/hovercard" href="https://github.com/twbs/bootstrap/pull/37498">#37498</a>: Fix accessibility of examples buttons</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1459774978" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37535" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37535/hovercard" href="https://github.com/twbs/bootstrap/pull/37535">#37535</a>: Docs: Fix Thirteenth typo on Navbars example</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1462240498" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37538" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37538/hovercard" href="https://github.com/twbs/bootstrap/pull/37538">#37538</a>: Docs: Add black text/background examples</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1467567513" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37553" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37553/hovercard" href="https://github.com/twbs/bootstrap/pull/37553">#37553</a>: Docs: fix "Usage -&gt; Enable dark mode" code example</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1469973502" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37568" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37568/hovercard" href="https://github.com/twbs/bootstrap/pull/37568">#37568</a>: Remove title from <code>check2</code> SVG icon</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1471478294" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37570" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37570/hovercard" href="https://github.com/twbs/bootstrap/pull/37570">#37570</a>: code-examples.js: switch to <code>firstElementChild</code></li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1485409070" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37615" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37615/hovercard" href="https://github.com/twbs/bootstrap/pull/37615">#37615</a>: Add new team member to the Teams page</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1486552771" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37617" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37617/hovercard" href="https://github.com/twbs/bootstrap/pull/37617">#37617</a>: CSS: <code>$prefix</code> to the whole assets</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1499755711" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37658" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37658/hovercard" href="https://github.com/twbs/bootstrap/pull/37658">#37658</a>: docs: move color-mode script</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1503271855" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37670" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37670/hovercard" href="https://github.com/twbs/bootstrap/pull/37670">#37670</a>: Docs: Fix typo in guide</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1504078180" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37676" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37676/hovercard" href="https://github.com/twbs/bootstrap/pull/37676">#37676</a>: Docs: fix typo for Sass vars references in Customize &gt; Color modes &gt; Building with Sass</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="hammer_and_wrench" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6e0.png">🛠</g-emoji> Examples</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1263626801" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36523" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36523/hovercard" href="https://github.com/twbs/bootstrap/pull/36523">#36523</a>: Update navbars example to include a centered nav with utilities</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1369185898" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37123" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37123/hovercard" href="https://github.com/twbs/bootstrap/pull/37123">#37123</a>: Fix button hover color in the cover example</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1399166855" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37267" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37267/hovercard" href="https://github.com/twbs/bootstrap/pull/37267">#37267</a>: Rename examples CSS/JS files for consistency</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1451764148" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37502" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37502/hovercard" href="https://github.com/twbs/bootstrap/pull/37502">#37502</a>: Fix grid and alignment in examples/features</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="earth_americas" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f30e.png">🌎</g-emoji> Accessibility</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1315910439" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36831" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36831/hovercard" href="https://github.com/twbs/bootstrap/pull/36831">#36831</a>: Rework progress bar markup and styles</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1418972398" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37354" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37354/hovercard" href="https://github.com/twbs/bootstrap/pull/37354">#37354</a>: Docs: rewrite/reorganize carousel docs page</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1436752785" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37432" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37432/hovercard" href="https://github.com/twbs/bootstrap/pull/37432">#37432</a>: Docs: use <code>&lt;button&gt;</code> for dropdown/popover examples, explain preference over <code>&lt;a&gt;</code> for dropdowns, tweak collapse prose</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1450061662" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37498" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37498/hovercard" href="https://github.com/twbs/bootstrap/pull/37498">#37498</a>: Fix accessibility of examples buttons</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="factory" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3ed.png">🏭</g-emoji> Tests</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1394818378" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37248" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37248/hovercard" href="https://github.com/twbs/bootstrap/pull/37248">#37248</a>: Rename some variables in tab unit tests for consistency</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="toolbox" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f9f0.png">🧰</g-emoji> Misc</h2>
-<ul>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1231933383" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/36325" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/36325/hovercard" href="https://github.com/twbs/bootstrap/pull/36325">#36325</a>: CI: Add GitHub token permissions for workflows</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1417102073" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37348" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37348/hovercard" href="https://github.com/twbs/bootstrap/pull/37348">#37348</a>: Update authors and copyright to match npm, add repository reference</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1441488964" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37459" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37459/hovercard" href="https://github.com/twbs/bootstrap/pull/37459">#37459</a>: CI: remove git credentials after checkout</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1441532148" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37461" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37461/hovercard" href="https://github.com/twbs/bootstrap/pull/37461">#37461</a>: CI: switch to Node.js 18 LTS</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446302853" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37481" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37481/hovercard" href="https://github.com/twbs/bootstrap/pull/37481">#37481</a>: Update CodeQL workflow</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446327579" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37485" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37485/hovercard" href="https://github.com/twbs/bootstrap/pull/37485">#37485</a>: Update site/.eslintrc.json</li>
-<li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1446440013" data-permission-text="Title is private" data-url="https://github.com/twbs/bootstrap/issues/37486" data-hovercard-type="pull_request" data-hovercard-url="/twbs/bootstrap/pull/37486/hovercard" href="https://github.com/twbs/bootstrap/pull/37486">#37486</a>: CodeQL: ignore dist folder</li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="package" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4e6.png">📦</g-emoji> Dependencies</h2>
-<ul>
-<li>Updated numerous devDependencies: <a href="https://github.com/twbs/bootstrap/pulls?q=is%3Apr+label%3Adependencies+project%3Atwbs%2F9+is%3Aclosed">https://github.com/twbs/bootstrap/pulls?q=is%3Apr+label%3Adependencies+project%3Atwbs%2F9+is%3Aclosed</a></li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
