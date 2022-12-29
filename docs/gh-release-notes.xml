@@ -4,7 +4,7 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 28 Dec 2022 18:06:18 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 29 Dec 2022 00:22:13 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
@@ -174,6 +174,686 @@
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from sqlalchemy: 2.0.0rc1]]></title>
+            <link>https://github.com/sqlalchemy/sqlalchemy/releases/tag/rel_2_0_0rc1</link>
+            <guid>https://github.com/sqlalchemy/sqlalchemy/releases/tag/rel_2_0_0rc1</guid>
+            <pubDate>Thu, 29 Dec 2022 00:02:00 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>2.0.0rc1</h1>
+<p>Released: December 28, 2022</p>
+<h2>general</h2>
+<ul>
+<li>
+<p><strong>[general] [bug]</strong> Fixed regression where the base compat module was calling upon<br>
+<code>platform.architecture()</code> in order to detect some system properties,<br>
+which results in an over-broad system call against the system-level<br>
+<code>file</code> call that is unavailable under some circumstances, including<br>
+within some secure environment configurations.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8995" rel="nofollow">#8995</a></p>
+</li>
+</ul>
+<h2>orm</h2>
+<ul>
+<li>
+<p><strong>[orm] [feature]</strong> Added a new default value for the <code>Mapper.eager_defaults</code><br>
+parameter "auto", which will automatically fetch table default values<br>
+during a unit of work flush, if the dialect supports RETURNING for the<br>
+INSERT being run, as well as<br>
+<code>insertmanyvalues &lt;engine_insertmanyvalues&gt;</code> available. Eager fetches<br>
+for server-side UPDATE defaults, which are very uncommon, continue to only<br>
+take place if <code>Mapper.eager_defaults</code> is set to <code>True</code>, as<br>
+there is no batch-RETURNING form for UPDATE statements.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8889" rel="nofollow">#8889</a></p>
+</li>
+<li>
+<p><strong>[orm] [usecase]</strong> Adjustments to the <code>_orm.Session</code> in terms of extensibility,<br>
+as well as updates to the <code>ShardedSession</code> extension:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="-   `_orm.Session.get()` now accepts
+    `_orm.Session.get.bind_arguments`, which in particular may be
+    useful when using the horizontal sharding extension.
+
+-   `_orm.Session.get_bind()` accepts arbitrary kw arguments, which
+    assists in developing code that uses a `_orm.Session` class which
+    overrides this method with additional arguments.
+
+-   Added a new ORM execution option `identity_token` which may be used
+    to directly affect the &quot;identity token&quot; that will be associated with
+    newly loaded ORM objects.  This token is how sharding approaches
+    (namely the `ShardedSession`, but can be used in other cases
+    as well) separate object identities across different &quot;shards&quot;.
+
+-   The `_orm.SessionEvents.do_orm_execute()` event hook may now be used
+    to affect all ORM-related options, including `autoflush`,
+    `populate_existing`, and `yield_per`; these options are re-consumed
+    subsequent to event hooks being invoked before they are acted upon.
+    Previously, options like `autoflush` would have been already evaluated
+    at this point. The new `identity_token` option is also supported in
+    this mode and is now used by the horizontal sharding extension.
+
+-   The `ShardedSession` class replaces the
+    `ShardedSession.id_chooser` hook with a new hook
+    `ShardedSession.identity_chooser`, which no longer relies upon
+    the legacy `_orm.Query` object.
+    `ShardedSession.id_chooser` is still accepted in place of
+    `ShardedSession.identity_chooser` with a deprecation warning."><pre class="notranslate"><code>-   `_orm.Session.get()` now accepts
+    `_orm.Session.get.bind_arguments`, which in particular may be
+    useful when using the horizontal sharding extension.
+
+-   `_orm.Session.get_bind()` accepts arbitrary kw arguments, which
+    assists in developing code that uses a `_orm.Session` class which
+    overrides this method with additional arguments.
+
+-   Added a new ORM execution option `identity_token` which may be used
+    to directly affect the "identity token" that will be associated with
+    newly loaded ORM objects.  This token is how sharding approaches
+    (namely the `ShardedSession`, but can be used in other cases
+    as well) separate object identities across different "shards".
+
+-   The `_orm.SessionEvents.do_orm_execute()` event hook may now be used
+    to affect all ORM-related options, including `autoflush`,
+    `populate_existing`, and `yield_per`; these options are re-consumed
+    subsequent to event hooks being invoked before they are acted upon.
+    Previously, options like `autoflush` would have been already evaluated
+    at this point. The new `identity_token` option is also supported in
+    this mode and is now used by the horizontal sharding extension.
+
+-   The `ShardedSession` class replaces the
+    `ShardedSession.id_chooser` hook with a new hook
+    `ShardedSession.identity_chooser`, which no longer relies upon
+    the legacy `_orm.Query` object.
+    `ShardedSession.id_chooser` is still accepted in place of
+    `ShardedSession.identity_chooser` with a deprecation warning.
+</code></pre></div>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/7837" rel="nofollow">#7837</a></p>
+</li>
+<li>
+<p><strong>[orm] [usecase]</strong> The behavior of "joining an external transaction into a Session" has been<br>
+revised and improved, allowing explicit control over how the<br>
+<code>_orm.Session</code> will accommodate an incoming<br>
+<code>_engine.Connection</code> that already has a transaction and possibly a<br>
+savepoint already established. The new parameter<br>
+<code>_orm.Session.join_transaction_mode</code> includes a series of option<br>
+values which can accommodate the existing transaction in several ways, most<br>
+importantly allowing a <code>_orm.Session</code> to operate in a fully<br>
+transactional style using savepoints exclusively, while leaving the<br>
+externally initiated transaction non-committed and active under all<br>
+circumstances, allowing test suites to rollback all changes that take place<br>
+within tests.</p>
+<p>Additionally, revised the <code>_orm.Session.close()</code> method to fully close<br>
+out savepoints that may still be present, which also allows the<br>
+"external transaction" recipe to proceed without warnings if the<br>
+<code>_orm.Session</code> did not explicitly end its own SAVEPOINT<br>
+transactions.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9015" rel="nofollow">#9015</a></p>
+</li>
+<li>
+<p><strong>[orm] [usecase]</strong> Removed the requirement that the <code>__allow_unmapped__</code> attribute be used<br>
+on Declarative Dataclass Mapped class when non-<code>Mapped[]</code> annotations are<br>
+detected; previously, an error message that was intended to support legacy<br>
+ORM typed mappings would be raised, which additionally did not mention<br>
+correct patterns to use with Dataclasses specifically. This error message<br>
+is now no longer raised if <code>_orm.registry.mapped_as_dataclass()</code> or<br>
+<code>_orm.MappedAsDataclass</code> is used.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8973" rel="nofollow">#8973</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Fixed issue in the internal SQL traversal for DML statements like<br>
+<code>_dml.Update</code> and <code>_dml.Delete</code> which would cause among other<br>
+potential issues, a specific issue using lambda statements with the ORM<br>
+update/delete feature.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9033" rel="nofollow">#9033</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Fixed bug where <code>_orm.Session.merge()</code> would fail to preserve the<br>
+current loaded contents of relationship attributes that were indicated with<br>
+the <code>_orm.relationship.viewonly</code> parameter, thus defeating<br>
+strategies that use <code>_orm.Session.merge()</code> to pull fully loaded objects<br>
+from caches and other similar techniques. In a related change, fixed issue<br>
+where an object that contains a loaded relationship that was nonetheless<br>
+configured as <code>lazy='raise'</code> on the mapping would fail when passed to<br>
+<code>_orm.Session.merge()</code>; checks for "raise" are now suspended within<br>
+the merge process assuming the <code>_orm.Session.merge.load</code><br>
+parameter remains at its default of <code>True</code>.</p>
+<p>Overall, this is a behavioral adjustment to a change introduced in the 1.4<br>
+series as of <a href="https://www.sqlalchemy.org/trac/ticket/4994" rel="nofollow">#4994</a>, which took "merge" out of the set of cascades<br>
+applied by default to "viewonly" relationships. As "viewonly" relationships<br>
+aren't persisted under any circumstances, allowing their contents to<br>
+transfer during "merge" does not impact the persistence behavior of the<br>
+target object. This allows <code>_orm.Session.merge()</code> to correctly suit one<br>
+of its use cases, that of adding objects to a <code>Session</code> that were<br>
+loaded elsewhere, often for the purposes of restoring from a cache.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8862" rel="nofollow">#8862</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Fixed issues in <code>_orm.with_expression()</code> where expressions that were<br>
+composed of columns that were referenced from the enclosing SELECT would<br>
+not render correct SQL in some contexts, in the case where the expression<br>
+had a label name that matched the attribute which used<br>
+<code>_orm.query_expression()</code>, even when <code>_orm.query_expression()</code> had<br>
+no default expression. For the moment, if the <code>_orm.query_expression()</code><br>
+does have a default expression, that label name is still used for that<br>
+default, and an additional label with the same name will continue to be<br>
+ignored. Overall, this case is pretty thorny so further adjustments might<br>
+be warranted.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8881" rel="nofollow">#8881</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> A warning is emitted if a backref name used in <code>_orm.relationship()</code><br>
+names an attribute on the target class which already has a method or<br>
+attribute assigned to that name, as the backref declaration will replace<br>
+that attribute.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/4629" rel="nofollow">#4629</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> A series of changes and improvements regarding<br>
+<code>_orm.Session.refresh()</code>. The overall change is that primary key<br>
+attributes for an object are now included in a refresh operation<br>
+unconditionally when relationship-bound attributes are to be refreshed,<br>
+even if not expired and even if not specified in the refresh.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="-   Improved `_orm.Session.refresh()` so that if autoflush is enabled
+    (as is the default for `_orm.Session`), the autoflush takes place
+    at an earlier part of the refresh process so that pending primary key
+    changes are applied without errors being raised.  Previously, this
+    autoflush took place too late in the process and the SELECT statement
+    would not use the correct key to locate the row and an
+    `InvalidRequestError` would be raised.
+
+-   When the above condition is present, that is, unflushed primary key
+    changes are present on the object, but autoflush is not enabled,
+    the refresh() method now explicitly disallows the operation to proceed,
+    and an informative `InvalidRequestError` is raised asking that
+    the pending primary key changes be flushed first.  Previously,
+    this use case was simply broken and `InvalidRequestError`
+    would be raised anyway. This restriction is so that it's safe for the
+    primary key attributes to be refreshed, as is necessary for the case of
+    being able to refresh the object with relationship-bound secondary
+    eagerloaders also being emitted. This rule applies in all cases to keep
+    API behavior consistent regardless of whether or not the PK cols are
+    actually needed in the refresh, as it is unusual to be refreshing
+    some attributes on an object while keeping other attributes &quot;pending&quot;
+    in any case.
+
+-   The `_orm.Session.refresh()` method has been enhanced such that
+    attributes which are `_orm.relationship()`-bound and linked to an
+    eager loader, either at mapping time or via last-used loader options,
+    will be refreshed in all cases even when a list of attributes is passed
+    that does not include any columns on the parent row. This builds upon the
+    feature first implemented for non-column attributes as part of
+    [#1763](https://www.sqlalchemy.org/trac/ticket/1763) fixed in 1.4 allowing eagerly-loaded relationship-bound
+    attributes to participate in the `_orm.Session.refresh()` operation.
+    If the refresh operation does not indicate any columns on the parent row
+    to be refreshed, the primary key columns will nonetheless be included
+    in the refresh operation, which allows the load to proceed into the
+    secondary relationship loaders indicated as it does normally.
+    Previously an `InvalidRequestError` error would be raised
+    for this condition ([#8703](https://www.sqlalchemy.org/trac/ticket/8703))
+
+-   Fixed issue where an unnecessary additional SELECT would be emitted in
+    the case where `_orm.Session.refresh()` were called with a
+    combination of expired attributes, as well as an eager loader such as
+    `_orm.selectinload()` that emits a &quot;secondary&quot; query, if the primary
+    key attributes were also in an expired state.  As the primary key
+    attributes are now included in the refresh automatically, there is no
+    additional load for these attributes when a relationship loader
+    goes to select for them ([#8997](https://www.sqlalchemy.org/trac/ticket/8997))
+
+-   Fixed regression caused by [#8126](https://www.sqlalchemy.org/trac/ticket/8126) released in 2.0.0b1 where the
+    `_orm.Session.refresh()` method would fail with an
+    `AttributeError`, if passed both an expired column name as well as the
+    name of a relationship-bound attribute that was linked to a &quot;secondary&quot;
+    eagerloader such as the `_orm.selectinload()` eager loader
+    ([#8996](https://www.sqlalchemy.org/trac/ticket/8996))"><pre class="notranslate"><code>-   Improved `_orm.Session.refresh()` so that if autoflush is enabled
+    (as is the default for `_orm.Session`), the autoflush takes place
+    at an earlier part of the refresh process so that pending primary key
+    changes are applied without errors being raised.  Previously, this
+    autoflush took place too late in the process and the SELECT statement
+    would not use the correct key to locate the row and an
+    `InvalidRequestError` would be raised.
+
+-   When the above condition is present, that is, unflushed primary key
+    changes are present on the object, but autoflush is not enabled,
+    the refresh() method now explicitly disallows the operation to proceed,
+    and an informative `InvalidRequestError` is raised asking that
+    the pending primary key changes be flushed first.  Previously,
+    this use case was simply broken and `InvalidRequestError`
+    would be raised anyway. This restriction is so that it's safe for the
+    primary key attributes to be refreshed, as is necessary for the case of
+    being able to refresh the object with relationship-bound secondary
+    eagerloaders also being emitted. This rule applies in all cases to keep
+    API behavior consistent regardless of whether or not the PK cols are
+    actually needed in the refresh, as it is unusual to be refreshing
+    some attributes on an object while keeping other attributes "pending"
+    in any case.
+
+-   The `_orm.Session.refresh()` method has been enhanced such that
+    attributes which are `_orm.relationship()`-bound and linked to an
+    eager loader, either at mapping time or via last-used loader options,
+    will be refreshed in all cases even when a list of attributes is passed
+    that does not include any columns on the parent row. This builds upon the
+    feature first implemented for non-column attributes as part of
+    [#1763](https://www.sqlalchemy.org/trac/ticket/1763) fixed in 1.4 allowing eagerly-loaded relationship-bound
+    attributes to participate in the `_orm.Session.refresh()` operation.
+    If the refresh operation does not indicate any columns on the parent row
+    to be refreshed, the primary key columns will nonetheless be included
+    in the refresh operation, which allows the load to proceed into the
+    secondary relationship loaders indicated as it does normally.
+    Previously an `InvalidRequestError` error would be raised
+    for this condition ([#8703](https://www.sqlalchemy.org/trac/ticket/8703))
+
+-   Fixed issue where an unnecessary additional SELECT would be emitted in
+    the case where `_orm.Session.refresh()` were called with a
+    combination of expired attributes, as well as an eager loader such as
+    `_orm.selectinload()` that emits a "secondary" query, if the primary
+    key attributes were also in an expired state.  As the primary key
+    attributes are now included in the refresh automatically, there is no
+    additional load for these attributes when a relationship loader
+    goes to select for them ([#8997](https://www.sqlalchemy.org/trac/ticket/8997))
+
+-   Fixed regression caused by [#8126](https://www.sqlalchemy.org/trac/ticket/8126) released in 2.0.0b1 where the
+    `_orm.Session.refresh()` method would fail with an
+    `AttributeError`, if passed both an expired column name as well as the
+    name of a relationship-bound attribute that was linked to a "secondary"
+    eagerloader such as the `_orm.selectinload()` eager loader
+    ([#8996](https://www.sqlalchemy.org/trac/ticket/8996))
+</code></pre></div>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8703" rel="nofollow">#8703</a>, <a href="https://www.sqlalchemy.org/trac/ticket/8996" rel="nofollow">#8996</a>, <a href="https://www.sqlalchemy.org/trac/ticket/8997" rel="nofollow">#8997</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Improved a fix first made in version 1.4 for <a href="https://www.sqlalchemy.org/trac/ticket/8456" rel="nofollow">#8456</a> which scaled<br>
+back the usage of internal "polymorphic adapters", that are used to render<br>
+ORM queries when the <code>_orm.Mapper.with_polymorphic</code> parameter is<br>
+used. These adapters, which are very complex and error prone, are now used<br>
+only in those cases where an explicit user-supplied subquery is used for<br>
+<code>_orm.Mapper.with_polymorphic</code>, which includes only the use case<br>
+of concrete inheritance mappings that use the<br>
+<code>_orm.polymorphic_union()</code> helper, as well as the legacy use case of<br>
+using an aliased subquery for joined inheritance mappings, which is not<br>
+needed in modern use.</p>
+<p>For the most common case of joined inheritance mappings that use the<br>
+built-in polymorphic loading scheme, which includes those which make use of<br>
+the <code>_orm.Mapper.polymorphic_load</code> parameter set to <code>inline</code>,<br>
+polymorphic adapters are now no longer used. This has both a positive<br>
+performance impact on the construction of queries as well as a<br>
+substantial simplification of the internal query rendering process.</p>
+<p>The specific issue targeted was to allow a <code>_orm.column_property()</code><br>
+to refer to joined-inheritance classes within a scalar subquery, which now<br>
+works as intuitively as is feasible.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8168" rel="nofollow">#8168</a></p>
+</li>
+</ul>
+<h2>engine</h2>
+<ul>
+<li>
+<p><strong>[engine] [bug]</strong> Fixed a long-standing race condition in the connection pool which could<br>
+occur under eventlet/gevent monkeypatching schemes in conjunction with the<br>
+use of eventlet/gevent <code>Timeout</code> conditions, where a connection pool<br>
+checkout that's interrupted due to the timeout would fail to clean up the<br>
+failed state, causing the underlying connection record and sometimes the<br>
+database connection itself to "leak", leaving the pool in an invalid state<br>
+with unreachable entries. This issue was first identified and fixed in<br>
+SQLAlchemy 1.2 for <a href="https://www.sqlalchemy.org/trac/ticket/4225" rel="nofollow">#4225</a>, however the failure modes detected in<br>
+that fix failed to accommodate for <code>BaseException</code>, rather than<br>
+<code>Exception</code>, which prevented eventlet/gevent <code>Timeout</code> from being<br>
+caught. In addition, a block within initial pool connect has also been<br>
+identified and hardened with a <code>BaseException</code> -&gt; "clean failed connect"<br>
+block to accommodate for the same condition in this location.<br>
+Big thanks to Github user <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/niklaus/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/niklaus">@niklaus</a> for their tenacious efforts in<br>
+identifying and describing this intricate issue.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8974" rel="nofollow">#8974</a></p>
+</li>
+<li>
+<p><strong>[engine] [bug]</strong> Fixed a long-standing race condition in the connection pool which could<br>
+occur under eventlet/gevent monkeypatching schemes in conjunction with the<br>
+use of eventlet/gevent <code>Timeout</code> conditions, where a connection pool<br>
+checkout that's interrupted due to the timeout would fail to clean up the<br>
+failed state, causing the underlying connection record and sometimes the<br>
+database connection itself to "leak", leaving the pool in an invalid state<br>
+with unreachable entries. This issue was first identified and fixed in<br>
+SQLAlchemy 1.2 for <a href="https://www.sqlalchemy.org/trac/ticket/4225" rel="nofollow">#4225</a>, however the failure modes detected in<br>
+that fix failed to accommodate for <code>BaseException</code>, rather than<br>
+<code>Exception</code>, which prevented eventlet/gevent <code>Timeout</code> from being<br>
+caught. In addition, a block within initial pool connect has also been<br>
+identified and hardened with a <code>BaseException</code> -&gt; "clean failed connect"<br>
+block to accommodate for the same condition in this location.<br>
+Big thanks to Github user <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/niklaus/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/niklaus">@niklaus</a> for their tenacious efforts in<br>
+identifying and describing this intricate issue.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8974" rel="nofollow">#8974</a></p>
+</li>
+<li>
+<p><strong>[engine] [bug]</strong> Fixed issue where <code>_engine.Result.freeze()</code> method would not work for<br>
+textual SQL using either <code>_sql.text()</code> or<br>
+<code>_engine.Connection.exec_driver_sql()</code>.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8963" rel="nofollow">#8963</a></p>
+</li>
+</ul>
+<h2>sql</h2>
+<ul>
+<li>
+<p><strong>[sql] [usecase]</strong> An informative re-raise is now thrown in the case where any "literal<br>
+bindparam" render operation fails, indicating the value itself and<br>
+the datatype in use, to assist in debugging when literal params<br>
+are being rendered in a statement.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8800" rel="nofollow">#8800</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Added parameter<br>
+<code>FunctionElement.column_valued.joins_implicitly</code>, which is<br>
+useful in preventing the "cartesian product" warning when making use of<br>
+table-valued or column-valued functions. This parameter was already<br>
+introduced for <code>FunctionElement.table_valued()</code> in <a href="https://www.sqlalchemy.org/trac/ticket/7845" rel="nofollow">#7845</a>,<br>
+however it failed to be added for <code>FunctionElement.column_valued()</code><br>
+as well.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9009" rel="nofollow">#9009</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed bug where SQL compilation would fail (assertion fail in 2.0, NoneType<br>
+error in 1.4) when using an expression whose type included<br>
+<code>_types.TypeEngine.bind_expression()</code>, in the context of an "expanding"<br>
+(i.e. "IN") parameter in conjunction with the <code>literal_binds</code> compiler<br>
+parameter.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8989" rel="nofollow">#8989</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed issue in lambda SQL feature where the calculated type of a literal<br>
+value would not take into account the type coercion rules of the "compared<br>
+to type", leading to a lack of typing information for SQL expressions, such<br>
+as comparisons to <code>_types.JSON</code> elements and similar.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9029" rel="nofollow">#9029</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Added parameter<br>
+<code>FunctionElement.column_valued.joins_implicitly</code>, which is<br>
+useful in preventing the "cartesian product" warning when making use of<br>
+table-valued or column-valued functions. This parameter was already<br>
+introduced for <code>FunctionElement.table_valued()</code> in <a href="https://www.sqlalchemy.org/trac/ticket/7845" rel="nofollow">#7845</a>,<br>
+however it failed to be added for <code>FunctionElement.column_valued()</code><br>
+as well.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9009" rel="nofollow">#9009</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed a series of issues regarding the position and sometimes the identity<br>
+of rendered bound parameters, such as those used for SQLite, asyncpg,<br>
+MySQL, Oracle and others. Some compiled forms would not maintain the order<br>
+of parameters correctly, such as the PostgreSQL <code>regexp_replace()</code><br>
+function, the "nesting" feature of the <code>CTE</code> construct first<br>
+introduced in <a href="https://www.sqlalchemy.org/trac/ticket/4123" rel="nofollow">#4123</a>, and selectable tables formed by using the<br>
+<code>FunctionElement.column_valued()</code> method with Oracle.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8827" rel="nofollow">#8827</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Added test support to ensure that all compiler <code>visit_xyz()</code> methods<br>
+across all <code>Compiler</code> implementations in SQLAlchemy accept a<br>
+<code>**kw</code> parameter, so that all compilers accept additional keyword<br>
+arguments under all circumstances.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8988" rel="nofollow">#8988</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> The <code>SQLCompiler.construct_params()</code> method, as well as the<br>
+<code>SQLCompiler.params</code> accessor, will now return the<br>
+exact parameters that correspond to a compiled statement that used<br>
+the <code>render_postcompile</code> parameter to compile.   Previously,<br>
+the method returned a parameter structure that by itself didn't correspond<br>
+to either the original parameters or the expanded ones.</p>
+<p>Passing a new dictionary of parameters to<br>
+<code>SQLCompiler.construct_params()</code> for a <code>SQLCompiler</code> that was<br>
+constructed with <code>render_postcompile</code> is now disallowed; instead, to make<br>
+a new SQL string and parameter set for an alternate set of parameters, a<br>
+new method <code>SQLCompiler.construct_expanded_state()</code> is added which<br>
+will produce a new expanded form for the given parameter set, using the<br>
+<code>ExpandedState</code> container which includes a new SQL statement<br>
+and new parameter dictionary, as well as a positional parameter tuple.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/6114" rel="nofollow">#6114</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> To accommodate for third party dialects with different character escaping<br>
+needs regarding bound parameters, the system by which SQLAlchemy "escapes"<br>
+(i.e., replaces with another character in its place) special characters in<br>
+bound parameter names has been made extensible for third party dialects,<br>
+using the <code>SQLCompiler.bindname_escape_chars</code> dictionary which can<br>
+be overridden at the class declaration level on any <code>SQLCompiler</code><br>
+subclass. As part of this change, also added the dot <code>"."</code> as a default<br>
+"escaped" character.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8994" rel="nofollow">#8994</a></p>
+</li>
+</ul>
+<h2>typing</h2>
+<ul>
+<li>
+<p><strong>[typing] [bug]</strong> pep-484 typing has been completed for the<br>
+<code>sqlalchemy.ext.horizontal_shard</code> extension as well as the<br>
+<code>sqlalchemy.orm.events</code> module. Thanks to Gleb Kisenkov for their<br>
+efforts.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/6810" rel="nofollow">#6810</a>, <a href="https://www.sqlalchemy.org/trac/ticket/9025" rel="nofollow">#9025</a></p>
+</li>
+</ul>
+<h2>asyncio</h2>
+<ul>
+<li>
+<p><strong>[asyncio] [bug]</strong> Removed non-functional <code>merge()</code> method from<br>
+<code>_asyncio.AsyncResult</code>.  This method has never worked and was<br>
+included with <code>_asyncio.AsyncResult</code> in error.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8952" rel="nofollow">#8952</a></p>
+</li>
+</ul>
+<h2>postgresql</h2>
+<ul>
+<li>
+<p><strong>[postgresql] [usecase]</strong> Added the PostgreSQL type <code>MACADDR8</code>.<br>
+Pull request courtesy of Asim Farooq.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8393" rel="nofollow">#8393</a></p>
+</li>
+<li>
+<p><strong>[postgresql] [bug]</strong> Fixed bug where the PostgreSQL<br>
+<code>_postgresql.OnConflictClause.constraint</code> parameter would accept<br>
+an <code>Index</code> object, however would not expand this index out into its<br>
+individual index expressions, instead rendering its name in an ON CONFLICT<br>
+ON CONSTRAINT clause, which is not accepted by PostgreSQL; the "constraint<br>
+name" form only accepts unique or exclude constraint names. The parameter<br>
+continues to accept the index but now expands it out into its component<br>
+expressions for the render.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9023" rel="nofollow">#9023</a></p>
+</li>
+<li>
+<p><strong>[postgresql] [bug]</strong> Fixed bug where the PostgreSQL<br>
+<code>_postgresql.OnConflictClause.constraint</code> parameter would accept<br>
+an <code>Index</code> object, however would not expand this index out into its<br>
+individual index expressions, instead rendering its name in an ON CONFLICT<br>
+ON CONSTRAINT clause, which is not accepted by PostgreSQL; the "constraint<br>
+name" form only accepts unique or exclude constraint names. The parameter<br>
+continues to accept the index but now expands it out into its component<br>
+expressions for the render.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9023" rel="nofollow">#9023</a></p>
+</li>
+<li>
+<p><strong>[postgresql] [bug]</strong> Made an adjustment to how the PostgreSQL dialect considers column types<br>
+when it reflects columns from a table, to accommodate for alternative<br>
+backends which may return NULL from the PG <code>format_type()</code> function.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8748" rel="nofollow">#8748</a></p>
+</li>
+<li>
+<p><strong>[postgresql] [bug]</strong> Added support for explicit use of PG full text functions with asyncpg and<br>
+psycopg (SQLAlchemy 2.0 only), with regards to the <code>REGCONFIG</code> type cast<br>
+for the first argument, which previously would be incorrectly cast to a<br>
+VARCHAR, causing failures on these dialects that rely upon explicit type<br>
+casts. This includes support for <code>_postgresql.to_tsvector</code>,<br>
+<code>_postgresql.to_tsquery</code>, <code>_postgresql.plainto_tsquery</code>,<br>
+<code>_postgresql.phraseto_tsquery</code>,<br>
+<code>_postgresql.websearch_to_tsquery</code>,<br>
+<code>_postgresql.ts_headline</code>, each of which will determine based on<br>
+number of arguments passed if the first string argument should be<br>
+interpreted as a PostgreSQL "REGCONFIG" value; if so, the argument is typed<br>
+using a newly added type object <code>_postgresql.REGCONFIG</code> which is<br>
+then explicitly cast in the SQL expression.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8977" rel="nofollow">#8977</a></p>
+</li>
+<li>
+<p><strong>[postgresql] [bug]</strong> Fixed regression where newly revised PostgreSQL range types such as<br>
+<code>_postgresql.INT4RANGE</code> could not be set up as the impl of a<br>
+<code>TypeDecorator</code> custom type, instead raising a <code>TypeError</code>.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9020" rel="nofollow">#9020</a></p>
+</li>
+<li>
+<p><strong>[postgresql] [bug]</strong> The <code>_postgresql.Range.__eq___()</code> will now return <code>NotImplemented</code><br>
+when comparing with an instance of a different class, instead of raising<br>
+an <code>AttributeError</code> exception.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8984" rel="nofollow">#8984</a></p>
+</li>
+</ul>
+<h2>sqlite</h2>
+<ul>
+<li>
+<p><strong>[sqlite] [usecase]</strong> Added support for the SQLite backend to reflect the "DEFERRABLE" and<br>
+"INITIALLY" keywords which may be present on a foreign key construct. Pull<br>
+request courtesy Michael Gorven.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8903" rel="nofollow">#8903</a></p>
+</li>
+<li>
+<p><strong>[sqlite] [usecase]</strong> Added support for reflection of expression-oriented WHERE criteria included<br>
+in indexes on the SQLite dialect, in a manner similar to that of the<br>
+PostgreSQL dialect. Pull request courtesy Tobias Pfeiffer.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8804" rel="nofollow">#8804</a></p>
+</li>
+<li>
+<p><strong>[sqlite] [bug]</strong> Fixed regression caused by new support for reflection of partial indexes on<br>
+SQLite added in 1.4.45 for <a href="https://www.sqlalchemy.org/trac/ticket/8804" rel="nofollow">#8804</a>, where the <code>index_list</code> pragma<br>
+command in very old versions of SQLite (possibly prior to 3.8.9) does not<br>
+return the current expected number of columns, leading to exceptions raised<br>
+when reflecting tables and indexes.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8969" rel="nofollow">#8969</a></p>
+</li>
+</ul>
+<h2>oracle</h2>
+<ul>
+<li>
+<p><strong>[oracle] [bug]</strong> Fixed issue in Oracle compiler where the syntax for<br>
+<code>FunctionElement.column_valued()</code> was incorrect, rendering the name<br>
+<code>COLUMN_VALUE</code> without qualifying the source table correctly.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.45</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/8945" rel="nofollow">#8945</a></p>
+</li>
+</ul>
+<h2>tests</h2>
+<ul>
+<li>
+<p><strong>[tests] [bug]</strong> Fixed issue in tox.ini file where changes in the tox 4.0 series to the<br>
+format of "passenv" caused tox to not function correctly, in particular<br>
+raising an error as of tox 4.0.6.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+</li>
+<li>
+<p><strong>[tests] [bug]</strong> Added new exclusion rule for third party dialects called<br>
+<code>unusual_column_name_characters</code>, which can be "closed" for third party<br>
+dialects that don't support column names with unusual characters such as<br>
+dots, slashes, or percent signs in them, even if the name is properly<br>
+quoted.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.46</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/9002" rel="nofollow">#9002</a></p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91459]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91459</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91459</guid>
+            <pubDate>Wed, 28 Dec 2022 21:48:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Disable when running with dynamo</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Wed, 28 Dec 2022 21:45:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-12-28 21:40:25 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/e673747ef4ec94ce4c1fc9b86f635dc1284d89e7/hovercard" href="https://github.com/kovidgoyal/kitty/commit/e673747ef4ec94ce4c1fc9b86f635dc1284d89e7"><tt>e673747</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from ember.js: v4.10.0-beta.5]]></title>
+            <link>https://github.com/emberjs/ember.js/releases/tag/v4.10.0-beta.5</link>
+            <guid>https://github.com/emberjs/ember.js/releases/tag/v4.10.0-beta.5</guid>
+            <pubDate>Wed, 28 Dec 2022 21:22:22 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>CHANGELOG</h3>
+<ul>
+<li><a href="https://github.com/emberjs/ember.js/pull/20327" data-hovercard-type="pull_request" data-hovercard-url="/emberjs/ember.js/pull/20327/hovercard">#20327</a> [BUGFIX] Fix the types for the mutation-methods of <code>NativeArray</code></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91318: Update on "SymIntify F.interpolate() with recompute_scale_factor=True"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91318</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91318</guid>
+            <pubDate>Wed, 28 Dec 2022 21:18:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR makes the minor changes necessary to get <code>F.interpolate()</code> working with symbolic shapes when <code>recompute_scale_factor=True</code> + adds <code>OpInfo</code> samples to test.</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4932]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4932</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4932</guid>
+            <pubDate>Wed, 28 Dec 2022 21:09:01 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from couchdb: 3.3.0]]></title>
+            <link>https://github.com/apache/couchdb/releases/tag/3.3.0</link>
+            <guid>https://github.com/apache/couchdb/releases/tag/3.3.0</guid>
+            <pubDate>Wed, 28 Dec 2022 20:43:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Version 3.3.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.27.39]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.27.39</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.27.39</guid>
+            <pubDate>Wed, 28 Dec 2022 19:07:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.27.39 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from opencv: OpenCV 4.7.0]]></title>
+            <link>https://github.com/opencv/opencv/releases/tag/4.7.0</link>
+            <guid>https://github.com/opencv/opencv/releases/tag/4.7.0</guid>
+            <pubDate>Wed, 28 Dec 2022 19:05:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>OpenCV 4.7.0 has been released.</p>
+<p><g-emoji class="g-emoji" alias="hammer_and_wrench" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6e0.png">🛠️</g-emoji> Change log is <a href="https://github.com/opencv/opencv/wiki/ChangeLog#version470">here</a>.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91454: [IGNORE] Avoid casting for all singleton tensors in optimizer states]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91454</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91454</guid>
+            <pubDate>Wed, 28 Dec 2022 18:59:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91453: Fix sharded_tensor test_sharded_tensor_to_cpu]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91453</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91453</guid>
+            <pubDate>Wed, 28 Dec 2022 18:58:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4921]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4921</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4921</guid>
+            <pubDate>Wed, 28 Dec 2022 18:25:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4918]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4918</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4918</guid>
@@ -181,19 +861,18 @@
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from aws-cli: 2.9.11]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/2.9.11</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/2.9.11</guid>
+            <pubDate>Wed, 28 Dec 2022 17:37:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 2.9.11 release.</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4917]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4917</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4917</guid>
             <pubDate>Wed, 28 Dec 2022 17:37:06 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91318: Update on "SymIntify F.interpolate() with recompute_scale_factor=True"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91318</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91318</guid>
-            <pubDate>Wed, 28 Dec 2022 17:24:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR makes the minor changes necessary to get <code>F.interpolate()</code> working with symbolic shapes when <code>recompute_scale_factor=True</code> + adds <code>OpInfo</code> samples to test.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 11.1.83]]></title>
@@ -276,14 +955,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from opencv: OpenCV 4.7.0]]></title>
-            <link>https://github.com/opencv/opencv/releases/tag/4.7.0</link>
-            <guid>https://github.com/opencv/opencv/releases/tag/4.7.0</guid>
-            <pubDate>Wed, 28 Dec 2022 15:43:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>OpenCV 4.7.0 has been released.</p>
-<p><g-emoji class="g-emoji" alias="hammer_and_wrench" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f6e0.png">🛠️</g-emoji> Change log is <a href="https://github.com/opencv/opencv/wiki/ChangeLog#version470">here</a>.</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 11.1.82]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.1.82</link>
             <guid>https://github.com/v8/v8/releases/tag/11.1.82</guid>
@@ -293,38 +964,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4128475
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/11.1.82@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b8b136cb3662e23b0fb6e2c82c29de08576eee81/hovercard" href="https://github.com/v8/v8/commit/b8b136cb3662e23b0fb6e2c82c29de08576eee81"><tt>b8b136c</tt></a>-refs/heads/main@{#85028}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91442: [aot_autograd] symintify `logsumexp`]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91442</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91442</guid>
-            <pubDate>Wed, 28 Dec 2022 14:43:01 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91441: [autograd.Function] enable the extended Function feature flag by default]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91441</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91441</guid>
-            <pubDate>Wed, 28 Dec 2022 14:38:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>The autograd.Function &lt;&gt; functorch interaction is in a mostly completed<br>
-state now. There are some minor action items remaining<br>
-(<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1477566681" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/90224" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/90224/hovercard" href="https://github.com/pytorch/pytorch/issues/90224">#90224</a>), but I want to enable<br>
-the feature by default so that PyTorch CI / other parties / etc can<br>
-begin testing to see if there is any impact on the original<br>
-autograd.Function API (there shouldn't be).</p>
-<p>The longer-term plan for the feature flag is:</p>
-<ul>
-<li>keep it around until at least the next release (so that people can<br>
-turn off the feature if it breaks something in existing code)</li>
-<li>delete the flag then (either before or after the release, I haven't<br>
-decided yet)</li>
-</ul>
-<p>Test Plan:</p>
-<ul>
-<li>new test</li>
-<li>wait for CI</li>
-</ul>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from grafana: v0.0.0-test]]></title>
@@ -375,13 +1014,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4126761
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/11.1.80@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/dff5fc1b23da4153ac37b6abef5f7886893bc96d/hovercard" href="https://github.com/v8/v8/commit/dff5fc1b23da4153ac37b6abef5f7886893bc96d"><tt>dff5fc1</tt></a>-refs/heads/main@{#85026}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90353: modify DictKeyHash::operator() to use IValue::hash]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90353</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90353</guid>
-            <pubDate>Wed, 28 Dec 2022 11:47:39 GMT</pubDate>
-            <content:encoded><![CDATA[<p>modify DictKeyHash::operator() to use IValue::hash</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4885]]></title>
@@ -600,13 +1232,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Tue, 27 Dec 2022 21:42:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2022-12-27 21:41:02 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/e673747ef4ec94ce4c1fc9b86f635dc1284d89e7/hovercard" href="https://github.com/kovidgoyal/kitty/commit/e673747ef4ec94ce4c1fc9b86f635dc1284d89e7"><tt>e673747</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cdk: v2.57.0]]></title>
             <link>https://github.com/aws/aws-cdk/releases/tag/v2.57.0</link>
             <guid>https://github.com/aws/aws-cdk/releases/tag/v2.57.0</guid>
@@ -660,20 +1285,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4860</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4860</guid>
             <pubDate>Tue, 27 Dec 2022 17:43:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4858]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4858</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4858</guid>
-            <pubDate>Tue, 27 Dec 2022 17:33:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-4857]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4857</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-4857</guid>
-            <pubDate>Tue, 27 Dec 2022 17:25:16 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
