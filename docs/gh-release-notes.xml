@@ -4,10 +4,857 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 04 Jan 2023 06:06:59 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 04 Jan 2023 12:07:50 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91613: Update on "[cpu] implement erf based on oneDNN algorithm for aten::Vec"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91613</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91613</guid>
+            <pubDate>Wed, 04 Jan 2023 17:41:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Aten's <code>erf</code> implementation will invoke <code>MKL</code> function which shows better performance than current Torchinductor's <code>erf</code> implementation who calls <code>sleef</code> function in <code>aten::Vec</code>. The performance benefits from the algorithm. <code>sleef</code> uses the Taylor expansion more precise than <code>MKL</code>, resulting in longer time-consuming. As the implementations of <code>erf</code> in <code>oneDNN</code> and <code>MKL</code> are similar, we implement the algorithm of <code>erf</code> in <code>aten::Vec</code> based on <code>oneDNN</code> algorithm.</p>
+<p>Performance data for eager v.s. inductor:<br>
+<code>gelu</code> also benefits from this modification for it uses <code>erf</code>.</p>
+
+
+
+
+
+
+
+
+<table>
+<thead>
+<tr>
+<th>suite</th>
+<th>op_name</th>
+<th>improved_ratio_speedup0.2</th>
+<th>improved_ratio_speedup0.5</th>
+<th>improved_ratio_speedup0.8</th>
+<th>speedup_old_0.2</th>
+<th>RSD(3)</th>
+<th>speedup_old_0.5</th>
+<th>RSD(3)</th>
+<th>speedup_old_0.8</th>
+<th>RSD(3)</th>
+<th>speedup_new_0.2</th>
+<th>RSD(3)</th>
+<th>speedup_new_0.5</th>
+<th>RSD(3)</th>
+<th>speedup_new_0.8</th>
+<th>RSD(3)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>torchbench</td>
+<td>aten.erf.default</td>
+<td>138.54%</td>
+<td>138.54%</td>
+<td>138.54%</td>
+<td>0.402057897</td>
+<td>13.54%</td>
+<td>0.402057897</td>
+<td>13.54%</td>
+<td>0.402057897</td>
+<td>13.54%</td>
+<td>0.959050302</td>
+<td>4.21%</td>
+<td>0.959050302</td>
+<td>4.21%</td>
+<td>0.959050302</td>
+<td>4.21%</td>
+</tr>
+<tr>
+<td>torchbench</td>
+<td>aten.gelu.default</td>
+<td>196.94%</td>
+<td>16.28%</td>
+<td>3.28%</td>
+<td>0.303611506</td>
+<td>0.88%</td>
+<td>0.865411422</td>
+<td>0.23%</td>
+<td>0.984732108</td>
+<td>0.15%</td>
+<td>0.901534389</td>
+<td>1.04%</td>
+<td>1.006314977</td>
+<td>0.10%</td>
+<td>1.017019831</td>
+<td>0.37%</td>
+</tr>
+<tr>
+<td>huggingface</td>
+<td>aten.gelu.default</td>
+<td>178.90%</td>
+<td>153.93%</td>
+<td>22.70%</td>
+<td>0.324031619</td>
+<td>8.16%</td>
+<td>0.40085369</td>
+<td>1.67%</td>
+<td>0.839170801</td>
+<td>1.30%</td>
+<td>0.90371451</td>
+<td>2.25%</td>
+<td>1.017872459</td>
+<td>0.47%</td>
+<td>1.029638829</td>
+<td>0.49%</td>
+</tr>
+<tr>
+<td>timm</td>
+<td>aten.gelu.default</td>
+<td>12.76%</td>
+<td>3.01%</td>
+<td>1.98%</td>
+<td>0.892005539</td>
+<td>0.22%</td>
+<td>0.979783341</td>
+<td>0.16%</td>
+<td>0.998917466</td>
+<td>0.08%</td>
+<td>1.005821648</td>
+<td>0.11%</td>
+<td>1.009227094</td>
+<td>0.07%</td>
+<td>1.018701655</td>
+<td>0.30%</td>
+</tr>
+<tr>
+<td>torchbench</td>
+<td>aten.gelu_backward.default</td>
+<td>124.25%</td>
+<td>53.19%</td>
+<td>5.96%</td>
+<td>0.437150835</td>
+<td>6.11%</td>
+<td>0.664341696</td>
+<td>0.24%</td>
+<td>0.983091818</td>
+<td>2.49%</td>
+<td>0.980304388</td>
+<td>1.86%</td>
+<td>1.017688734</td>
+<td>0.33%</td>
+<td>1.041684409</td>
+<td>0.74%</td>
+</tr>
+<tr>
+<td>huggingface</td>
+<td>aten.gelu_backward.default</td>
+<td>126.26%</td>
+<td>32.55%</td>
+<td>11.61%</td>
+<td>0.446699743</td>
+<td>0.34%</td>
+<td>0.781550075</td>
+<td>0.73%</td>
+<td>0.989682073</td>
+<td>0.28%</td>
+<td>1.010687581</td>
+<td>1.31%</td>
+<td>1.035929929</td>
+<td>1.11%</td>
+<td>1.104549968</td>
+<td>2.68%</td>
+</tr>
+<tr>
+<td>timm</td>
+<td>aten.gelu_backward.default</td>
+<td>5.65%</td>
+<td>1.79%</td>
+<td>2.58%</td>
+<td>0.955116562</td>
+<td>0.40%</td>
+<td>0.99782989</td>
+<td>0.18%</td>
+<td>1.002408412</td>
+<td>0.13%</td>
+<td>1.00905163</td>
+<td>0.07%</td>
+<td>1.015649447</td>
+<td>0.26%</td>
+<td>1.028238613</td>
+<td>0.24%</td>
+</tr>
+</tbody>
+</table>
+
+
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5136]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5136</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5136</guid>
+            <pubDate>Wed, 04 Jan 2023 11:49:02 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rxdb: 14.0.0-beta.8]]></title>
+            <link>https://github.com/pubkey/rxdb/releases/tag/14.0.0-beta.8</link>
+            <guid>https://github.com/pubkey/rxdb/releases/tag/14.0.0-beta.8</guid>
+            <pubDate>Wed, 04 Jan 2023 11:45:31 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>CHANGE Do not use hash for revisions but use database instance token instead.</li>
+<li>Remove the deprecated PouchDB RxStorage.</li>
+<li>CHANGE (memory RxStorage) do not clean up database state on closing of the storage, only on <code>remove()</code>.</li>
+<li>REMOVE old <code>replication-couchdb</code> plugin. Rename <code>replication-couchdb-new</code> to <code>replication-couchdb</code>.</li>
+<li>FIX CouchDB replication: Use correct default fetch method.</li>
+<li>CHANGE use plain json errors inside of RxError parameters to make debugging easier.</li>
+<li>CHANGE crunch multiple incremental (aka 'atomic') operations into a single database write. Also batch writes to multiple documents into a single write.</li>
+<li>CHANGE Make RxDocuments immutable</li>
+<li>ADD <code>RxDocument.getLatest()</code></li>
+<li>REMOVE deprecated <code>babel-plugin-transform-async-to-promises</code> plugin.</li>
+<li>CHANGE <code>RxCollection.findByIds()</code> now returns a <code>RxQuery</code>.</li>
+<li>REMOVED <code>RxCollection.findByIds$</code>, use <code>RxCollection.findByIds().$</code> instead.</li>
+<li>FIX schema hashing should respect the sort order <a href="https://github.com/pubkey/rxdb/pull/4005" data-hovercard-type="pull_request" data-hovercard-url="/pubkey/rxdb/pull/4005/hovercard">#4005</a></li>
+<li>CHANGE Prefix storage plugins with <code>storage-</code> like <code>rxdb/plugins/storage-dexie</code>.</li>
+<li>RENAME <code>atomicUpdate()</code> to <code>incrementalModify()</code></li>
+<li>RENAME <code>atomicPatch()</code> to <code>incrementalPatch()</code></li>
+<li>RENAME <code>atomicUpsert()</code> to <code>incrementalUpsert()</code></li>
+<li>ADD <code>RxDocument().incrementalUpdate()</code></li>
+<li>ADD <code>RxDocument.incrementalRemove()</code></li>
+<li>ADD non-incremental <code>RxDocument</code> methods <code>patch()</code> and <code>modify()</code></li>
+<li>ADD typings to the query selector</li>
+<li>CHANGE start replication via pure functions instead of RxCollection methods.</li>
+<li>FIX replication does not provide a <code>._rev</code> to the storage write when a conflict is resolved.</li>
+<li>CHANGE to reduce bundle size and improve performance, the following JavaScript features will no longer be transpiled:
+<ul>
+<li><a href="https://caniuse.com/async-functions" rel="nofollow">async/await</a></li>
+<li><a href="https://caniuse.com/arrow-functions" rel="nofollow">Arrow functions</a></li>
+<li><a href="https://caniuse.com/?search=for...of" rel="nofollow">for...of</a></li>
+<li><a href="https://caniuse.com/mdn-javascript_operators_object_initializer_shorthand_property_names" rel="nofollow">shorthand properties</a></li>
+<li><a href="https://caniuse.com/?search=spread%20operator" rel="nofollow">Spread operator</a></li>
+<li><a href="https://caniuse.com/?search=destructuring" rel="nofollow">destructuring</a></li>
+<li><a href="https://caniuse.com/?search=default%20parameters" rel="nofollow">default parameters</a></li>
+<li><a href="https://caniuse.com/?search=Object%20spread" rel="nofollow">object spread</a></li>
+</ul>
+</li>
+</ul>
+<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5133]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5133</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5133</guid>
+            <pubDate>Wed, 04 Jan 2023 11:30:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5130]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5130</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5130</guid>
+            <pubDate>Wed, 04 Jan 2023 11:05:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.4.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.4.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.4.0-next.2</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.4.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@5.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%405.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%405.4.0-next.1</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@5.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.4.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.4.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.4.0-next.2</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@5.4.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.4.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.4.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.4.0-next.2</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.4.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@5.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.4.0-next.1</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-toml@5.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.4.0-next.1</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.4.0-next.1</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-worker@2.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@8.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.4.0-next.1</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@8.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.4.0-next.1]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.4.0-next.1</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.4.0-next.1</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.4.0-next.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.4.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.4.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.4.0-next.2</guid>
+            <pubDate>Wed, 04 Jan 2023 10:33:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>@gatsbyjs/parcel-namer-relative-to-cwd@2.4.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rxdb: 14.0.0-beta.7]]></title>
+            <link>https://github.com/pubkey/rxdb/releases/tag/14.0.0-beta.7</link>
+            <guid>https://github.com/pubkey/rxdb/releases/tag/14.0.0-beta.7</guid>
+            <pubDate>Wed, 04 Jan 2023 10:13:10 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>CHANGE Do not use hash for revisions but use database instance token instead.</li>
+<li>Remove the deprecated PouchDB RxStorage.</li>
+<li>CHANGE (memory RxStorage) do not clean up database state on closing of the storage, only on <code>remove()</code>.</li>
+<li>REMOVE old <code>replication-couchdb</code> plugin. Rename <code>replication-couchdb-new</code> to <code>replication-couchdb</code>.</li>
+<li>FIX CouchDB replication: Use correct default fetch method.</li>
+<li>CHANGE use plain json errors inside of RxError parameters to make debugging easier.</li>
+<li>CHANGE crunch multiple incremental (aka 'atomic') operations into a single database write. Also batch writes to multiple documents into a single write.</li>
+<li>CHANGE Make RxDocuments immutable</li>
+<li>ADD <code>RxDocument.getLatest()</code></li>
+<li>REMOVE deprecated <code>babel-plugin-transform-async-to-promises</code> plugin.</li>
+<li>CHANGE <code>RxCollection.findByIds()</code> now returns a <code>RxQuery</code>.</li>
+<li>REMOVED <code>RxCollection.findByIds$</code>, use <code>RxCollection.findByIds().$</code> instead.</li>
+<li>FIX schema hashing should respect the sort order <a href="https://github.com/pubkey/rxdb/pull/4005" data-hovercard-type="pull_request" data-hovercard-url="/pubkey/rxdb/pull/4005/hovercard">#4005</a></li>
+<li>CHANGE Prefix storage plugins with <code>storage-</code> like <code>rxdb/plugins/storage-dexie</code>.</li>
+<li>RENAME <code>atomicUpdate()</code> to <code>incrementalModify()</code></li>
+<li>RENAME <code>atomicPatch()</code> to <code>incrementalPatch()</code></li>
+<li>RENAME <code>atomicUpsert()</code> to <code>incrementalUpsert()</code></li>
+<li>ADD <code>RxDocument().incrementalUpdate()</code></li>
+<li>ADD <code>RxDocument.incrementalRemove()</code></li>
+<li>ADD non-incremental <code>RxDocument</code> methods <code>patch()</code> and <code>modify()</code></li>
+<li>ADD typings to the query selector</li>
+<li>CHANGE start replication via pure functions instead of RxCollection methods.</li>
+<li>FIX replication does not provide a <code>._rev</code> to the storage write when a conflict is resolved.</li>
+<li>CHANGE to reduce bundle size and improve performance, the following JavaScript features will no longer be transpiled:
+<ul>
+<li><a href="https://caniuse.com/async-functions" rel="nofollow">async/await</a></li>
+<li><a href="https://caniuse.com/arrow-functions" rel="nofollow">Arrow functions</a></li>
+<li><a href="https://caniuse.com/?search=for...of" rel="nofollow">for...of</a></li>
+<li><a href="https://caniuse.com/mdn-javascript_operators_object_initializer_shorthand_property_names" rel="nofollow">shorthand properties</a></li>
+<li><a href="https://caniuse.com/?search=spread%20operator" rel="nofollow">Spread operator</a></li>
+<li><a href="https://caniuse.com/?search=destructuring" rel="nofollow">destructuring</a></li>
+<li><a href="https://caniuse.com/?search=default%20parameters" rel="nofollow">default parameters</a></li>
+<li><a href="https://caniuse.com/?search=Object%20spread" rel="nofollow">object spread</a></li>
+</ul>
+</li>
+</ul>
+<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5123]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5123</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5123</guid>
+            <pubDate>Wed, 04 Jan 2023 10:08:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: v0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/v0.1.0b17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/v0.1.0b17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:50:10 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>0.1.0b17</h2>
+<p>(<a href="https://github.com/jupyterlite/jupyterlite/compare/v0.1.0b16...864bc67f434706297b3c958555abbdb532841941">Full Changelog</a>)</p>
+<h3><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> API and Breaking Changes <g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji></h3>
+<h4>Use <code>PipliteAddon.piplite_urls</code> instead of <code>LiteBuildConfig.piplite_urls</code></h4>
+<p>If you were configuring the <code>piplite_urls</code> option (described in <a href="https://jupyterlite.readthedocs.io/en/latest/howto/python/wheels.html" rel="nofollow">https://jupyterlite.readthedocs.io/en/latest/howto/python/wheels.html</a>) to ship additional wheels at build time, this configuration option has now been moved from <code>LiteBuildConfig.piplite_urls</code> to <code>PipliteAddon.piplite_urls</code>.</p>
+<p>If using a <code>jupyter_lite_build.json</code> file, the configuration should look like the following:</p>
+<div class="highlight highlight-source-json notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="{
+  &quot;PipliteAddon&quot;: {
+    &quot;piplite_urls&quot;: [
+      &quot;url-to-wheel1&quot;,
+      &quot;url-to-wheel2&quot;,
+      &quot;...&quot;,
+    ]
+  }
+}"><pre>{
+  <span class="pl-ent">"PipliteAddon"</span>: {
+    <span class="pl-ent">"piplite_urls"</span>: [
+      <span class="pl-s"><span class="pl-pds">"</span>url-to-wheel1<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>url-to-wheel2<span class="pl-pds">"</span></span>,
+      <span class="pl-s"><span class="pl-pds">"</span>...<span class="pl-pds">"</span></span>,
+    ]
+  }
+}</pre></div>
+<p>This was changed in the following PR:</p>
+<ul>
+<li>Allow Addons to provide CLI aliases and flags <a href="https://github.com/jupyterlite/jupyterlite/pull/934" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/934/hovercard">#934</a> (<a href="https://github.com/bollwyvl">@bollwyvl</a>)</li>
+</ul>
+<h4>CLI flags</h4>
+<p>The CLI flags have <em>not</em> changed.</p>
+<h3>Enhancements made</h3>
+<ul>
+<li>normalize all indexed piplite wheel names <a href="https://github.com/jupyterlite/jupyterlite/pull/939" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/939/hovercard">#939</a> (<a href="https://github.com/bollwyvl">@bollwyvl</a>)</li>
+<li>Update to Pyodide 0.22 <a href="https://github.com/jupyterlite/jupyterlite/pull/937" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/937/hovercard">#937</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
+<li>Allow Addons to provide CLI aliases and flags <a href="https://github.com/jupyterlite/jupyterlite/pull/934" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/934/hovercard">#934</a> (<a href="https://github.com/bollwyvl">@bollwyvl</a>)</li>
+<li>do not signal <code>ready</code> until initialize completes <a href="https://github.com/jupyterlite/jupyterlite/pull/900" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/900/hovercard">#900</a> (<a href="https://github.com/stevejpurves">@stevejpurves</a>)</li>
+</ul>
+<h3>Maintenance and upkeep improvements</h3>
+<ul>
+<li>Bump json5 from 2.2.1 to 2.2.2 <a href="https://github.com/jupyterlite/jupyterlite/pull/936" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/936/hovercard">#936</a> (<a href="https://github.com/dependabot">@dependabot</a>)</li>
+<li>Add name to the top-level <code>pyproject.toml</code> <a href="https://github.com/jupyterlite/jupyterlite/pull/931" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/931/hovercard">#931</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
+<li>Fix Gitpod setup task <a href="https://github.com/jupyterlite/jupyterlite/pull/928" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/928/hovercard">#928</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
+<li>Update to JupyterLab 3.5.2 <a href="https://github.com/jupyterlite/jupyterlite/pull/924" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/924/hovercard">#924</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
+<li>Add UI test for embedding the REPL <a href="https://github.com/jupyterlite/jupyterlite/pull/699" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/699/hovercard">#699</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
+</ul>
+<h3>Contributors to this release</h3>
+<p>(<a href="https://github.com/jupyterlite/jupyterlite/graphs/contributors?from=2022-12-20&amp;to=2023-01-04&amp;type=c">GitHub contributors page for this release</a>)</p>
+<p><a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Abollwyvl+updated%3A2022-12-20..2023-01-04&amp;type=Issues">@bollwyvl</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Adependabot+updated%3A2022-12-20..2023-01-04&amp;type=Issues">@dependabot</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Agithub-actions+updated%3A2022-12-20..2023-01-04&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Ajtpio+updated%3A2022-12-20..2023-01-04&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Astevejpurves+updated%3A2022-12-20..2023-01-04&amp;type=Issues">@stevejpurves</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/types@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/session@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/retro-application-extension@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fretro-application-extension%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fretro-application-extension%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.1.0-beta.17: Publish 0.1.0b17]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.17</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.17</guid>
+            <pubDate>Wed, 04 Jan 2023 09:28:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 528b5a09f58224ef0f019fe7738894e19ece4b45ea83802a61ebb4fb82f84824</p>
+<p>jupyterlite-0.1.0b17-py3-none-any.whl: 30053e4459fe24bbc5e8d2b57a716591a91f7c082f44dbfdc272490de5dff04b</p>
+<p>jupyterlite-0.1.0b17.tar.gz: 453055edd1ec05bb72830315b88f50ecddca2e4337d1e9df43525da3249eb93b</p>
+<p>jupyterlite-application-0.1.0-beta.17.tgz: eb39b5caf5583f44b300638ae79e059427a0d243514909516a24934517e08a5f</p>
+<p>jupyterlite-application-extension-0.1.0-beta.17.tgz: 93c007b1efae6d588e86b9e900f028e9a47943a52583aff79db3cd19263329c4</p>
+<p>jupyterlite-contents-0.1.0-beta.17.tgz: 7422b0d32caa37f7d1384134c136e3f139fbf35d004db5d5f347b77dce1cc8f7</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.17.tgz: f56787cd6acb460f4a806adbabaf371189728c4da2065e0182321f1c052d7bf3</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.17.tgz: e3a6d72215f523a33ee189907d430f725c1670e49b41446510f848ff17f2a581</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.17.tgz: f06d7306b119d833011c480a39e4a5af4c3e71803be2521fa0f3bf9fdc475439</p>
+<p>jupyterlite-kernel-0.1.0-beta.17.tgz: 0aa32a3b752fd067622bd80a5612cfc9dbc608b878e64b6523f9c191882a25e7</p>
+<p>jupyterlite-licenses-0.1.0-beta.17.tgz: 811c65c56412a196384b06c1071afbf5f79bb114034177a9740bfdd8db111494</p>
+<p>jupyterlite-localforage-0.1.0-beta.17.tgz: f2bc6741f5c8c0645dd70466ebd7bf44ea5dd968a089536ad182922546b2d115</p>
+<p>jupyterlite-pyolite-kernel-0.1.0-beta.17.tgz: b3d6ad89d972254d769b3630581539df9a79edffea8eed7af052c575ce1f2d72</p>
+<p>jupyterlite-pyolite-kernel-extension-0.1.0-beta.17.tgz: fbd262e530956e2e6ff0a3ef9ebc9b8cf8ce9121f4f8742208ff251aa4a5a494</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.17.tgz: 2dfffc82440cdb7057b014d4608316830306c5afb767d40714be8eae28baace1</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.17.tgz: 44f1da5363656291aa4b810814eb66229e60b8712d395eebe71d070850aeceee</p>
+<p>jupyterlite-server-0.1.0-beta.17.tgz: 8dadddce040b3f80189a77e25bd2e49f797cb7b8d067bd5ad702860af7eb026a</p>
+<p>jupyterlite-server-extension-0.1.0-beta.17.tgz: aef3260027374faee0e5ca7352ca8e7da8cc338d9f6453e0407867bf495a0bd3</p>
+<p>jupyterlite-session-0.1.0-beta.17.tgz: 6cad8ea285ecfb182339b44abe332e354216771209cb0bbd0681d3489cb94d14</p>
+<p>jupyterlite-settings-0.1.0-beta.17.tgz: f5bcb1be959bfb61e1d6e4179fc7b315f710d5842d9d029d2dff4021833218ab</p>
+<p>jupyterlite-translation-0.1.0-beta.17.tgz: c7318a6279acd539d4b6e78a3bc54fa295e7103ba5ee00ee9ad8c4dac75f7f2a</p>
+<p>jupyterlite-types-0.1.0-beta.17.tgz: 8ad9a25ab68c1a28de5133ba689d0cd3f4fc3672ef541bb29bf686ab52c94dd1</p>
+<p>jupyterlite-ui-components-0.1.0-beta.17.tgz: 2402af1b214ea0d90379128f997de394c337fc250473c96995e021cb2c084d6d</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5118]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5118</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5118</guid>
+            <pubDate>Wed, 04 Jan 2023 08:38:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5115]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5115</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5115</guid>
+            <pubDate>Wed, 04 Jan 2023 08:12:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91155: Update on "[Quant][FX] Lower QConvAddReLU2d for onednn backend"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91155</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91155</guid>
+            <pubDate>Wed, 04 Jan 2023 07:09:12 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Add quantization mappings for QConvAddReLU2d for int8 inference for onednn backend. The fusion and lowering is supported only in FX mode.</p>
+<p><strong>Test plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_onednn
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_by_default
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_lowering"><pre class="notranslate"><code>python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_onednn
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_by_default
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_lowering
+</code></pre></div>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91154: Update on "[Quant] Add fused ConvAddReLU2d module for onednn backend"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91154</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91154</guid>
+            <pubDate>Wed, 04 Jan 2023 07:09:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Post op fusion can reduce data movement overhead and improve inference performance. This PR adds fused ConvAddReLU2d module for onednn backend, which will be used for int8 inference with onednn backend. Cannot call this module with other quantization backends otherwise an error is thrown.</p>
+<p><strong>Test plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest test_quantization.py -k test_conv2d_add"><pre class="notranslate"><code>python -m pytest test_quantization.py -k test_conv2d_add
+</code></pre></div>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91153: Update on "[Quant][FX] Lower QConvAdd2d for onednn backend"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91153</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91153</guid>
+            <pubDate>Wed, 04 Jan 2023 07:09:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Add quantization mappings for QConvAdd2d for int8 inference for onednn backend. The fusion and lowering is supported only in FX mode.</p>
+<p><strong>Test plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_onednn
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_by_default
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_lowering"><pre class="notranslate"><code>python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_onednn
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_by_default
+python -m pytest test_quantization.py -k test_fuse_conv_bn_add_relu_lowering
+</code></pre></div>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91500: Update on "optimize segment_reduce forward and backward path on CPU"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91500</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91500</guid>
+            <pubDate>Wed, 04 Jan 2023 06:38:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>The target of this PR is to improve the performance of <code>segment_reduce</code> on CPU.</p>
+<p>The current implementation is a reference design which is sequential and not vectorized. If we normalize the input data shape to be <code>{B, M, K}</code>, where B = batch_size and K = feature_size. This PR did parallelization on <code>{B, M}</code> and vectorized on <code>{K}</code>.</p>
+<h3>Functional Change</h3>
+<p>When we have an <strong>empty row</strong>, for instance:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="offsets = [0, 1, 2, 2, 4]
+lengths = [1, 1, 0, 2]"><pre class="notranslate"><code>offsets = [0, 1, 2, 2, 4]
+lengths = [1, 1, 0, 2]
+</code></pre></div>
+<p>In the above example, the <code>output</code> would have 4 rows and the 3rd row is empty. When <code>reduce='mean'</code>, the current implementation would fill the 3rd row <code>NaN</code>, this PR changed this behavior to fill the empty rows <code>zeros</code> (actually this row is initialized to be zeros and never touch after). The reason of making this change is that this scenario would be mapped to the situation that a particular node(s) have no edges which are quite common and NaN will be propagated on this situation, which is an unexpected behavior.</p>
+<p>On other situations, this PR follows the original behaviors of the current implementation.</p>
+<h3>Performance Benchmarking</h3>
+<p>I did not find any hands-on benchmark so I used the dataset of <code>ogbn-products</code> from <a href="https://github.com/snap-stanford/ogb">https://github.com/snap-stanford/ogb</a>. Note that only the first <code>2000</code> rows are tested because using the entire dataset would be too slow.</p>
+<p>The CPU is <code>Intel(R) Xeon(R) Platinum 8260 CPU @ 2.40GHz, single socket 24 cores</code>.</p>
+<h4>before</h4>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="### using OMP_NUM_THREADS=24
+### using numactl --physcpubind=0-23 --membind=0
+
+Reduce type:  sum ; data size: [332327, 128] ; time: 96.609 ms
+Reduce type:  mean ; data size: [332327, 128] ; time: 96.428 ms
+Reduce type:  max ; data size: [332327, 128] ; time: 140.279 ms
+Reduce type:  min ; data size: [332327, 128] ; time: 141.940 ms
+Reduce type:  prod ; data size: [332327, 128] ; time: 191.643 ms"><pre class="notranslate"><code>### using OMP_NUM_THREADS=24
+### using numactl --physcpubind=0-23 --membind=0
+
+Reduce type:  sum ; data size: [332327, 128] ; time: 96.609 ms
+Reduce type:  mean ; data size: [332327, 128] ; time: 96.428 ms
+Reduce type:  max ; data size: [332327, 128] ; time: 140.279 ms
+Reduce type:  min ; data size: [332327, 128] ; time: 141.940 ms
+Reduce type:  prod ; data size: [332327, 128] ; time: 191.643 ms
+</code></pre></div>
+<h4>after</h4>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="### using OMP_NUM_THREADS=24
+### using numactl --physcpubind=0-23 --membind=0
+
+Reduce type:  sum ; data size: [332327, 128] ; time: 1.387 ms
+Reduce type:  mean ; data size: [332327, 128] ; time: 1.387 ms
+Reduce type:  amax ; data size: [332327, 128] ; time: 1.408 ms
+Reduce type:  amin ; data size: [332327, 128] ; time: 1.406 ms
+Reduce type:  prod ; data size: [332327, 128] ; time: 3.120 ms"><pre class="notranslate"><code>### using OMP_NUM_THREADS=24
+### using numactl --physcpubind=0-23 --membind=0
+
+Reduce type:  sum ; data size: [332327, 128] ; time: 1.387 ms
+Reduce type:  mean ; data size: [332327, 128] ; time: 1.387 ms
+Reduce type:  amax ; data size: [332327, 128] ; time: 1.408 ms
+Reduce type:  amin ; data size: [332327, 128] ; time: 1.406 ms
+Reduce type:  prod ; data size: [332327, 128] ; time: 3.120 ms
+</code></pre></div>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91499: Update on "unify reduction types from different operators: scatter, s…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91499</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91499</guid>
+            <pubDate>Wed, 04 Jan 2023 06:38:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…catter_reduce, segment_reduce"</p>
+<p>The target of this PR is to unify <code>ReductionType</code> for reduce operators so that we have the same set of reduce utils for <code>init</code>, or <code>update</code> for vectorization.</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90978: Update on "optimize sampled_addmm performance on CPU (SparseCSR)"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90978</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90978</guid>
+            <pubDate>Wed, 04 Jan 2023 06:38:28 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Target and Background</h3>
+<p>This PR is improving the performance of <code>sampled_addmm</code> on CPU device. This is part of effort for improving PyG performance on CPU for GNN training/inference.</p>
+<p>The current implementation is a reference design which converts <code>SparseCSR</code> tensor back to dense tensor and then do the addmm and convert back to <code>SparseCSR</code> again: this is going to be very slow and won't be able to run most of the datasets under <a href="https://github.com/snap-stanford/ogb">https://github.com/snap-stanford/ogb</a> (convert to dense would trigger <code>OOM</code>).</p>
+<h3>Benchmarks</h3>
+<p>Right now we don't have any hands-on benchmark or workload to test this since this operator is not used in PyG yet. I fetched the dataset from <code>ogb-products</code> where:</p>
+<ul>
+<li>number of nodes: 2.4 * 10^6</li>
+<li>number of edges: 1.26 * 10^8</li>
+<li>number of features: 128</li>
+</ul>
+<p>So if we store the <strong>adjacency matrix</strong> is dense, it is going to be 2.4 * 2.4 * 4 * 10^12 bytes, this will be OOB on current code. I abstract the first 1k rows to compare, <strong>1100x</strong> speedup:</p>
+<p>CPU: Intel(R) Xeon(R) Gold 6248 CPU @ 2.50GHz, dual socket, 20 cores per socket.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="### before: run 1000 rows from the whole dataset
+sampled_addmm: running dataset ogb-products first 1000 rows: each iter takes 1212.000 ms!
+
+### after: run 1000 rows from the whole dataset
+sampled_addmm: running dataset ogb-products first 1000 rows: each iter takes 1.102 ms!
+
+### after: run the whole dataset
+sampled_addmm: running dataset ogb-products (the whole dataset) 2449029 rows: each iter takes 873.306 ms!"><pre class="notranslate"><code>### before: run 1000 rows from the whole dataset
+sampled_addmm: running dataset ogb-products first 1000 rows: each iter takes 1212.000 ms!
+
+### after: run 1000 rows from the whole dataset
+sampled_addmm: running dataset ogb-products first 1000 rows: each iter takes 1.102 ms!
+
+### after: run the whole dataset
+sampled_addmm: running dataset ogb-products (the whole dataset) 2449029 rows: each iter takes 873.306 ms!
+</code></pre></div>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -110,30 +957,6 @@ Cr-Commit-Position: refs/heads/11.1.115@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/dba5c526af85d3c05ad8a43d0822d337aebf82c4/hovercard" href="https://github.com/v8/v8/commit/dba5c526af85d3c05ad8a43d0822d337aebf82c4"><tt>dba5c52</tt></a>-refs/heads/main@{#85085}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91155: Update on "[Quant][FX] Lower QConvAddReLU2d for onednn backend"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91155</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91155</guid>
-            <pubDate>Wed, 04 Jan 2023 02:45:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91154: Update on "[Quant] Add fused ConvAddReLU2d module for onednn backend"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91154</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91154</guid>
-            <pubDate>Wed, 04 Jan 2023 02:45:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91153: Update on "[Quant][FX] Lower QConvAdd2d for onednn backend"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91153</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91153</guid>
-            <pubDate>Wed, 04 Jan 2023 02:45:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/91152: Update on "[Quant] Add fused ConvAdd2d module for onednn backend"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91152</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91152</guid>
@@ -216,92 +1039,6 @@ Previously, we use <code>DNNL_RUNTIME_S32_VAL</code> as the <code>zero point</co
 </code></pre></div>
 <p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90364: Update on "[Quant] Add fused conv2d_add_relu op for onednn backend"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90364</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90364</guid>
-            <pubDate>Wed, 04 Jan 2023 02:27:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
-Post op fusion can reduce data movement overhead and improve inference performance. This PR adds fused conv2d_add_relu op for onednn backend, which will be used for int8 inference with onednn backend. Cannot call this op with other quantization backends otherwise an error is thrown.</p>
-<p><strong>Test Plan</strong></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -m pytest test_quantization.py::TestQuantizedConv"><pre class="notranslate"><code>python -m pytest test_quantization.py::TestQuantizedConv
-</code></pre></div>
-<p><strong>TODO</strong><br>
-There is a oneDNN issue which may cause the kernel core dump with some input shapes. This PR should be merged after the issue resolved.</p>
-<p>cc VitalyFedyunin jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/90605: Update on "[Quant] Update IDeep to support oneDNN conv add fusion"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90605</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F90605</guid>
-            <pubDate>Wed, 04 Jan 2023 02:27:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
-This PR updates IDeep to support oneDNN conv add fusion.</p>
-<p><strong>TODO</strong><br>
-The IDeep still points to personal repo. After necessary IDeep PR merged, will point it to right position.</p>
-<p>cc jerryzh168 jianyuh raghuramank100 jamesr66a vkuzo jgong5 Xia-Weiwen gujinghui PenghuiCheng XiaobingSuper mingfeima sanchitintel ashokei jingxu10 min-jean-cho yanbing-j Guobing-Chen</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91502: Update on "Vectorize norm(double, p=2) on cpu"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91502</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91502</guid>
-            <pubDate>Wed, 04 Jan 2023 01:46:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This gives a speed up of 100x on my machine:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[------------------ Master -------------------]
-                                |  (200000, 3)
-32 threads: ----------------------------------
-      torch linalg_norm         |     10000
-      torch linalg_vector_norm  |     10000
-      torch custom              |       397
-      numpy norm                |      3123
-      numpy custom_np           |      3119
-
-Times are in microseconds (us).
-
-[------------------- PR -------------------]
-                                |  (200000, 3)
-32 threads: ----------------------------------
-      torch linalg_norm         |       107
-      torch linalg_vector_norm  |       100
-      torch custom              |       400
-      numpy norm                |      3170
-      numpy custom_np           |      3162
-
-Times are in microseconds (us)."><pre class="notranslate"><code>[------------------ Master -------------------]
-                                |  (200000, 3)
-32 threads: ----------------------------------
-      torch linalg_norm         |     10000
-      torch linalg_vector_norm  |     10000
-      torch custom              |       397
-      numpy norm                |      3123
-      numpy custom_np           |      3119
-
-Times are in microseconds (us).
-
-[------------------- PR -------------------]
-                                |  (200000, 3)
-32 threads: ----------------------------------
-      torch linalg_norm         |       107
-      torch linalg_vector_norm  |       100
-      torch custom              |       400
-      numpy norm                |      3170
-      numpy custom_np           |      3162
-
-Times are in microseconds (us).
-</code></pre></div>
-<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1510125036" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/91373" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/91373/hovercard" href="https://github.com/pytorch/pytorch/issues/91373">#91373</a></p>
-<p>cc ngimel jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/91664]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91664</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F91664</guid>
-            <pubDate>Wed, 04 Jan 2023 00:32:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Try remove sudo</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/91512]]></title>
@@ -1006,27 +1743,6 @@ Cr-Commit-Position: refs/heads/11.1.107@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/6f29973f20ff22176a802334ad797ce34b0078bb/hovercard" href="https://github.com/v8/v8/commit/6f29973f20ff22176a802334ad797ce34b0078bb"><tt>6f29973</tt></a>-refs/heads/main@{#85069}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5066]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5066</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5066</guid>
-            <pubDate>Tue, 03 Jan 2023 12:32:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5063]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5063</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5063</guid>
-            <pubDate>Tue, 03 Jan 2023 11:49:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5058]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5058</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5058</guid>
-            <pubDate>Tue, 03 Jan 2023 10:28:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from wasmer: v3.1.0]]></title>
             <link>https://github.com/wasmerio/wasmer/releases/tag/v3.1.0</link>
             <guid>https://github.com/wasmerio/wasmer/releases/tag/v3.1.0</guid>
@@ -1088,27 +1804,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>CHANGE start replication via pure functions instead of RxCollection methods.</li>
 </ul>
 <p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5039]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5039</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5039</guid>
-            <pubDate>Mon, 02 Jan 2023 21:55:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5035]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5035</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5035</guid>
-            <pubDate>Mon, 02 Jan 2023 20:04:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.8.20-dev-5034]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5034</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.20-dev-5034</guid>
-            <pubDate>Mon, 02 Jan 2023 19:57:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from rxdb: 14.0.0-beta.2]]></title>
@@ -1367,98 +2062,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>
 <p><strong>Note</strong> - Set <code>updateChannel</code> to <code>'canary'</code> in hyper config (<code>command/ctrl</code>+<code>,</code>) to stay on canary builds.</p>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/vercel/hyper/compare/v3.4.0-canary.1...v4.0.0-canary.1"><tt>v3.4.0-canary.1...v4.0.0-canary.1</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from hyper: 3.4.0]]></title>
-            <link>https://github.com/vercel/hyper/releases/tag/v3.4.0</link>
-            <guid>https://github.com/vercel/hyper/releases/tag/v3.4.0</guid>
-            <pubDate>Sun, 01 Jan 2023 11:43:12 GMT</pubDate>
-            <content:encoded><![CDATA[<p>V3.4.0 Happy New Year 2023 <g-emoji class="g-emoji" alias="tada" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f389.png">🎉</g-emoji></p>
-<p>This should be the last release for v3, to check out what's coming in v4, try out the canary releases.<br>
-No major changes in this one, mostly dependency updates and few fixes. The major/breaking changes are included in the v4 canary release instead.</p>
-<table>
-<thead>
-<tr>
-<th align="center">OS</th>
-<th align="center">Installer</th>
-<th align="center"></th>
-<th align="center"></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td align="center">Mac</td>
-<td align="center">dmg</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/Hyper-3.4.0-mac-x64.dmg">x64</a> (Intel)</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/Hyper-3.4.0-mac-arm64.dmg">arm64</a> (M1)</td>
-</tr>
-<tr>
-<td align="center">Linux</td>
-<td align="center">deb</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/hyper_3.4.0_amd64.deb">x64</a></td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/hyper_3.4.0_arm64.deb">arm64</a></td>
-</tr>
-<tr>
-<td align="center"></td>
-<td align="center">rpm</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/hyper-3.4.0.x86_64.rpm">x64</a></td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/hyper-3.4.0.aarch64.rpm">arm64</a></td>
-</tr>
-<tr>
-<td align="center"></td>
-<td align="center">AppImage</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/Hyper-3.4.0.AppImage">x64</a></td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/Hyper-3.4.0-arm64.AppImage">arm64</a></td>
-</tr>
-<tr>
-<td align="center"></td>
-<td align="center">snap</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/hyper_3.4.0_amd64.snap">x64</a></td>
-<td align="center"></td>
-</tr>
-<tr>
-<td align="center">Windows</td>
-<td align="center">exe</td>
-<td align="center"><a href="https://github.com/vercel/hyper/releases/download/v3.4.0/Hyper-Setup-3.4.0.exe">x64</a></td>
-<td align="center"></td>
-</tr>
-</tbody>
-</table>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/vercel/hyper/compare/v3.3.0...v3.4.0"><tt>v3.3.0...v3.4.0</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.0.0-beta.19]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-beta.19</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-beta.19</guid>
-            <pubDate>Sun, 01 Jan 2023 10:29:04 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Features</h4>
-<ul>
-<li>NextJS: Add next/head support <a href="https://github.com/storybooks/storybook/pull/20436" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20436/hovercard">#20436</a></li>
-</ul>
-<h4>Bug Fixes</h4>
-<ul>
-<li>CLI: Do not use legacy-peer-deps for npm <a href="https://github.com/storybooks/storybook/pull/20456" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20456/hovercard">#20456</a></li>
-<li>CLI: Use closest lockfile to determine package manager <a href="https://github.com/storybooks/storybook/pull/20464" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20464/hovercard">#20464</a></li>
-<li>CLI: Use correct package manager for automigrate <a href="https://github.com/storybooks/storybook/pull/20428" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20428/hovercard">#20428</a></li>
-<li>CLI: Add prop-types dependency if not using TypeScript <a href="https://github.com/storybooks/storybook/pull/20449" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20449/hovercard">#20449</a></li>
-<li>CLI: Add peer dependency on react <a href="https://github.com/storybooks/storybook/pull/20459" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20459/hovercard">#20459</a></li>
-</ul>
-<h4>Maintenance</h4>
-<ul>
-<li>Vue3: Add TS / legacy TS CLI templates <a href="https://github.com/storybooks/storybook/pull/20434" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20434/hovercard">#20434</a></li>
-<li>Core: Delete outdated onerror handler <a href="https://github.com/storybooks/storybook/pull/20462" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20462/hovercard">#20462</a></li>
-</ul>
-<h4>Build</h4>
-<ul>
-<li>Build: Add extensions to lodash imports <a href="https://github.com/storybooks/storybook/pull/20443" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20443/hovercard">#20443</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.0.0-beta.18]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-beta.18</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-beta.18</guid>
-            <pubDate>Sun, 01 Jan 2023 10:02:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v7.0.0-beta.18</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
