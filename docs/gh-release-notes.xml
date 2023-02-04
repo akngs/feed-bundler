@@ -4,10 +4,87 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 04 Feb 2023 12:07:01 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 04 Feb 2023 18:06:18 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/94135]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94135</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94135</guid>
+            <pubDate>Sat, 04 Feb 2023 17:07:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Revert nullptr fixes for now</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/94136: Hack SymInt.__iadd__ to be working.]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94136</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94136</guid>
+            <pubDate>Sat, 04 Feb 2023 16:00:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang <a href="mailto:ezyang@meta.com">ezyang@meta.com</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/94047: Update on "Fast path binary ops in fake tensor"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94047</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94047</guid>
+            <pubDate>Sat, 04 Feb 2023 13:24:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fast path execution of a few binary ops in fake tensor, to speed up trace time. When testing <code>python benchmarks/dynamo/timm_models.py --accuracy --timing --backend aot_eager --dynamic-shapes --float32 --only hrnet_w18</code>, I get the following trace speedup.</p>
+<p>Before:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cuda eval  hrnet_w18                           PASS
+TIMING: entire_frame_compile:53.97591 backend_compile:33.60832
+STATS: call_* op count: 1369 | FakeTensor.__torch_dispatch__:4995 | FakeTensorMode.__torch_dispatch__:89985 | ProxyTorchDispatchMode.__torch_dispatch__:3010"><pre class="notranslate"><code>cuda eval  hrnet_w18                           PASS
+TIMING: entire_frame_compile:53.97591 backend_compile:33.60832
+STATS: call_* op count: 1369 | FakeTensor.__torch_dispatch__:4995 | FakeTensorMode.__torch_dispatch__:89985 | ProxyTorchDispatchMode.__torch_dispatch__:3010
+</code></pre></div>
+<p>After:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cuda eval  hrnet_w18                           PASS
+TIMING: entire_frame_compile:40.18931 backend_compile:25.28828
+STATS: call_* op count: 1369 | FakeTensor.__torch_dispatch__:4995 | FakeTensorMode.__torch_dispatch__:69478 | attempt fast:4399 | fast is_contiguous:4399 | ProxyTorchDispatchMode.__torch_dispatch__:3010"><pre class="notranslate"><code>cuda eval  hrnet_w18                           PASS
+TIMING: entire_frame_compile:40.18931 backend_compile:25.28828
+STATS: call_* op count: 1369 | FakeTensor.__torch_dispatch__:4995 | FakeTensorMode.__torch_dispatch__:69478 | attempt fast:4399 | fast is_contiguous:4399 | ProxyTorchDispatchMode.__torch_dispatch__:3010
+</code></pre></div>
+<p>My experiment notebook can be found at <a href="https://docs.google.com/document/d/1_dTIQUwjIVnEWmiFAavJQYVF8uzXqD9Dk6b9gGQLF_U/edit#" rel="nofollow">https://docs.google.com/document/d/1_dTIQUwjIVnEWmiFAavJQYVF8uzXqD9Dk6b9gGQLF_U/edit#</a></p>
+<p>This is not the "most" optimized version of the code; compared with Horace/Voz roofline experiment:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="diff --git a/torch/_subclasses/fake_tensor.py b/torch/_subclasses/fake_tensor.py
+index e3bf545f3b8..395942c6ffe 100644
+--- a/torch/_subclasses/fake_tensor.py
++++ b/torch/_subclasses/fake_tensor.py
+@@ -774,6 +774,10 @@ class FakeTensorMode(TorchDispatchMode):
+     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
+         kwargs = kwargs if kwargs else {}
+ 
++        with no_dispatch():
++            if func in {aten.mul.Tensor, aten.add.Tensor, aten.sub.Tensor, aten.relu.default}:
++                return FakeTensor(self, torch.empty(args[0].shape, device='meta'), device='cuda')
++
+         if func == torch.ops.prim.device.default:
+             assert len(args) == 1 and isinstance(args[0], FakeTensor)
+             if args[0].fake_mode.in_kernel_invocation:"><pre class="notranslate"><code>diff --git a/torch/_subclasses/fake_tensor.py b/torch/_subclasses/fake_tensor.py
+index e3bf545f3b8..395942c6ffe 100644
+--- a/torch/_subclasses/fake_tensor.py
++++ b/torch/_subclasses/fake_tensor.py
+@@ -774,6 +774,10 @@ class FakeTensorMode(TorchDispatchMode):
+     def __torch_dispatch__(self, func, types, args=(), kwargs=None):
+         kwargs = kwargs if kwargs else {}
+ 
++        with no_dispatch():
++            if func in {aten.mul.Tensor, aten.add.Tensor, aten.sub.Tensor, aten.relu.default}:
++                return FakeTensor(self, torch.empty(args[0].shape, device='meta'), device='cuda')
++
+         if func == torch.ops.prim.device.default:
+             assert len(args) == 1 and isinstance(args[0], FakeTensor)
+             if args[0].fake_mode.in_kernel_invocation:
+</code></pre></div>
+<p>I am still leaving about 10s of trace time improvement on the table (5s of which is attributable to not yet handling relu.)</p>
+<p>The implementation here is based off of <a aria-label="Pull request #93118" class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1559000007" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/93118" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/93118/hovercard" href="https://github.com/pytorch/pytorch/pull/93118">#93118</a> but I modeled the short circuit logic off of TensorIterator's implementation, for ease of code review and correctness verification. However, there are some important divergences:</p>
+<ul>
+<li>Traditional fast setup in TensorIterator only short circuits if the shapes of all input elements are equal. On hrnet_w18, only 5% of fastpath'ed binary operators actually satisfy this. So instead, I compute the broadcasted shape, but then I only allow the fast path if (1) at least one input tensor has a shape that is exactly the output size, and (2) all the tensors are contiguous (or if all the tensors are channels last).</li>
+<li>I had to manually adjust the logic to handle wrapped numbers (which ordinarily are handled by wrapping into tensors). I think I got this right.</li>
+</ul>
+<p>Some evidence that this heuristic is correct is here in: <a href="https://gist.github.com/ezyang/b22fa7b72b7349137211d8dc7041f758">https://gist.github.com/ezyang/b22fa7b72b7349137211d8dc7041f758</a> I exhaustively test all dim=3 tensors with sizes [1, 2] and show that we get the same significant strides between PrimTorch and the new algorithm. In fact, there ARE differences between this algorithm and PrimTorch, but in fact this algorithm agrees with TensorIterator where PrimTorch is wrong (sample case: size=(1, 1, 2), stride=(1, 1, 1), stride=(1, 1, 1))</p>
+<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from pipenv: Release v2023.2.4]]></title>
             <link>https://github.com/pypa/pipenv/releases/tag/v2023.2.4</link>
@@ -225,22 +302,6 @@ a4a195b7f1d99146ea80e7fc4ebe707909ff671cc695ef2083e17c93c1ef314a  nvim-macos.tar
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/94121: Add lowerings for all symbolic shape operators]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94121</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94121</guid>
-            <pubDate>Sat, 04 Feb 2023 03:30:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>In particular, this fixes the missing negative problem.</p>
-<p>Signed-off-by: Edward Z. Yang <a href="mailto:ezyang@meta.com">ezyang@meta.com</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/92536]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F92536</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F92536</guid>
-            <pubDate>Sat, 04 Feb 2023 03:29:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Extract reusable function</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/94002]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94002</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F94002</guid>
@@ -307,13 +368,6 @@ a4a195b7f1d99146ea80e7fc4ebe707909ff671cc695ef2083e17c93c1ef314a  nvim-macos.tar
 <p>Test Plan: Sandcastlle + GitHub CI.</p>
 <p>Differential Revision: D43016100</p>
 <p>fbshipit-source-id: 683cc6bebdcc71a7ef3be6ff87a321a0c5b39277</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/78760]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F78760</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F78760</guid>
-            <pubDate>Sat, 04 Feb 2023 00:39:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>test distributed test nccl for sigsegv</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/92857: Update on "turn functionalization on in aot_autograd inference"]]></title>
@@ -932,20 +986,6 @@ Cr-Commit-Position: refs/heads/11.2.60@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/df0e9dca39350e2e538088ddef7da24050bb17ed/hovercard" href="https://github.com/v8/v8/commit/df0e9dca39350e2e538088ddef7da24050bb17ed"><tt>df0e9dc</tt></a>-refs/heads/main@{#85644}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.7.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.7.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.7.0-next.0</guid>
-            <pubDate>Fri, 03 Feb 2023 13:36:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-worker@2.7.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.7.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.7.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.7.0-next.0</guid>
-            <pubDate>Fri, 03 Feb 2023 13:36:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.7.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.7.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.7.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.7.0-next.0</guid>
@@ -981,6 +1021,13 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@5.7.0-next.0</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.7.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.7.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.7.0-next.0</guid>
+            <pubDate>Fri, 03 Feb 2023 13:36:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.7.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@8.7.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.7.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.7.0-next.0</guid>
@@ -988,11 +1035,18 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@8.7.0-next.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.7.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.7.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.7.0-next.0</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.7.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.7.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.7.0-next.0</guid>
             <pubDate>Fri, 03 Feb 2023 13:36:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.7.0-next.0</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-worker@2.7.0-next.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.7.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.7.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.7.0-next.0</guid>
+            <pubDate>Fri, 03 Feb 2023 13:36:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.7.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.7.0-next.0]]></title>
@@ -2509,9 +2563,9 @@ while with no block body (<a aria-label="Pull request #17567" class="issue-link 
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-node@1.1.5]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-node%401.1.5</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-node%401.1.5</guid>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.6]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.6</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.6</guid>
             <pubDate>Thu, 02 Feb 2023 16:40:58 GMT</pubDate>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
@@ -2527,9 +2581,9 @@ while with no block body (<a aria-label="Pull request #17567" class="issue-link 
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-static@1.0.6]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.6</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-static%401.0.6</guid>
+            <title><![CDATA[Release notes from kit: @sveltejs/adapter-node@1.1.5]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-node%401.1.5</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-node%401.1.5</guid>
             <pubDate>Thu, 02 Feb 2023 16:40:58 GMT</pubDate>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
@@ -3422,152 +3476,6 @@ Reviewed-by: Michael Knyszek <a href="mailto:mknyszek@google.com">mknyszek@googl
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/hanneslund/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/hanneslund">@hanneslund</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/vinaykulk621/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/vinaykulk621">@vinaykulk621</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JanKaifer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JanKaifer">@JanKaifer</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Brooooooklyn/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Brooooooklyn">@Brooooooklyn</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/feedthejim/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/feedthejim">@feedthejim</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 2.9.20]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/2.9.20</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/2.9.20</guid>
-            <pubDate>Wed, 01 Feb 2023 17:40:52 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 2.9.20 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.3.9]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.3.9</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.3.9</guid>
-            <pubDate>Wed, 01 Feb 2023 17:34:41 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>fix: output errors properly if pages fail to compile (<a href="https://github.com/sveltejs/kit/pull/8813" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/8813/hovercard">#8813</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.3.8]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.3.8</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.3.8</guid>
-            <pubDate>Wed, 01 Feb 2023 17:09:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>fix: remove Vite manifest before running adapter (<a href="https://github.com/sveltejs/kit/pull/8815" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/8815/hovercard">#8815</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.7.1: Update Engine revision to 800594f1f4a6674010a6f1603c07a919b4d7ebd7 fo…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.7.1</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.7.1</guid>
-            <pubDate>Wed, 01 Feb 2023 17:07:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…r stable release 3.7.1 (<a aria-label="Pull request #119687" class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1565510236" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/119687" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/119687/hovercard" href="https://github.com/flutter/flutter/pull/119687">#119687</a>)</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.35.0-dev.20230201]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.35.0-dev.20230201</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.35.0-dev.20230201</guid>
-            <pubDate>Wed, 01 Feb 2023 16:19:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v0.35.0-dev.20230201</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.0.0-beta.39]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-beta.39</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-beta.39</guid>
-            <pubDate>Wed, 01 Feb 2023 16:08:53 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Features</h4>
-<ul>
-<li>Core: return address of dev server from buildDevStandalone <a href="https://github.com/storybooks/storybook/pull/20820" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20820/hovercard">#20820</a></li>
-<li>Addons: Fix env variables not available inside addons <a href="https://github.com/storybooks/storybook/pull/20834" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20834/hovercard">#20834</a></li>
-<li>CLI: Add warning when main config does not use default exports <a href="https://github.com/storybooks/storybook/pull/20802" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20802/hovercard">#20802</a></li>
-</ul>
-<h4>Bug Fixes</h4>
-<ul>
-<li>SvelteKit: Disable failing <code>vite-plugin-sveltekit-guard</code> <a href="https://github.com/storybooks/storybook/pull/20870" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20870/hovercard">#20870</a></li>
-</ul>
-<h4>Maintenance</h4>
-<ul>
-<li>Core: Remove core-js as a dependency <a href="https://github.com/storybooks/storybook/pull/20833" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20833/hovercard">#20833</a></li>
-</ul>
-<h4>Build</h4>
-<ul>
-<li>Build: cleanup CI config <a href="https://github.com/storybooks/storybook/pull/20853" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20853/hovercard">#20853</a></li>
-<li>Change forceReRender story to forceRemount <a href="https://github.com/storybooks/storybook/pull/20752" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20752/hovercard">#20752</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from moby: v23.0.0-rc.4]]></title>
-            <link>https://github.com/moby/moby/releases/tag/v23.0.0-rc.4</link>
-            <guid>https://github.com/moby/moby/releases/tag/v23.0.0-rc.4</guid>
-            <pubDate>Wed, 01 Feb 2023 16:08:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This is a pre-release of the upcoming 23.0.0 release.</p>
-<p>Pre-releases are intended for testing new releases: <strong>only install in a test environment!</strong></p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="curl -fsSL https://get.docker.com -o get-docker.sh
-sudo CHANNEL=test sh get-docker.sh"><pre>curl -fsSL https://get.docker.com -o get-docker.sh
-sudo CHANNEL=test sh get-docker.sh</pre></div>
-<blockquote>
-<p>Starting with the 23.0.0 release, we're moving away from using CalVer versioning,<br>
-and use versioning that's using SemVer <em>format</em>. Changing the version format is<br>
-a stepping-stone towards go module compatibility, but the repository does not<br>
-yet use go-modules, and still requires using a "+incompatible" version; we'll<br>
-be working towards go module compatibility in a future release.</p>
-</blockquote>
-<p>Draft release notes can be found in <a aria-label="Pull request #16421" class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1517626555" data-permission-text="Title is private" data-url="https://github.com/docker/docs/issues/16421" data-hovercard-type="pull_request" data-hovercard-url="/docker/docs/pull/16421/hovercard" href="https://github.com/docker/docs/pull/16421">docker/docs#16421</a></p>
-<h3>Known issues:</h3>
-<ul>
-<li>Static binaries (<code>.tar.gz</code>) are no longer include cli plugins; use the deb/rpm packages, or manual installation instructions from the <a href="https://github.com/docker/buildx#manual-download">buildx github repository</a> and  <a href="https://github.com/docker/compose/#where-to-get-docker-compose">docker compose github repository</a></li>
-<li>Static binaries for <code>dockerd</code> are broken on <code>armel</code> (32-bit).</li>
-<li>There are no packages available yet for the s390x and ppc64le architectures</li>
-</ul>
-<p>Bugs and regressions can be reported in these issue trackers:</p>
-<ul>
-<li>Related to the CLI: <a href="https://github.com/docker/cli/issues">https://github.com/docker/cli/issues</a></li>
-<li>Related to the Docker Engine <a href="https://github.com/moby/moby/issues">https://github.com/moby/moby/issues</a></li>
-</ul>
-<p>When reporting issues, include <code>[23.0.0-rc]</code> in the issue title</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from puppeteer: puppeteer-core: v19.6.3]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v19.6.3</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v19.6.3</guid>
-            <pubDate>Wed, 01 Feb 2023 14:49:40 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-core-v19.6.2...puppeteer-core-v19.6.3">19.6.3</a> (2023-02-01)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li>ignore not found contexts for console messages (<a href="https://github.com/puppeteer/puppeteer/issues/9595" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/9595/hovercard">#9595</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/390685bbe52c22b686fc0e3119b4ac7b1073c581">390685b</a>)</li>
-<li>restore WaitTask terminate  condition (<a href="https://github.com/puppeteer/puppeteer/issues/9612" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/9612/hovercard">#9612</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/e16cbc6626cffd40d0caa30801620e7293455006">e16cbc6</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from puppeteer: puppeteer: v19.6.3]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v19.6.3</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v19.6.3</guid>
-            <pubDate>Wed, 01 Feb 2023 14:49:38 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-v19.6.2...puppeteer-v19.6.3">19.6.3</a> (2023-02-01)</h2>
-<h3>Miscellaneous Chores</h3>
-<ul>
-<li><strong>puppeteer:</strong> Synchronize puppeteer versions</li>
-</ul>
-<h3>Dependencies</h3>
-<ul>
-<li>The following workspace dependencies were updated
-<ul>
-<li>dependencies
-<ul>
-<li>puppeteer-core bumped from 19.6.2 to 19.6.3</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from prometheus: v0.42.0]]></title>
-            <link>https://github.com/prometheus/prometheus/releases/tag/v0.42.0</link>
-            <guid>https://github.com/prometheus/prometheus/releases/tag/v0.42.0</guid>
-            <pubDate>Wed, 01 Feb 2023 13:31:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v0.42.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v24.0.0-nightly.20230201]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v24.0.0-nightly.20230201</link>
-            <guid>https://github.com/electron/electron/releases/tag/v24.0.0-nightly.20230201</guid>
-            <pubDate>Wed, 01 Feb 2023 13:01:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v24.0.0-nightly.20230201</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
