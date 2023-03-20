@@ -4,144 +4,57 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Mon, 20 Mar 2023 00:23:59 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 20 Mar 2023 06:07:29 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/unstable/96934: Update on "[ci] test inductor codegen"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F96934</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F96934</guid>
-            <pubDate>Sun, 19 Mar 2023 23:48:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc soumith voznesenskym penguinwu anijain2305 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EikanWang/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EikanWang">@EikanWang</a> jgong5 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Guobing-Chen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Guobing-Chen">@Guobing-Chen</a> <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/XiaobingSuper/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/XiaobingSuper">@XiaobingSuper</a> zhuhaozhe blzheng <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Xia-Weiwen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Xia-Weiwen">@Xia-Weiwen</a> wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96774: Update on "Extend aot autograd dedup guards to params, stop using pos…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96774</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96774</guid>
-            <pubDate>Sun, 19 Mar 2023 23:23:06 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…itions"</p>
-<p>The purpose of this PR is to remove reliance on argument positions in dedup guards, AND extend the functionality to params.</p>
-<p>A version of this PR was stamped prior <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1605796378" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/95831" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/95831/hovercard" href="https://github.com/pytorch/pytorch/pull/95831">#95831</a> - but was kinda gross, because it was based on an underlying PR that did way too much with source names.</p>
-<p>This PR leaves most of that alone, in favor of just reusing the same name standardization logic that dynamo module registration does.</p>
-<p>cc soumith penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97101]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97101</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97101</guid>
-            <pubDate>Sun, 19 Mar 2023 22:39:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>lint</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96341: Update on "[aot autograd] refactor to make functionalization self-con…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96341</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96341</guid>
-            <pubDate>Sun, 19 Mar 2023 21:47:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…tained"</p>
-<p>This refactor should make it easier to add an export hook into aot autograd.</p>
-<p>(1) I killed <code>create_forward_or_joint_functionalized()</code> (and the functions that it called, like <code>forward_or_joint()</code>) which used to handle autograd + functionalization all-in-one-go for the joint case, and was also used in the inference case.</p>
-<p>I added a few separate helper functions:</p>
-<p><code>create_functionalized_graph()</code>: this takes a flat fn, and returns a functionalized fx graph. It is mostly just a thin wrapper around functionalization + make_fx(), but also has some extra logic to manually append <code>copy_()</code> ops to the end of the graph.</p>
-<p><code>fn_no_extra_mutations()</code>: this creates the fn that we want to trace in the inference code path. It takes in a function that it then calls, and returns the outputs + any (updated) mutated inputs.</p>
-<p><code>joint_fn_no_external_mutations()</code>: this creates the fn that we want to trace in the joint code path. It takes in a function, and traces out its joint. It also does the work of cloning inputs that are mutated and require gradients, returning mutated inputs as outputs, and returning intermediate bases as outputs</p>
-<p>We should be able to add an export hook by basically adding a similar version of <code>joint_fn_no_external_mutations</code> but with a lot more restrictions (guaranteed to have no tangents, not synthetic bases, etc), and calling <code>create_functionalized_graph()</code> on it.</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D44204090" rel="nofollow">D44204090</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Sun, 19 Mar 2023 21:45:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2023-03-19 21:44:44 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/5f9b520ca09dd7cf90d3ce7286afdd05d350ae8d/hovercard" href="https://github.com/kovidgoyal/kitty/commit/5f9b520ca09dd7cf90d3ce7286afdd05d350ae8d"><tt>5f9b520</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97116]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97116</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97116</guid>
-            <pubDate>Sun, 19 Mar 2023 21:25:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Remove unnecessary dict comprehensions</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/97116]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F97116</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F97116</guid>
-            <pubDate>Sun, 19 Mar 2023 21:25:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Remove unnecessary dict comprehensions</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97005]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97005</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97005</guid>
-            <pubDate>Sun, 19 Mar 2023 20:40:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Updates as per the review comments</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/97005]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97005</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97005</guid>
-            <pubDate>Sun, 19 Mar 2023 20:40:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Updates as per the review comments</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pipenv: Release v2023.3.20]]></title>
-            <link>https://github.com/pypa/pipenv/releases/tag/v2023.3.20</link>
-            <guid>https://github.com/pypa/pipenv/releases/tag/v2023.3.20</guid>
-            <pubDate>Sun, 19 Mar 2023 19:00:07 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>Fix import issue with pipenv 2023.3.18. by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/matteius/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/matteius">@matteius</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1631058189" data-permission-text="Title is private" data-url="https://github.com/pypa/pipenv/issues/5636" data-hovercard-type="pull_request" data-hovercard-url="/pypa/pipenv/pull/5636/hovercard" href="https://github.com/pypa/pipenv/pull/5636">#5636</a></li>
+            <title><![CDATA[Release notes from prettier: 2.8.5]]></title>
+            <link>https://github.com/prettier/prettier/releases/tag/2.8.5</link>
+            <guid>https://github.com/prettier/prettier/releases/tag/2.8.5</guid>
+            <pubDate>Mon, 20 Mar 2023 06:07:00 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>Support TypeScript 5.0</li>
 </ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/pypa/pipenv/compare/v2023.3.18...v2023.3.20"><tt>v2023.3.18...v2023.3.20</tt></a></p>]]></content:encoded>
+<p><g-emoji class="g-emoji" alias="link" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f517.png">🔗</g-emoji> <a href="https://github.com/prettier/prettier/blob/main/CHANGELOG.md#285">Changelog</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from poetry: 1.4.1]]></title>
-            <link>https://github.com/python-poetry/poetry/releases/tag/1.4.1</link>
-            <guid>https://github.com/python-poetry/poetry/releases/tag/1.4.1</guid>
-            <pubDate>Sun, 19 Mar 2023 14:46:19 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Fixed</h3>
-<ul>
-<li>Fix an issue where <code>poetry install</code> did not respect the requirements for building editable dependencies (<a href="https://github.com/python-poetry/poetry/pull/7579" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7579/hovercard">#7579</a>).</li>
-<li>Fix an issue where <code>poetry init</code> crashed due to bad input when adding packages interactively (<a href="https://github.com/python-poetry/poetry/pull/7569" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7569/hovercard">#7569</a>).</li>
-<li>Fix an issue where <code>poetry install</code> ignored the <code>subdirectory</code> argument of git dependencies (<a href="https://github.com/python-poetry/poetry/pull/7580" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7580/hovercard">#7580</a>).</li>
-<li>Fix an issue where installing packages with <code>no-binary</code> could result in a false hash mismatch (<a href="https://github.com/python-poetry/poetry/pull/7594" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7594/hovercard">#7594</a>).</li>
-<li>Fix an issue where the hash of sdists was neither validated nor written to the <code>direct_url.json</code> during installation (<a href="https://github.com/python-poetry/poetry/pull/7594" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7594/hovercard">#7594</a>).</li>
-<li>Fix an issue where <code>poetry install --sync</code> attempted to remove itself (<a href="https://github.com/python-poetry/poetry/pull/7626" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7626/hovercard">#7626</a>).</li>
-<li>Fix an issue where wheels with non-normalized <code>dist-info</code> directory names could not be installed (<a href="https://github.com/python-poetry/poetry/pull/7671" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7671/hovercard">#7671</a>).</li>
-<li>Fix an issue where <code>poetry install --compile</code> compiled with optimization level 1 (<a href="https://github.com/python-poetry/poetry/pull/7666" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7666/hovercard">#7666</a>).</li>
-</ul>
-<h3>Docs</h3>
-<ul>
-<li>Clarify the behavior of the <code>--extras</code> option (<a href="https://github.com/python-poetry/poetry/pull/7563" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7563/hovercard">#7563</a>).</li>
-<li>Expand the FAQ on reasons for slow dependency resolution (<a href="https://github.com/python-poetry/poetry/pull/7620" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7620/hovercard">#7620</a>).</li>
-</ul>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96736]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96736</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96736</guid>
+            <pubDate>Mon, 20 Mar 2023 05:28:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix CI failures, use at::GradMode::is_enabled()</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/97107: Test graph breaks on dynamic]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97107</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97107</guid>
-            <pubDate>Sun, 19 Mar 2023 11:20:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang <a href="mailto:ezyang@meta.com">ezyang@meta.com</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: 11.3.204-pgo: Version 11.3.204]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.3.204-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.3.204-pgo</guid>
+            <pubDate>Mon, 20 Mar 2023 05:16:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6d3e9b1b975ab3eec40396b5dbf0cf42af363aa1<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4352090" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4352090</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.3.204@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ee9c92870802077137372b0179487106561005a6/hovercard" href="https://github.com/v8/v8/commit/ee9c92870802077137372b0179487106561005a6"><tt>ee9c928</tt></a>-refs/heads/main@{#86553}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/26921]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F26921</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F26921</guid>
-            <pubDate>Sun, 19 Mar 2023 07:03:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>2023-03-19 nightly release (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/c1214ce5c26fce541a920bdf9917c9ca9f63ecb0/hovercard" href="https://github.com/pytorch/pytorch/commit/c1214ce5c26fce541a920bdf9917c9ca9f63ecb0"><tt>c1214ce</tt></a>)</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: Version 11.3.204]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.3.204</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.3.204</guid>
+            <pubDate>Mon, 20 Mar 2023 05:16:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6d3e9b1b975ab3eec40396b5dbf0cf42af363aa1<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4352090" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4352090</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.3.204@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ee9c92870802077137372b0179487106561005a6/hovercard" href="https://github.com/v8/v8/commit/ee9c92870802077137372b0179487106561005a6"><tt>ee9c928</tt></a>-refs/heads/main@{#86553}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
             <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Sun, 19 Mar 2023 05:18:37 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.9.0-dev-1248+g204a8b17c
+            <pubDate>Mon, 20 Mar 2023 05:16:24 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.9.0-dev-1254+g84027f751
 Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.9.0-dev-1248+g204a8b17c
+LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.9.0-dev-1254+g84027f751
 Build type: RelWithDebInfo
 LuaJIT 2.1.0-beta3
 </code></pre></div>
@@ -198,20 +111,166 @@ LuaJIT 2.1.0-beta3
 <li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
 </ul>
 <h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="0be30de74fcc77e280b388dfcc5dc50ad5a574eab3889fccdd9fa0abac014c6b  nvim-linux64.tar.gz
-2a42561e9a839f68c470655998864cafa89ab949041565f9de40c377c63dd17d  nvim-linux64.deb
-fbc3df26aebc8c044cea3c314a02b794ee169e13797c6086f85ab28b51f97416  nvim.appimage
-083084f5764224b320cb997b942c2cfec0f87ad1f20ede32342e9d3bc5577ab8  nvim.appimage.zsync
-60affde2621770af7624d5f6f3dffdcd8dd6f4f9eea1893919a98acaf64d78db  nvim-macos.tar.gz
-11466d5a4ef78d00443b9ac3c3f98eacf63d48ed815ff2d1bf14ec9e1ba6884d  nvim-win64.zip
-668a8689946281678c866a4263c22114948b520288cef973ae746cceb9e679aa  nvim-win64.msi"><pre class="notranslate"><code>0be30de74fcc77e280b388dfcc5dc50ad5a574eab3889fccdd9fa0abac014c6b  nvim-linux64.tar.gz
-2a42561e9a839f68c470655998864cafa89ab949041565f9de40c377c63dd17d  nvim-linux64.deb
-fbc3df26aebc8c044cea3c314a02b794ee169e13797c6086f85ab28b51f97416  nvim.appimage
-083084f5764224b320cb997b942c2cfec0f87ad1f20ede32342e9d3bc5577ab8  nvim.appimage.zsync
-60affde2621770af7624d5f6f3dffdcd8dd6f4f9eea1893919a98acaf64d78db  nvim-macos.tar.gz
-11466d5a4ef78d00443b9ac3c3f98eacf63d48ed815ff2d1bf14ec9e1ba6884d  nvim-win64.zip
-668a8689946281678c866a4263c22114948b520288cef973ae746cceb9e679aa  nvim-win64.msi
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="07323ed5089b8d26a36f1d692f4baa902a2b471f4d2be065bd3357f3e6b717e5  nvim-linux64.tar.gz
+b6a8292cf160bba583f53cbff36fc8d427489e001730eda8d43b453580bcecee  nvim-linux64.deb
+0392a89f518c2d0777547e517684cf7f293d76734fff46264073f3410f21e21d  nvim.appimage
+42616b66b82b8b0ee4633b3cc5c4916180a16eac94ac26dc3ad4644cb2204edb  nvim.appimage.zsync
+7f83dbaa06e49815215c011981f7e8e09e8e3fd530f010a176c92fdaa07dffbe  nvim-macos.tar.gz
+04f924accfa5eca1d0ecba822e1fdfed9150b17f23b2dc50746f97796e179688  nvim-win64.zip
+ac24d4c2e16bfd7e40c71ce50a3ef1a2c91aef1a117f1ca72009903ce3b7e347  nvim-win64.msi"><pre class="notranslate"><code>07323ed5089b8d26a36f1d692f4baa902a2b471f4d2be065bd3357f3e6b717e5  nvim-linux64.tar.gz
+b6a8292cf160bba583f53cbff36fc8d427489e001730eda8d43b453580bcecee  nvim-linux64.deb
+0392a89f518c2d0777547e517684cf7f293d76734fff46264073f3410f21e21d  nvim.appimage
+42616b66b82b8b0ee4633b3cc5c4916180a16eac94ac26dc3ad4644cb2204edb  nvim.appimage.zsync
+7f83dbaa06e49815215c011981f7e8e09e8e3fd530f010a176c92fdaa07dffbe  nvim-macos.tar.gz
+04f924accfa5eca1d0ecba822e1fdfed9150b17f23b2dc50746f97796e179688  nvim-win64.zip
+ac24d4c2e16bfd7e40c71ce50a3ef1a2c91aef1a117f1ca72009903ce3b7e347  nvim-win64.msi
 </code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96928: Update on "Enable the weight pre-quant when lowering inside inductor"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96928</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96928</guid>
+            <pubDate>Mon, 20 Mar 2023 05:06:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summay</strong><br>
+Enable quantization specific passes inside Inductor which includes weight quant, quantized conv post op fusion, weight prepack for quantized conv. We may split this PR into several PRs with independent pass.</p>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_backend_config_conv"><pre class="notranslate"><code>clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_backend_config_conv
+</code></pre></div>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96475: Update on "Enable quantized conv for inductor path"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96475</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96475</guid>
+            <pubDate>Mon, 20 Mar 2023 05:06:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Since for Quantization Inductor path, the qconv is a function call accepting plain uint8/int8 tensor inputs instead of quantized tensor inputs, we re-implement the oneDNN qconv for inductor path.</p>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv1d
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv3d
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d_relu
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d_add
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d_add_relu"><pre class="notranslate"><code>clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv1d
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv3d
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d_relu
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d_add
+clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_qconv2d_add_relu
+</code></pre></div>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96927: Update on "Enable lowering to inductor"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96927</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96927</guid>
+            <pubDate>Mon, 20 Mar 2023 05:06:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Enable the lowering path from a quantized 2.0 fx graph into Inductor. The basic usage will be</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="export_module, guards = torchdynamo.export(m, *args)
+prepare_module = prepare_pt2e(export_module, *args)
+convert_module = convert_pt2e(prepare_module)
+ooptimized_module = compile_fx(convert_module, example_inputs)"><pre class="notranslate"><code>export_module, guards = torchdynamo.export(m, *args)
+prepare_module = prepare_pt2e(export_module, *args)
+convert_module = convert_pt2e(prepare_module)
+ooptimized_module = compile_fx(convert_module, example_inputs)
+</code></pre></div>
+<p>Most of the issues we met previously has already been fixed in PyTorch Master. So in this PR, we mainly do 2 things:</p>
+<ol>
+<li>Add the basic usage into a UT.</li>
+<li>Move <code>handle_dynamo_export_graph</code> before the fusion passes, otherwise the dynamo_export_graph will hit the fusion passes twice which is un-expected.</li>
+</ol>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_backend_config_conv"><pre class="notranslate"><code>clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_backend_config_conv
+</code></pre></div>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu anijain2305 EikanWang Guobing-Chen zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/mps/97027]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F97027</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F97027</guid>
+            <pubDate>Mon, 20 Mar 2023 04:11:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[MPS] Fix torch.eye unsupported bool constant on macOS 12</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96645]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96645</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96645</guid>
+            <pubDate>Mon, 20 Mar 2023 03:19:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>lintrunner f_string/lambda</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/96188]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96188</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F96188</guid>
+            <pubDate>Mon, 20 Mar 2023 03:02:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>add suuport torch tensor serialization for custom device</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97119: Update on "inductor: support profiler_mark_wrapper_call in cpp wrapper"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97119</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97119</guid>
+            <pubDate>Mon, 20 Mar 2023 01:46:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/95028: split `zero_size` path]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F95028</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F95028</guid>
+            <pubDate>Mon, 20 Mar 2023 01:33:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Signed-off-by: Masaki Kozuki <a href="mailto:mkozuki@nvidia.com">mkozuki@nvidia.com</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/unstable/96934: Update on "[ci] test inductor codegen"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F96934</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F96934</guid>
+            <pubDate>Mon, 20 Mar 2023 00:48:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc soumith voznesenskym penguinwu anijain2305 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/EikanWang/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/EikanWang">@EikanWang</a> jgong5 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Guobing-Chen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Guobing-Chen">@Guobing-Chen</a> <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/XiaobingSuper/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/XiaobingSuper">@XiaobingSuper</a> zhuhaozhe blzheng <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Xia-Weiwen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Xia-Weiwen">@Xia-Weiwen</a> wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Sun, 19 Mar 2023 21:45:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2023-03-19 21:44:44 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/5f9b520ca09dd7cf90d3ce7286afdd05d350ae8d/hovercard" href="https://github.com/kovidgoyal/kitty/commit/5f9b520ca09dd7cf90d3ce7286afdd05d350ae8d"><tt>5f9b520</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pipenv: Release v2023.3.20]]></title>
+            <link>https://github.com/pypa/pipenv/releases/tag/v2023.3.20</link>
+            <guid>https://github.com/pypa/pipenv/releases/tag/v2023.3.20</guid>
+            <pubDate>Sun, 19 Mar 2023 19:00:07 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>What's Changed</h2>
+<ul>
+<li>Fix import issue with pipenv 2023.3.18. by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/matteius/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/matteius">@matteius</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1631058189" data-permission-text="Title is private" data-url="https://github.com/pypa/pipenv/issues/5636" data-hovercard-type="pull_request" data-hovercard-url="/pypa/pipenv/pull/5636/hovercard" href="https://github.com/pypa/pipenv/pull/5636">#5636</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/pypa/pipenv/compare/v2023.3.18...v2023.3.20"><tt>v2023.3.18...v2023.3.20</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from poetry: 1.4.1]]></title>
+            <link>https://github.com/python-poetry/poetry/releases/tag/1.4.1</link>
+            <guid>https://github.com/python-poetry/poetry/releases/tag/1.4.1</guid>
+            <pubDate>Sun, 19 Mar 2023 14:46:19 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Fixed</h3>
+<ul>
+<li>Fix an issue where <code>poetry install</code> did not respect the requirements for building editable dependencies (<a href="https://github.com/python-poetry/poetry/pull/7579" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7579/hovercard">#7579</a>).</li>
+<li>Fix an issue where <code>poetry init</code> crashed due to bad input when adding packages interactively (<a href="https://github.com/python-poetry/poetry/pull/7569" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7569/hovercard">#7569</a>).</li>
+<li>Fix an issue where <code>poetry install</code> ignored the <code>subdirectory</code> argument of git dependencies (<a href="https://github.com/python-poetry/poetry/pull/7580" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7580/hovercard">#7580</a>).</li>
+<li>Fix an issue where installing packages with <code>no-binary</code> could result in a false hash mismatch (<a href="https://github.com/python-poetry/poetry/pull/7594" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7594/hovercard">#7594</a>).</li>
+<li>Fix an issue where the hash of sdists was neither validated nor written to the <code>direct_url.json</code> during installation (<a href="https://github.com/python-poetry/poetry/pull/7594" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7594/hovercard">#7594</a>).</li>
+<li>Fix an issue where <code>poetry install --sync</code> attempted to remove itself (<a href="https://github.com/python-poetry/poetry/pull/7626" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7626/hovercard">#7626</a>).</li>
+<li>Fix an issue where wheels with non-normalized <code>dist-info</code> directory names could not be installed (<a href="https://github.com/python-poetry/poetry/pull/7671" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7671/hovercard">#7671</a>).</li>
+<li>Fix an issue where <code>poetry install --compile</code> compiled with optimization level 1 (<a href="https://github.com/python-poetry/poetry/pull/7666" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7666/hovercard">#7666</a>).</li>
+</ul>
+<h3>Docs</h3>
+<ul>
+<li>Clarify the behavior of the <code>--extras</code> option (<a href="https://github.com/python-poetry/poetry/pull/7563" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7563/hovercard">#7563</a>).</li>
+<li>Expand the FAQ on reasons for slow dependency resolution (<a href="https://github.com/python-poetry/poetry/pull/7620" data-hovercard-type="pull_request" data-hovercard-url="/python-poetry/poetry/pull/7620/hovercard">#7620</a>).</li>
+</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neo-tree.nvim: 2.56]]></title>
@@ -226,6 +285,13 @@ fbc3df26aebc8c044cea3c314a02b794ee169e13797c6086f85ab28b51f97416  nvim.appimage
 <li>fix: handle errors in git utils convert_octal_to_utf8 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cseickel/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cseickel">@cseickel</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1630585799" data-permission-text="Title is private" data-url="https://github.com/nvim-neo-tree/neo-tree.nvim/issues/817" data-hovercard-type="pull_request" data-hovercard-url="/nvim-neo-tree/neo-tree.nvim/pull/817/hovercard" href="https://github.com/nvim-neo-tree/neo-tree.nvim/pull/817">#817</a></li>
 </ul>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/nvim-neo-tree/neo-tree.nvim/compare/2.55...2.56"><tt>2.55...2.56</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from flutter: 3.9.0-10.0.pre: Disable shuffling for flutter/test/material/text_field_test.dart (#12…]]></title>
+            <link>https://github.com/flutter/flutter/releases/tag/3.9.0-10.0.pre</link>
+            <guid>https://github.com/flutter/flutter/releases/tag/3.9.0-10.0.pre</guid>
+            <pubDate>Sat, 18 Mar 2023 21:38:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…2956)</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from cube: v0.32.9]]></title>
@@ -748,9 +814,9 @@ main and slash).</p>
 <p>Co-authored-by: skrdgraph <a href="mailto:sudhish@dgraph.io">sudhish@dgraph.io</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.3.202-pgo: Version 11.3.202]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.202-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.202-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.3.202]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.3.202</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.3.202</guid>
             <pubDate>Fri, 17 Mar 2023 18:47:43 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I6545f619cba971c34ec83313b240cd0e0ee081b3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4349154" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4349154</a><br>
@@ -759,9 +825,9 @@ Cr-Commit-Position: refs/heads/11.3.202@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9a6fbf6f8c46c82337a74120c487bab05461812d/hovercard" href="https://github.com/v8/v8/commit/9a6fbf6f8c46c82337a74120c487bab05461812d"><tt>9a6fbf6</tt></a>-refs/heads/main@{#86545}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.3.202]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.202</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.202</guid>
+            <title><![CDATA[Release notes from v8: 11.3.202-pgo: Version 11.3.202]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.3.202-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.3.202-pgo</guid>
             <pubDate>Fri, 17 Mar 2023 18:47:43 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I6545f619cba971c34ec83313b240cd0e0ee081b3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4349154" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4349154</a><br>
@@ -810,9 +876,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.3.201-pgo: Version 11.3.201]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.201-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.201-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.3.201]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.3.201</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.3.201</guid>
             <pubDate>Fri, 17 Mar 2023 17:32:04 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie564ac44831fa7cabe177595e96a236ddd6baad3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4347603" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4347603</a><br>
@@ -821,9 +887,9 @@ Cr-Commit-Position: refs/heads/11.3.201@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e7e1642283888cf75b71117b0f2396e424a87729/hovercard" href="https://github.com/v8/v8/commit/e7e1642283888cf75b71117b0f2396e424a87729"><tt>e7e1642</tt></a>-refs/heads/main@{#86543}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.3.201]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.201</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.201</guid>
+            <title><![CDATA[Release notes from v8: 11.3.201-pgo: Version 11.3.201]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.3.201-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.3.201-pgo</guid>
             <pubDate>Fri, 17 Mar 2023 17:32:04 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie564ac44831fa7cabe177595e96a236ddd6baad3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4347603" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4347603</a><br>
@@ -947,16 +1013,16 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </blockquote>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.37.0-dev.20230319: Merge pull request #3721 from jakebailey/ts-4.9]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230319</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230319</guid>
+            <title><![CDATA[Release notes from monaco-editor: v0.37.0-dev.20230318: Merge pull request #3721 from jakebailey/ts-4.9]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230318</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230318</guid>
             <pubDate>Fri, 17 Mar 2023 16:32:54 GMT</pubDate>
             <content:encoded><![CDATA[<p>Update TypeScript to TS 5.0.2 in all projects, vendored files</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.37.0-dev.20230318: Merge pull request #3721 from jakebailey/ts-4.9]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230318</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230318</guid>
+            <title><![CDATA[Release notes from monaco-editor: v0.37.0-dev.20230319: Merge pull request #3721 from jakebailey/ts-4.9]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230319</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.37.0-dev.20230319</guid>
             <pubDate>Fri, 17 Mar 2023 16:32:54 GMT</pubDate>
             <content:encoded><![CDATA[<p>Update TypeScript to TS 5.0.2 in all projects, vendored files</p>]]></content:encoded>
         </item>
@@ -1300,26 +1366,14 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.3.199-pgo: Version 11.3.199]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.199-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.199-pgo</guid>
-            <pubDate>Fri, 17 Mar 2023 14:38:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I28ecb04d4de1778afd44d4868d418ceee350b699<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4348116" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4348116</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.3.199@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a4d22e15acc6cf85b57d8f53a1b0631864b5f566/hovercard" href="https://github.com/v8/v8/commit/a4d22e15acc6cf85b57d8f53a1b0631864b5f566"><tt>a4d22e1</tt></a>-refs/heads/main@{#86534}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.3.199]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.199</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.199</guid>
-            <pubDate>Fri, 17 Mar 2023 14:38:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I28ecb04d4de1778afd44d4868d418ceee350b699<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4348116" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4348116</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.3.199@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a4d22e15acc6cf85b57d8f53a1b0631864b5f566/hovercard" href="https://github.com/v8/v8/commit/a4d22e15acc6cf85b57d8f53a1b0631864b5f566"><tt>a4d22e1</tt></a>-refs/heads/main@{#86534}</p>]]></content:encoded>
+            <title><![CDATA[Release notes from redux-saga: @redux-saga/core@1.2.3]]></title>
+            <link>https://github.com/redux-saga/redux-saga/releases/tag/%40redux-saga%2Fcore%401.2.3</link>
+            <guid>https://github.com/redux-saga/redux-saga/releases/tag/%40redux-saga%2Fcore%401.2.3</guid>
+            <pubDate>Fri, 17 Mar 2023 14:37:42 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li><a href="https://github.com/redux-saga/redux-saga/pull/2372" data-hovercard-type="pull_request" data-hovercard-url="/redux-saga/redux-saga/pull/2372/hovercard">#2372</a> <a href="https://github.com/redux-saga/redux-saga/commit/2cccf480a8ef67680daf319893a690f0cb74ef9e"><code>2cccf48</code></a> Thanks <a href="https://github.com/neurosnap">@neurosnap</a>! - Added a <code>channel</code> property to the <code>SagaMiddlewareOptions</code> to reflect its runtime support.</li>
+</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from redux-saga: redux-saga@1.2.3]]></title>
@@ -1337,16 +1391,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>@redux-saga/core@1.2.3</li>
 </ul>
 </li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from redux-saga: @redux-saga/core@1.2.3]]></title>
-            <link>https://github.com/redux-saga/redux-saga/releases/tag/%40redux-saga%2Fcore%401.2.3</link>
-            <guid>https://github.com/redux-saga/redux-saga/releases/tag/%40redux-saga%2Fcore%401.2.3</guid>
-            <pubDate>Fri, 17 Mar 2023 14:37:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li><a href="https://github.com/redux-saga/redux-saga/pull/2372" data-hovercard-type="pull_request" data-hovercard-url="/redux-saga/redux-saga/pull/2372/hovercard">#2372</a> <a href="https://github.com/redux-saga/redux-saga/commit/2cccf480a8ef67680daf319893a690f0cb74ef9e"><code>2cccf48</code></a> Thanks <a href="https://github.com/neurosnap">@neurosnap</a>! - Added a <code>channel</code> property to the <code>SagaMiddlewareOptions</code> to reflect its runtime support.</li>
 </ul>]]></content:encoded>
         </item>
         <item>
@@ -1402,62 +1446,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/swc-project/swc/releases/tag/v1.3.41</guid>
             <pubDate>Fri, 17 Mar 2023 08:28:33 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.0.0-rc.4]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-rc.4</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-rc.4</guid>
-            <pubDate>Fri, 17 Mar 2023 01:34:27 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Features</h4>
-<ul>
-<li>Angular: Add "assets" build option <a href="https://github.com/storybooks/storybook/pull/21116" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21116/hovercard">#21116</a></li>
-</ul>
-<h4>Bug Fixes</h4>
-<ul>
-<li>React: Fix missing framework options in shim <a href="https://github.com/storybooks/storybook/pull/21644" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21644/hovercard">#21644</a></li>
-<li>Docs: Update MDX <code>Link</code> component to be more user friendly <a href="https://github.com/storybooks/storybook/pull/21570" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21570/hovercard">#21570</a></li>
-<li>Links: Update LinkTo component <a href="https://github.com/storybooks/storybook/pull/21569" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21569/hovercard">#21569</a></li>
-<li>Vite: Allow vue files in importfn <a href="https://github.com/storybooks/storybook/pull/21550" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21550/hovercard">#21550</a></li>
-<li>Controls: Fix glitchy range control <a href="https://github.com/storybooks/storybook/pull/21459" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21459/hovercard">#21459</a></li>
-<li>CLI: Fix styling regression on CLI starter Introduction.mdx file <a href="https://github.com/storybooks/storybook/pull/21466" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21466/hovercard">#21466</a></li>
-<li>Addon-docs: Fix csf-plugin for Angular <a href="https://github.com/storybooks/storybook/pull/21629" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21629/hovercard">#21629</a></li>
-<li>Vite: Fix alias array converted incorrectly to an object <a href="https://github.com/storybooks/storybook/pull/21480" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21480/hovercard">#21480</a></li>
-<li>UI: Default white preview background <a href="https://github.com/storybooks/storybook/pull/21593" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21593/hovercard">#21593</a></li>
-<li>Vite: Fix dev and yarn pnp by adding lodash files to optimizeDeps.include <a href="https://github.com/storybooks/storybook/pull/21535" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21535/hovercard">#21535</a></li>
-<li>Composition: Fix blank page when ref is missing but specified in url <a href="https://github.com/storybooks/storybook/pull/21598" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21598/hovercard">#21598</a></li>
-<li>Core: Disable cache in dev-mode <a href="https://github.com/storybooks/storybook/pull/21574" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21574/hovercard">#21574</a></li>
-<li>Vite: Fix react-vite and projects with absolute path preview entries on Windows <a href="https://github.com/storybooks/storybook/pull/21545" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21545/hovercard">#21545</a></li>
-<li>UI: Change the way of preloading fonts <a href="https://github.com/storybooks/storybook/pull/21599" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21599/hovercard">#21599</a></li>
-<li>Core: Add preload and prefetch links for runtime.mjs and related files <a href="https://github.com/storybooks/storybook/pull/21594" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21594/hovercard">#21594</a></li>
-<li>React: Fix type inconsistencies in composeStories <a href="https://github.com/storybooks/storybook/pull/21575" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21575/hovercard">#21575</a></li>
-<li>UI: Fix WithTooltip to use visible prop instead of defaultVisible <a href="https://github.com/storybooks/storybook/pull/21589" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21589/hovercard">#21589</a></li>
-</ul>
-<h4>Maintenance</h4>
-<ul>
-<li>Blocks: Iprove error messages <a href="https://github.com/storybooks/storybook/pull/21615" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21615/hovercard">#21615</a></li>
-</ul>
-<h4>Build</h4>
-<ul>
-<li>Build: Regen lockfiles <a href="https://github.com/storybooks/storybook/pull/21576" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21576/hovercard">#21576</a></li>
-<li>Build: Fix coverage job in CircleCI <a href="https://github.com/storybooks/storybook/pull/21633" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21633/hovercard">#21633</a></li>
-<li>Vite: Update sandbox template for vue2 script <a href="https://github.com/storybooks/storybook/pull/20750" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/20750/hovercard">#20750</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.9.0-9.0.pre: Roll Flutter Engine from 48628fb9462e to 06e031891d02 (8 revisions) (…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.9.0-9.0.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.9.0-9.0.pre</guid>
-            <pubDate>Fri, 17 Mar 2023 01:11:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1628462221" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/122851" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/122851/hovercard" href="https://github.com/flutter/flutter/pull/122851">#122851</a>)</p>
-<p>Roll Flutter Engine from 48628fb9462e to 06e031891d02 (8 revisions)</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kubernetes: Kubernetes v1.27.0-beta.0]]></title>
-            <link>https://github.com/kubernetes/kubernetes/releases/tag/v1.27.0-beta.0</link>
-            <guid>https://github.com/kubernetes/kubernetes/releases/tag/v1.27.0-beta.0</guid>
-            <pubDate>Fri, 17 Mar 2023 00:49:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>See <a href="https://groups.google.com/forum/#!forum/kubernetes-announce" rel="nofollow">kubernetes-announce@</a>. Additional binary downloads are linked in the <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.27.md">CHANGELOG</a>.</p>
-<p>See <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.27.md">the CHANGELOG</a> for more details.</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
