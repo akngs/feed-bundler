@@ -4,10 +4,201 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 26 Mar 2023 06:06:44 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 26 Mar 2023 12:07:22 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97175: warn on future reshape alias mutation violations]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97175</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97175</guid>
+            <pubDate>Sun, 26 Mar 2023 11:37:36 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Summary:<br>
+Copy-on-Write Storage</h1>
+<h2>Motivation</h2>
+<p>PyTorch inherited from NumPy an optimization on the reshape function<br>
+that produces a view as an output if it can be represented as<br>
+such. This complicates the work of the PyTorch compilation stack<br>
+because, it needs to understand the representation of the input in<br>
+order to understand if the output will be a copy or an alias.</p>
+<p>The compilation stack would rather not be concerned with such details,<br>
+motivating the Stride Agnostic PyTorch project.</p>
+<p>To address reshape specifically, we wish to simplify the<br>
+implementation to <em>always</em> copy, but copy lazily upon modification if<br>
+we can represent the output as a view.</p>
+<h2>Implementation plan</h2>
+<p>We have not implemented copy-on-write tensors yet, because this is a<br>
+backward incompatible change (see Backward Incompatible section<br>
+below). But this is the design.</p>
+<p>A copy-on-write tensor, also known as a lazily-copied tensor, is<br>
+initially going to be created by an operation like reshape which would<br>
+historically have created a view. We wish to maintain the performance<br>
+of the view but drop the aliasing aspect. Note that there is desire<br>
+for copy-on-write tensors outside of reshape, so we will likely also<br>
+want to add a public operator that can do this. It could be named<br>
+"lazy_clone" or something similar.</p>
+<p>The core tenet of the design is that we wish to maintain the invariant<br>
+that Tensors alias if and only if they share a storage. Thus when we<br>
+create a lazy-copy, we will need to create a new storage. We also will<br>
+have to modify the source storage, since it also must now be lazily<br>
+copied.</p>
+<p>The algorithm for creating a new copy-on-write tensor (and also<br>
+converting the source to copy-on-write) is as follows:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="def lazy_clone(src: Tensor) -&gt; Tensor:
+    # First ensure that the source has a copy-on-write enabled storage.
+    # We implement this using a custom context on the DataPtr. The
+    # source tensor might already have this enabled, but if it doesn't,
+    # convert it.
+    if not has_copy_on_write_context(src.storage().storage_impl()):
+        if not(wrap_with_copy_on_write_context(src.storage().storage_impl())):
+            # For whatever reason, we weren't able to wrap the DataPtr.
+            # We have to do an eager copy.
+            return src.clone()
+
+    new_storage = fork_copy_on_write_storage(src.storage()) # can't fail
+    # Now just create a new tensor using the new storage.
+    return new Tensor(storage=new_storage, sizes_and_strides_like=src)"><pre class="notranslate"><code>def lazy_clone(src: Tensor) -&gt; Tensor:
+    # First ensure that the source has a copy-on-write enabled storage.
+    # We implement this using a custom context on the DataPtr. The
+    # source tensor might already have this enabled, but if it doesn't,
+    # convert it.
+    if not has_copy_on_write_context(src.storage().storage_impl()):
+        if not(wrap_with_copy_on_write_context(src.storage().storage_impl())):
+            # For whatever reason, we weren't able to wrap the DataPtr.
+            # We have to do an eager copy.
+            return src.clone()
+
+    new_storage = fork_copy_on_write_storage(src.storage()) # can't fail
+    # Now just create a new tensor using the new storage.
+    return new Tensor(storage=new_storage, sizes_and_strides_like=src)
+</code></pre></div>
+<p>That's the high level algorithm. The copy-on-write context that we<br>
+introduce is morally just a refcount on the underlying physical data<br>
+pointer. Each unique storage represents a set of tensors that share a<br>
+view and thus will hold a single refcount on the context.</p>
+<p>Now we just need to intercept writes to the storage and materialize<br>
+them. We can use a few mechanisms to do this:</p>
+<ol>
+<li>autograd knows which operators write to which tensor inputs. We can<br>
+materialize at that point when autograd is enabled.</li>
+<li>if autograd is not enabled, we can introduce a new dispatch key<br>
+that does the same trick</li>
+<li>we can also materialize whenever there's mutable access to the data<br>
+pointer through any of <code>at::Tensor</code>, <code>c10::TensorImpl</code>,<br>
+<code>c10::Storage</code>, <code>c10::StorageImpl</code>, or <code>c10::DataPtr</code>. With the<br>
+current codebase, this will be too aggressive, but we will refactor<br>
+to have a minimal set of mutable accesses.</li>
+</ol>
+<h2>Backwards incompatibiility</h2>
+<p>Changing reshape to produce a copy is a backwards incompatible change,<br>
+because users could be relying on the aliasing behavior, intentionally<br>
+or not.</p>
+<p>For one release, rather than returning copy-on-write tensors, we<br>
+instead warn when users have triggered behavior in their program that<br>
+relies on the aliasing of the output and input.</p>
+<p>To do this, we must simulate the behavior in a backward compatible<br>
+way. To remain backward compatible, the aliases must preserve the<br>
+invariant that they have the same storage. This is a big deviation<br>
+from the design detailed above. To get closer to the real design and<br>
+implementation, we introduce a new <code>c10::TensorImpl</code> level concept<br>
+called "Shadow Storage". The shadow storage represents what the<br>
+storage would have looked like the view actually been a lazy copy.</p>
+<p>In the instrumented world we thus maintain the formal invariant that<br>
+tensors that alias share a storage. But we have a new invariant:<br>
+tensors that are lazy-copies of each other will share a shadow<br>
+storage.</p>
+<p>So what do we warn on? We warn if there is a write to a tensor in a<br>
+set that shares a shadow storage followed by a read or a write to a<br>
+different tensor that shares a physical storage but has a different<br>
+shadow storage. In the real implementation, the first write would have<br>
+triggered a copy, forever cleaving the two sets of tensors, but in the<br>
+current world we instead had behavior that relied on the view-ness of<br>
+the output of reshape.</p>
+<p>We can track these violations simply by adding a generation number to<br>
+the shadow and physical storages, updating them both on writes and<br>
+observing if a read or write ever encounters values that are out of<br>
+sync.</p>
+<p>We have a few mechanisms for tracking reads and writes:</p>
+<ul>
+<li>reads can be tracked by const accesses to the data pointer</li>
+<li>writes can be tracked by mutable accesses to the data pointer</li>
+<li>writes may also be tracked via autograd, using the same mechanism<br>
+to bump version numbers</li>
+</ul>
+<p>Note that we presently are only checking via autograd, since we don't<br>
+have const access to the data pointer, so we would be way too<br>
+aggressive if we assumed every access was a real write.</p>
+<h3>Optimizations to the instrumentation</h3>
+<p>Technically, every tensor will require a shadow storage, because if we<br>
+were to create a view of a tensor and then create a lazy-copy, both<br>
+the original tensor and the view would have to share the shadow<br>
+storage, and thus it has to be created and shared before we ever even<br>
+know we needed it.</p>
+<p>But we don't want to pay the memory cost of this since we don't expect<br>
+it to be that common. We can get around this by saving the original<br>
+shadow storage on the phsyical storage itself. We will have an<br>
+asymmetrical rule that states that any tensor that has a null shadow<br>
+storage will instead get its shadow storage from the physical<br>
+storage. This allows us to avoid refcount bumps on the shadow storage<br>
+as well as deferring any generation number bumps until we actually<br>
+have an outstanding copy on write.</p>
+<h2>Future work</h2>
+<ul>
+<li>enrich the warning by flagging reads/writes to data pointer after a<br>
+big refactoring</li>
+<li>analyze violations of the warning and make a decision about whether<br>
+we require any coordination about the BC change or if we should just<br>
+let the warning run its course</li>
+<li>implement the actual copy on write</li>
+<li>simplify the compiler stack to no longer concern itself with this</li>
+</ul>
+<p>Test Plan: Added new tests.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97515: add -std=c++17 to windows cuda compilations]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97515</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97515</guid>
+            <pubDate>Sun, 26 Mar 2023 10:06:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+We're using C++17 in headers that are compiled by C++<br>
+extensions. Support for this was not added when we upgraded to C++17.</p>
+<p>Test Plan: Rely on CI.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from core: v3.3.0-alpha.5]]></title>
+            <link>https://github.com/vuejs/core/releases/tag/v3.3.0-alpha.5</link>
+            <guid>https://github.com/vuejs/core/releases/tag/v3.3.0-alpha.5</guid>
+            <pubDate>Sun, 26 Mar 2023 08:53:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Please refer to <a href="https://github.com/vuejs/core/blob/main/CHANGELOG.md">CHANGELOG.md</a> for details.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/95271]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F95271</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F95271</guid>
+            <pubDate>Sun, 26 Mar 2023 08:40:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>add cl3d support for and conv deconv</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/26921]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F26921</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F26921</guid>
+            <pubDate>Sun, 26 Mar 2023 07:03:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>2023-03-26 nightly release (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/dc45ad702466e4a73d972d3e1dc0c12ed80d2eef/hovercard" href="https://github.com/pytorch/pytorch/commit/dc45ad702466e4a73d972d3e1dc0c12ed80d2eef"><tt>dc45ad7</tt></a>)</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97620]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97620</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97620</guid>
+            <pubDate>Sun, 26 Mar 2023 06:16:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ROCm] Remove usage of deprecated HIP symbols</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/97620]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97620</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97620</guid>
+            <pubDate>Sun, 26 Mar 2023 06:16:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ROCm] Remove usage of deprecated HIP symbols</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -118,15 +309,6 @@ Tests already exist for new system (torch/dynamo/logging_tests.py)</p>
             <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/97164: Update on "Adjusted design for ShapeEnv."]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F97164</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F97164</guid>
-            <pubDate>Sun, 26 Mar 2023 00:56:39 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
-<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/97490]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97490</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97490</guid>
@@ -155,23 +337,6 @@ Tests already exist for new system (torch/dynamo/logging_tests.py)</p>
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sp00ls/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sp00ls">@sp00ls</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/vinaykulk621/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/vinaykulk621">@vinaykulk621</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97515: add /std:c++17 to windows cuda compilations]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97515</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97515</guid>
-            <pubDate>Sat, 25 Mar 2023 19:19:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:<br>
-We're using C++17 in headers that are compiled by C++<br>
-extensions. Support for this was not added when we upgraded to C++17.</p>
-<p>Test Plan: Rely on CI.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97602]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97602</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97602</guid>
-            <pubDate>Sat, 25 Mar 2023 16:46:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>fix</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v13.2.5-canary.17]]></title>
@@ -568,13 +733,6 @@ extensions. Support for this was not added when we upgraded to C++17.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97420]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97420</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97420</guid>
-            <pubDate>Sat, 25 Mar 2023 01:50:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>fix warnning message and add note</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from d3: v7.8.3]]></title>
             <link>https://github.com/d3/d3/releases/tag/v7.8.3</link>
             <guid>https://github.com/d3/d3/releases/tag/v7.8.3</guid>
@@ -584,24 +742,6 @@ extensions. Support for this was not added when we upgraded to C++17.</p>
 <li>Fix broken polygon. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1620091022" data-permission-text="Title is private" data-url="https://github.com/d3/d3-delaunay/issues/140" data-hovercard-type="pull_request" data-hovercard-url="/d3/d3-delaunay/pull/140/hovercard" href="https://github.com/d3/d3-delaunay/pull/140">d3/d3-delaunay#140</a></li>
 <li>Fix threshold generation when input is empty or has no deviation. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1630003238" data-permission-text="Title is private" data-url="https://github.com/d3/d3-array/issues/271" data-hovercard-type="pull_request" data-hovercard-url="/d3/d3-array/pull/271/hovercard" href="https://github.com/d3/d3-array/pull/271">d3/d3-array#271</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97431: Update on "[WIP] Enable conv binary for inductor"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97431</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97431</guid>
-            <pubDate>Sat, 25 Mar 2023 00:53:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu anijain2305 EikanWang Guobing-Chen zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97418: Update on "Implement conv unary op under Mkldnn/Meta dispatch key"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97418</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97418</guid>
-            <pubDate>Sat, 25 Mar 2023 00:53:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
-This PR implement <code>conv_unary</code> op with Mkldnn and Meta dispatch key. This op will be used in lowering inside inductor as external call.</p>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from storybook: v7.0.0-rc.8]]></title>
@@ -849,27 +989,6 @@ This PR implement <code>conv_unary</code> op with Mkldnn and Meta dispatch key. 
 <p><a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Agithub-actions+updated%3A2023-03-20..2023-03-24&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ajtpio+updated%3A2023-03-20..2023-03-24&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ayumyumqing+updated%3A2023-03-20..2023-03-24&amp;type=Issues">@yumyumqing</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.0.0-alpha.18</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.0.0-alpha.18</guid>
-            <pubDate>Fri, 24 Mar 2023 16:56:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.0.0-alpha.18.tgz: 7429a90998f35085aadb76209372eda9dd724dae5d37920f1bd408f7e8a21e9f</p>
-<p>jupyter-notebook-application-extension-7.0.0-alpha.18.tgz: 5ad1dbf554f5c60b02271b833292f12bcf29e5c0f5545c0da7261265dd428b70</p>
-<p>jupyter-notebook-console-extension-7.0.0-alpha.18.tgz: fb191b75147c484bf3f80c1fb70f7ddf0fdca5893f4f5d9eda92261c0812de40</p>
-<p>jupyter-notebook-docmanager-extension-7.0.0-alpha.18.tgz: da55183e6c91a872b2808058ff9fcd3c1674ab6091e98d1293247380725854d9</p>
-<p>jupyter-notebook-documentsearch-extension-7.0.0-alpha.18.tgz: 31c9e401e830fa0f9b9c874379961f1cdd666a7e59cce91e771b79b081e75d45</p>
-<p>jupyter-notebook-help-extension-7.0.0-alpha.18.tgz: e396ac5ea05c903d7a3c813c825ba5428a69592203a9d2781843ce365a755b82</p>
-<p>jupyter-notebook-lab-extension-7.0.0-alpha.18.tgz: 29a92b4d6f1bde0b83c11f47decc8ad09dd8b4d9fa5b59ed056eabc8065aefe4</p>
-<p>jupyter-notebook-notebook-extension-7.0.0-alpha.18.tgz: 0de2251e846eae92f496cfee43cbb232e81b172f296cdca953092218b7728149</p>
-<p>jupyter-notebook-terminal-extension-7.0.0-alpha.18.tgz: 47ba30ad9a52788e55e77c77935e537054e0540b580c5646e2d7b6f194597a6a</p>
-<p>jupyter-notebook-tree-7.0.0-alpha.18.tgz: e5e1c73d6975681acf424b95d7dcce1fdce04acbfa613b5266edc6a64212c823</p>
-<p>jupyter-notebook-tree-extension-7.0.0-alpha.18.tgz: 8dcc04b6bc9878051ac17e5d09cac21da6b978a447a6163b7018e13eb6e83c9d</p>
-<p>jupyter-notebook-ui-components-7.0.0-alpha.18.tgz: b8caf1fc39584dc7bbb2ac739b327de82f4fc366795308a008e157ec8fec8220</p>
-<p>notebook-7.0.0a18-py3-none-any.whl: 17d36528151e0b0e1bf318d2944520f98f08be2860d247c556185ea2bab6d5de</p>
-<p>notebook-7.0.0a18.tar.gz: 3c1fb8d2a6087b3f043715679338ae2c7fd51b99405ec9acb22b28a254f90741</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.0.0-alpha.18</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.0.0-alpha.18</guid>
@@ -912,9 +1031,30 @@ This PR implement <code>conv_unary</code> op with Mkldnn and Meta dispatch key. 
 <p>notebook-7.0.0a18.tar.gz: 3c1fb8d2a6087b3f043715679338ae2c7fd51b99405ec9acb22b28a254f90741</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.0.0-alpha.18</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.0.0-alpha.18</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.0.0-alpha.18</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.0.0-alpha.18</guid>
+            <pubDate>Fri, 24 Mar 2023 16:56:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.0.0-alpha.18.tgz: 7429a90998f35085aadb76209372eda9dd724dae5d37920f1bd408f7e8a21e9f</p>
+<p>jupyter-notebook-application-extension-7.0.0-alpha.18.tgz: 5ad1dbf554f5c60b02271b833292f12bcf29e5c0f5545c0da7261265dd428b70</p>
+<p>jupyter-notebook-console-extension-7.0.0-alpha.18.tgz: fb191b75147c484bf3f80c1fb70f7ddf0fdca5893f4f5d9eda92261c0812de40</p>
+<p>jupyter-notebook-docmanager-extension-7.0.0-alpha.18.tgz: da55183e6c91a872b2808058ff9fcd3c1674ab6091e98d1293247380725854d9</p>
+<p>jupyter-notebook-documentsearch-extension-7.0.0-alpha.18.tgz: 31c9e401e830fa0f9b9c874379961f1cdd666a7e59cce91e771b79b081e75d45</p>
+<p>jupyter-notebook-help-extension-7.0.0-alpha.18.tgz: e396ac5ea05c903d7a3c813c825ba5428a69592203a9d2781843ce365a755b82</p>
+<p>jupyter-notebook-lab-extension-7.0.0-alpha.18.tgz: 29a92b4d6f1bde0b83c11f47decc8ad09dd8b4d9fa5b59ed056eabc8065aefe4</p>
+<p>jupyter-notebook-notebook-extension-7.0.0-alpha.18.tgz: 0de2251e846eae92f496cfee43cbb232e81b172f296cdca953092218b7728149</p>
+<p>jupyter-notebook-terminal-extension-7.0.0-alpha.18.tgz: 47ba30ad9a52788e55e77c77935e537054e0540b580c5646e2d7b6f194597a6a</p>
+<p>jupyter-notebook-tree-7.0.0-alpha.18.tgz: e5e1c73d6975681acf424b95d7dcce1fdce04acbfa613b5266edc6a64212c823</p>
+<p>jupyter-notebook-tree-extension-7.0.0-alpha.18.tgz: 8dcc04b6bc9878051ac17e5d09cac21da6b978a447a6163b7018e13eb6e83c9d</p>
+<p>jupyter-notebook-ui-components-7.0.0-alpha.18.tgz: b8caf1fc39584dc7bbb2ac739b327de82f4fc366795308a008e157ec8fec8220</p>
+<p>notebook-7.0.0a18-py3-none-any.whl: 17d36528151e0b0e1bf318d2944520f98f08be2860d247c556185ea2bab6d5de</p>
+<p>notebook-7.0.0a18.tar.gz: 3c1fb8d2a6087b3f043715679338ae2c7fd51b99405ec9acb22b28a254f90741</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.0.0-alpha.18</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.0.0-alpha.18</guid>
             <pubDate>Fri, 24 Mar 2023 16:56:24 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.0.0-alpha.18.tgz: 7429a90998f35085aadb76209372eda9dd724dae5d37920f1bd408f7e8a21e9f</p>
@@ -1017,9 +1157,9 @@ This PR implement <code>conv_unary</code> op with Mkldnn and Meta dispatch key. 
 <p>notebook-7.0.0a18.tar.gz: 3c1fb8d2a6087b3f043715679338ae2c7fd51b99405ec9acb22b28a254f90741</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.0.0-alpha.18</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.0.0-alpha.18</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.0.0-alpha.18: Publish 7.0.0a18]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.0.0-alpha.18</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.0.0-alpha.18</guid>
             <pubDate>Fri, 24 Mar 2023 16:56:24 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.0.0-alpha.18.tgz: 7429a90998f35085aadb76209372eda9dd724dae5d37920f1bd408f7e8a21e9f</p>
@@ -1835,38 +1975,6 @@ This also changes static files to be served only if the <code>RAILS_SERVE_STATIC
 <p><a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Abollwyvl+updated%3A2023-03-22..2023-03-24&amp;type=Issues">@bollwyvl</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Agithub-actions+updated%3A2023-03-22..2023-03-24&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Ajtpio+updated%3A2023-03-22..2023-03-24&amp;type=Issues">@jtpio</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.1.0-beta.21: Publish 0.1.0b21]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.21</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.21</guid>
-            <pubDate>Fri, 24 Mar 2023 08:24:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: e78518d6404cc4a4ce0f9ec728b01f4dff9091557330c22e286fdf28abb57448</p>
-<p>jupyterlite-0.1.0b21-py3-none-any.whl: 8dc1e0df087ce3d594a39e7499556bdcbb89abbfd51e2e53e2c24db9a23a9af9</p>
-<p>jupyterlite-0.1.0b21.tar.gz: 5414282a6a0e1e9365d6743113981b4dbfc32cd8354d0dcaaa5c9b840074be98</p>
-<p>jupyterlite-application-0.1.0-beta.21.tgz: c249abb041a85c2bb43fd2be27115abb7120d1f4a3af8f28d27519f87bcec227</p>
-<p>jupyterlite-application-extension-0.1.0-beta.21.tgz: b97e4d7ad740db04658e7af1f14b15088246f672e1c8089efc7f112bb2cd4069</p>
-<p>jupyterlite-contents-0.1.0-beta.21.tgz: ede352376c461711ec4fddf9819e2e6272b0a28b6d1d359bd5a043e21dc79863</p>
-<p>jupyterlite-iframe-extension-0.1.0-beta.21.tgz: c3d7cc23b70359ea2e634d58d0cb30dbd82a3b6d1cf0df52527c3f20c8311007</p>
-<p>jupyterlite-javascript-kernel-0.1.0-beta.21.tgz: e0912642ce4a1149b2a29df1848a5fca756a7fe4160f94035fd91b71e881d533</p>
-<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.21.tgz: a056563cf6c845930a12dd95ebb5af8281e2a003fd2f7c506cfe0058f1427cd8</p>
-<p>jupyterlite-kernel-0.1.0-beta.21.tgz: 0f802a586ebd77d4e001e7c0efa815a13c53104de9de204ce1a855fe176d2d3e</p>
-<p>jupyterlite-licenses-0.1.0-beta.21.tgz: 0f60c71a01a94b5b93b5cc056e4452f382a3214a03daaba06cec668745cbae5f</p>
-<p>jupyterlite-localforage-0.1.0-beta.21.tgz: ab69cd33a3feacd626e08e911895b8bb769db771b4ca32a0fe4ca3ba107a857c</p>
-<p>jupyterlite-repl-extension-0.1.0-beta.21.tgz: 0eb64c2ddba958535b22c0a51efe08d98bf470304dd96699b88bd4332928f8e5</p>
-<p>jupyterlite-retro-application-extension-0.1.0-beta.21.tgz: c86b081624218dc250ab2326b577a3aba4a4eb4403323f32aa087097ec757953</p>
-<p>jupyterlite-server-0.1.0-beta.21.tgz: a7c50650b82c79348282092bc41f5685e9f2df10368200890100b5b881295616</p>
-<p>jupyterlite-server-extension-0.1.0-beta.21.tgz: 33e69bc67b2a370170ef30a7fd0139fcc6905aa9a24c628e0bc427385559bb0b</p>
-<p>jupyterlite-session-0.1.0-beta.21.tgz: 5942ec424c7ba3c7f884e56b9415b48049946c690d70af452537e903b7d7d326</p>
-<p>jupyterlite-settings-0.1.0-beta.21.tgz: 200fc6e43b758e9492f0df2c72cdb7aad96924a0ad6eb40d5aee06471305807f</p>
-<p>jupyterlite-translation-0.1.0-beta.21.tgz: ba51109215304e6a3ebcd48161ff810edf8894905bbe8ffb68db617bdde52a3d</p>
-<p>jupyterlite-types-0.1.0-beta.21.tgz: 2ce87b5c36f6cd98316c97852546f15e76ff0b4b12e98d0fa29d7daacea4940f</p>
-<p>jupyterlite-ui-components-0.1.0-beta.21.tgz: 0bf0b16fd8934724550a65c3922add529d11d028509095f3c5692197976c698d</p>
-<p>jupyterlite_core-0.1.0b21-py3-none-any.whl: 6e06a41c0137258c9527b6a997ec46f1732faa5fdb978e4393f33d9ae2744573</p>
-<p>jupyterlite_core-0.1.0b21.tar.gz: 55a92f878fafc8b2e0f966aca7390db02780d0284678a39b768cef9c2d762b79</p>
-<p>jupyterlite_javascript_kernel-0.1.0b21-py3-none-any.whl: 6914509bbcb4648c80c8ea53635dbd424cae1098da0327ecdb0dc65401e8186a</p>
-<p>jupyterlite_javascript_kernel-0.1.0b21.tar.gz: 41993c3cb6108492616fd8354b5ac09a0c747d13a8747eb36beb041f57f1dbf5</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.1.0-beta.21: Publish 0.1.0b21]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.21</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.1.0-beta.21</guid>
@@ -1931,9 +2039,9 @@ This also changes static files to be served only if the <code>RAILS_SERVE_STATIC
 <p>jupyterlite_javascript_kernel-0.1.0b21.tar.gz: 41993c3cb6108492616fd8354b5ac09a0c747d13a8747eb36beb041f57f1dbf5</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.1.0-beta.21: Publish 0.1.0b21]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.21</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.21</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.1.0-beta.21: Publish 0.1.0b21]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.21</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.21</guid>
             <pubDate>Fri, 24 Mar 2023 08:24:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: e78518d6404cc4a4ce0f9ec728b01f4dff9091557330c22e286fdf28abb57448</p>
@@ -1963,9 +2071,9 @@ This also changes static files to be served only if the <code>RAILS_SERVE_STATIC
 <p>jupyterlite_javascript_kernel-0.1.0b21.tar.gz: 41993c3cb6108492616fd8354b5ac09a0c747d13a8747eb36beb041f57f1dbf5</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/types@0.1.0-beta.21: Publish 0.1.0b21]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.1.0-beta.21</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.1.0-beta.21</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.1.0-beta.21: Publish 0.1.0b21]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.21</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.1.0-beta.21</guid>
             <pubDate>Fri, 24 Mar 2023 08:24:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: e78518d6404cc4a4ce0f9ec728b01f4dff9091557330c22e286fdf28abb57448</p>
@@ -2059,9 +2167,9 @@ This also changes static files to be served only if the <code>RAILS_SERVE_STATIC
 <p>jupyterlite_javascript_kernel-0.1.0b21.tar.gz: 41993c3cb6108492616fd8354b5ac09a0c747d13a8747eb36beb041f57f1dbf5</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.1.0-beta.21: Publish 0.1.0b21]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.21</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.21</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.1.0-beta.21: Publish 0.1.0b21]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.21</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.1.0-beta.21</guid>
             <pubDate>Fri, 24 Mar 2023 08:24:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: e78518d6404cc4a4ce0f9ec728b01f4dff9091557330c22e286fdf28abb57448</p>
@@ -2091,9 +2199,41 @@ This also changes static files to be served only if the <code>RAILS_SERVE_STATIC
 <p>jupyterlite_javascript_kernel-0.1.0b21.tar.gz: 41993c3cb6108492616fd8354b5ac09a0c747d13a8747eb36beb041f57f1dbf5</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.1.0-beta.21: Publish 0.1.0b21]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.21</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.1.0-beta.21</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/types@0.1.0-beta.21: Publish 0.1.0b21]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.1.0-beta.21</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.1.0-beta.21</guid>
+            <pubDate>Fri, 24 Mar 2023 08:24:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: e78518d6404cc4a4ce0f9ec728b01f4dff9091557330c22e286fdf28abb57448</p>
+<p>jupyterlite-0.1.0b21-py3-none-any.whl: 8dc1e0df087ce3d594a39e7499556bdcbb89abbfd51e2e53e2c24db9a23a9af9</p>
+<p>jupyterlite-0.1.0b21.tar.gz: 5414282a6a0e1e9365d6743113981b4dbfc32cd8354d0dcaaa5c9b840074be98</p>
+<p>jupyterlite-application-0.1.0-beta.21.tgz: c249abb041a85c2bb43fd2be27115abb7120d1f4a3af8f28d27519f87bcec227</p>
+<p>jupyterlite-application-extension-0.1.0-beta.21.tgz: b97e4d7ad740db04658e7af1f14b15088246f672e1c8089efc7f112bb2cd4069</p>
+<p>jupyterlite-contents-0.1.0-beta.21.tgz: ede352376c461711ec4fddf9819e2e6272b0a28b6d1d359bd5a043e21dc79863</p>
+<p>jupyterlite-iframe-extension-0.1.0-beta.21.tgz: c3d7cc23b70359ea2e634d58d0cb30dbd82a3b6d1cf0df52527c3f20c8311007</p>
+<p>jupyterlite-javascript-kernel-0.1.0-beta.21.tgz: e0912642ce4a1149b2a29df1848a5fca756a7fe4160f94035fd91b71e881d533</p>
+<p>jupyterlite-javascript-kernel-extension-0.1.0-beta.21.tgz: a056563cf6c845930a12dd95ebb5af8281e2a003fd2f7c506cfe0058f1427cd8</p>
+<p>jupyterlite-kernel-0.1.0-beta.21.tgz: 0f802a586ebd77d4e001e7c0efa815a13c53104de9de204ce1a855fe176d2d3e</p>
+<p>jupyterlite-licenses-0.1.0-beta.21.tgz: 0f60c71a01a94b5b93b5cc056e4452f382a3214a03daaba06cec668745cbae5f</p>
+<p>jupyterlite-localforage-0.1.0-beta.21.tgz: ab69cd33a3feacd626e08e911895b8bb769db771b4ca32a0fe4ca3ba107a857c</p>
+<p>jupyterlite-repl-extension-0.1.0-beta.21.tgz: 0eb64c2ddba958535b22c0a51efe08d98bf470304dd96699b88bd4332928f8e5</p>
+<p>jupyterlite-retro-application-extension-0.1.0-beta.21.tgz: c86b081624218dc250ab2326b577a3aba4a4eb4403323f32aa087097ec757953</p>
+<p>jupyterlite-server-0.1.0-beta.21.tgz: a7c50650b82c79348282092bc41f5685e9f2df10368200890100b5b881295616</p>
+<p>jupyterlite-server-extension-0.1.0-beta.21.tgz: 33e69bc67b2a370170ef30a7fd0139fcc6905aa9a24c628e0bc427385559bb0b</p>
+<p>jupyterlite-session-0.1.0-beta.21.tgz: 5942ec424c7ba3c7f884e56b9415b48049946c690d70af452537e903b7d7d326</p>
+<p>jupyterlite-settings-0.1.0-beta.21.tgz: 200fc6e43b758e9492f0df2c72cdb7aad96924a0ad6eb40d5aee06471305807f</p>
+<p>jupyterlite-translation-0.1.0-beta.21.tgz: ba51109215304e6a3ebcd48161ff810edf8894905bbe8ffb68db617bdde52a3d</p>
+<p>jupyterlite-types-0.1.0-beta.21.tgz: 2ce87b5c36f6cd98316c97852546f15e76ff0b4b12e98d0fa29d7daacea4940f</p>
+<p>jupyterlite-ui-components-0.1.0-beta.21.tgz: 0bf0b16fd8934724550a65c3922add529d11d028509095f3c5692197976c698d</p>
+<p>jupyterlite_core-0.1.0b21-py3-none-any.whl: 6e06a41c0137258c9527b6a997ec46f1732faa5fdb978e4393f33d9ae2744573</p>
+<p>jupyterlite_core-0.1.0b21.tar.gz: 55a92f878fafc8b2e0f966aca7390db02780d0284678a39b768cef9c2d762b79</p>
+<p>jupyterlite_javascript_kernel-0.1.0b21-py3-none-any.whl: 6914509bbcb4648c80c8ea53635dbd424cae1098da0327ecdb0dc65401e8186a</p>
+<p>jupyterlite_javascript_kernel-0.1.0b21.tar.gz: 41993c3cb6108492616fd8354b5ac09a0c747d13a8747eb36beb041f57f1dbf5</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.1.0-beta.21: Publish 0.1.0b21]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.21</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.1.0-beta.21</guid>
             <pubDate>Fri, 24 Mar 2023 08:24:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: e78518d6404cc4a4ce0f9ec728b01f4dff9091557330c22e286fdf28abb57448</p>
@@ -2900,235 +3040,6 @@ memory-intensive environments.</p>
             <guid>https://github.com/electron/electron/releases/tag/v25.0.0-nightly.20230323</guid>
             <pubDate>Thu, 23 Mar 2023 13:02:55 GMT</pubDate>
             <content:encoded><![CDATA[<p>v25.0.0-nightly.20230323</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.0.0-rc.7]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-rc.7</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.0.0-rc.7</guid>
-            <pubDate>Thu, 23 Mar 2023 12:01:31 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Bug Fixes</h4>
-<ul>
-<li>Svelte: Remount when resetting args in controls <a href="https://github.com/storybooks/storybook/pull/21659" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21659/hovercard">#21659</a></li>
-<li>CLI: Fix support for env vars when running <code>dev</code>/<code>build</code> commands <a href="https://github.com/storybooks/storybook/pull/21152" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21152/hovercard">#21152</a></li>
-</ul>
-<h4>Maintenance</h4>
-<ul>
-<li>Core: upgrade esbuild, remove watch option from options <a href="https://github.com/storybooks/storybook/pull/21727" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21727/hovercard">#21727</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from spring-boot: v3.0.5]]></title>
-            <link>https://github.com/spring-projects/spring-boot/releases/tag/v3.0.5</link>
-            <guid>https://github.com/spring-projects/spring-boot/releases/tag/v3.0.5</guid>
-            <pubDate>Thu, 23 Mar 2023 11:56:40 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Bug Fixes</h2>
-<ul>
-<li>EmbeddedWebServerFactoryCustomizerAutoConfiguration should not run when embedded web server is not configured <a href="https://github.com/spring-projects/spring-boot/issues/34659" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34659/hovercard">#34659</a></li>
-<li>StandardConfigDataResource can import the same file twice if the classpath includes '.' <a href="https://github.com/spring-projects/spring-boot/issues/34617" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34617/hovercard">#34617</a></li>
-<li>Loading application.yml fails with NoSuchMethodError when using SnakeYAML 2.0 <a href="https://github.com/spring-projects/spring-boot/issues/34515" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34515/hovercard">#34515</a></li>
-<li><code>@ConfigurationProperties</code> no longer works on a mutable Kotlin data classes <a href="https://github.com/spring-projects/spring-boot/issues/34500" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34500/hovercard">#34500</a></li>
-<li>Image builds with podman fail when image buildpacks are configured <a href="https://github.com/spring-projects/spring-boot/issues/34495" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34495/hovercard">#34495</a></li>
-<li>Use of <code>@EntityScan</code> causes AOT instance supplier code generation error <a href="https://github.com/spring-projects/spring-boot/issues/34371" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34371/hovercard">#34371</a></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="notebook_with_decorative_cover" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4d4.png">📔</g-emoji> Documentation</h2>
-<ul>
-<li>Document support for Java 20 <a href="https://github.com/spring-projects/spring-boot/issues/34726" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34726/hovercard">#34726</a></li>
-<li>Clarify conventions for custom error pages in WebFlux <a href="https://github.com/spring-projects/spring-boot/issues/34705" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34705/hovercard">#34705</a></li>
-<li>Add documentation tip showing how to configure publishRegistry Maven properties from the command line <a href="https://github.com/spring-projects/spring-boot/issues/34704" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34704/hovercard">#34704</a></li>
-<li>Typo in Batch documentation: content instead of context <a href="https://github.com/spring-projects/spring-boot/pull/34646" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34646/hovercard">#34646</a></li>
-<li>Update two references to old APIs <a href="https://github.com/spring-projects/spring-boot/issues/34602" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34602/hovercard">#34602</a></li>
-<li>Fix Javadoc in JobLauncherApplicationRunner <a href="https://github.com/spring-projects/spring-boot/pull/34596" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34596/hovercard">#34596</a></li>
-<li>Document how to get socket location for image building configuration with podman <a href="https://github.com/spring-projects/spring-boot/issues/34475" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34475/hovercard">#34475</a></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="hammer" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f528.png">🔨</g-emoji> Dependency Upgrades</h2>
-<ul>
-<li>Upgrade to Caffeine 3.1.5 <a href="https://github.com/spring-projects/spring-boot/issues/34662" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34662/hovercard">#34662</a></li>
-<li>Upgrade to Couchbase Client 3.4.4 <a href="https://github.com/spring-projects/spring-boot/issues/34663" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34663/hovercard">#34663</a></li>
-<li>Upgrade to Dropwizard Metrics 4.2.18 <a href="https://github.com/spring-projects/spring-boot/issues/34664" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34664/hovercard">#34664</a></li>
-<li>Upgrade to GraphQL Java 19.4 <a href="https://github.com/spring-projects/spring-boot/issues/34718" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34718/hovercard">#34718</a></li>
-<li>Upgrade to Groovy 4.0.10 <a href="https://github.com/spring-projects/spring-boot/issues/34665" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34665/hovercard">#34665</a></li>
-<li>Upgrade to Infinispan 14.0.7.Final <a href="https://github.com/spring-projects/spring-boot/issues/34666" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34666/hovercard">#34666</a></li>
-<li>Upgrade to Jedis 4.3.2 <a href="https://github.com/spring-projects/spring-boot/issues/34698" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34698/hovercard">#34698</a></li>
-<li>Upgrade to Jetty Reactive HTTPClient 3.0.8 <a href="https://github.com/spring-projects/spring-boot/issues/34667" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34667/hovercard">#34667</a></li>
-<li>Upgrade to jOOQ 3.17.10 <a href="https://github.com/spring-projects/spring-boot/issues/34699" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34699/hovercard">#34699</a></li>
-<li>Upgrade to Json-smart 2.4.10 <a href="https://github.com/spring-projects/spring-boot/issues/34669" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34669/hovercard">#34669</a></li>
-<li>Upgrade to Logback 1.4.6 <a href="https://github.com/spring-projects/spring-boot/issues/34670" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34670/hovercard">#34670</a></li>
-<li>Upgrade to Micrometer 1.10.5 <a href="https://github.com/spring-projects/spring-boot/issues/34536" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34536/hovercard">#34536</a></li>
-<li>Upgrade to Micrometer Tracing 1.0.3 <a href="https://github.com/spring-projects/spring-boot/issues/34537" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34537/hovercard">#34537</a></li>
-<li>Upgrade to Netty 4.1.90.Final <a href="https://github.com/spring-projects/spring-boot/issues/34671" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34671/hovercard">#34671</a></li>
-<li>Upgrade to Reactor Bom 2022.0.5 <a href="https://github.com/spring-projects/spring-boot/issues/34538" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34538/hovercard">#34538</a></li>
-<li>Upgrade to SLF4J 2.0.7 <a href="https://github.com/spring-projects/spring-boot/issues/34672" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34672/hovercard">#34672</a></li>
-<li>Upgrade to Spring AMQP 3.0.3 <a href="https://github.com/spring-projects/spring-boot/issues/34608" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34608/hovercard">#34608</a></li>
-<li>Upgrade to Spring Data Bom 2022.0.4 <a href="https://github.com/spring-projects/spring-boot/issues/34539" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34539/hovercard">#34539</a></li>
-<li>Upgrade to Spring Framework 6.0.7 <a href="https://github.com/spring-projects/spring-boot/issues/34540" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34540/hovercard">#34540</a></li>
-<li>Upgrade to Spring GraphQL 1.1.3 <a href="https://github.com/spring-projects/spring-boot/issues/34541" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34541/hovercard">#34541</a></li>
-<li>Upgrade to Spring HATEOAS 2.0.3 <a href="https://github.com/spring-projects/spring-boot/issues/34673" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34673/hovercard">#34673</a></li>
-<li>Upgrade to Spring Integration 6.0.4 <a href="https://github.com/spring-projects/spring-boot/issues/34542" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34542/hovercard">#34542</a></li>
-<li>Upgrade to Spring Kafka 3.0.5 <a href="https://github.com/spring-projects/spring-boot/issues/34543" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34543/hovercard">#34543</a></li>
-<li>Upgrade to Spring Retry 2.0.1 <a href="https://github.com/spring-projects/spring-boot/issues/34544" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34544/hovercard">#34544</a></li>
-<li>Upgrade to Spring Session 3.0.1 <a href="https://github.com/spring-projects/spring-boot/issues/34545" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34545/hovercard">#34545</a></li>
-<li>Upgrade to Tomcat 10.1.7 <a href="https://github.com/spring-projects/spring-boot/issues/34674" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34674/hovercard">#34674</a></li>
-<li>Upgrade to UnboundID LDAPSDK 6.0.8 <a href="https://github.com/spring-projects/spring-boot/issues/34675" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34675/hovercard">#34675</a></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="heart" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2764.png">❤️</g-emoji> Contributors</h2>
-<p>Thank you to all the contributors who worked on this release:</p>
-<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/1993heqiang/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/1993heqiang">@1993heqiang</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anthonydahanne/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anthonydahanne">@anthonydahanne</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/benelog/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/benelog">@benelog</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dsyer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dsyer">@dsyer</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/izeye/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/izeye">@izeye</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/swapy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/swapy">@swapy</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/terminux/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/terminux">@terminux</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.3.244.1-pgo: Version 11.3.244.1]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.244.1-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.244.1-pgo</guid>
-            <pubDate>Thu, 23 Mar 2023 09:54:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib3737af3f6219be9b9a63ee61de36feed35dd108<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4365198" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4365198</a><br>
-Reviewed-by: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
-Commit-Queue: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
-Cr-Commit-Position: refs/branch-heads/11.3@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b0a3a06aa78a9beb4e8485eb502b20b2abe2abbf/hovercard" href="https://github.com/v8/v8/commit/b0a3a06aa78a9beb4e8485eb502b20b2abe2abbf"><tt>b0a3a06</tt></a>-refs/heads/11.3.244@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0326cf6343caaa6ea32bb3208e894cb7412e1313/hovercard" href="https://github.com/v8/v8/commit/0326cf6343caaa6ea32bb3208e894cb7412e1313"><tt>0326cf6</tt></a>-refs/heads/main@{#86647}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.3.244.1]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.244.1</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.244.1</guid>
-            <pubDate>Thu, 23 Mar 2023 09:54:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib3737af3f6219be9b9a63ee61de36feed35dd108<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4365198" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4365198</a><br>
-Reviewed-by: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
-Commit-Queue: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
-Cr-Commit-Position: refs/branch-heads/11.3@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b0a3a06aa78a9beb4e8485eb502b20b2abe2abbf/hovercard" href="https://github.com/v8/v8/commit/b0a3a06aa78a9beb4e8485eb502b20b2abe2abbf"><tt>b0a3a06</tt></a>-refs/heads/11.3.244@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0326cf6343caaa6ea32bb3208e894cb7412e1313/hovercard" href="https://github.com/v8/v8/commit/0326cf6343caaa6ea32bb3208e894cb7412e1313"><tt>0326cf6</tt></a>-refs/heads/main@{#86647}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v6.5.17-alpha.0]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v6.5.17-alpha.0</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v6.5.17-alpha.0</guid>
-            <pubDate>Thu, 23 Mar 2023 09:21:36 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Bug Fixes</h4>
-<ul>
-<li>Fix TypeScript 5.0 support in 6.5 <a href="https://github.com/storybooks/storybook/pull/21745" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21745/hovercard">#21745</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from spring-boot: v2.7.10]]></title>
-            <link>https://github.com/spring-projects/spring-boot/releases/tag/v2.7.10</link>
-            <guid>https://github.com/spring-projects/spring-boot/releases/tag/v2.7.10</guid>
-            <pubDate>Thu, 23 Mar 2023 09:20:38 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Bug Fixes</h2>
-<ul>
-<li>Some of the deprecated spring.security.saml2.relyingparty.registration.*.identityprovider.* properties are ignored <a href="https://github.com/spring-projects/spring-boot/issues/34525" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34525/hovercard">#34525</a></li>
-<li>Maven plugin uses timezone-local timestamps when outputTimestamp is used <a href="https://github.com/spring-projects/spring-boot/issues/34424" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34424/hovercard">#34424</a></li>
-<li>Loading application.yml fails with NoSuchMethodError when using SnakeYAML 2.0 <a href="https://github.com/spring-projects/spring-boot/issues/34405" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34405/hovercard">#34405</a></li>
-<li>EmbeddedWebServerFactoryCustomizerAutoConfiguration should not run when embedded web server is not configured <a href="https://github.com/spring-projects/spring-boot/pull/34332" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34332/hovercard">#34332</a></li>
-<li>Image builds with podman fail when image buildpacks are configured <a href="https://github.com/spring-projects/spring-boot/issues/34324" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34324/hovercard">#34324</a></li>
-<li>org.springframework.boot.web.embedded.jetty.GracefulShutdown uses the wrong class to create its logger <a href="https://github.com/spring-projects/spring-boot/pull/34220" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34220/hovercard">#34220</a></li>
-<li>StandardConfigDataResource can import the same file twice if the classpath includes '.' <a href="https://github.com/spring-projects/spring-boot/issues/34212" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34212/hovercard">#34212</a></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="notebook_with_decorative_cover" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4d4.png">📔</g-emoji> Documentation</h2>
-<ul>
-<li>Document support for Java 20 <a href="https://github.com/spring-projects/spring-boot/issues/34642" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34642/hovercard">#34642</a></li>
-<li>Update two references to old APIs <a href="https://github.com/spring-projects/spring-boot/pull/34567" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34567/hovercard">#34567</a></li>
-<li>Clarify conventions for custom error pages in WebFlux <a href="https://github.com/spring-projects/spring-boot/pull/34534" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34534/hovercard">#34534</a></li>
-<li>Add documentation tip showing how to configure publishRegistry Maven properties from the command line <a href="https://github.com/spring-projects/spring-boot/pull/34517" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34517/hovercard">#34517</a></li>
-<li>Document support for Gradle 8 <a href="https://github.com/spring-projects/spring-boot/issues/34458" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34458/hovercard">#34458</a></li>
-<li>Document how to get socket location for image building configuration with podman <a href="https://github.com/spring-projects/spring-boot/issues/34435" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34435/hovercard">#34435</a></li>
-<li>Fix typo in Encrypting Properties <a href="https://github.com/spring-projects/spring-boot/pull/34386" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/34386/hovercard">#34386</a></li>
-<li>Use plugins DSL consistently in Spring Boot Gradle Plugin docs  <a href="https://github.com/spring-projects/spring-boot/issues/34048" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34048/hovercard">#34048</a></li>
-<li>Add link to Failover starter <a href="https://github.com/spring-projects/spring-boot/pull/32943" data-hovercard-type="pull_request" data-hovercard-url="/spring-projects/spring-boot/pull/32943/hovercard">#32943</a></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="hammer" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f528.png">🔨</g-emoji> Dependency Upgrades</h2>
-<ul>
-<li>Upgrade to Dropwizard Metrics 4.2.18 <a href="https://github.com/spring-projects/spring-boot/issues/34648" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34648/hovercard">#34648</a></li>
-<li>Upgrade to GraphQL Java 18.4 <a href="https://github.com/spring-projects/spring-boot/issues/34717" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34717/hovercard">#34717</a></li>
-<li>Upgrade to Groovy 3.0.16 <a href="https://github.com/spring-projects/spring-boot/issues/34649" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34649/hovercard">#34649</a></li>
-<li>Upgrade to Jetty 9.4.51.v20230217 <a href="https://github.com/spring-projects/spring-boot/issues/34651" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34651/hovercard">#34651</a></li>
-<li>Upgrade to Jetty Reactive HTTPClient 1.1.14 <a href="https://github.com/spring-projects/spring-boot/issues/34650" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34650/hovercard">#34650</a></li>
-<li>Upgrade to Json-smart 2.4.10 <a href="https://github.com/spring-projects/spring-boot/issues/34652" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34652/hovercard">#34652</a></li>
-<li>Upgrade to Micrometer 1.9.9 <a href="https://github.com/spring-projects/spring-boot/issues/34528" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34528/hovercard">#34528</a></li>
-<li>Upgrade to Netty 4.1.90.Final <a href="https://github.com/spring-projects/spring-boot/issues/34653" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34653/hovercard">#34653</a></li>
-<li>Upgrade to Reactor Bom 2020.0.30 <a href="https://github.com/spring-projects/spring-boot/issues/34529" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34529/hovercard">#34529</a></li>
-<li>Upgrade to Spring AMQP 2.4.11 <a href="https://github.com/spring-projects/spring-boot/issues/34607" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34607/hovercard">#34607</a></li>
-<li>Upgrade to Spring Data Bom 2021.2.10 <a href="https://github.com/spring-projects/spring-boot/issues/34530" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34530/hovercard">#34530</a></li>
-<li>Upgrade to Spring Framework 5.3.26 <a href="https://github.com/spring-projects/spring-boot/issues/34531" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34531/hovercard">#34531</a></li>
-<li>Upgrade to Spring GraphQL 1.0.4 <a href="https://github.com/spring-projects/spring-boot/issues/34532" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34532/hovercard">#34532</a></li>
-<li>Upgrade to Spring HATEOAS 1.5.4 <a href="https://github.com/spring-projects/spring-boot/issues/34654" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34654/hovercard">#34654</a></li>
-<li>Upgrade to Spring Integration 5.5.17 <a href="https://github.com/spring-projects/spring-boot/issues/34722" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34722/hovercard">#34722</a></li>
-<li>Upgrade to Spring Session Bom 2021.2.1 <a href="https://github.com/spring-projects/spring-boot/issues/34533" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34533/hovercard">#34533</a></li>
-<li>Upgrade to Tomcat 9.0.73 <a href="https://github.com/spring-projects/spring-boot/issues/34655" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34655/hovercard">#34655</a></li>
-<li>Upgrade to UnboundID LDAPSDK 6.0.8 <a href="https://github.com/spring-projects/spring-boot/issues/34656" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/34656/hovercard">#34656</a></li>
-</ul>
-<h2><g-emoji class="g-emoji" alias="heart" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2764.png">❤️</g-emoji> Contributors</h2>
-<p>Thank you to all the contributors who worked on this release:</p>
-<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/1993heqiang/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/1993heqiang">@1993heqiang</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anandmnair/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anandmnair">@anandmnair</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anthonydahanne/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anthonydahanne">@anthonydahanne</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dsyer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dsyer">@dsyer</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/izeye/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/izeye">@izeye</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jongwooo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jongwooo">@jongwooo</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/terminux/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/terminux">@terminux</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.2.5-canary.14]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.2.5-canary.14</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.2.5-canary.14</guid>
-            <pubDate>Thu, 23 Mar 2023 09:16:20 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Add optional match support of rewrites and redirects in <code>typedRoutes</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1635811459" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/47398" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/47398/hovercard" href="https://github.com/vercel/next.js/pull/47398">#47398</a></li>
-<li>Support dynamic routes for social images and icons: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1636598245" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/47425" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/47425/hovercard" href="https://github.com/vercel/next.js/pull/47425">#47425</a></li>
-<li>turbopack: Implement streamed middleware: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1630020318" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/47264" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/47264/hovercard" href="https://github.com/vercel/next.js/pull/47264">#47264</a></li>
-</ul>
-<h3>Documentation Changes</h3>
-<ul>
-<li>Updating the default URL of Amplify Hosting: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1636488189" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/47420" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/47420/hovercard" href="https://github.com/vercel/next.js/pull/47420">#47420</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jridgewell/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jridgewell">@jridgewell</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/swaminator/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/swaminator">@swaminator</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from lerna: 6.6.0]]></title>
-            <link>https://github.com/lerna/lerna/releases/tag/6.6.0</link>
-            <guid>https://github.com/lerna/lerna/releases/tag/6.6.0</guid>
-            <pubDate>Thu, 23 Mar 2023 09:06:47 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/lerna/lerna/compare/6.5.1...6.6.0">6.6.0</a> (2023-03-23)</h1>
-<h3>Bug Fixes</h3>
-<ul>
-<li>correct links to command docs (<a href="https://github.com/lerna/lerna/issues/3598" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3598/hovercard">#3598</a>) (<a href="https://github.com/lerna/lerna/commit/b90b684976e33b18f1a856657dbc9a9546fe2c66">b90b684</a>)</li>
-<li><strong>publish:</strong> ensure zero exit code when EWORKINGTREE warning occurs (<a href="https://github.com/lerna/lerna/issues/3327" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3327/hovercard">#3327</a>) (<a href="https://github.com/lerna/lerna/commit/9c00a33b18046b6f0a5a20d7043a4f0bb309d9c4">9c00a33</a>)</li>
-<li>update <code>troubleshooting.md</code> typo (<a href="https://github.com/lerna/lerna/issues/3581" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3581/hovercard">#3581</a>) (<a href="https://github.com/lerna/lerna/commit/a174cd78165c5e9f05bf160891d927177ed7b948">a174cd7</a>)</li>
-<li>update arborist package to get rid of deprecated warning (<a href="https://github.com/lerna/lerna/issues/3559" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3559/hovercard">#3559</a>) (<a href="https://github.com/lerna/lerna/commit/aff38a7a0f5e5eea04d1743e78add9b2e052de3a">aff38a7</a>)</li>
-<li><strong>version:</strong> handle deps property missing due to outdated lockfile (<a href="https://github.com/lerna/lerna/issues/3549" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3549/hovercard">#3549</a>) (<a href="https://github.com/lerna/lerna/commit/fdbbab9c2cb96ac9e97018129bbdb5347c0e6171">fdbbab9</a>)</li>
-<li><strong>version:</strong> update yarn lock for versions of yarn &gt;= 2.0.0 (<a href="https://github.com/lerna/lerna/issues/3555" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3555/hovercard">#3555</a>) (<a href="https://github.com/lerna/lerna/commit/ce2ceca7defd06fc2c8abf0241cbb2c3dcfaf0f3">ce2ceca</a>)</li>
-</ul>
-<h3>Features</h3>
-<ul>
-<li>add @lerna/legacy-package-management package (<a href="https://github.com/lerna/lerna/issues/3602" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/3602/hovercard">#3602</a>) (<a href="https://github.com/lerna/lerna/commit/4a03dd5f02c118eb683cf2ed525715b4d8e5221b">4a03dd5</a>)</li>
-<li><strong>version:</strong> add user-defined build metadata to bumped packages (<a href="https://github.com/lerna/lerna/issues/2880" data-hovercard-type="pull_request" data-hovercard-url="/lerna/lerna/pull/2880/hovercard">#2880</a>) (<a href="https://github.com/lerna/lerna/commit/0b0e2a62257ad8728835057dc37654626cbd621e">0b0e2a6</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jdk: jdk-21+15]]></title>
-            <link>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B15</link>
-            <guid>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B15</guid>
-            <pubDate>Thu, 23 Mar 2023 07:29:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Added tag jdk-21+15 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/75168eaca3f665785519bb489073962a4972fdc0/hovercard" href="https://github.com/openjdk/jdk/commit/75168eaca3f665785519bb489073962a4972fdc0"><tt>75168ea</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.3.245]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.245</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.245</guid>
-            <pubDate>Thu, 23 Mar 2023 06:21:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib42e0a70356fd03e95fadfedd08bc6ffcedddcdf<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4361991" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4361991</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.3.245@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2a2a400243386c24d398f6bc8272839a3f756e91/hovercard" href="https://github.com/v8/v8/commit/2a2a400243386c24d398f6bc8272839a3f756e91"><tt>2a2a400</tt></a>-refs/heads/main@{#86648}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.3.245-pgo: Version 11.3.245]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.3.245-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.3.245-pgo</guid>
-            <pubDate>Thu, 23 Mar 2023 06:21:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib42e0a70356fd03e95fadfedd08bc6ffcedddcdf<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4361991" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4361991</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.3.245@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2a2a400243386c24d398f6bc8272839a3f756e91/hovercard" href="https://github.com/v8/v8/commit/2a2a400243386c24d398f6bc8272839a3f756e91"><tt>2a2a400</tt></a>-refs/heads/main@{#86648}</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
