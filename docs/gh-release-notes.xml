@@ -4,23 +4,200 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Mon, 10 Apr 2023 18:06:25 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 11 Apr 2023 00:21:52 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98462]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98462</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98462</guid>
-            <pubDate>Mon, 10 Apr 2023 18:03:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge remote-tracking branch 'upstream/master' into skip-test-triton-bsr</p>]]></content:encoded>
+            <title><![CDATA[Release notes from node: 2023-04-10 Node.js v19.9.0 (Current) Release]]></title>
+            <link>https://github.com/nodejs/node/releases/tag/v19.9.0</link>
+            <guid>https://github.com/nodejs/node/releases/tag/v19.9.0</guid>
+            <pubDate>Tue, 11 Apr 2023 00:07:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Git-EVTag-v0-SHA512: f41242acda2608d70581ecb2de6f964d3de570cb33ef94ab4de858ed91597ef4c4aea1b0c17d04b1f1ca142703185486118936db64be6bfef67a06570e938eff</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from electron: v25.0.0-alpha.2]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v25.0.0-alpha.2</link>
-            <guid>https://github.com/electron/electron/releases/tag/v25.0.0-alpha.2</guid>
-            <pubDate>Mon, 10 Apr 2023 17:33:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v25.0.0-alpha.2</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/98775: Update on "[WIP] De-dup graph inputs"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F98775</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F98775</guid>
+            <pubDate>Tue, 11 Apr 2023 00:06:39 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Overview</h3>
+<p>This PR de-duplicates graph inputs in TorchDynamo, using the <code>Source</code> as the unique identifier for each input.</p>
+<h3>Details</h3>
+<p><code>VariableBuilder.wrap_tensor()</code> should return a <code>VariableTracker</code> for the passed-in <code>value: Tensor</code>. If <code>value</code> is duplicated, we should avoid calling <code>OutputGraph.create_graph_input()</code> and <code>OutputGraph.add_grapharg()</code>.</p>
+<ul>
+<li>Note that <code>create_graph_input()</code> and <code>add_grapharg()</code> are not 1:1. For a constant source, TorchDynamo still calls <code>create_graph_input()</code> but not <code>add_grapharg()</code>.</li>
+<li>Note that <code>create_graph_input()</code> should be called before constructing the corresponding <code>VariableTracker</code>. TorchDynamo needs the <code>fx.Proxy</code> object to pass to <code>wrap_fx_proxy()</code>.</li>
+</ul>
+<p>In this PR, the <code>OutputGraph</code> saves an additional mapping <code>input_source_to_var</code> from each graph input's <code>Source</code> to its <code>VariableTracker</code>, which works because <code>Source</code> is now hashable. This mapping should be updated each time <code>create_graph_input()</code> is called. However, since we must construct the <code>VariableTracker</code> after <code>create_graph_input()</code> returns, we must have a separate call to the <code>OutputGraph</code> to update the mapping.</p>
+<p>If anyone has any suggestion on how to coalesce this logic and avoid having to remember to update <code>input_source_to_var</code> for each <code>create_graph_input()</code>, I would love to hear it.</p>
+<details>
+<summary> Alternate Approach</summary>
+<p>Initially, I tried having TorchDynamo construct a new but equivalent <code>VariableTracker</code> for the duplicated tensor. However, I abandoned this approach after hitting an assertion in <code>def wrap_fx_proxy_cls()</code> due to <code>"example_value"</code> already being in the proxy node's metadata because we were reusing the primary tensor's <code>Proxy</code> object. Reusing the exact <code>VariableTracker</code> also seems less error-prone instead of requiring constructing a new but identical <code>VariableTracker</code>.</p>
+</details>
+<h3>Testing</h3>
+<h4>Global Variable Test</h4>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import torch
+torch.compile()
+def f(): 
+    return x + x
+x = torch.randn(3)
+f()"><pre class="notranslate"><code>import torch
+torch.compile()
+def f(): 
+    return x + x
+x = torch.randn(3)
+f()
+</code></pre></div>
+<p>Before:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="====== Forward graph 0 ======
+ &lt;eval_with_key&gt;.6 class &lt;lambda&gt;(torch.nn.Module):
+    def forward(self, arg0_1: f32[3], arg1_1: f32[3]):
+        # File: /data/users/ezyang/b/pytorch/ff.py:5, code: return x + x
+        add: f32[3] = torch.ops.aten.add.Tensor(arg0_1, arg1_1);  arg0_1 = arg1_1 = None
+        return (add,)"><pre class="notranslate"><code>====== Forward graph 0 ======
+ &lt;eval_with_key&gt;.6 class &lt;lambda&gt;(torch.nn.Module):
+    def forward(self, arg0_1: f32[3], arg1_1: f32[3]):
+        # File: /data/users/ezyang/b/pytorch/ff.py:5, code: return x + x
+        add: f32[3] = torch.ops.aten.add.Tensor(arg0_1, arg1_1);  arg0_1 = arg1_1 = None
+        return (add,)
+</code></pre></div>
+<p>After (only <code>arg0_1</code> and no more <code>arg1_1</code>):</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content=" ====== Forward graph 0 ======
+ &lt;eval_with_key&gt;.4 class &lt;lambda&gt;(torch.nn.Module):
+    def forward(self, arg0_1: f32[3]):
+        # File: dynamo/test_dup_global.py:8, code: return x + x
+        add: f32[3] = torch.ops.aten.add.Tensor(arg0_1, arg0_1);  arg0_1 = None
+        return (add,)"><pre class="notranslate"><code> ====== Forward graph 0 ======
+ &lt;eval_with_key&gt;.4 class &lt;lambda&gt;(torch.nn.Module):
+    def forward(self, arg0_1: f32[3]):
+        # File: dynamo/test_dup_global.py:8, code: return x + x
+        add: f32[3] = torch.ops.aten.add.Tensor(arg0_1, arg0_1);  arg0_1 = None
+        return (add,)
+</code></pre></div>
+<h4>FSDP Test</h4>
+<p>Before we error on</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="File &quot;/.../pytorch/torch/_guards.py&quot;, line 244, in __post_init__
+    assert self.input_source_a != self.input_source_b"><pre class="notranslate"><code>File "/.../pytorch/torch/_guards.py", line 244, in __post_init__
+    assert self.input_source_a != self.input_source_b
+</code></pre></div>
+<p>and now there is no error.</p>
+<hr>
+<p>The rename from <code>name_to_input</code> to <code>input_name_to_proxy</code> is not part of the core logic change and is a remnant from initial attempts. I can undo it later if desired, but I also feel that the new name is more informative. It also fixes the type annotation.</p>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98797]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98797</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98797</guid>
+            <pubDate>Mon, 10 Apr 2023 23:49:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Enable test_matmul_cuda UTs for ROCm</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98785: Update on "[SPMD] Upstream iter_move_grads_and_optimizers"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98785</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98785</guid>
+            <pubDate>Mon, 10 Apr 2023 23:31:59 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR upstreams <code>iter_move_grads_and_optimizer</code> which delay some of the gradients and the corresponding optimizer to the next iteration. D44512863(credit for lessw2020 ) is the internal implementation, which is only good for the old _SPMD expansion.  This PR changes the implmentation to use the new APIs.</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D44836486/" rel="nofollow">D44836486</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98784: Update on "[SPMD] Implement split_fused_optimizer to split one fused_…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98784</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98784</guid>
+            <pubDate>Mon, 10 Apr 2023 23:31:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…optimizer node to two"</p>
+<p>Several optimization passes requires the ability to split the fused_optimizer.  This PR adds the API to support the use cases.</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D44806450/" rel="nofollow">D44806450</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: v26.0.0-nightly.20230410]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v26.0.0-nightly.20230410</link>
+            <guid>https://github.com/electron/electron/releases/tag/v26.0.0-nightly.20230410</guid>
+            <pubDate>Mon, 10 Apr 2023 22:28:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v26.0.0-nightly.20230410</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rxdb: 14.6.5]]></title>
+            <link>https://github.com/pubkey/rxdb/releases/tag/14.6.5</link>
+            <guid>https://github.com/pubkey/rxdb/releases/tag/14.6.5</guid>
+            <pubDate>Mon, 10 Apr 2023 20:44:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p align="center">
+            <a href="https://rxdb.info/" rel="nofollow">
+                <img src="https://camo.githubusercontent.com/8898befd529bc4f43a25bf0b61fdd2aa1d4f59c7ec142df882b8d717f53d2261/68747470733a2f2f727864622e696e666f2f66696c65732f6c6f676f2f6c6f676f5f746578742e737667" width="380px" alt="JavaScript Database" data-canonical-src="https://rxdb.info/files/logo/logo_text.svg" style="max-width: 100%;">
+            </a>
+        </p>
+<h2>Changes:</h2>
+<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98732: Update on "distinguish implementation of data() and mutable_data() on…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98732</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98732</guid>
+            <pubDate>Mon, 10 Apr 2023 20:05:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… TensorImpl"</p>
+<p>The old style had them both going through a mutable method on Storage,<br>
+which would prevent us from implementing checks differently depending<br>
+on whether we are writing or reading.</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D44831044/" rel="nofollow">D44831044</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98765: Update on "Convert logging f-strings to use % format, part five"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98765</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98765</guid>
+            <pubDate>Mon, 10 Apr 2023 19:30:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This does some annoying but simple cases by hand.</p>
+<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from code-server: v4.12.0-rc.1]]></title>
+            <link>https://github.com/coder/code-server/releases/tag/v4.12.0-rc.1</link>
+            <guid>https://github.com/coder/code-server/releases/tag/v4.12.0-rc.1</guid>
+            <pubDate>Mon, 10 Apr 2023 19:23:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Code v1.77.1</p>
+<h3>Changed</h3>
+<ul>
+<li>Updated to Code 1.77.1</li>
+<li>Ports panel will use domain-based proxy (instead of the default path-based<br>
+proxy) when set via --proxy-domain.</li>
+<li>Apply --app-name to the PWA title.</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li>Thai translation for login page.</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98706: Update on "Simplify _use_grad_for_differentiable"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98706</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98706</guid>
+            <pubDate>Mon, 10 Apr 2023 19:18:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This makes it so dynamo can trace through it</p>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cube: v0.32.24]]></title>
+            <link>https://github.com/cube-js/cube/releases/tag/v0.32.24</link>
+            <guid>https://github.com/cube-js/cube/releases/tag/v0.32.24</guid>
+            <pubDate>Mon, 10 Apr 2023 19:02:50 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.32.23...v0.32.24">0.32.24</a> (2023-04-10)</h2>
+<h3>Reverts</h3>
+<ul>
+<li>Revert "feat(docker): Install DuckDB as built-in driver" (<a href="https://github.com/cube-js/cube/commit/99ea6c15333b3d0c19011cb58ed8a8d10e6b0d3c">99ea6c1</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.27.110]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.27.110</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.27.110</guid>
+            <pubDate>Mon, 10 Apr 2023 18:09:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.27.110 release.</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v13.3.1-canary.4]]></title>
@@ -37,31 +214,6 @@
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/motopods/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/motopods">@motopods</a> for helping!</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98660: Update on "[dynamo] Support dict kwargs constructor"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98660</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98660</guid>
-            <pubDate>Mon, 10 Apr 2023 17:00:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98706: Update on "Simplify _use_grad_for_differentiable"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98706</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98706</guid>
-            <pubDate>Mon, 10 Apr 2023 17:00:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This makes it so dynamo can trace through it</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98661: Update on "[dynamo] Add einops to skipfiles"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98661</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98661</guid>
-            <pubDate>Mon, 10 Apr 2023 17:00:52 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This was causing failures in a torchbench model</p>
-<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from julia: v1.9.0-rc2]]></title>
             <link>https://github.com/JuliaLang/julia/releases/tag/v1.9.0-rc2</link>
             <guid>https://github.com/JuliaLang/julia/releases/tag/v1.9.0-rc2</guid>
@@ -72,17 +224,6 @@
 <li>release-1.9: set VERSION to 1.9.0-rc2 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/KristofferC/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/KristofferC">@KristofferC</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649702524" data-permission-text="Title is private" data-url="https://github.com/JuliaLang/julia/issues/49208" data-hovercard-type="pull_request" data-hovercard-url="/JuliaLang/julia/pull/49208/hovercard" href="https://github.com/JuliaLang/julia/pull/49208">#49208</a></li>
 </ul>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/JuliaLang/julia/compare/v1.9.0-rc1...v1.9.0-rc2"><tt>v1.9.0-rc1...v1.9.0-rc2</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98747: Update on "[core][pruning][be] rename BaseSparsifier to BasePruner"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98747</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98747</guid>
-            <pubDate>Mon, 10 Apr 2023 16:41:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:</p>
-<p>att</p>
-<p>Test Plan:<br>
-<code>python test/test_ao_sparsity.py -- TestBasePruner</code></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from cube: v0.32.23]]></title>
@@ -187,12 +328,13 @@ monero-freebsd-x64-v0.18.2.2.tar.bz2, 187f58410b5aac866f7200bb1e4244ba1940b51db7
 <p>A GPG-signed list of the hashes is at <a href="https://getmonero.org/downloads/hashes.txt" rel="nofollow">https://getmonero.org/downloads/hashes.txt</a> and should be treated as canonical, with the signature checked against the appropriate GPG key in the source code (in /utils/gpg_keys). To ensure that the files you download are those originally posted by the maintainers, you should both check that the hashes of your files match those on the signed list, and that the signature on the list is valid.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98738: Update on "Assert that there are not duplicate sources for distinct a…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98738</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98738</guid>
-            <pubDate>Mon, 10 Apr 2023 15:01:15 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…rguments"</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98705: Update on "Convert logging f-strings to use % format, part four"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98705</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98705</guid>
+            <pubDate>Mon, 10 Apr 2023 14:59:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This does multi-line concatenated string literals.</p>
 <p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
@@ -211,22 +353,6 @@ monero-freebsd-x64-v0.18.2.2.tar.bz2, 187f58410b5aac866f7200bb1e4244ba1940b51db7
 <li><strong>prestodb-driver:</strong> Add schema filter to informationSchemaQuery (<a href="https://github.com/cube-js/cube/issues/6382" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/6382/hovercard">#6382</a>) Thanks <a href="https://github.com/maatumo">@maatumo</a> ! (<a href="https://github.com/cube-js/cube/commit/cbf4620bd8b0f5bfa0f02006dee007102258744a">cbf4620</a>)</li>
 <li><strong>schema-compiler:</strong> Yaml - report error on misconfiguration (object instead of array) (<a href="https://github.com/cube-js/cube/issues/6407" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/6407/hovercard">#6407</a>) (<a href="https://github.com/cube-js/cube/commit/29e37780c9c4f320c868880266dc73f55840987f">29e3778</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v26.0.0-nightly.20230410]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v26.0.0-nightly.20230410</link>
-            <guid>https://github.com/electron/electron/releases/tag/v26.0.0-nightly.20230410</guid>
-            <pubDate>Mon, 10 Apr 2023 13:03:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v26.0.0-nightly.20230410</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98704: Update on "Convert logging f-strings to use % format, part three"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98704</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98704</guid>
-            <pubDate>Mon, 10 Apr 2023 12:23:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This does triple-quoted strings.</p>
-<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.9.0-dev-5426]]></title>
@@ -255,134 +381,6 @@ monero-freebsd-x64-v0.18.2.2.tar.bz2, 187f58410b5aac866f7200bb1e4244ba1940b51db7
             <guid>https://github.com/swc-project/swc/releases/tag/v1.3.49</guid>
             <pubDate>Mon, 10 Apr 2023 06:24:39 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98489: Update on "Enable inductor vec codegen for quantization"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98489</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98489</guid>
-            <pubDate>Mon, 10 Apr 2023 06:23:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
-Enable the <code>decomposed dequant - pointwise ops - decomposed quant</code> vectorization code gen inside inductor.<br>
-Here is the example in the UT and the generated code:</p>
-<p>Example:</p>
-<ul>
-<li><code>decomposed dequant - relu - decomposed quant</code> pattern.</li>
-<li>Using <code>uint8</code> as the quantized tensor data type.</li>
-</ul>
-<p>Generated Code:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="kernel_cpp_0 = async_compile.cpp('''
-#include &quot;/tmp/torchinductor_root/hw/chwr6vy6e6sd25sfh42qtywkuf2emodexm2aomp3lbrcxwznfwyi.h&quot;
-extern &quot;C&quot; void kernel(const unsigned char* in_ptr0,
-                       unsigned char* out_ptr0)
-{
-    #pragma omp parallel num_threads(56)
-    {
-        {
-            #pragma omp for
-            for(long i0=static_cast&lt;long&gt;(0); i0&lt;static_cast&lt;long&gt;(27); i0+=static_cast&lt;long&gt;(1))
-            {
-                auto tmp0 = at::vec::load_uint8_as_float(in_ptr0 + static_cast&lt;long&gt;(16*i0));
-                auto tmp1 = (tmp0);
-                auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(100));
-                auto tmp3 = tmp1 - tmp2;
-                auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.01));
-                auto tmp5 = tmp3 * tmp4;
-                auto tmp6 = at::vec::clamp_min(tmp5, decltype(tmp5)(0));
-                auto tmp7 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(100.0));
-                auto tmp8 = tmp6 * tmp7;
-                auto tmp9 = tmp8.round();
-                auto tmp10 = tmp9 + tmp2;
-                auto tmp11 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0));
-                auto tmp12 = at::vec::maximum(tmp10, tmp11);
-                auto tmp13 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255));
-                auto tmp14 = at::vec::minimum(tmp12, tmp13);
-                auto tmp15 = (tmp14);
-                tmp15.store_float_as_uint8(out_ptr0 + static_cast&lt;long&gt;(16*i0));
-            }
-            #pragma omp for simd simdlen(8)
-            for(long i0=static_cast&lt;long&gt;(432); i0&lt;static_cast&lt;long&gt;(441); i0+=static_cast&lt;long&gt;(1))
-            {
-                auto tmp0 = in_ptr0[static_cast&lt;long&gt;(i0)];
-                auto tmp1 = static_cast&lt;float&gt;(tmp0);
-                auto tmp2 = static_cast&lt;float&gt;(100);
-                auto tmp3 = tmp1 - tmp2;
-                auto tmp4 = static_cast&lt;float&gt;(0.01);
-                auto tmp5 = tmp3 * tmp4;
-                auto tmp6 = tmp5 * (tmp5&gt;0);
-                auto tmp7 = static_cast&lt;float&gt;(100.0);
-                auto tmp8 = tmp6 * tmp7;
-                auto tmp9 = std::nearbyint(tmp8);
-                auto tmp10 = tmp9 + tmp2;
-                auto tmp11 = static_cast&lt;float&gt;(0);
-                auto tmp12 = (tmp11 != tmp11) ? tmp11 : std::max(tmp10, tmp11);
-                auto tmp13 = static_cast&lt;float&gt;(255);
-                auto tmp14 = (tmp13 != tmp13) ? tmp13 : std::min(tmp12, tmp13);
-                auto tmp15 = static_cast&lt;unsigned char&gt;(tmp14);
-                out_ptr0[static_cast&lt;long&gt;(i0)] = tmp15;
-            }
-        }
-    }
-}
-''')"><pre class="notranslate"><code>kernel_cpp_0 = async_compile.cpp('''
-#include "/tmp/torchinductor_root/hw/chwr6vy6e6sd25sfh42qtywkuf2emodexm2aomp3lbrcxwznfwyi.h"
-extern "C" void kernel(const unsigned char* in_ptr0,
-                       unsigned char* out_ptr0)
-{
-    #pragma omp parallel num_threads(56)
-    {
-        {
-            #pragma omp for
-            for(long i0=static_cast&lt;long&gt;(0); i0&lt;static_cast&lt;long&gt;(27); i0+=static_cast&lt;long&gt;(1))
-            {
-                auto tmp0 = at::vec::load_uint8_as_float(in_ptr0 + static_cast&lt;long&gt;(16*i0));
-                auto tmp1 = (tmp0);
-                auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(100));
-                auto tmp3 = tmp1 - tmp2;
-                auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.01));
-                auto tmp5 = tmp3 * tmp4;
-                auto tmp6 = at::vec::clamp_min(tmp5, decltype(tmp5)(0));
-                auto tmp7 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(100.0));
-                auto tmp8 = tmp6 * tmp7;
-                auto tmp9 = tmp8.round();
-                auto tmp10 = tmp9 + tmp2;
-                auto tmp11 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0));
-                auto tmp12 = at::vec::maximum(tmp10, tmp11);
-                auto tmp13 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255));
-                auto tmp14 = at::vec::minimum(tmp12, tmp13);
-                auto tmp15 = (tmp14);
-                tmp15.store_float_as_uint8(out_ptr0 + static_cast&lt;long&gt;(16*i0));
-            }
-            #pragma omp for simd simdlen(8)
-            for(long i0=static_cast&lt;long&gt;(432); i0&lt;static_cast&lt;long&gt;(441); i0+=static_cast&lt;long&gt;(1))
-            {
-                auto tmp0 = in_ptr0[static_cast&lt;long&gt;(i0)];
-                auto tmp1 = static_cast&lt;float&gt;(tmp0);
-                auto tmp2 = static_cast&lt;float&gt;(100);
-                auto tmp3 = tmp1 - tmp2;
-                auto tmp4 = static_cast&lt;float&gt;(0.01);
-                auto tmp5 = tmp3 * tmp4;
-                auto tmp6 = tmp5 * (tmp5&gt;0);
-                auto tmp7 = static_cast&lt;float&gt;(100.0);
-                auto tmp8 = tmp6 * tmp7;
-                auto tmp9 = std::nearbyint(tmp8);
-                auto tmp10 = tmp9 + tmp2;
-                auto tmp11 = static_cast&lt;float&gt;(0);
-                auto tmp12 = (tmp11 != tmp11) ? tmp11 : std::max(tmp10, tmp11);
-                auto tmp13 = static_cast&lt;float&gt;(255);
-                auto tmp14 = (tmp13 != tmp13) ? tmp13 : std::min(tmp12, tmp13);
-                auto tmp15 = static_cast&lt;unsigned char&gt;(tmp14);
-                out_ptr0[static_cast&lt;long&gt;(i0)] = tmp15;
-            }
-        }
-    }
-}
-''')
-</code></pre></div>
-<p><strong>Test Plan</strong></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cd test/inductor &amp;&amp; python -m pytest test_torchinductor.py -k test_decomposed_dequant_relu_quant"><pre class="notranslate"><code>cd test/inductor &amp;&amp; python -m pytest test_torchinductor.py -k test_decomposed_dequant_relu_quant
-</code></pre></div>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu anijain2305 EikanWang Guobing-Chen zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
@@ -487,6 +485,16 @@ LuaJIT 2.1.0-beta3
 </ul>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from xstate: xstate@5.0.0-beta.7]]></title>
+            <link>https://github.com/statelyai/xstate/releases/tag/xstate%405.0.0-beta.7</link>
+            <guid>https://github.com/statelyai/xstate/releases/tag/xstate%405.0.0-beta.7</guid>
+            <pubDate>Sun, 09 Apr 2023 21:22:31 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Major Changes</h3>
+<ul>
+<li><a href="https://github.com/statelyai/xstate/pull/3900" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/3900/hovercard">#3900</a> <a href="https://github.com/statelyai/xstate/commit/7d1a8ff097dc96526e4aba3700d34934133e6eeb"><code>7d1a8ff09</code></a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - <code>external</code> property on transitions has been renamed to <code>reenter</code></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from xstate: @xstate/fsm@3.0.0-beta.2]]></title>
             <link>https://github.com/statelyai/xstate/releases/tag/%40xstate%2Ffsm%403.0.0-beta.2</link>
             <guid>https://github.com/statelyai/xstate/releases/tag/%40xstate%2Ffsm%403.0.0-beta.2</guid>
@@ -506,16 +514,6 @@ LuaJIT 2.1.0-beta3
             <guid>https://github.com/statelyai/xstate/releases/tag/%40xstate%2Fvue%403.0.0-beta.2</guid>
             <pubDate>Sun, 09 Apr 2023 21:22:31 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from xstate: xstate@5.0.0-beta.7]]></title>
-            <link>https://github.com/statelyai/xstate/releases/tag/xstate%405.0.0-beta.7</link>
-            <guid>https://github.com/statelyai/xstate/releases/tag/xstate%405.0.0-beta.7</guid>
-            <pubDate>Sun, 09 Apr 2023 21:22:31 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Major Changes</h3>
-<ul>
-<li><a href="https://github.com/statelyai/xstate/pull/3900" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/3900/hovercard">#3900</a> <a href="https://github.com/statelyai/xstate/commit/7d1a8ff097dc96526e4aba3700d34934133e6eeb"><code>7d1a8ff09</code></a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - <code>external</code> property on transitions has been renamed to <code>reenter</code></li>
-</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from YouTube.js: v4.2.0-deno]]></title>
@@ -538,9 +536,9 @@ LuaJIT 2.1.0-beta3
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.4.73]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.73</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.73</guid>
+            <title><![CDATA[Release notes from v8: 11.4.73-pgo: Version 11.4.73]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.73-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.73-pgo</guid>
             <pubDate>Sun, 09 Apr 2023 05:32:35 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I5d36bcd596cbd6a70bf3c50764c98be6aee3cf66<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4410029" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4410029</a><br>
@@ -549,9 +547,9 @@ Cr-Commit-Position: refs/heads/11.4.73@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9ab765142a5c0fcf570cea936dd23412a5a4dbc7/hovercard" href="https://github.com/v8/v8/commit/9ab765142a5c0fcf570cea936dd23412a5a4dbc7"><tt>9ab7651</tt></a>-refs/heads/main@{#86994}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.4.73-pgo: Version 11.4.73]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.73-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.73-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.4.73]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.73</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.73</guid>
             <pubDate>Sun, 09 Apr 2023 05:32:35 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I5d36bcd596cbd6a70bf3c50764c98be6aee3cf66<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4410029" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4410029</a><br>
@@ -754,6 +752,13 @@ Cr-Commit-Position: refs/heads/11.4.72@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d70b0594d9d640159c56663fa31012adda6daf85/hovercard" href="https://github.com/v8/v8/commit/d70b0594d9d640159c56663fa31012adda6daf85"><tt>d70b059</tt></a>-refs/heads/main@{#86993}</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from flutter: 3.10.0-2.0.pre: document StaticIconProvider (#120935)]]></title>
+            <link>https://github.com/flutter/flutter/releases/tag/3.10.0-2.0.pre</link>
+            <guid>https://github.com/flutter/flutter/releases/tag/3.10.0-2.0.pre</guid>
+            <pubDate>Sat, 08 Apr 2023 02:45:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>document StaticIconProvider</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from next.js: v13.3.1-canary.3]]></title>
             <link>https://github.com/vercel/next.js/releases/tag/v13.3.1-canary.3</link>
             <guid>https://github.com/vercel/next.js/releases/tag/v13.3.1-canary.3</guid>
@@ -790,274 +795,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.21-333</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.21-333</guid>
             <pubDate>Sat, 08 Apr 2023 01:05:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v24.0.0]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v24.0.0</link>
-            <guid>https://github.com/electron/electron/releases/tag/v24.0.0</guid>
-            <pubDate>Fri, 07 Apr 2023 23:20:41 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Release Notes for v24.0.0</h1>
-<h2>Stack Upgrades</h2>
-<ul>
-<li>Chromium 112.0.5615.49
-<ul>
-<li><a href="https://developer.chrome.com/blog/new-in-chrome-112/" rel="nofollow">New in Chrome 112</a></li>
-<li><a href="https://developer.chrome.com/blog/new-in-chrome-111/" rel="nofollow">New in Chrome 111</a></li>
-</ul>
-</li>
-<li>Node.js 18.14.0
-<ul>
-<li><a href="https://nodejs.org/en/blog/release/v18.14.0/" rel="nofollow">Node 18.14.0 blog post</a></li>
-</ul>
-</li>
-<li>V8 11.2</li>
-</ul>
-<h2>Breaking Changes</h2>
-<ul>
-<li><code>nativeImage.createThumbnailFromPath()</code> now takes <code>size</code> instead of <code>maxSize</code>. <a href="https://github.com/electron/electron/pull/37796" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37796/hovercard">#37796</a></li>
-</ul>
-<h2>Features</h2>
-<ul>
-<li>Added <code>httpOnly</code> to the cookie filter. <a href="https://github.com/electron/electron/pull/37365" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37365/hovercard">#37365</a></li>
-<li>Added <code>logUsage</code> to <code>shell.openExternal()</code> options, which allows passing the <code>SEE_MASK_FLAG_LOG_USAGE</code> flag to <code>ShellExecuteEx</code> on Windows. <a href="https://github.com/electron/electron/pull/37291" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37291/hovercard">#37291</a></li>
-<li>Added <code>types</code> to <code>webRequest</code> filter. <a href="https://github.com/electron/electron/pull/37427" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37427/hovercard">#37427</a></li>
-<li>Added several standard page size options to <code>webContents.print()</code>. <a href="https://github.com/electron/electron/pull/37265" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37265/hovercard">#37265</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37263" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37263/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37264" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37264/hovercard">23</a>)</span></li>
-<li>Added the <code>enableLocalEcho</code> flag to the session handler <code>ses.setDisplayMediaRequestHandler()</code> callback for allowing remote audio input to be echoed in the local output stream when <code>audio</code> is a <code>WebFrameMain</code>. <a href="https://github.com/electron/electron/pull/37528" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37528/hovercard">#37528</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37529" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37529/hovercard">23</a>)</span></li>
-</ul>
-<h2>Fixes</h2>
-<ul>
-<li>Corrects an issue with HTML fullscreen when <code>BrowserWindow</code> fullscreening is disabled. <a href="https://github.com/electron/electron/pull/37368" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37368/hovercard">#37368</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37367" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37367/hovercard">23</a>)</span></li>
-<li>Fixed WebUSB on ARM64 macs. <a href="https://github.com/electron/electron/pull/37522" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37522/hovercard">#37522</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37521" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37521/hovercard">23</a>)</span></li>
-<li>Fixed <code>destroyed</code> event not emitted on <code>close</code> for <code>BrowserView.webContents</code>. <a href="https://github.com/electron/electron/pull/37450" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37450/hovercard">#37450</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37451" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37451/hovercard">23</a>)</span></li>
-<li>Fixed a crash on capturing sources when using desktopCapturer API on Wayland. <a href="https://github.com/electron/electron/pull/37527" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37527/hovercard">#37527</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37526" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37526/hovercard">23</a>)</span></li>
-<li>Fixed a crash when <code>BrowserView</code>s are present and a user attempts to prevent <code>beforeunload</code> in the renderer process. <a href="https://github.com/electron/electron/pull/37268" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37268/hovercard">#37268</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37266" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37266/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37267" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37267/hovercard">23</a>)</span></li>
-<li>Fixed an incorrect result returned when using secure as a cookies filter. <a href="https://github.com/electron/electron/pull/37246" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37246/hovercard">#37246</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37247" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37247/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37248" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37248/hovercard">23</a>)</span></li>
-<li>Fixed an issue where <code>BroadcastChannel</code> did not work correctly when <code>contextIsolation: false</code>. <a href="https://github.com/electron/electron/pull/37443" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37443/hovercard">#37443</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37444" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37444/hovercard">23</a>)</span></li>
-<li>Fixed an issue where <code>minWidth</code>/<code>minHeight</code> and <code>maxWidth</code>/<code>maxHeight</code> would not be enforced if the user set an <code>aspectRatio</code> on macOS. <a href="https://github.com/electron/electron/pull/37456" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37456/hovercard">#37456</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37458" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37458/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37457" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37457/hovercard">23</a>)</span></li>
-<li>Fixed an issue where calling <code>port.postMessage</code> in <code>MessagePortMain</code> with some invalid parameters could cause a crash. <a href="https://github.com/electron/electron/pull/37726" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37726/hovercard">#37726</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37725" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37725/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37724" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37724/hovercard">23</a>)</span></li>
-<li>Fixed an issue where draggable regions incorrectly captured clicks in framed windows. <a href="https://github.com/electron/electron/pull/37741" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37741/hovercard">#37741</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37740" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37740/hovercard">23</a>)</span></li>
-<li>Fixed an issue where passing both <code>hasReply</code> and <code>actions</code> to a main process Notification on macOS resulted in the first action being obscured and unavailable. <a href="https://github.com/electron/electron/pull/37449" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37449/hovercard">#37449</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37447" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37447/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37448" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37448/hovercard">23</a>)</span></li>
-<li>Fixed an issue where unhandled rejections could cause duplicate logs in some cases. <a href="https://github.com/electron/electron/pull/37500" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37500/hovercard">#37500</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37502" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37502/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37501" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37501/hovercard">23</a>)</span></li>
-<li>Fixed an issue with potential dock icon duplication on macOS. <a href="https://github.com/electron/electron/pull/37625" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37625/hovercard">#37625</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37623" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37623/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37624" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37624/hovercard">23</a>)</span></li>
-<li>Fixed canceling of bluetooth requests when no devices are returned. <a href="https://github.com/electron/electron/pull/37717" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37717/hovercard">#37717</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37720" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37720/hovercard">23</a>)</span></li>
-<li>Fixed draggable regions not working in Mac App Store builds. <a href="https://github.com/electron/electron/pull/37474" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37474/hovercard">#37474</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37473" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37473/hovercard">23</a>)</span></li>
-<li>Fixed issue with BrowserWindow not updating after call to previewFile. <a href="https://github.com/electron/electron/pull/37578" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37578/hovercard">#37578</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37576" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37576/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37577" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37577/hovercard">23</a>)</span></li>
-<li>Fixed potential private API usage for MAS builds on macOS. <a href="https://github.com/electron/electron/pull/37364" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37364/hovercard">#37364</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37363" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37363/hovercard">23</a>)</span></li>
-<li>Fixed right-click events not being delivered in frameless window draggable regions. <a href="https://github.com/electron/electron/pull/37395" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37395/hovercard">#37395</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37394" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37394/hovercard">23</a>)</span></li>
-<li>Fixed the active background color for top-level menu items on Windows. <a href="https://github.com/electron/electron/pull/37785" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37785/hovercard">#37785</a></li>
-<li>Fixed window could not go back to maximized state when restored on Linux. <a href="https://github.com/electron/electron/pull/37358" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37358/hovercard">#37358</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37360" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37360/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37359" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37359/hovercard">23</a>)</span></li>
-<li>Improved error messages on <code>session.cookies.set</code> failure. <a href="https://github.com/electron/electron/pull/37597" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37597/hovercard">#37597</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37595" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37595/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37596" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37596/hovercard">23</a>)</span></li>
-<li>Setting the about panel's options no longer crashes. <a href="https://github.com/electron/electron/pull/37442" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37442/hovercard">#37442</a></li>
-<li><code>app.showAboutPanel()</code> no longer blocks the main thread on Windows or Linux, thus matching macOS. <a href="https://github.com/electron/electron/pull/37508" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37508/hovercard">#37508</a></li>
-</ul>
-<h2>Other Changes</h2>
-<ul>
-<li>Improved error messages for <code>contents.takeHeapSnapshot</code>. <a href="https://github.com/electron/electron/pull/37461" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37461/hovercard">#37461</a> <span>(Also in <a href="https://github.com/electron/electron/pull/37459" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37459/hovercard">22</a>, <a href="https://github.com/electron/electron/pull/37460" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37460/hovercard">23</a>)</span></li>
-<li>Updated Chromium to 112.0.5615.49.  Fixed performance regression. <a href="https://github.com/electron/electron/pull/37767" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37767/hovercard">#37767</a></li>
-</ul>
-<h2>Documentation</h2>
-<ul>
-<li>Documentation changes: <a href="https://github.com/electron/electron/pull/37288" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/37288/hovercard">#37288</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from eslint: v8.38.0]]></title>
-            <link>https://github.com/eslint/eslint/releases/tag/v8.38.0</link>
-            <guid>https://github.com/eslint/eslint/releases/tag/v8.38.0</guid>
-            <pubDate>Fri, 07 Apr 2023 23:08:15 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Features</h2>
-<ul>
-<li><a href="https://github.com/eslint/eslint/commit/a1d561d18ed653b56bddbfb1bab1ebe957293563"><code>a1d561d</code></a> feat: Move getDeclaredVariables and getAncestors to SourceCode (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1654665486" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17059" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17059/hovercard" href="https://github.com/eslint/eslint/pull/17059">#17059</a>) (Nicholas C. Zakas)</li>
-</ul>
-<h2>Bug Fixes</h2>
-<ul>
-<li><a href="https://github.com/eslint/eslint/commit/1c1ece26d1da61e523b83dda25353ec9379eb6c9"><code>1c1ece2</code></a> fix: do not report on <code>RegExp(...args)</code> in <code>require-unicode-regexp</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1645257812" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17037" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17037/hovercard" href="https://github.com/eslint/eslint/pull/17037">#17037</a>) (Francesco Trotta)</li>
-</ul>
-<h2>Documentation</h2>
-<ul>
-<li><a href="https://github.com/eslint/eslint/commit/7162d34df9a66c817c3bd4aafd3a03d226b58dd5"><code>7162d34</code></a> docs: Mention new config system is complete (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1659170192" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17068" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17068/hovercard" href="https://github.com/eslint/eslint/pull/17068">#17068</a>) (Nicholas C. Zakas)</li>
-<li><a href="https://github.com/eslint/eslint/commit/0fd6bb213ad2de77543c936eda21501653182e52"><code>0fd6bb2</code></a> docs: Update README (GitHub Actions Bot)</li>
-<li><a href="https://github.com/eslint/eslint/commit/c83531c1a6026675f36aa9e33fef14458043974a"><code>c83531c</code></a> docs: Update/remove external links, eg. point to <code>eslint-community</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1655437948" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17061" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17061/hovercard" href="https://github.com/eslint/eslint/pull/17061">#17061</a>) (Pelle Wessman)</li>
-<li><a href="https://github.com/eslint/eslint/commit/a3aa6f5f146534ed7999ebf8930c524a4871ec0b"><code>a3aa6f5</code></a> docs: Clarify <code>no-div-regex</code> rule docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650988111" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17051" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17051/hovercard" href="https://github.com/eslint/eslint/pull/17051">#17051</a>) (Francesco Trotta)</li>
-<li><a href="https://github.com/eslint/eslint/commit/b0f11cf977a4180bf7c3042e7faeaaa067ffafd0"><code>b0f11cf</code></a> docs: Update README (GitHub Actions Bot)</li>
-<li><a href="https://github.com/eslint/eslint/commit/da8d52a9d4edd9b2016cd4a15cd78f1ddadf20c7"><code>da8d52a</code></a> docs: Update the second object instance for the "no-new" rule (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1640778841" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17020" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17020/hovercard" href="https://github.com/eslint/eslint/pull/17020">#17020</a>) (Ahmadou Waly NDIAYE)</li>
-<li><a href="https://github.com/eslint/eslint/commit/518130ae79a16d7bf4d752c211ae88152cc5a6f0"><code>518130a</code></a> docs: switch language based on current path (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1504603250" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/16687" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/16687/hovercard" href="https://github.com/eslint/eslint/pull/16687">#16687</a>) (Percy Ma)</li>
-<li><a href="https://github.com/eslint/eslint/commit/24206c49a138d4390f815ae122ee12f564bc604b"><code>24206c4</code></a> docs: Update README (GitHub Actions Bot)</li>
-</ul>
-<h2>Chores</h2>
-<ul>
-<li><a href="https://github.com/eslint/eslint/commit/59ed06041d4670781956221086ea0fca6683788d"><code>59ed060</code></a> chore: upgrade @eslint/js@8.38.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1659267894" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17069" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17069/hovercard" href="https://github.com/eslint/eslint/pull/17069">#17069</a>) (Milos Djermanovic)</li>
-<li><a href="https://github.com/eslint/eslint/commit/88c08984ec259ac22d839397c06beec8ef213120"><code>88c0898</code></a> chore: package.json update for @eslint/js release (ESLint Jenkins)</li>
-<li><a href="https://github.com/eslint/eslint/commit/cf682d249f04a6a304407d5b9ddbbc4a9714dd62"><code>cf682d2</code></a> refactor: simplify new-parens rule schema (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1654992419" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17060" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17060/hovercard" href="https://github.com/eslint/eslint/pull/17060">#17060</a>) (MHO)</li>
-<li><a href="https://github.com/eslint/eslint/commit/0dde02211268394bcbc2b0beef55ea2409b6f55d"><code>0dde022</code></a> ci: bump actions/add-to-project from 0.4.1 to 0.5.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1652834079" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17055" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17055/hovercard" href="https://github.com/eslint/eslint/pull/17055">#17055</a>) (dependabot[bot])</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from carbon: refs/tags/v11.26.1]]></title>
-            <link>https://github.com/carbon-design-system/carbon/releases/tag/v11.26.1</link>
-            <guid>https://github.com/carbon-design-system/carbon/releases/tag/v11.26.1</guid>
-            <pubDate>Fri, 07 Apr 2023 20:11:11 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from carbon: v11.26.0]]></title>
-            <link>https://github.com/carbon-design-system/carbon/releases/tag/v11.26.0</link>
-            <guid>https://github.com/carbon-design-system/carbon/releases/tag/v11.26.0</guid>
-            <pubDate>Fri, 07 Apr 2023 19:35:18 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/carbon-design-system/carbon/compare/v11.25.0...v11.26.0">v11.26.0</a> (2023-3-31)</h1>
-<h2><code>carbon-components-react@8.26.0</code></h2>
-<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
-<ul>
-<li>chore(release): v11.26.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1648128022" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13436" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13436/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13436">#13436</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a95ac1dfe"><code>a95ac1dfe</code></a>)</li>
-<li>chore(release): v11.26.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1644098015" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13411/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13411">#13411</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/14c6f7442"><code>14c6f7442</code></a>)</li>
-<li>chore: add postinstall deprecation warning to old packages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1614149555" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13304" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13304/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13304">#13304</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/843ff10c1"><code>843ff10c1</code></a>)</li>
-</ul>
-<h2><code>carbon-components@11.26.0</code></h2>
-<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
-<ul>
-<li>chore(release): v11.26.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1648128022" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13436" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13436/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13436">#13436</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a95ac1dfe"><code>a95ac1dfe</code></a>)</li>
-<li>chore(release): v11.26.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1644098015" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13411/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13411">#13411</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/14c6f7442"><code>14c6f7442</code></a>)</li>
-<li>chore: add postinstall deprecation warning to old packages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1614149555" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13304" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13304/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13304">#13304</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/843ff10c1"><code>843ff10c1</code></a>)</li>
-</ul>
-<h2><code>@carbon/react@1.26.0</code></h2>
-<h3>New features <g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji></h3>
-<ul>
-<li>feat(PasswordInput): add typescript types to PasswordInput (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1615590458" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13311" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13311/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13311">#13311</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/507ed8e02"><code>507ed8e02</code></a>)</li>
-<li>feat(tabs): add support for secondaryLabel (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1628357328" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13366" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13366/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13366">#13366</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/4bf871b5d"><code>4bf871b5d</code></a>)</li>
-<li>feat(Table): add <code>typescript</code> type annotations to Table (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1629959256" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13372" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13372/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13372">#13372</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/d630dcbfd"><code>d630dcbfd</code></a>)</li>
-<li>feat(radio-button): add validation props (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1616665377" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13317" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13317/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13317">#13317</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/d8afeeb86"><code>d8afeeb86</code></a>)</li>
-<li>feat(HeaderMenuItem): update prop (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1631751621" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13375" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13375/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13375">#13375</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/0bd4507e7"><code>0bd4507e7</code></a>)</li>
-</ul>
-<h3>Bug fixes <g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji></h3>
-<ul>
-<li>fix(radiobutton): shows helper text (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1638757617" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13401" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13401/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13401">#13401</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3586e7589"><code>3586e7589</code></a>)</li>
-<li>fix(button): don't overwrite rest['aria-pressed'] when passed (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1627326315" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13360" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13360/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13360">#13360</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/33f683f3c"><code>33f683f3c</code></a>)</li>
-<li>fix(react): prevent button nesting warning by switching interactive state (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1628142549" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13365" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13365/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13365">#13365</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a96bf7c78"><code>a96bf7c78</code></a>)</li>
-<li>fix(FilterableMultiSelect): set top items when select menu closes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1625902137" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13352" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13352/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13352">#13352</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/210ea21e8"><code>210ea21e8</code></a>)</li>
-<li>fix(Search): add default placeholder (a11y) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1614332463" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13306" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13306/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13306">#13306</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/9d0a08fc5"><code>9d0a08fc5</code></a>)</li>
-<li>fix(NumberInput): set defaults min/max prop (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1613809339" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13301" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13301/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13301">#13301</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a0c82cfa5"><code>a0c82cfa5</code></a>)</li>
-<li>fix(MultiSelect): remove enter key select (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1627452268" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13362" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13362/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13362">#13362</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/702bbe698"><code>702bbe698</code></a>)</li>
-<li>fix(StructuredListInput): remove onChange deprecation warning (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1629331103" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13368" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13368/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13368">#13368</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/270d6f86a"><code>270d6f86a</code></a>)</li>
-<li>fix(FileUploader): clear hidden input value on file upload (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1618125386" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13327" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13327/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13327">#13327</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a2c4147a1"><code>a2c4147a1</code></a>)</li>
-</ul>
-<h3>Documentation <g-emoji class="g-emoji" alias="memo" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4dd.png">📝</g-emoji></h3>
-<ul>
-<li>docs(button): update sizing guidance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1637760323" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13396" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13396/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13396">#13396</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/09f7da25e"><code>09f7da25e</code></a>)</li>
-</ul>
-<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
-<ul>
-<li>chore(release): v11.26.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1648128022" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13436" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13436/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13436">#13436</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a95ac1dfe"><code>a95ac1dfe</code></a>)</li>
-<li>chore(release): v11.26.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1644098015" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13411/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13411">#13411</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/14c6f7442"><code>14c6f7442</code></a>)</li>
-<li>refactor(typescript): Convert TableHead, TableHeader to tsx (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1628932758" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13367" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13367/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13367">#13367</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/9cc6a01fe"><code>9cc6a01fe</code></a>)</li>
-<li>refactor(InlineCheckbox): update aria-label (NEW) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1628070310" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13364" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13364/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13364">#13364</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/4e43b6c8a"><code>4e43b6c8a</code></a>)</li>
-<li>refactor(typescript): Convert TableCell, TableExpandRow, TableExpandedRow, TableRow to tsx (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1612271595" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13297" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13297/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13297">#13297</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/888b0c036"><code>888b0c036</code></a>)</li>
-<li>chore(ClickableTile): add test for disabled  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1611617544" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13291" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13291/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13291">#13291</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/fe45a38c8"><code>fe45a38c8</code></a>)</li>
-<li>refactor(typescript): add TextInputSkeleton types (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1616032459" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13314" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13314/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13314">#13314</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/d8a6ad4f6"><code>d8a6ad4f6</code></a>)</li>
-<li>refactor(typescript): add TypeScript types to SearchSkeleton (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1616163511" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13315" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13315/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13315">#13315</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/70014c95b"><code>70014c95b</code></a>)</li>
-</ul>
-<h2><code>@carbon/styles@1.26.0</code></h2>
-<h3>New features <g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji></h3>
-<ul>
-<li>feat(tabs): add support for secondaryLabel (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1628357328" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13366" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13366/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13366">#13366</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/4bf871b5d"><code>4bf871b5d</code></a>)</li>
-<li>feat(radio-button): add validation props (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1616665377" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13317" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13317/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13317">#13317</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/d8afeeb86"><code>d8afeeb86</code></a>)</li>
-</ul>
-<h3>Bug fixes <g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji></h3>
-<ul>
-<li>fix(radiobutton): shows helper text (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1638757617" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13401" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13401/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13401">#13401</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3586e7589"><code>3586e7589</code></a>)</li>
-<li>fix(checkbox): match styles to checkbox icon (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1634469052" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13386" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13386/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13386">#13386</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e985d7601"><code>e985d7601</code></a>)</li>
-<li>fix(treeview): increase hit area of twistie to 24px (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1626066717" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13354" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13354/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13354">#13354</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/5f6392dbb"><code>5f6392dbb</code></a>)</li>
-<li>fix(Modal): align button text to baseline (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1617279960" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13320" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13320/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13320">#13320</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/173cc71db"><code>173cc71db</code></a>)</li>
-</ul>
-<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
-<ul>
-<li>chore(release): v11.26.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1648128022" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13436" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13436/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13436">#13436</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a95ac1dfe"><code>a95ac1dfe</code></a>)</li>
-<li>chore(release): v11.26.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1644098015" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13411/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13411">#13411</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/14c6f7442"><code>14c6f7442</code></a>)</li>
-<li>chore(fluid-form): update fluid input styles (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1622807155" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13343" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/13343/hovercard" href="https://github.com/carbon-design-system/carbon/pull/13343">#13343</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/03de283cb"><code>03de283cb</code></a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from mongo: r4.4.20]]></title>
-            <link>https://github.com/mongodb/mongo/releases/tag/r4.4.20</link>
-            <guid>https://github.com/mongodb/mongo/releases/tag/r4.4.20</guid>
-            <pubDate>Fri, 07 Apr 2023 18:30:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>'4.4.20'</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from tfjs: TFJS 4.4.0]]></title>
-            <link>https://github.com/tensorflow/tfjs/releases/tag/tfjs-v4.4.0</link>
-            <guid>https://github.com/tensorflow/tfjs/releases/tag/tfjs-v4.4.0</guid>
-            <pubDate>Fri, 07 Apr 2023 18:27:50 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Core (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-<li>Support string flag (<a href="https://github.com/tensorflow/tfjs/pull/7509" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7509/hovercard">#7509</a>). Thanks, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/axinging/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/axinging">@axinging</a>.</li>
-<li>webgpu: upgrade webgpu/types (<a href="https://github.com/tensorflow/tfjs/pull/7528" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7528/hovercard">#7528</a>). Thanks, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/qjia7/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/qjia7">@qjia7</a>.</li>
-<li>Fix missing isTypedArray when mixing versions of <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/tensorflow/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tensorflow">@tensorflow</a> packages (<a href="https://github.com/tensorflow/tfjs/pull/7489" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7489/hovercard">#7489</a>).</li>
-</ul>
-<h2>Data (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-</ul>
-<h2>Layers (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-<li>RandomHeight Preprocessing Layer (<a href="https://github.com/tensorflow/tfjs/pull/7483" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7483/hovercard">#7483</a>). Thanks, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/RWallie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/RWallie">@RWallie</a>.</li>
-<li>BaseRandomLayer Abstract Layer and RandomWidth Preprocessing Layer (<a href="https://github.com/tensorflow/tfjs/pull/7345" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7345/hovercard">#7345</a>). Thanks, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/RWallie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/RWallie">@RWallie</a>.</li>
-</ul>
-<h2>Converter (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-<li>Fix graph executor to not dispose output tensors (<a href="https://github.com/tensorflow/tfjs/pull/7505" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7505/hovercard">#7505</a>). Thanks, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/chunnienc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/chunnienc">@chunnienc</a>.</li>
-</ul>
-<h2>Node (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Bug fixes</h3>
-<ul>
-<li>[tfjs-node] fixed summary writer memory leak (<a href="https://github.com/tensorflow/tfjs/pull/7490" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7490/hovercard">#7490</a>).</li>
-</ul>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-<li>Fix missing isTypedArray when mixing versions of <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/tensorflow/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tensorflow">@tensorflow</a> packages (<a href="https://github.com/tensorflow/tfjs/pull/7489" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7489/hovercard">#7489</a>).</li>
-<li>[tfjs-node] Encode jpeg (<a href="https://github.com/tensorflow/tfjs/pull/7484" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7484/hovercard">#7484</a>).</li>
-</ul>
-<h2>Wasm (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Security</h3>
-<ul>
-<li>build(deps-dev): bump webpack in /tfjs-backend-wasm/starter/webpack (<a href="https://github.com/tensorflow/tfjs/pull/7476" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7476/hovercard">#7476</a>). Thanks, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>[bot].</li>
-</ul>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-</ul>
-<h2>Cpu (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-<li>[cpu] Cast pixel to number in maxpool utils (<a href="https://github.com/tensorflow/tfjs/pull/7534" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7534/hovercard">#7534</a>).</li>
-</ul>
-<h2>Webgl (4.3.0 ==&gt; 4.4.0)</h2>
-<h3>Misc</h3>
-<ul>
-<li>Update monorepo to 4.4.0. (<a href="https://github.com/tensorflow/tfjs/pull/7549" data-hovercard-type="pull_request" data-hovercard-url="/tensorflow/tfjs/pull/7549/hovercard">#7549</a>).</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.27.109]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.27.109</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.27.109</guid>
-            <pubDate>Fri, 07 Apr 2023 18:11:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.27.109 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.0-dev-5389]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-dev-5389</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-dev-5389</guid>
-            <pubDate>Fri, 07 Apr 2023 18:10:00 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
     </channel>
