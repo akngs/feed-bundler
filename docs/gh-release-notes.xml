@@ -4,21 +4,117 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 16 Apr 2023 06:06:43 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 16 Apr 2023 12:07:02 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97377: Functionalization of RNG ops]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97377</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97377</guid>
-            <pubDate>Sun, 16 Apr 2023 06:03:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>ghstack-source-id: 1aa226cd4bed246a8c435e048688bbe32175c543<br>
-Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661584123" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/98799" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/98799/hovercard" href="https://github.com/pytorch/pytorch/pull/98799">#98799</a></p>
-<p>Addressing Alban's comments</p>
-<p>ghstack-source-id: ee9ba4fba660a70d6de8ec551b6ee23a2f6f806e<br>
-Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661584240" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/98800" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/98800/hovercard" href="https://github.com/pytorch/pytorch/pull/98800">#98800</a></p>
-<p>ezyang's comments</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98820: Update on "fix mul/div overflow issue on CPU float16"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98820</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98820</guid>
+            <pubDate>Sun, 16 Apr 2023 08:53:02 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="973705008" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/63482" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/63482/hovercard" href="https://github.com/pytorch/pytorch/issues/63482">#63482</a> and <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1659807335" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/98691" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/98691/hovercard" href="https://github.com/pytorch/pytorch/issues/98691">#98691</a></p>
+<p>The above two issues have the same root cause:</p>
+<p><strong>binary_ops</strong> will create TensorIterator with the flag <code>promote_inputs_to_common_dtype</code> on, which will convert both input tensors to the common_dtype_ (the logic is bypassed on CUDA), which might overflow on Half. If one of the inputs is a scalar with abs value larger than ~65000, it will overflow.</p>
+<p>This patch will try to fetch the scalar value from the <code>original_tensor_base</code> which records the original scalar input value, then in the <code>cpu_kernel_vec</code> the TensorIterator is treated as an unary Op.</p>
+<p>So previously, CPU and CUDA would have different behaviors for such scenario. This is aligned with this patch, test cases added for both CPU and CUDA device.</p>
+<p>The following is the results:</p>
+<h4>before:</h4>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="&gt;&gt;&gt; torch.tensor([3388.], dtype=torch.half).div(524288.0)
+tensor([0.], dtype=torch.float16)
+&gt;&gt;&gt; torch.tensor([0.01], dtype=torch.float16) * torch.tensor(65536, dtype=torch.float32)
+tensor([inf], dtype=torch.float16)"><pre class="notranslate"><code>&gt;&gt;&gt; torch.tensor([3388.], dtype=torch.half).div(524288.0)
+tensor([0.], dtype=torch.float16)
+&gt;&gt;&gt; torch.tensor([0.01], dtype=torch.float16) * torch.tensor(65536, dtype=torch.float32)
+tensor([inf], dtype=torch.float16)
+</code></pre></div>
+<h4>after:</h4>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="&gt;&gt;&gt; torch.tensor([3388.], dtype=torch.half).div(524288.0)
+tensor([0.0065], dtype=torch.float16)
+&gt;&gt;&gt; torch.tensor([0.01], dtype=torch.float16) * torch.tensor(65536, dtype=torch.float32)
+tensor([655.5000], dtype=torch.float16)"><pre class="notranslate"><code>&gt;&gt;&gt; torch.tensor([3388.], dtype=torch.half).div(524288.0)
+tensor([0.0065], dtype=torch.float16)
+&gt;&gt;&gt; torch.tensor([0.01], dtype=torch.float16) * torch.tensor(65536, dtype=torch.float32)
+tensor([655.5000], dtype=torch.float16)
+</code></pre></div>
+<p>Also need to update <code>RRelu</code> implementation, to use float to store the intermediate results, otherwise the following test case would fail:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content=". build/bin/test_api --gtest_filter=ModulesTest.RReLU"><pre class="notranslate"><code>. build/bin/test_api --gtest_filter=ModulesTest.RReLU
+</code></pre></div>
+<p>cc jgong5 XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98965: Update on "Python binding to set CUDA rng state offset"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98965</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98965</guid>
+            <pubDate>Sun, 16 Apr 2023 08:11:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Why?</p>
+<ul>
+<li>To reduce the latency of hot path in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1636518423" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/97377" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/97377/hovercard" href="https://github.com/pytorch/pytorch/pull/97377">#97377</a></li>
+</ul>
+<p>Concern - I had to add <code>set_offset</code> in all instances of <code>GeneratorImpl</code>. I don't know if there is a better way.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import torch
+torch.cuda.manual_seed(123)
+print(torch.cuda.get_rng_state())
+torch.cuda.set_rng_state_offset(40)
+print(torch.cuda.get_rng_state())
+
+tensor([123,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0], dtype=torch.uint8)
+tensor([123,   0,   0,   0,   0,   0,   0,   0,  40,   0,   0,   0,   0,   0,
+          0,   0], dtype=torch.uint8)
+~~~
+
+[ghstack-poisoned]"><pre class="notranslate"><code>import torch
+torch.cuda.manual_seed(123)
+print(torch.cuda.get_rng_state())
+torch.cuda.set_rng_state_offset(40)
+print(torch.cuda.get_rng_state())
+
+tensor([123,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+          0,   0], dtype=torch.uint8)
+tensor([123,   0,   0,   0,   0,   0,   0,   0,  40,   0,   0,   0,   0,   0,
+          0,   0], dtype=torch.uint8)
+~~~
+
+[ghstack-poisoned]
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from couchdb: 3.3.2-RC1]]></title>
+            <link>https://github.com/apache/couchdb/releases/tag/3.3.2-RC1</link>
+            <guid>https://github.com/apache/couchdb/releases/tag/3.3.2-RC1</guid>
+            <pubDate>Sun, 16 Apr 2023 06:49:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Version 3.3.2-RC1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from couchdb: 3.2.3-RC1]]></title>
+            <link>https://github.com/apache/couchdb/releases/tag/3.2.3-RC1</link>
+            <guid>https://github.com/apache/couchdb/releases/tag/3.2.3-RC1</guid>
+            <pubDate>Sun, 16 Apr 2023 06:45:01 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Version 3.2.3-RC1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.4.110-pgo: Version 11.4.110]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.110-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.110-pgo</guid>
+            <pubDate>Sun, 16 Apr 2023 06:02:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I9fcfecd8d2fbf8b4574957806b9d3804c1260515<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4429132" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4429132</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.4.110@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/49a333f26ff5c9b8d86a7accd4cc594584682eb0/hovercard" href="https://github.com/v8/v8/commit/49a333f26ff5c9b8d86a7accd4cc594584682eb0"><tt>49a333f</tt></a>-refs/heads/main@{#87106}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.4.110]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.110</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.110</guid>
+            <pubDate>Sun, 16 Apr 2023 06:02:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I9fcfecd8d2fbf8b4574957806b9d3804c1260515<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4429132" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4429132</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.4.110@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/49a333f26ff5c9b8d86a7accd4cc594584682eb0/hovercard" href="https://github.com/v8/v8/commit/49a333f26ff5c9b8d86a7accd4cc594584682eb0"><tt>49a333f</tt></a>-refs/heads/main@{#87106}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from swc: v1.3.51]]></title>
@@ -153,23 +249,6 @@ This makes it easier to tell if you are recompiling the same frame</li>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97133: Update on "Enable int8 conv unary op fusion pattern inside inductor"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97133</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97133</guid>
-            <pubDate>Sun, 16 Apr 2023 01:37:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
-Enable the fusion pass for int8 convolution includes pattern of</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="weight-dq_per_channel - 
-               dq_per_tensor - conv - optional (post_op of relu) - q_per_tensor"><pre class="notranslate"><code>weight-dq_per_channel - 
-               dq_per_tensor - conv - optional (post_op of relu) - q_per_tensor
-</code></pre></div>
-<p><strong>Test Plan</strong></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_backend_config_conv"><pre class="notranslate"><code>clear &amp;&amp; python -m pytest test_quantization.py -k test_inductor_backend_config_conv
-</code></pre></div>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu anijain2305 EikanWang Guobing-Chen zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/97418: Update on "Implement conv unary op under Mkldnn/Meta dispatch key"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97418</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97418</guid>
@@ -279,9 +358,9 @@ Since current quantization flow has not decomposed quant/dequant into prim ops, 
             <content:encoded><![CDATA[<p>Release version 0.28.0. For changelog, see <a href="https://sw.kovidgoyal.net/kitty/changelog/#detailed-list-of-changes" rel="nofollow">https://sw.kovidgoyal.net/kitty/changelog/#detailed-list-of-changes</a> GPG key used for signing tarballs is: <a href="https://calibre-ebook.com/signatures/kovid.gpg" rel="nofollow">https://calibre-ebook.com/signatures/kovid.gpg</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.4.109-pgo: Version 11.4.109]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.109-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.109-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.4.109]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.109</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.109</guid>
             <pubDate>Sat, 15 Apr 2023 05:32:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I73068be2bdbc3611f2506b89a0c2b8529633929f<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4429095" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4429095</a><br>
@@ -290,9 +369,9 @@ Cr-Commit-Position: refs/heads/11.4.109@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/12731c17936cbcc2f26949dca1de838c31e591dd/hovercard" href="https://github.com/v8/v8/commit/12731c17936cbcc2f26949dca1de838c31e591dd"><tt>12731c1</tt></a>-refs/heads/main@{#87105}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.4.109]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.109</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.109</guid>
+            <title><![CDATA[Release notes from v8: 11.4.109-pgo: Version 11.4.109]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.109-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.109-pgo</guid>
             <pubDate>Sat, 15 Apr 2023 05:32:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I73068be2bdbc3611f2506b89a0c2b8529633929f<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4429095" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4429095</a><br>
@@ -492,28 +571,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/mongodb/mongo/releases/tag/r4.4.21-rc0</guid>
             <pubDate>Fri, 14 Apr 2023 21:42:00 GMT</pubDate>
             <content:encoded><![CDATA[<p>'4.4.21-rc0'</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.4.105]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.105</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.105</guid>
-            <pubDate>Fri, 14 Apr 2023 21:32:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I78c2b17c361814a798e24fe0396263d9efdc2d91<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4427892" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4427892</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.4.105@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ff761770aae2d9c862ba0b95b9525a3ef5b72395/hovercard" href="https://github.com/v8/v8/commit/ff761770aae2d9c862ba0b95b9525a3ef5b72395"><tt>ff76177</tt></a>-refs/heads/main@{#87100}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.4.105-pgo: Version 11.4.105]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.105-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.105-pgo</guid>
-            <pubDate>Fri, 14 Apr 2023 21:32:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I78c2b17c361814a798e24fe0396263d9efdc2d91<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4427892" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4427892</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.4.105@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ff761770aae2d9c862ba0b95b9525a3ef5b72395/hovercard" href="https://github.com/v8/v8/commit/ff761770aae2d9c862ba0b95b9525a3ef5b72395"><tt>ff76177</tt></a>-refs/heads/main@{#87100}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.9.0-dev-5831]]></title>
@@ -2016,16 +2073,23 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.25  /usr/local/bin/etcdctl 
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.38.0-dev.20230415: Merge pull request #3911 from microsoft/hediet/b/regulatory-basilisk]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230415</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230415</guid>
+            <title><![CDATA[Release notes from monaco-editor: v0.38.0-dev.20230414: Merge pull request #3911 from microsoft/hediet/b/regulatory-basilisk]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230414</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230414</guid>
             <pubDate>Thu, 13 Apr 2023 14:38:39 GMT</pubDate>
             <content:encoded><![CDATA[<p>Implements reload command</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.38.0-dev.20230414: Merge pull request #3911 from microsoft/hediet/b/regulatory-basilisk]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230414</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230414</guid>
+            <title><![CDATA[Release notes from monaco-editor: v0.38.0-dev.20230416: Merge pull request #3911 from microsoft/hediet/b/regulatory-basilisk]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230416</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230416</guid>
+            <pubDate>Thu, 13 Apr 2023 14:38:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Implements reload command</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from monaco-editor: v0.38.0-dev.20230415: Merge pull request #3911 from microsoft/hediet/b/regulatory-basilisk]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230415</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.38.0-dev.20230415</guid>
             <pubDate>Thu, 13 Apr 2023 14:38:39 GMT</pubDate>
             <content:encoded><![CDATA[<p>Implements reload command</p>]]></content:encoded>
         </item>
@@ -2123,401 +2187,6 @@ docker <span class="pl-c1">exec</span> etcd-gcr-v3.4.25  /usr/local/bin/etcdctl 
 </ul>
 </li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.0-dev-5725]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-dev-5725</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-dev-5725</guid>
-            <pubDate>Thu, 13 Apr 2023 11:44:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from Ghost: @tryghost/portal@2.29.3]]></title>
-            <link>https://github.com/TryGhost/Ghost/releases/tag/%40tryghost%2Fportal%402.29.3</link>
-            <guid>https://github.com/TryGhost/Ghost/releases/tag/%40tryghost%2Fportal%402.29.3</guid>
-            <pubDate>Thu, 13 Apr 2023 11:42:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Released Portal v2.29.3</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from YouTube.js: v4.3.0-deno]]></title>
-            <link>https://github.com/LuanRT/YouTube.js/releases/tag/v4.3.0-deno</link>
-            <guid>https://github.com/LuanRT/YouTube.js/releases/tag/v4.3.0-deno</guid>
-            <pubDate>Thu, 13 Apr 2023 10:53:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: v4.3.0 release</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from YouTube.js: v4.3.0]]></title>
-            <link>https://github.com/LuanRT/YouTube.js/releases/tag/v4.3.0</link>
-            <guid>https://github.com/LuanRT/YouTube.js/releases/tag/v4.3.0</guid>
-            <pubDate>Thu, 13 Apr 2023 10:53:05 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/LuanRT/YouTube.js/compare/v4.2.0...v4.3.0">4.3.0</a> (2023-04-13)</h2>
-<h3>Features</h3>
-<ul>
-<li><strong>GridVideo:</strong> add <code>upcoming</code>, <code>upcoming_text</code>, <code>is_reminder_set</code> and <code>buttons</code> (<a href="https://github.com/LuanRT/YouTube.js/commit/05de3ec97a1fea92543b5e5f84933b86a07ab830">05de3ec</a>), closes <a href="https://github.com/LuanRT/YouTube.js/issues/380" data-hovercard-type="issue" data-hovercard-url="/LuanRT/YouTube.js/issues/380/hovercard">#380</a></li>
-<li><strong>MusicResponsiveListItem:</strong> make flex/fixed cols public (<a href="https://github.com/LuanRT/YouTube.js/issues/382" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/382/hovercard">#382</a>) (<a href="https://github.com/LuanRT/YouTube.js/commit/096bf362c9bd46a510ecb0d01623c70841e26e26">096bf36</a>)</li>
-<li><strong>ToggleMenuServiceItem:</strong> parse default nav endpoint (<a href="https://github.com/LuanRT/YouTube.js/commit/a0566969ba436f31ca3722d09442a0c6302235d7">a056696</a>)</li>
-<li><strong>ytmusic:</strong> add taste builder nodes (<a href="https://github.com/LuanRT/YouTube.js/issues/383" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/383/hovercard">#383</a>) (<a href="https://github.com/LuanRT/YouTube.js/commit/a9cad49333aa85c98bbb96e5f2d5b57d9beeb0c7">a9cad49</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/v3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/v3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:26:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Please check out <a href="https://github.com/etcd-io/etcd/blob/main/CHANGELOG/CHANGELOG-3.5.md">CHANGELOG</a> for a full list of changes. And make sure to read <a href="https://github.com/etcd-io/website/blob/main/content/en/docs/v3.5/upgrades/upgrade_3_5.md">upgrade guide</a> before upgrading etcd (there may be breaking changes).</p>
-<p>For installation guides, please check out <a href="http://play.etcd.io" rel="nofollow">play.etcd.io</a> and <a href="https://github.com/etcd-io/etcd/tree/master/Documentation#operating-etcd-clusters">operating etcd</a>. Latest support status for common architectures and operating systems can be found at <a href="https://github.com/etcd-io/website/blob/main/content/en/docs/v3.5/op-guide/supported-platform.md">supported platforms</a>.</p>
-<h6>Linux</h6>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="ETCD_VER=v3.5.8
-
-# choose either URL
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=${GOOGLE_URL}
-
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-rm -rf /tmp/etcd-download-test &amp;&amp; mkdir -p /tmp/etcd-download-test
-
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version"><pre>ETCD_VER=v3.5.8
-
-<span class="pl-c"><span class="pl-c">#</span> choose either URL</span>
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=<span class="pl-smi">${GOOGLE_URL}</span>
-
-rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz
-rm -rf /tmp/etcd-download-test <span class="pl-k">&amp;&amp;</span> mkdir -p /tmp/etcd-download-test
-
-curl -L <span class="pl-smi">${DOWNLOAD_URL}</span>/<span class="pl-smi">${ETCD_VER}</span>/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz -o /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz
-tar xzvf /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version</pre></div>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="# start a local etcd server
-/tmp/etcd-download-test/etcd
-
-# write,read to etcd
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 put foo bar
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 get foo"><pre><span class="pl-c"><span class="pl-c">#</span> start a local etcd server</span>
-/tmp/etcd-download-test/etcd
-
-<span class="pl-c"><span class="pl-c">#</span> write,read to etcd</span>
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 put foo bar
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 get foo</pre></div>
-<h6>macOS (Darwin)</h6>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="ETCD_VER=v3.5.8
-
-# choose either URL
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=${GOOGLE_URL}
-
-rm -f /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
-rm -rf /tmp/etcd-download-test &amp;&amp; mkdir -p /tmp/etcd-download-test
-
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-darwin-amd64.zip -o /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
-unzip /tmp/etcd-${ETCD_VER}-darwin-amd64.zip -d /tmp &amp;&amp; rm -f /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
-mv /tmp/etcd-${ETCD_VER}-darwin-amd64/* /tmp/etcd-download-test &amp;&amp; rm -rf mv /tmp/etcd-${ETCD_VER}-darwin-amd64
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version"><pre>ETCD_VER=v3.5.8
-
-<span class="pl-c"><span class="pl-c">#</span> choose either URL</span>
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=<span class="pl-smi">${GOOGLE_URL}</span>
-
-rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip
-rm -rf /tmp/etcd-download-test <span class="pl-k">&amp;&amp;</span> mkdir -p /tmp/etcd-download-test
-
-curl -L <span class="pl-smi">${DOWNLOAD_URL}</span>/<span class="pl-smi">${ETCD_VER}</span>/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip -o /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip
-unzip /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip -d /tmp <span class="pl-k">&amp;&amp;</span> rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip
-mv /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64/<span class="pl-k">*</span> /tmp/etcd-download-test <span class="pl-k">&amp;&amp;</span> rm -rf mv /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version</pre></div>
-<h6>Docker</h6>
-<p>etcd uses <a href="https://gcr.io/etcd-development/etcd" rel="nofollow"><code>gcr.io/etcd-development/etcd</code></a> as a primary container registry, and <a href="https://quay.io/coreos/etcd" rel="nofollow"><code>quay.io/coreos/etcd</code></a> as secondary.</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="rm -rf /tmp/etcd-data.tmp &amp;&amp; mkdir -p /tmp/etcd-data.tmp &amp;&amp; \
-  docker rmi gcr.io/etcd-development/etcd:v3.5.8 || true &amp;&amp; \
-  docker run \
-  -p 2379:2379 \
-  -p 2380:2380 \
-  --mount type=bind,source=/tmp/etcd-data.tmp,destination=/etcd-data \
-  --name etcd-gcr-v3.5.8 \
-  gcr.io/etcd-development/etcd:v3.5.8 \
-  /usr/local/bin/etcd \
-  --name s1 \
-  --data-dir /etcd-data \
-  --listen-client-urls http://0.0.0.0:2379 \
-  --advertise-client-urls http://0.0.0.0:2379 \
-  --listen-peer-urls http://0.0.0.0:2380 \
-  --initial-advertise-peer-urls http://0.0.0.0:2380 \
-  --initial-cluster s1=http://0.0.0.0:2380 \
-  --initial-cluster-token tkn \
-  --initial-cluster-state new \
-  --log-level info \
-  --logger zap \
-  --log-outputs stderr
-
-docker exec etcd-gcr-v3.5.8 /usr/local/bin/etcd --version
-docker exec etcd-gcr-v3.5.8 /usr/local/bin/etcdctl version
-docker exec etcd-gcr-v3.5.8 /usr/local/bin/etcdutl version
-docker exec etcd-gcr-v3.5.8 /usr/local/bin/etcdctl endpoint health
-docker exec etcd-gcr-v3.5.8 /usr/local/bin/etcdctl put foo bar
-docker exec etcd-gcr-v3.5.8 /usr/local/bin/etcdctl get foo"><pre>rm -rf /tmp/etcd-data.tmp <span class="pl-k">&amp;&amp;</span> mkdir -p /tmp/etcd-data.tmp <span class="pl-k">&amp;&amp;</span> \
-  docker rmi gcr.io/etcd-development/etcd:v3.5.8 <span class="pl-k">||</span> <span class="pl-c1">true</span> <span class="pl-k">&amp;&amp;</span> \
-  docker run \
-  -p 2379:2379 \
-  -p 2380:2380 \
-  --mount type=bind,source=/tmp/etcd-data.tmp,destination=/etcd-data \
-  --name etcd-gcr-v3.5.8 \
-  gcr.io/etcd-development/etcd:v3.5.8 \
-  /usr/local/bin/etcd \
-  --name s1 \
-  --data-dir /etcd-data \
-  --listen-client-urls http://0.0.0.0:2379 \
-  --advertise-client-urls http://0.0.0.0:2379 \
-  --listen-peer-urls http://0.0.0.0:2380 \
-  --initial-advertise-peer-urls http://0.0.0.0:2380 \
-  --initial-cluster s1=http://0.0.0.0:2380 \
-  --initial-cluster-token tkn \
-  --initial-cluster-state new \
-  --log-level info \
-  --logger zap \
-  --log-outputs stderr
-
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.8 /usr/local/bin/etcd --version
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.8 /usr/local/bin/etcdctl version
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.8 /usr/local/bin/etcdutl version
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.8 /usr/local/bin/etcdctl endpoint health
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.8 /usr/local/bin/etcdctl put foo bar
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.8 /usr/local/bin/etcdctl get foo</pre></div>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: tests/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/tests%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/tests%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: etcdctl/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/etcdctl%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/etcdctl%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: etcdutl/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/etcdutl%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/etcdutl%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: server/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/server%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/server%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: client/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/client%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/client%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:15 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: client/v2.305.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/client%2Fv2.305.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/client%2Fv2.305.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v2.305.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: raft/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/raft%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/raft%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: pkg/v3.5.8]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/pkg%2Fv3.5.8</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/pkg%2Fv3.5.8</guid>
-            <pubDate>Thu, 13 Apr 2023 10:09:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.8</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.15.5]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.15.5</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.15.5</guid>
-            <pubDate>Thu, 13 Apr 2023 09:54:07 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: correct allow header methods list for 405s (<a href="https://github.com/sveltejs/kit/pull/9655" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/9655/hovercard">#9655</a>)</p>
-</li>
-<li>
-<p>fix: prevent routes/layouts from having conflicting files through resets or different extensions (<a href="https://github.com/sveltejs/kit/pull/9590" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/9590/hovercard">#9590</a>)</p>
-</li>
-<li>
-<p>fix: prevent unhandled exceptions for invalid header values (<a href="https://github.com/sveltejs/kit/pull/9638" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/9638/hovercard">#9638</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from theia: Eclipse Theia v1.36.0]]></title>
-            <link>https://github.com/eclipse-theia/theia/releases/tag/v1.36.0</link>
-            <guid>https://github.com/eclipse-theia/theia/releases/tag/v1.36.0</guid>
-            <pubDate>Thu, 13 Apr 2023 08:45:47 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>What's Changed</h3>
-<ul>
-<li><a href="https://github.com/eclipse-theia/theia/blob/v1.36.0/CHANGELOG.md#v1360-0---03302023">Release Notes</a></li>
-<li><a href="https://github.com/eclipse-theia/theia/blob/v1.36.0/CHANGELOG.md#breaking_changes_1.36.0">Breaking Changes</a></li>
-<li><a href="https://eclipsesource.com/blogs/2023/04/12/eclipse-theia-1-36-release-news-and-noteworthy/" rel="nofollow">News &amp; Noteworthy</a></li>
-</ul>
-<h3>Contributors</h3>
-<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DerTimonius/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DerTimonius">@DerTimonius</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/FernandoAscencio/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/FernandoAscencio">@FernandoAscencio</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alvsan09/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alvsan09">@alvsan09</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/colin-grant-work/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/colin-grant-work">@colin-grant-work</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gbodeen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gbodeen">@gbodeen</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kenneth-marut-work/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kenneth-marut-work">@kenneth-marut-work</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/marcdumais-work/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/marcdumais-work">@marcdumais-work</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/msujew/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/msujew">@msujew</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/paul-marechal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/paul-marechal">@paul-marechal</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/planger/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/planger">@planger</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rschnekenbu/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rschnekenbu">@rschnekenbu</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/thegecko/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/thegecko">@thegecko</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tsmaeder/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tsmaeder">@tsmaeder</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/vince-fugnitto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/vince-fugnitto">@vince-fugnitto</a></p>
-<h3>New Contributors <g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji></h3>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/DerTimonius/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/DerTimonius">@DerTimonius</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1623851909" data-permission-text="Title is private" data-url="https://github.com/eclipse-theia/theia/issues/12300" data-hovercard-type="pull_request" data-hovercard-url="/eclipse-theia/theia/pull/12300/hovercard" href="https://github.com/eclipse-theia/theia/pull/12300">#12300</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/eclipse-theia/theia/compare/v1.35.0...v1.36.0"><tt>v1.35.0...v1.36.0</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.1.0-alpha.3]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.3</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.3</guid>
-            <pubDate>Thu, 13 Apr 2023 08:30:29 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Bug Fixes</h4>
-<ul>
-<li>UI: Fix upgrade command in about page <a href="https://github.com/storybooks/storybook/pull/22056" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22056/hovercard">#22056</a></li>
-<li>CLI: Fix sandbox command <a href="https://github.com/storybooks/storybook/pull/21977" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/21977/hovercard">#21977</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jdk: jdk-21+18]]></title>
-            <link>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B18</link>
-            <guid>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B18</guid>
-            <pubDate>Thu, 13 Apr 2023 06:21:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Added tag jdk-21+18 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/b9bdbe9ab3922c4dc7a754200df2fe542b11359b/hovercard" href="https://github.com/openjdk/jdk/commit/b9bdbe9ab3922c4dc7a754200df2fe542b11359b"><tt>b9bdbe9</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from tools: CLI v12.0.0-nightly.0133f40]]></title>
-            <link>https://github.com/rome/tools/releases/tag/cli%2Fv12.0.0-nightly.0133f40</link>
-            <guid>https://github.com/rome/tools/releases/tag/cli%2Fv12.0.0-nightly.0133f40</guid>
-            <pubDate>Thu, 13 Apr 2023 06:10:27 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>feat(rome_js_analyze): noConfusingArrow by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/malobre/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/malobre">@malobre</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1640076255" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4321" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4321/hovercard" href="https://github.com/rome/tools/pull/4321">#4321</a></li>
-<li>feat(rome_js_analyze): noRedundantRoles by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1619397892" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4293" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4293/hovercard" href="https://github.com/rome/tools/pull/4293">#4293</a></li>
-<li>Fix typo in configuration.mdx by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannicschroeer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannicschroeer">@yannicschroeer</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649005649" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4335" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4335/hovercard" href="https://github.com/rome/tools/pull/4335">#4335</a></li>
-<li>fix(rome_js_syntax): Allow module syntax in cts files by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1634126432" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4317" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4317/hovercard" href="https://github.com/rome/tools/pull/4317">#4317</a></li>
-<li>feat(rome_js_analyze): noNoninteractiveTabindex by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1631009258" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4312" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4312/hovercard" href="https://github.com/rome/tools/pull/4312">#4312</a></li>
-<li>fix(rome_js_formatter): format JsxString node by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1647813820" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4334" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4334/hovercard" href="https://github.com/rome/tools/pull/4334">#4334</a></li>
-<li>docs(vscode): document quick fix action  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ianzone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ianzone">@ianzone</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650592038" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4339" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4339/hovercard" href="https://github.com/rome/tools/pull/4339">#4339</a></li>
-<li>feat(rome_js_analyze): noAriaUnsupportedElements by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650598375" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4340" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4340/hovercard" href="https://github.com/rome/tools/pull/4340">#4340</a></li>
-<li>feat(rome_service): apply formatter to code actions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1641141033" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4324" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4324/hovercard" href="https://github.com/rome/tools/pull/4324">#4324</a></li>
-<li>chore: update version numbers by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1655503739" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4350" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4350/hovercard" href="https://github.com/rome/tools/pull/4350">#4350</a></li>
-<li>feat(rome_js_analyzer): <code>noConsoleLog</code> rule by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658613670" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4357" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4357/hovercard" href="https://github.com/rome/tools/pull/4357">#4357</a></li>
-<li>refactor(rome_js_anaylze): introduce StaticValue enum for checking value of the JSX attributes or JS expressions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650930343" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4342" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4342/hovercard" href="https://github.com/rome/tools/pull/4342">#4342</a></li>
-<li>feat(rome_js_analyze): noForEach by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1660573081" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4364" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4364/hovercard" href="https://github.com/rome/tools/pull/4364">#4364</a></li>
-<li>fix(rome_js_analyze): lint/correctness/noUndeclaredVariables incorrectly identifies AggregateError as an undeclared variable. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661451857" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4365" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4365/hovercard" href="https://github.com/rome/tools/issues/4365">#4365</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661922961" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4366" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4366/hovercard" href="https://github.com/rome/tools/pull/4366">#4366</a></li>
-<li>fix(rome_js_analyze): <code>useShorthandArrayType</code> should handle nested ReadonlyArray and not report to <code>TsObjectType</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1657844751" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4354" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4354/hovercard" href="https://github.com/rome/tools/pull/4354">#4354</a></li>
-<li>feat(rome_js_parser, rome_js_formatter): import attribute by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658847944" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4359" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4359/hovercard" href="https://github.com/rome/tools/pull/4359">#4359</a></li>
-<li>feat(rome_js_analyzer): <code>useLiteralKeys</code> rule by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658770563" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4358" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4358/hovercard" href="https://github.com/rome/tools/pull/4358">#4358</a></li>
-<li>fix(rome_json_formatter): JSON formatter does not respect lineWidth for arrays <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1656525567" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4351" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4351/hovercard" href="https://github.com/rome/tools/issues/4351">#4351</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1662585563" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4367" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4367/hovercard" href="https://github.com/rome/tools/pull/4367">#4367</a></li>
-<li>chore: crates metadata and documentation by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1657046597" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4352" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4352/hovercard" href="https://github.com/rome/tools/pull/4352">#4352</a></li>
-<li>feat(rome_js_analyze): analyzer metadata by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1664232249" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4368" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4368/hovercard" href="https://github.com/rome/tools/pull/4368">#4368</a></li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannicschroeer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannicschroeer">@yannicschroeer</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649005649" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4335" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4335/hovercard" href="https://github.com/rome/tools/pull/4335">#4335</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ianzone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ianzone">@ianzone</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650592038" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4339" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4339/hovercard" href="https://github.com/rome/tools/pull/4339">#4339</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v12.0.0...cli/v12.0.0-nightly.0133f40"><tt>cli/v12.0.0...cli/v12.0.0-nightly.0133f40</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from tools: VSCode Extension v0.23.20230413]]></title>
-            <link>https://github.com/rome/tools/releases/tag/lsp%2Fv0.23.20230413</link>
-            <guid>https://github.com/rome/tools/releases/tag/lsp%2Fv0.23.20230413</guid>
-            <pubDate>Thu, 13 Apr 2023 06:10:19 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>feat(rome_js_analyze): noConfusingArrow by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/malobre/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/malobre">@malobre</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1640076255" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4321" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4321/hovercard" href="https://github.com/rome/tools/pull/4321">#4321</a></li>
-<li>feat(rome_js_analyze): noRedundantRoles by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1619397892" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4293" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4293/hovercard" href="https://github.com/rome/tools/pull/4293">#4293</a></li>
-<li>Fix typo in configuration.mdx by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannicschroeer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannicschroeer">@yannicschroeer</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649005649" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4335" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4335/hovercard" href="https://github.com/rome/tools/pull/4335">#4335</a></li>
-<li>fix(rome_js_syntax): Allow module syntax in cts files by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1634126432" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4317" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4317/hovercard" href="https://github.com/rome/tools/pull/4317">#4317</a></li>
-<li>feat(rome_js_analyze): noNoninteractiveTabindex by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1631009258" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4312" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4312/hovercard" href="https://github.com/rome/tools/pull/4312">#4312</a></li>
-<li>fix(rome_js_formatter): format JsxString node by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1647813820" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4334" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4334/hovercard" href="https://github.com/rome/tools/pull/4334">#4334</a></li>
-<li>docs(vscode): document quick fix action  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ianzone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ianzone">@ianzone</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650592038" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4339" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4339/hovercard" href="https://github.com/rome/tools/pull/4339">#4339</a></li>
-<li>feat(rome_js_analyze): noAriaUnsupportedElements by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650598375" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4340" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4340/hovercard" href="https://github.com/rome/tools/pull/4340">#4340</a></li>
-<li>feat(rome_service): apply formatter to code actions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1641141033" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4324" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4324/hovercard" href="https://github.com/rome/tools/pull/4324">#4324</a></li>
-<li>chore: update version numbers by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1655503739" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4350" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4350/hovercard" href="https://github.com/rome/tools/pull/4350">#4350</a></li>
-<li>feat(rome_js_analyzer): <code>noConsoleLog</code> rule by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658613670" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4357" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4357/hovercard" href="https://github.com/rome/tools/pull/4357">#4357</a></li>
-<li>refactor(rome_js_anaylze): introduce StaticValue enum for checking value of the JSX attributes or JS expressions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650930343" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4342" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4342/hovercard" href="https://github.com/rome/tools/pull/4342">#4342</a></li>
-<li>feat(rome_js_analyze): noForEach by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1660573081" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4364" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4364/hovercard" href="https://github.com/rome/tools/pull/4364">#4364</a></li>
-<li>fix(rome_js_analyze): lint/correctness/noUndeclaredVariables incorrectly identifies AggregateError as an undeclared variable. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661451857" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4365" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4365/hovercard" href="https://github.com/rome/tools/issues/4365">#4365</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661922961" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4366" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4366/hovercard" href="https://github.com/rome/tools/pull/4366">#4366</a></li>
-<li>fix(rome_js_analyze): <code>useShorthandArrayType</code> should handle nested ReadonlyArray and not report to <code>TsObjectType</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1657844751" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4354" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4354/hovercard" href="https://github.com/rome/tools/pull/4354">#4354</a></li>
-<li>feat(rome_js_parser, rome_js_formatter): import attribute by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658847944" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4359" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4359/hovercard" href="https://github.com/rome/tools/pull/4359">#4359</a></li>
-<li>feat(rome_js_analyzer): <code>useLiteralKeys</code> rule by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658770563" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4358" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4358/hovercard" href="https://github.com/rome/tools/pull/4358">#4358</a></li>
-<li>fix(rome_json_formatter): JSON formatter does not respect lineWidth for arrays <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1656525567" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4351" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4351/hovercard" href="https://github.com/rome/tools/issues/4351">#4351</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1662585563" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4367" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4367/hovercard" href="https://github.com/rome/tools/pull/4367">#4367</a></li>
-<li>chore: crates metadata and documentation by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1657046597" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4352" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4352/hovercard" href="https://github.com/rome/tools/pull/4352">#4352</a></li>
-<li>feat(rome_js_analyze): analyzer metadata by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1664232249" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4368" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4368/hovercard" href="https://github.com/rome/tools/pull/4368">#4368</a></li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannicschroeer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannicschroeer">@yannicschroeer</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649005649" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4335" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4335/hovercard" href="https://github.com/rome/tools/pull/4335">#4335</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ianzone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ianzone">@ianzone</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650592038" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4339" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4339/hovercard" href="https://github.com/rome/tools/pull/4339">#4339</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v12.0.0...lsp/v0.23.20230413"><tt>cli/v12.0.0...lsp/v0.23.20230413</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from tools: JavaScript APIs v0.3.0-nightly.0133f40]]></title>
-            <link>https://github.com/rome/tools/releases/tag/js-api%2Fv0.3.0-nightly.0133f40</link>
-            <guid>https://github.com/rome/tools/releases/tag/js-api%2Fv0.3.0-nightly.0133f40</guid>
-            <pubDate>Thu, 13 Apr 2023 06:10:15 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>feat(rome_js_analyze): noConfusingArrow by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/malobre/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/malobre">@malobre</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1640076255" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4321" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4321/hovercard" href="https://github.com/rome/tools/pull/4321">#4321</a></li>
-<li>feat(rome_js_analyze): noRedundantRoles by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1619397892" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4293" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4293/hovercard" href="https://github.com/rome/tools/pull/4293">#4293</a></li>
-<li>Fix typo in configuration.mdx by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannicschroeer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannicschroeer">@yannicschroeer</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649005649" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4335" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4335/hovercard" href="https://github.com/rome/tools/pull/4335">#4335</a></li>
-<li>fix(rome_js_syntax): Allow module syntax in cts files by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1634126432" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4317" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4317/hovercard" href="https://github.com/rome/tools/pull/4317">#4317</a></li>
-<li>feat(rome_js_analyze): noNoninteractiveTabindex by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1631009258" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4312" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4312/hovercard" href="https://github.com/rome/tools/pull/4312">#4312</a></li>
-<li>fix(rome_js_formatter): format JsxString node by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1647813820" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4334" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4334/hovercard" href="https://github.com/rome/tools/pull/4334">#4334</a></li>
-<li>docs(vscode): document quick fix action  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ianzone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ianzone">@ianzone</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650592038" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4339" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4339/hovercard" href="https://github.com/rome/tools/pull/4339">#4339</a></li>
-<li>feat(rome_js_analyze): noAriaUnsupportedElements by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650598375" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4340" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4340/hovercard" href="https://github.com/rome/tools/pull/4340">#4340</a></li>
-<li>feat(rome_service): apply formatter to code actions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1641141033" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4324" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4324/hovercard" href="https://github.com/rome/tools/pull/4324">#4324</a></li>
-<li>chore: update version numbers by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1655503739" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4350" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4350/hovercard" href="https://github.com/rome/tools/pull/4350">#4350</a></li>
-<li>feat(rome_js_analyzer): <code>noConsoleLog</code> rule by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658613670" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4357" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4357/hovercard" href="https://github.com/rome/tools/pull/4357">#4357</a></li>
-<li>refactor(rome_js_anaylze): introduce StaticValue enum for checking value of the JSX attributes or JS expressions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650930343" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4342" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4342/hovercard" href="https://github.com/rome/tools/pull/4342">#4342</a></li>
-<li>feat(rome_js_analyze): noForEach by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1660573081" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4364" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4364/hovercard" href="https://github.com/rome/tools/pull/4364">#4364</a></li>
-<li>fix(rome_js_analyze): lint/correctness/noUndeclaredVariables incorrectly identifies AggregateError as an undeclared variable. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661451857" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4365" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4365/hovercard" href="https://github.com/rome/tools/issues/4365">#4365</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1661922961" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4366" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4366/hovercard" href="https://github.com/rome/tools/pull/4366">#4366</a></li>
-<li>fix(rome_js_analyze): <code>useShorthandArrayType</code> should handle nested ReadonlyArray and not report to <code>TsObjectType</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unvalley/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unvalley">@unvalley</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1657844751" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4354" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4354/hovercard" href="https://github.com/rome/tools/pull/4354">#4354</a></li>
-<li>feat(rome_js_parser, rome_js_formatter): import attribute by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658847944" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4359" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4359/hovercard" href="https://github.com/rome/tools/pull/4359">#4359</a></li>
-<li>feat(rome_js_analyzer): <code>useLiteralKeys</code> rule by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1658770563" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4358" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4358/hovercard" href="https://github.com/rome/tools/pull/4358">#4358</a></li>
-<li>fix(rome_json_formatter): JSON formatter does not respect lineWidth for arrays <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1656525567" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4351" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4351/hovercard" href="https://github.com/rome/tools/issues/4351">#4351</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1662585563" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4367" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4367/hovercard" href="https://github.com/rome/tools/pull/4367">#4367</a></li>
-<li>chore: crates metadata and documentation by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1657046597" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4352" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4352/hovercard" href="https://github.com/rome/tools/pull/4352">#4352</a></li>
-<li>feat(rome_js_analyze): analyzer metadata by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1664232249" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4368" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4368/hovercard" href="https://github.com/rome/tools/pull/4368">#4368</a></li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannicschroeer/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannicschroeer">@yannicschroeer</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1649005649" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4335" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4335/hovercard" href="https://github.com/rome/tools/pull/4335">#4335</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ianzone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ianzone">@ianzone</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1650592038" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4339" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4339/hovercard" href="https://github.com/rome/tools/pull/4339">#4339</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v12.0.0...js-api/v0.3.0-nightly.0133f40"><tt>cli/v12.0.0...js-api/v0.3.0-nightly.0133f40</tt></a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
