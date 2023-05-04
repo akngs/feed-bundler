@@ -4,10 +4,187 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 04 May 2023 06:06:40 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 04 May 2023 12:12:52 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.16.0]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.16.0</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.16.0</guid>
+            <pubDate>Thu, 04 May 2023 12:07:24 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Minor Changes</h3>
+<ul>
+<li>feat: route-level entry generators via <code>export const entries</code> (<a href="https://github.com/sveltejs/kit/pull/9571" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/9571/hovercard">#9571</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100543: Update on "bsr_dense_mm(): better test coverage"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100543</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100543</guid>
+            <pubDate>Thu, 04 May 2023 11:45:59 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR improves test coverage for <code>bsr_dense_mm</code> by:</p>
+<ul>
+<li>enabling correctness tests for <code>float32</code></li>
+<li>extending and testing input correctness checks.</li>
+</ul>
+<p>cc alexsamardzic pearu cpuhrsch amjames bhosmer</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-606]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-606</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-606</guid>
+            <pubDate>Thu, 04 May 2023 11:40:52 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100546: Update on "Add --offload-to-disk support to minifier"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100546</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100546</guid>
+            <pubDate>Thu, 04 May 2023 11:02:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>When minifying extremely large repros, the minifier can run out of memory. This is because, for delta debugging, the minifier keeps a copy of every intermediate output in the network. This can easily put you over the memory limit for your GPU. To make matters worse, we cannot easily delta debug in such a situation, as delta debugging involves replacing intermediates with inputs, but doing so can cause an intermediate to become live longer than its actual extent in the original model (since inputs all have to be allocated up front).</p>
+<p>The strategy in this PR is to use <code>load_tensor</code> from the previous PR to offer a low memory mode for delta debugging. Instead of putting intermediates as inputs, we instead load them in the middle of the graph in question.  If, through DCE, the load_tensor ends up floating to the top of the graph, we can input-ify it. We now no longer save all intermediates in memory, but instead save them to disk. I used this to successfully minify the repro that helped us solve <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1689802414" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/100332" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/100332/hovercard" href="https://github.com/pytorch/pytorch/pull/100332">#100332</a></p>
+<p>The testing is not very good. I can try to add more robust testing but it will involve a more involved refactor to FX minifier. Let me know if that's what you want.</p>
+<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100519: Update on "Add load_storage"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100519</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100519</guid>
+            <pubDate>Thu, 04 May 2023 11:02:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This adds a new operator debugprims::load_storage which does the unusual thing of loading a tensor from disk (via ContentStoreReader). This will be used in a later PR to implement delta debugging in the minifier, even when the repro is too big to fit into memory. The way it works is that you specify a name of the tensor you want to load, as well as enough metadata to reconstruct the tensor, if the store isn't available. If there is an active content store, we read and return the tensor from that store; otherwise we use <code>rand_strided</code> to create it.</p>
+<p>I needed some infra improvements to do this:</p>
+<ul>
+<li><code>custom_op</code> now supports factory functions. Factory functions have to be registered specially via <code>impl_factory</code></li>
+<li>I modified <code>clone_input</code> to also support dtype conversion, which I use to change the dtype of a loaded tensor if necessary.</li>
+<li>ContentStore needs to work with a device argument, so we torch.load directly to the correct device. This is for fake tensor support.</li>
+</ul>
+<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-588]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-588</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-588</guid>
+            <pubDate>Thu, 04 May 2023 10:56:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-584]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-584</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-584</guid>
+            <pubDate>Thu, 04 May 2023 10:39:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v13.3.5-canary.9]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v13.3.5-canary.9</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v13.3.5-canary.9</guid>
+            <pubDate>Thu, 04 May 2023 10:32:25 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Fix standalone mode with appDir running in a single process: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1693185971" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49116" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49116/hovercard" href="https://github.com/vercel/next.js/pull/49116">#49116</a></li>
+<li>Enable progressive enhanced form actions through decodeAction: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1695221325" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49187" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49187/hovercard" href="https://github.com/vercel/next.js/pull/49187">#49187</a></li>
+<li>Use special annotation for <code>$$bound</code> if no closure argument is attached: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1695222057" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49188" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49188/hovercard" href="https://github.com/vercel/next.js/pull/49188">#49188</a></li>
+<li>Add warning for missing metadataBase in social images: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1694951572" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49180" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49180/hovercard" href="https://github.com/vercel/next.js/pull/49180">#49180</a></li>
+<li>Allow override icon rel: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1695505525" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49194" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49194/hovercard" href="https://github.com/vercel/next.js/pull/49194">#49194</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sebmarkbage/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sebmarkbage">@sebmarkbage</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rxdb: 14.11.1]]></title>
+            <link>https://github.com/pubkey/rxdb/releases/tag/14.11.1</link>
+            <guid>https://github.com/pubkey/rxdb/releases/tag/14.11.1</guid>
+            <pubDate>Thu, 04 May 2023 09:52:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p align="center">
+            <a href="https://rxdb.info/" rel="nofollow">
+                <img src="https://camo.githubusercontent.com/8898befd529bc4f43a25bf0b61fdd2aa1d4f59c7ec142df882b8d717f53d2261/68747470733a2f2f727864622e696e666f2f66696c65732f6c6f676f2f6c6f676f5f746578742e737667" width="380px" alt="JavaScript Database" data-canonical-src="https://rxdb.info/files/logo/logo_text.svg" style="max-width: 100%;">
+            </a>
+        </p>
+<h2>Changes:</h2>
+<ul>
+<li>FIX remove <code>pouchdb-selector-core</code> dependency <a href="https://github.com/pubkey/rxdb/issues/4722" data-hovercard-type="issue" data-hovercard-url="/pubkey/rxdb/issues/4722/hovercard">#4722</a></li>
+</ul>
+<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100547: Update on "Fix a number of issues with divs in ValueRangeAnalysis"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100547</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100547</guid>
+            <pubDate>Thu, 04 May 2023 09:46:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR:</p>
+<ul>
+<li>Adds <code>floordiv</code> and <code>truncdiv</code> as they were missing</li>
+<li>Maps <code>div</code> to its correct definition (it was being mapped to <code>floordiv</code>)</li>
+<li>Simplifies the bounds of <code>floordiv</code></li>
+<li>Fixes some issues with the returned types of <code>floor</code> <code>ceil</code></li>
+<li>Adds tests for the previous point</li>
+</ul>
+<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.0-Beta-52]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-Beta-52</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-Beta-52</guid>
+            <pubDate>Thu, 04 May 2023 08:57:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-558]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-558</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-558</guid>
+            <pubDate>Thu, 04 May 2023 08:53:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.8.21-390]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.21-390</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.8.21-390</guid>
+            <pubDate>Thu, 04 May 2023 08:22:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.0-Beta-51]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-Beta-51</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-Beta-51</guid>
+            <pubDate>Thu, 04 May 2023 08:21:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100238]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100238</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100238</guid>
+            <pubDate>Thu, 04 May 2023 07:58:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix threaded PG tests</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from grafana: v0.0.0-test]]></title>
+            <link>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</link>
+            <guid>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</guid>
+            <pubDate>Thu, 04 May 2023 07:43:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>regenerate file from cue</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100130: Update on "[pt2] enable `svd` in `fake_tensor`"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100130</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100130</guid>
+            <pubDate>Thu, 04 May 2023 07:25:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jdk: jdk-21+21]]></title>
+            <link>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B21</link>
+            <guid>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B21</guid>
+            <pubDate>Thu, 04 May 2023 06:22:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Added tag jdk-21+21 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/705ad7d829dcbf8f5e2f098275d0856f6b86db2d/hovercard" href="https://github.com/openjdk/jdk/commit/705ad7d829dcbf8f5e2f098275d0856f6b86db2d"><tt>705ad7d</tt></a></p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 11.5.49]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.5.49</link>
@@ -110,25 +287,15 @@ c6f0017ea1a62cff75942643b9753943ac48773e5e5f89f7badb8045f257b637  nvim-win64.msi
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98461: Update on "Train Step Compile [2/3] optimizer support"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98461</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98461</guid>
-            <pubDate>Thu, 04 May 2023 04:40:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Support compiling a user-provided train_step function, provided</p>
-<ul>
-<li>it includes exactly one call to .backward()</li>
-<li>it includes any relevant optimizer steps, followed by zero_grad() calls</li>
-</ul>
-<p>Make Adam optimizer (almost) work</p>
-<p>Currently, use faketensor execution for the first optimizer step,<br>
-to create correct-shaped fake tensors for optimizer states, and<br>
-avoid taking the init path on the second try.</p>
-<p>Then we hackily convert the optimizer states to zero tensors.  This is the<br>
-worst part of the current impl, as it fails to trace the real optimizer<br>
-init and could be incorrect.</p>
-<p>Finally, we can wrap the real optimizer state tensors with fake tensors<br>
-to perform a real train step trace.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: 11.5.48-pgo: Version 11.5.48]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.48-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.48-pgo</guid>
+            <pubDate>Thu, 04 May 2023 04:32:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I008b2b0831c9314da4342db4bd5f3fe70e07ef21<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4504975" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4504975</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.5.48@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ae8079f0a2196f02cafef88eb67b8cc87849594e/hovercard" href="https://github.com/v8/v8/commit/ae8079f0a2196f02cafef88eb67b8cc87849594e"><tt>ae8079f</tt></a>-refs/heads/main@{#87433}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 11.5.48]]></title>
@@ -142,15 +309,11 @@ Cr-Commit-Position: refs/heads/11.5.48@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ae8079f0a2196f02cafef88eb67b8cc87849594e/hovercard" href="https://github.com/v8/v8/commit/ae8079f0a2196f02cafef88eb67b8cc87849594e"><tt>ae8079f</tt></a>-refs/heads/main@{#87433}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.48-pgo: Version 11.5.48]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.48-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.48-pgo</guid>
-            <pubDate>Thu, 04 May 2023 04:32:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I008b2b0831c9314da4342db4bd5f3fe70e07ef21<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4504975" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4504975</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.5.48@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ae8079f0a2196f02cafef88eb67b8cc87849594e/hovercard" href="https://github.com/v8/v8/commit/ae8079f0a2196f02cafef88eb67b8cc87849594e"><tt>ae8079f</tt></a>-refs/heads/main@{#87433}</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100601]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100601</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100601</guid>
+            <pubDate>Thu, 04 May 2023 04:11:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix some issues with older Sphinx</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from ant-design: 4.24.10]]></title>
@@ -200,9 +363,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <h2>Alpha modules (2.78.0-alpha.0)</h2>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.5.47]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.47</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.47</guid>
+            <title><![CDATA[Release notes from v8: 11.5.47-pgo: Version 11.5.47]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.47-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.47-pgo</guid>
             <pubDate>Thu, 04 May 2023 03:32:00 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie187337f7054feadd131cb44ae806950975cd950<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4504974" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4504974</a><br>
@@ -211,9 +374,9 @@ Cr-Commit-Position: refs/heads/11.5.47@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4becb939339f1de4744f95b9fcb10bda57cf7e99/hovercard" href="https://github.com/v8/v8/commit/4becb939339f1de4744f95b9fcb10bda57cf7e99"><tt>4becb93</tt></a>-refs/heads/main@{#87432}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.47-pgo: Version 11.5.47]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.47-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.47-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.5.47]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.47</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.47</guid>
             <pubDate>Thu, 04 May 2023 03:32:00 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie187337f7054feadd131cb44ae806950975cd950<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4504974" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4504974</a><br>
@@ -244,64 +407,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>fix: handle preload and filterSerializedResponseHeaders in sequence function (<a href="https://github.com/sveltejs/kit/pull/9741" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/9741/hovercard">#9741</a>)</p>
 </li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100546: Update on "Add --offload-to-disk support to minifier"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100546</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100546</guid>
-            <pubDate>Thu, 04 May 2023 03:22:01 GMT</pubDate>
-            <content:encoded><![CDATA[<p>When minifying extremely large repros, the minifier can run out of memory. This is because, for delta debugging, the minifier keeps a copy of every intermediate output in the network. This can easily put you over the memory limit for your GPU. To make matters worse, we cannot easily delta debug in such a situation, as delta debugging involves replacing intermediates with inputs, but doing so can cause an intermediate to become live longer than its actual extent in the original model (since inputs all have to be allocated up front).</p>
-<p>The strategy in this PR is to use <code>load_tensor</code> from the previous PR to offer a low memory mode for delta debugging. Instead of putting intermediates as inputs, we instead load them in the middle of the graph in question.  If, through DCE, the load_tensor ends up floating to the top of the graph, we can input-ify it. We now no longer save all intermediates in memory, but instead save them to disk. I used this to successfully minify the repro that helped us solve <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1689802414" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/100332" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/100332/hovercard" href="https://github.com/pytorch/pytorch/pull/100332">#100332</a></p>
-<p>The testing is not very good. I can try to add more robust testing but it will involve a more involved refactor to FX minifier. Let me know if that's what you want.</p>
-<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
-<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100519: Update on "Add load_storage"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100519</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100519</guid>
-            <pubDate>Thu, 04 May 2023 03:22:01 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This adds a new operator debugprims::load_storage which does the unusual thing of loading a tensor from disk (via ContentStoreReader). This will be used in a later PR to implement delta debugging in the minifier, even when the repro is too big to fit into memory. The way it works is that you specify a name of the tensor you want to load, as well as enough metadata to reconstruct the tensor, if the store isn't available. If there is an active content store, we read and return the tensor from that store; otherwise we use <code>rand_strided</code> to create it.</p>
-<p>I needed some infra improvements to do this:</p>
-<ul>
-<li><code>custom_op</code> now supports factory functions. Factory functions have to be registered specially via <code>impl_factory</code></li>
-<li>I modified <code>clone_input</code> to also support dtype conversion, which I use to change the dtype of a loaded tensor if necessary.</li>
-<li>ContentStore needs to work with a device argument, so we torch.load directly to the correct device. This is for fake tensor support.</li>
-</ul>
-<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
-<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100613: Don't build Triton from source in benchmarks/dynamo/Makefile]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100613</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100613</guid>
-            <pubDate>Thu, 04 May 2023 02:54:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang <a href="mailto:ezyang@meta.com">ezyang@meta.com</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98730: Update on "[WIP][Quant][PT2E]Enable x86 inductor quantizer"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98730</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98730</guid>
-            <pubDate>Thu, 04 May 2023 02:50:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 Xia-Weiwen</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/99132: Update on "[Inductor][Quant]Enable the decomposed dequant maxpooling2…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F99132</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F99132</guid>
-            <pubDate>Thu, 04 May 2023 02:50:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…d loop fusion"</p>
-<p><strong>Summary</strong><br>
-Lowering of <a href="https://github.com/pytorch/pytorch/blob/main/torch/_inductor/lowering.py#L2732"><code>max_pool2d</code> </a> will check the <code>num_reads</code> of input <code>StorageBox.data</code>. When num of reads is larger than 1, input of <code>StorageBox</code> will invoke <code>realize</code> and break the loop fusion with previous node. The previous node could be <code>decomposed.dequant_per_tensor.tensor</code> in quantization use case. For <code>decomposed.dequant_per_tensor.tensor</code>, it has 3 num of reads. But 2 of these 3 num of reads are scalar tensors as <code>zero point</code> and <code>scale</code>. In this PR, we try to relax the criterion for <code>StorageBox.realize</code>. Specifically, when the input is an instance of <code>Pointwise</code>, we will also check the number of non scalar tensor's read, and only invoke <code>StorageBox.realize</code> when the number of non scalar tensor's read is also larger than 1. It helps enable the loop fusion and vec code gen of pattern <code>decomposed.dequant_per_tensor.tensor - max_pool2d</code>.</p>
-<p><strong>Test Plan</strong></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cd test/inductor &amp;&amp; python -m pytest test_cpu_repro.py -k test_dequant_maxpool2d_lowering"><pre class="notranslate"><code>cd test/inductor &amp;&amp; python -m pytest test_cpu_repro.py -k test_dequant_maxpool2d_lowering
-</code></pre></div>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu anijain2305 EikanWang Guobing-Chen zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-548]]></title>
@@ -340,17 +445,6 @@ Lowering of <a href="https://github.com/pytorch/pytorch/blob/main/torch/_inducto
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.46-pgo: Version 11.5.46]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.46-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.46-pgo</guid>
-            <pubDate>Thu, 04 May 2023 02:32:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I23abb4549ad577a1c522ec391e50790d7f8a301f<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4505930" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4505930</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.5.46@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9cefa614b3ddf87abca192bc93e7afdffc092b09/hovercard" href="https://github.com/v8/v8/commit/9cefa614b3ddf87abca192bc93e7afdffc092b09"><tt>9cefa61</tt></a>-refs/heads/main@{#87431}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 11.5.46]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.5.46</link>
             <guid>https://github.com/v8/v8/releases/tag/11.5.46</guid>
@@ -362,17 +456,20 @@ Cr-Commit-Position: refs/heads/11.5.46@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9cefa614b3ddf87abca192bc93e7afdffc092b09/hovercard" href="https://github.com/v8/v8/commit/9cefa614b3ddf87abca192bc93e7afdffc092b09"><tt>9cefa61</tt></a>-refs/heads/main@{#87431}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100130: Update on "[pt2] enable `svd` in `fake_tensor`"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100130</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100130</guid>
-            <pubDate>Thu, 04 May 2023 02:10:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc soumith voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: 11.5.46-pgo: Version 11.5.46]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.46-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.46-pgo</guid>
+            <pubDate>Thu, 04 May 2023 02:32:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I23abb4549ad577a1c522ec391e50790d7f8a301f<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4505930" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4505930</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.5.46@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9cefa614b3ddf87abca192bc93e7afdffc092b09/hovercard" href="https://github.com/v8/v8/commit/9cefa614b3ddf87abca192bc93e7afdffc092b09"><tt>9cefa61</tt></a>-refs/heads/main@{#87431}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.45-pgo: Version 11.5.45]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.45-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.45-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.5.45]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.45</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.45</guid>
             <pubDate>Thu, 04 May 2023 02:02:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ibf91e7fbf67a2b073671ac1aefb11e353643656e<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4504973" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4504973</a><br>
@@ -381,9 +478,9 @@ Cr-Commit-Position: refs/heads/11.5.45@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c347910aa717bba66e24923ebb2772b4da6ee7bc/hovercard" href="https://github.com/v8/v8/commit/c347910aa717bba66e24923ebb2772b4da6ee7bc"><tt>c347910</tt></a>-refs/heads/main@{#87430}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.5.45]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.45</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.45</guid>
+            <title><![CDATA[Release notes from v8: 11.5.45-pgo: Version 11.5.45]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.45-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.45-pgo</guid>
             <pubDate>Thu, 04 May 2023 02:02:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ibf91e7fbf67a2b073671ac1aefb11e353643656e<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4504973" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4504973</a><br>
@@ -717,13 +814,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/aws/aws-cli/releases/tag/2.11.17</guid>
             <pubDate>Wed, 03 May 2023 19:08:00 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tagging 2.11.17 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from grafana: v0.0.0-test]]></title>
-            <link>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</link>
-            <guid>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</guid>
-            <pubDate>Wed, 03 May 2023 18:58:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>set deps on main merge not on tag</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from angular: v16.0.0]]></title>
@@ -2043,13 +2133,6 @@ NB: Unless, you render multiple Angular applications on the same page, setting a
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-494]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-494</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-494</guid>
-            <pubDate>Wed, 03 May 2023 14:11:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from strapi: v4.10.2]]></title>
             <link>https://github.com/strapi/strapi/releases/tag/v4.10.2</link>
             <guid>https://github.com/strapi/strapi/releases/tag/v4.10.2</guid>
@@ -2107,34 +2190,6 @@ NB: Unless, you render multiple Angular applications on the same page, setting a
 <p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.46.0...v5.46.1"><tt>v5.46.0...v5.46.1</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-468]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-468</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-468</guid>
-            <pubDate>Wed, 03 May 2023 12:53:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-460]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-460</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-460</guid>
-            <pubDate>Wed, 03 May 2023 12:22:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-459]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-459</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-459</guid>
-            <pubDate>Wed, 03 May 2023 12:17:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-458]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-458</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-458</guid>
-            <pubDate>Wed, 03 May 2023 12:16:12 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from django: 3.2.19]]></title>
             <link>https://github.com/django/django/releases/tag/3.2.19</link>
             <guid>https://github.com/django/django/releases/tag/3.2.19</guid>
@@ -2149,18 +2204,18 @@ NB: Unless, you render multiple Angular applications on the same page, setting a
             <content:encoded><![CDATA[<p>Tag 4.1.9</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-447]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-447</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-447</guid>
-            <pubDate>Wed, 03 May 2023 11:53:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from django: 4.2.1]]></title>
             <link>https://github.com/django/django/releases/tag/4.2.1</link>
             <guid>https://github.com/django/django/releases/tag/4.2.1</guid>
             <pubDate>Wed, 03 May 2023 11:48:49 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tag 4.2.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.10.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0-next.2</guid>
+            <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-worker@2.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.10.0-next.2]]></title>
@@ -2170,6 +2225,13 @@ NB: Unless, you render multiple Angular applications on the same page, setting a
             <content:encoded><![CDATA[<p>@gatsbyjs/parcel-namer-relative-to-cwd@2.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.10.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.10.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.10.0-next.2</guid>
+            <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.10.0-next.2</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@5.10.0-next.2]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.10.0-next.2</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.10.0-next.2</guid>
@@ -2177,32 +2239,11 @@ NB: Unless, you render multiple Angular applications on the same page, setting a
             <content:encoded><![CDATA[<p>gatsby-transformer-toml@5.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.10.0-next.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0-next.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0-next.2</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.10.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.10.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.10.0-next.2</guid>
             <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.10.0-next.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@5.10.0-next.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%405.10.0-next.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%405.10.0-next.2</guid>
-            <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@5.10.0-next.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.10.0-next.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.10.0-next.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.10.0-next.2</guid>
-            <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.10.0-next.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.10.0-next.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0-next.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0-next.2</guid>
-            <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-worker@2.10.0-next.2</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@5.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.10.0-next.2]]></title>
@@ -2219,25 +2260,25 @@ NB: Unless, you render multiple Angular applications on the same page, setting a
             <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@8.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.10.0-next.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.10.0-next.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.10.0-next.2</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.10.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.10.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.10.0-next.2</guid>
             <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.10.0-next.2</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.10.0-next.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.10.0-next.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.10.0-next.2</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.10.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0-next.2</guid>
             <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@5.10.0-next.2</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-438]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-438</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-438</guid>
-            <pubDate>Wed, 03 May 2023 10:53:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-screenshot@5.10.0-next.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%405.10.0-next.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-screenshot%405.10.0-next.2</guid>
+            <pubDate>Wed, 03 May 2023 11:00:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@5.10.0-next.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from xstate: @xstate/graph@2.0.0-alpha.2]]></title>
@@ -2699,6 +2740,13 @@ Release notes: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/
             <title><![CDATA[Release notes from monaco-editor: v0.39.0-dev.20230503: Merge pull request #3919 from spahnke/private-identifiers]]></title>
             <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230503</link>
             <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230503</guid>
+            <pubDate>Tue, 02 May 2023 12:46:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[JS, TS] Add Monarch support for private identifiers</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from monaco-editor: v0.39.0-dev.20230504: Merge pull request #3919 from spahnke/private-identifiers]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230504</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230504</guid>
             <pubDate>Tue, 02 May 2023 12:46:11 GMT</pubDate>
             <content:encoded><![CDATA[<p>[JS, TS] Add Monarch support for private identifiers</p>]]></content:encoded>
         </item>
@@ -3166,62 +3214,6 @@ is aware of the problem.</p>
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kdy1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kdy1">@kdy1</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alexkirsz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexkirsz">@alexkirsz</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.3.4]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.3.4</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.3.4</guid>
-            <pubDate>Mon, 01 May 2023 10:36:02 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Ensure app/layout.tsx can export preferredRegion: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1690616862" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49031" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49031/hovercard" href="https://github.com/vercel/next.js/pull/49031">#49031</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.1.0-alpha.11]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.11</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.11</guid>
-            <pubDate>Mon, 01 May 2023 09:59:01 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Features</h4>
-<ul>
-<li>Feature: Add support for Angular 16 <a href="https://github.com/storybooks/storybook/pull/22096" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22096/hovercard">#22096</a></li>
-</ul>
-<h4>Bug Fixes</h4>
-<ul>
-<li>Vue3: Rollback v7 breaking change and keep reactive v6-compatible API <a href="https://github.com/storybooks/storybook/pull/22229" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22229/hovercard">#22229</a></li>
-</ul>
-<h4>Maintenance</h4>
-<ul>
-<li>Core: Add tests for mapping behaviour in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1675232713" data-permission-text="Title is private" data-url="https://github.com/storybookjs/storybook/issues/22169" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22169/hovercard" href="https://github.com/storybookjs/storybook/pull/22169">#22169</a> <a href="https://github.com/storybooks/storybook/pull/22301" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22301/hovercard">#22301</a></li>
-</ul>
-<h4>Dependency Upgrades</h4>
-<ul>
-<li>Update glob to v10.0.0 <a href="https://github.com/storybooks/storybook/pull/22171" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22171/hovercard">#22171</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swagger-editor: v5.0.0-alpha.60]]></title>
-            <link>https://github.com/swagger-api/swagger-editor/releases/tag/v5.0.0-alpha.60</link>
-            <guid>https://github.com/swagger-api/swagger-editor/releases/tag/v5.0.0-alpha.60</guid>
-            <pubDate>Mon, 01 May 2023 08:27:02 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/swagger-api/swagger-editor/compare/v5.0.0-alpha.59...v5.0.0-alpha.60">5.0.0-alpha.60</a> (2023-05-01)</h1>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>top-bar:</strong> fix bug in 'Download Resolved JSON/YAML' menu items (<a href="https://github.com/swagger-api/swagger-editor/issues/4081" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-editor/pull/4081/hovercard">#4081</a>) (<a href="https://github.com/swagger-api/swagger-editor/commit/7e9cff12b38b449a2a251450814d30f9469bc26a">7e9cff1</a>), closes <a href="https://github.com/swagger-api/swagger-editor/issues/4080" data-hovercard-type="issue" data-hovercard-url="/swagger-api/swagger-editor/issues/4080/hovercard">#4080</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from sequelize: v6.31.1]]></title>
-            <link>https://github.com/sequelize/sequelize/releases/tag/v6.31.1</link>
-            <guid>https://github.com/sequelize/sequelize/releases/tag/v6.31.1</guid>
-            <pubDate>Mon, 01 May 2023 08:07:11 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/sequelize/sequelize/compare/v6.31.0...v6.31.1">6.31.1</a> (2023-05-01)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>postgres:</strong> adds support for minifying through join aliases (<a href="https://github.com/sequelize/sequelize/issues/15897" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/15897/hovercard">#15897</a>) (<a href="https://github.com/sequelize/sequelize/commit/a9fd5010809366eb50fa9d6fc4bf0612a9d1d751">a9fd501</a>)</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
