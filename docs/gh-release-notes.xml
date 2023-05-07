@@ -4,10 +4,124 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 07 May 2023 06:06:18 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 07 May 2023 12:07:12 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/100828]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100828</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100828</guid>
+            <pubDate>Sun, 07 May 2023 11:52:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update comment</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from arangodb: v3.11.0-beta.1]]></title>
+            <link>https://github.com/arangodb/arangodb/releases/tag/v3.11.0-beta.1</link>
+            <guid>https://github.com/arangodb/arangodb/releases/tag/v3.11.0-beta.1</guid>
+            <pubDate>Sun, 07 May 2023 11:44:23 GMT</pubDate>
+            <content:encoded><![CDATA[<p>arangodb release 3.11.0-beta.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100820: implement a function to materialize a copy-on-write storage]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100820</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100820</guid>
+            <pubDate>Sun, 07 May 2023 11:16:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+This is triggered if the storage is copy-on-write whenever mutable<br>
+access to a DataPtr is given.</p>
+<p>Test Plan: 100% code coverage</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100819: implement a function to convert a storage to copy-on-write]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100819</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100819</guid>
+            <pubDate>Sun, 07 May 2023 11:12:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+This will be used in the _lazy_clone() operator as well as reshape().</p>
+<p>Test Plan: 100% coverage of reachable lines.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100818: implementation of DataPtr context for copy-on-write tensors]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100818</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100818</guid>
+            <pubDate>Sun, 07 May 2023 11:06:46 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Summary:<br>
+Copy-on-write storage</h1>
+<p>This library adds support for copy-on-write storage, i.e. lazy copies,<br>
+to tensors. The design maintains the PyTorch invariant that tensors<br>
+alias if and only if they share a storage. Thus, tensors that are lazy<br>
+copies of one another will have distinct storages that share a data<br>
+allocation.</p>
+<h2>Thread-safety</h2>
+<p>The correctness of this design hinges on the pre-existing PyTorch user<br>
+requirement (and general default programming assumption) that users<br>
+are responsible for guaranteeing that writes do not take places<br>
+concurrently with reads and other writes.</p>
+<p>Lazily copied tensors add a complication to this programming model<br>
+because users are not required to know if lazy copies exist and are<br>
+not required to serialize writes across lazy copies. For example: two<br>
+tensors with distinct storages that share a copy-on-write data context<br>
+may be given to different threads that may do whatever they wish to<br>
+them, and the runtime is required to guarantee its safety.</p>
+<p>It turns out that this is not that difficult to protect because, due<br>
+to the copy-on-write requirement, we just need to materialize a tensor<br>
+upon writing. This could be done entirely without synchronization if<br>
+we materialized each copy, however, we have a common-sense<br>
+optimization to elide the copy for the last remaining reference. This<br>
+requires waiting for any pending copies.</p>
+<h3>Thread-safety detailed design</h3>
+<p>There are two operations that affect the copy-on-write details of a<br>
+tensor:</p>
+<ol>
+<li>lazy-clone (e.g. an explicit call or a hidden implementation detail<br>
+added through an operator like reshape)</li>
+<li>materialization (i.e. any write to the tensor)</li>
+</ol>
+<p>The key insight that we exploit is that lazy-clone is logically a read<br>
+operation and materialization is logically a write operation. This<br>
+means that, for a given set of tensors that share a storage, if<br>
+materialization is taking place, no other read operation, including<br>
+lazy-clone, can be concurrent with it.</p>
+<p>However, this insight only applies within a set of tensors that share<br>
+a storage. We also have to be concerned with tensors with different<br>
+storages that share a copy-on-write context. In this world,<br>
+materialization can race with lazy-clone or even other<br>
+materializations. <em>However</em>, in order for this to be the case, there<br>
+must be <em>at least</em> two references to the context. This means that the<br>
+context <em>can not</em> vanish out from under you if you are performing a<br>
+lazy-clone, and hence, it only requires an atomic refcount bump.</p>
+<p>The most complicated case is that all lazy-copies are concurrently<br>
+materializing. In this case, because a write is occurring, there are<br>
+no in-flight lazy-copies taking place. We must simply ensure that all<br>
+lazy-copies are able to materialize (read the data) concurrently. If<br>
+we didn't have the aforementioned optimization where the last copy<br>
+steals the data, we could get away with no locking whatsoever: each<br>
+makes a copy and decrements the refcount. However, because of the<br>
+optimization, we require the loser of the materializing race wait for<br>
+the pending copies to finish, and then steal the data without copying<br>
+it.</p>
+<p>We implement this by taking a shared lock when copying the data and<br>
+taking an exclusive lock when stealing the data. The exclusive lock<br>
+acquisition ensures that all pending shared locks are finished before<br>
+we steal the data.</p>
+<p>Test Plan: 100% code coverage.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/100824]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100824</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100824</guid>
+            <pubDate>Sun, 07 May 2023 07:24:02 GMT</pubDate>
+            <content:encoded><![CDATA[<p>default cache_dir should be lazily evaluated</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/100815: Update on "Enable dynamic shapes by default"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100815</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100815</guid>
+            <pubDate>Sun, 07 May 2023 07:12:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc soumith penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire anijain2305</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -80,17 +194,6 @@ b6adae24c1add7a76c9c61bc674581a309e3f71fe82c99cd93ea707ee2377c8d  nvim-win64.zip
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.5.69]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.69</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.69</guid>
-            <pubDate>Sun, 07 May 2023 05:06:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I119529bdc51ba3c6ea1cefba575a039bc88ea80f<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4507883" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4507883</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.5.69@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/41aa02562d46339e6ae3f30c90e13edce7da11f9/hovercard" href="https://github.com/v8/v8/commit/41aa02562d46339e6ae3f30c90e13edce7da11f9"><tt>41aa025</tt></a>-refs/heads/main@{#87488}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: 11.5.69-pgo: Version 11.5.69]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.5.69-pgo</link>
             <guid>https://github.com/v8/v8/releases/tag/11.5.69-pgo</guid>
@@ -102,11 +205,15 @@ Cr-Commit-Position: refs/heads/11.5.69@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/41aa02562d46339e6ae3f30c90e13edce7da11f9/hovercard" href="https://github.com/v8/v8/commit/41aa02562d46339e6ae3f30c90e13edce7da11f9"><tt>41aa025</tt></a>-refs/heads/main@{#87488}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/100824]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100824</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100824</guid>
-            <pubDate>Sun, 07 May 2023 04:14:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>default cache_dir should be lazily evaluated</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: Version 11.5.69]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.69</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.69</guid>
+            <pubDate>Sun, 07 May 2023 05:06:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I119529bdc51ba3c6ea1cefba575a039bc88ea80f<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4507883" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4507883</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.5.69@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/41aa02562d46339e6ae3f30c90e13edce7da11f9/hovercard" href="https://github.com/v8/v8/commit/41aa02562d46339e6ae3f30c90e13edce7da11f9"><tt>41aa025</tt></a>-refs/heads/main@{#87488}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/inductor/100816]]></title>
@@ -114,28 +221,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100816</guid>
             <pubDate>Sun, 07 May 2023 03:35:39 GMT</pubDate>
             <content:encoded><![CDATA[<p>lint</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100245]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100245</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100245</guid>
-            <pubDate>Sun, 07 May 2023 02:07:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>remove unused function</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/100245]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F100245</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F100245</guid>
-            <pubDate>Sun, 07 May 2023 02:07:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>remove unused function</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/100815: Update on "Enable dynamic shapes by default"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100815</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F100815</guid>
-            <pubDate>Sun, 07 May 2023 01:07:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc soumith penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire anijain2305</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/inductor/100331: Update on "[inductor] Move loop ordering after fusion"]]></title>
@@ -175,13 +260,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1698599031" data-permission-text="Title is private" data-url="https://github.com/qdrant/qdrant/issues/1847" data-hovercard-type="pull_request" data-hovercard-url="/qdrant/qdrant/pull/1847/hovercard" href="https://github.com/qdrant/qdrant/pull/1847">#1847</a> - restrict quantization to immutable segments only</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100754]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100754</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100754</guid>
-            <pubDate>Sat, 06 May 2023 17:10:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>ALso handle binary upload job</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-809]]></title>
@@ -250,13 +328,6 @@ sudo CHANNEL=test sh get-docker.sh</pre></div>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100791</guid>
             <pubDate>Sat, 06 May 2023 05:28:02 GMT</pubDate>
             <content:encoded><![CDATA[<p>Re-enable detectron2_maskrcnn on CI</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100789: add channels last support for ReplicationPad on CPU]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100789</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100789</guid>
-            <pubDate>Sat, 06 May 2023 03:59:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from vega-lite: Release 5.9.0]]></title>
@@ -692,9 +763,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.5.66]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.66</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.66</guid>
+            <title><![CDATA[Release notes from v8: 11.5.66-pgo: Version 11.5.66]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.66-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.66-pgo</guid>
             <pubDate>Fri, 05 May 2023 16:01:58 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I1d93c064919742f12b059671bcdd5e05c3b2a415<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4509455" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4509455</a><br>
@@ -703,9 +774,9 @@ Cr-Commit-Position: refs/heads/11.5.66@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8b5cb2be4b1a0a34130e7194f4182641565067ec/hovercard" href="https://github.com/v8/v8/commit/8b5cb2be4b1a0a34130e7194f4182641565067ec"><tt>8b5cb2b</tt></a>-refs/heads/main@{#87475}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.66-pgo: Version 11.5.66]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.66-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.66-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.5.66]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.66</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.66</guid>
             <pubDate>Fri, 05 May 2023 16:01:58 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I1d93c064919742f12b059671bcdd5e05c3b2a415<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4509455" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4509455</a><br>
@@ -1726,78 +1797,6 @@ memory-intensive environments.</p>]]></content:encoded>
 <ul>
 <li>feat: route-level entry generators via <code>export const entries</code> (<a href="https://github.com/sveltejs/kit/pull/9571" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/9571/hovercard">#9571</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.3.5-canary.9]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.3.5-canary.9</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.3.5-canary.9</guid>
-            <pubDate>Thu, 04 May 2023 10:32:25 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Fix standalone mode with appDir running in a single process: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1693185971" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49116" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49116/hovercard" href="https://github.com/vercel/next.js/pull/49116">#49116</a></li>
-<li>Enable progressive enhanced form actions through decodeAction: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1695221325" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49187" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49187/hovercard" href="https://github.com/vercel/next.js/pull/49187">#49187</a></li>
-<li>Use special annotation for <code>$$bound</code> if no closure argument is attached: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1695222057" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49188" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49188/hovercard" href="https://github.com/vercel/next.js/pull/49188">#49188</a></li>
-<li>Add warning for missing metadataBase in social images: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1694951572" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49180" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49180/hovercard" href="https://github.com/vercel/next.js/pull/49180">#49180</a></li>
-<li>Allow override icon rel: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1695505525" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49194" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49194/hovercard" href="https://github.com/vercel/next.js/pull/49194">#49194</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sebmarkbage/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sebmarkbage">@sebmarkbage</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.39.0-dev.20230506: Merge pull request #3942 from domesticmouse/patch-1]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230506</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230506</guid>
-            <pubDate>Thu, 04 May 2023 10:30:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update <code>monaco.d.ts</code> link</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.39.0-dev.20230505: Merge pull request #3942 from domesticmouse/patch-1]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230505</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.39.0-dev.20230505</guid>
-            <pubDate>Thu, 04 May 2023 10:30:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update <code>monaco.d.ts</code> link</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from rxdb: 14.11.1]]></title>
-            <link>https://github.com/pubkey/rxdb/releases/tag/14.11.1</link>
-            <guid>https://github.com/pubkey/rxdb/releases/tag/14.11.1</guid>
-            <pubDate>Thu, 04 May 2023 09:52:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p align="center">
-            <a href="https://rxdb.info/" rel="nofollow">
-                <img src="https://camo.githubusercontent.com/8898befd529bc4f43a25bf0b61fdd2aa1d4f59c7ec142df882b8d717f53d2261/68747470733a2f2f727864622e696e666f2f66696c65732f6c6f676f2f6c6f676f5f746578742e737667" width="380px" alt="JavaScript Database" data-canonical-src="https://rxdb.info/files/logo/logo_text.svg" style="max-width: 100%;">
-            </a>
-        </p>
-<h2>Changes:</h2>
-<ul>
-<li>FIX remove <code>pouchdb-selector-core</code> dependency <a href="https://github.com/pubkey/rxdb/issues/4722" data-hovercard-type="issue" data-hovercard-url="/pubkey/rxdb/issues/4722/hovercard">#4722</a></li>
-</ul>
-<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.11.0-1.0.pre: Roll Flutter Engine from da45a21708f2 to 4152b851e78e (1 revision) (#…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.11.0-1.0.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.11.0-1.0.pre</guid>
-            <pubDate>Thu, 04 May 2023 06:57:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…126042)</p>
-<p><a class="commit-link" href="https://github.com/flutter/engine/compare/da45a21708f2...4152b851e78e">flutter/engine@<tt>da45a21...4152b85</tt></a></p>
-<p>2023-05-04 <a href="mailto:jacksongardner@google.com">jacksongardner@google.com</a> Populate fallback fonts from CIPD in tests (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1691765444" data-permission-text="Title is private" data-url="https://github.com/flutter/engine/issues/41656" data-hovercard-type="pull_request" data-hovercard-url="/flutter/engine/pull/41656/hovercard" href="https://github.com/flutter/engine/pull/41656">flutter/engine#41656</a>)</p>
-<p>If this roll has caused a breakage, revert this CL and stop the roller<br>
-using the controls here:<br>
-<a href="https://autoroll.skia.org/r/flutter-engine-flutter-autoroll" rel="nofollow">https://autoroll.skia.org/r/flutter-engine-flutter-autoroll</a><br>
-Please CC <a href="mailto:jimgraham@google.com">jimgraham@google.com</a>,<a href="mailto:rmistry@google.com">rmistry@google.com</a>,<a href="mailto:zra@google.com">zra@google.com</a> on the revert to ensure that a human<br>
-is aware of the problem.</p>
-<p>To file a bug in Flutter: <a href="https://github.com/flutter/flutter/issues/new/choose">https://github.com/flutter/flutter/issues/new/choose</a></p>
-<p>To report a problem with the AutoRoller itself, please file a bug:<br>
-<a href="https://bugs.chromium.org/p/skia/issues/entry?template=Autoroller+Bug" rel="nofollow">https://bugs.chromium.org/p/skia/issues/entry?template=Autoroller+Bug</a></p>
-<p>Documentation for the AutoRoller is here:<br>
-<a href="https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md" rel="nofollow">https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jdk: jdk-21+21]]></title>
-            <link>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B21</link>
-            <guid>https://github.com/openjdk/jdk/releases/tag/jdk-21%2B21</guid>
-            <pubDate>Thu, 04 May 2023 06:22:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Added tag jdk-21+21 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/705ad7d829dcbf8f5e2f098275d0856f6b86db2d/hovercard" href="https://github.com/openjdk/jdk/commit/705ad7d829dcbf8f5e2f098275d0856f6b86db2d"><tt>705ad7d</tt></a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
