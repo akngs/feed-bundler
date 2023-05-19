@@ -4,72 +4,392 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 19 May 2023 00:21:21 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 19 May 2023 06:06:28 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/99483: Update on "Support autograd.Function w/ grad"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F99483</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F99483</guid>
-            <pubDate>Fri, 19 May 2023 00:06:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR adds support for tracing autograd.Function with grad.</p>
-<p>A few important bullet points outlining our approach:</p>
-<ol>
-<li>Our goal is to verify soundness in order to add a call_function to the autograd.Function's <code>apply</code> to the graph.</li>
-<li>We achieve (1) by either verifying soundness or rejecting soundness, by ensuring that both forward and backward of the autograd.Function are sound.</li>
-<li>For the forward, if we verify soundness, we install its guards into the graph.</li>
-<li>For the backward, if we verify soundness, we throw it out. However, backwards soundness verification is more onerous, and has a config driven set of banned attrs and methods for tensors.</li>
-</ol>
-<p>1-4 above are achieved by turning the forward and backward into UserDefinedFunctionVariables, and inlining through them, relying on dynamo's soundness detection. If we graph break in these, we raise and treat them as unsound. As noted above, backwards is stricter yet.</p>
-<p>For the tracing, the safety comes from dynamo's HigherOrderOperator system. That system ensures that not only do we trace soundly, but that no new variables are lifted into inputs during the tracing, and that the forward and backwards are entirely self contained.</p>
-<p>Whenever we reject a function as unsound, we restore back, as usual.</p>
-<p>Due to some limitations in the lifting logic, we have an escape hatch we implemented for tensors that are known in forward, but cross into backwards through save_tensors (save) /saved_tensors (load). We escape hatch here to avoid having the known saved tensors coming from forward end up being accidentally treated as lifted variables (and rejected). This is sound, but a little hacky feeling.</p>
-<p>Additionally, due to some limitations in fx node removal, combined with how we produce subgraphs for the traces installed from HigherOrderOperators, we had to improve our node removal logic. In the event of a restore, we remove the old nodes from the graph, as usual in dynamo. However, because the references to these nodes may exist in subgraphs, we traverse any nodes users and remove them first if and only if they are in another graph. This is always sound, because removal should only be downstream of restoration at this point.</p>
-<p>cc soumith penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/99497: Update on "add fp16 support for native conv on CPU"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F99497</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F99497</guid>
+            <pubDate>Fri, 19 May 2023 06:03:59 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Not complete yet. WIP.</p>
+<h3>Testing</h3>
+<p>56 cores:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Naïve impl   / us</th>
+<th>oneDNN /   us</th>
+<th>Speed up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IC:   64, OC: 256, kernel: 1, stride: 1, N: 256, H: 56, W: 56, G: 1, pad: 0</td>
+<td>1032064</td>
+<td>11073.58</td>
+<td>93.20061</td>
+</tr>
+<tr>
+<td>IC:   128, OC: 512, kernel: 1, stride: 1, N: 256, H: 28, W: 28, G: 1, pad: 0</td>
+<td>1000097</td>
+<td>16371.19</td>
+<td>61.08883</td>
+</tr>
+<tr>
+<td>IC:   256, OC: 1024, kernel: 1, stride: 1, N: 256, H: 14, W: 14, G: 1, pad: 0</td>
+<td>981813.4</td>
+<td>9008.908</td>
+<td>108.9825</td>
+</tr>
+<tr>
+<td>IC: 1024, OC: 256, kernel: 1, stride: 1,   N: 256, H: 14, W: 14, G: 1, pad: 0</td>
+<td>1082606</td>
+<td>10150.47</td>
+<td>106.6558</td>
+</tr>
+<tr>
+<td>IC: 256, OC: 256, kernel: 3, stride: 1,   N: 1, H: 16, W: 16, G: 1, pad: 0</td>
+<td>319980.6</td>
+<td>181.598</td>
+<td>1762.027</td>
+</tr>
+</tbody>
+</table>
+<p>Single core:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Naïve impl   / us</th>
+<th>oneDNN /   us</th>
+<th>Speed up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IC:   64, OC: 256, kernel: 1, stride: 1, N: 256, H: 56, W: 56, G: 1, pad: 0</td>
+<td>34676789</td>
+<td>524199.8</td>
+<td>66.15185</td>
+</tr>
+<tr>
+<td>IC:   128, OC: 512, kernel: 1, stride: 1, N: 256, H: 28, W: 28, G: 1, pad: 0</td>
+<td>33454125</td>
+<td>349844.4</td>
+<td>95.62573</td>
+</tr>
+<tr>
+<td>IC: 256, OC: 256, kernel: 3, stride: 1,   N: 1, H: 16, W: 16, G: 1, pad: 0</td>
+<td>317650.1</td>
+<td>2317.677</td>
+<td>137.0554</td>
+</tr>
+<tr>
+<td>IC: 128, OC: 256, kernel: 3, stride: 1,   N: 1, L: 64</td>
+<td>15334.68</td>
+<td>167.264</td>
+<td>91.67952</td>
+</tr>
+</tbody>
+</table>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/99483: Update on "Support autograd.Function w/ grad"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F99483</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F99483</guid>
-            <pubDate>Fri, 19 May 2023 00:06:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR adds support for tracing autograd.Function with grad.</p>
-<p>A few important bullet points outlining our approach:</p>
-<ol>
-<li>Our goal is to verify soundness in order to add a call_function to the autograd.Function's <code>apply</code> to the graph.</li>
-<li>We achieve (1) by either verifying soundness or rejecting soundness, by ensuring that both forward and backward of the autograd.Function are sound.</li>
-<li>For the forward, if we verify soundness, we install its guards into the graph.</li>
-<li>For the backward, if we verify soundness, we throw it out. However, backwards soundness verification is more onerous, and has a config driven set of banned attrs and methods for tensors.</li>
-</ol>
-<p>1-4 above are achieved by turning the forward and backward into UserDefinedFunctionVariables, and inlining through them, relying on dynamo's soundness detection. If we graph break in these, we raise and treat them as unsound. As noted above, backwards is stricter yet.</p>
-<p>For the tracing, the safety comes from dynamo's HigherOrderOperator system. That system ensures that not only do we trace soundly, but that no new variables are lifted into inputs during the tracing, and that the forward and backwards are entirely self contained.</p>
-<p>Whenever we reject a function as unsound, we restore back, as usual.</p>
-<p>Due to some limitations in the lifting logic, we have an escape hatch we implemented for tensors that are known in forward, but cross into backwards through save_tensors (save) /saved_tensors (load). We escape hatch here to avoid having the known saved tensors coming from forward end up being accidentally treated as lifted variables (and rejected). This is sound, but a little hacky feeling.</p>
-<p>Additionally, due to some limitations in fx node removal, combined with how we produce subgraphs for the traces installed from HigherOrderOperators, we had to improve our node removal logic. In the event of a restore, we remove the old nodes from the graph, as usual in dynamo. However, because the references to these nodes may exist in subgraphs, we traverse any nodes users and remove them first if and only if they are in another graph. This is always sound, because removal should only be downstream of restoration at this point.</p>
-<p>cc soumith penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/99497: Update on "add fp16 support for native conv on CPU"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F99497</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F99497</guid>
+            <pubDate>Fri, 19 May 2023 06:03:59 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Not complete yet. WIP.</p>
+<h3>Testing</h3>
+<p>56 cores:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Naïve impl   / us</th>
+<th>oneDNN /   us</th>
+<th>Speed up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IC:   64, OC: 256, kernel: 1, stride: 1, N: 256, H: 56, W: 56, G: 1, pad: 0</td>
+<td>1032064</td>
+<td>11073.58</td>
+<td>93.20061</td>
+</tr>
+<tr>
+<td>IC:   128, OC: 512, kernel: 1, stride: 1, N: 256, H: 28, W: 28, G: 1, pad: 0</td>
+<td>1000097</td>
+<td>16371.19</td>
+<td>61.08883</td>
+</tr>
+<tr>
+<td>IC:   256, OC: 1024, kernel: 1, stride: 1, N: 256, H: 14, W: 14, G: 1, pad: 0</td>
+<td>981813.4</td>
+<td>9008.908</td>
+<td>108.9825</td>
+</tr>
+<tr>
+<td>IC: 1024, OC: 256, kernel: 1, stride: 1,   N: 256, H: 14, W: 14, G: 1, pad: 0</td>
+<td>1082606</td>
+<td>10150.47</td>
+<td>106.6558</td>
+</tr>
+<tr>
+<td>IC: 256, OC: 256, kernel: 3, stride: 1,   N: 1, H: 16, W: 16, G: 1, pad: 0</td>
+<td>319980.6</td>
+<td>181.598</td>
+<td>1762.027</td>
+</tr>
+</tbody>
+</table>
+<p>Single core:</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Naïve impl   / us</th>
+<th>oneDNN /   us</th>
+<th>Speed up</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IC:   64, OC: 256, kernel: 1, stride: 1, N: 256, H: 56, W: 56, G: 1, pad: 0</td>
+<td>34676789</td>
+<td>524199.8</td>
+<td>66.15185</td>
+</tr>
+<tr>
+<td>IC:   128, OC: 512, kernel: 1, stride: 1, N: 256, H: 28, W: 28, G: 1, pad: 0</td>
+<td>33454125</td>
+<td>349844.4</td>
+<td>95.62573</td>
+</tr>
+<tr>
+<td>IC: 256, OC: 256, kernel: 3, stride: 1,   N: 1, H: 16, W: 16, G: 1, pad: 0</td>
+<td>317650.1</td>
+<td>2317.677</td>
+<td>137.0554</td>
+</tr>
+<tr>
+<td>IC: 128, OC: 256, kernel: 3, stride: 1,   N: 1, L: 64</td>
+<td>15334.68</td>
+<td>167.264</td>
+<td>91.67952</td>
+</tr>
+</tbody>
+</table>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/99483: Update on "Support autograd.Function w/ grad"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F99483</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F99483</guid>
-            <pubDate>Fri, 19 May 2023 00:06:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR adds support for tracing autograd.Function with grad.</p>
-<p>A few important bullet points outlining our approach:</p>
-<ol>
-<li>Our goal is to verify soundness in order to add a call_function to the autograd.Function's <code>apply</code> to the graph.</li>
-<li>We achieve (1) by either verifying soundness or rejecting soundness, by ensuring that both forward and backward of the autograd.Function are sound.</li>
-<li>For the forward, if we verify soundness, we install its guards into the graph.</li>
-<li>For the backward, if we verify soundness, we throw it out. However, backwards soundness verification is more onerous, and has a config driven set of banned attrs and methods for tensors.</li>
-</ol>
-<p>1-4 above are achieved by turning the forward and backward into UserDefinedFunctionVariables, and inlining through them, relying on dynamo's soundness detection. If we graph break in these, we raise and treat them as unsound. As noted above, backwards is stricter yet.</p>
-<p>For the tracing, the safety comes from dynamo's HigherOrderOperator system. That system ensures that not only do we trace soundly, but that no new variables are lifted into inputs during the tracing, and that the forward and backwards are entirely self contained.</p>
-<p>Whenever we reject a function as unsound, we restore back, as usual.</p>
-<p>Due to some limitations in the lifting logic, we have an escape hatch we implemented for tensors that are known in forward, but cross into backwards through save_tensors (save) /saved_tensors (load). We escape hatch here to avoid having the known saved tensors coming from forward end up being accidentally treated as lifted variables (and rejected). This is sound, but a little hacky feeling.</p>
-<p>Additionally, due to some limitations in fx node removal, combined with how we produce subgraphs for the traces installed from HigherOrderOperators, we had to improve our node removal logic. In the event of a restore, we remove the old nodes from the graph, as usual in dynamo. However, because the references to these nodes may exist in subgraphs, we traverse any nodes users and remove them first if and only if they are in another graph. This is always sound, because removal should only be downstream of restoration at this point.</p>
-<p>cc soumith penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97508]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97508</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97508</guid>
+            <pubDate>Fri, 19 May 2023 06:01:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>add dynamo_core_headers</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/98745: Update on "add Half support for logsigmoid, threshold, elu, gelu, har…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98745</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F98745</guid>
+            <pubDate>Fri, 19 May 2023 05:27:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…dtanh, hardsigmoid, hardswish, hardshrink, softshrink, leakyrelu, softplus, glu, silu, mish, and prelu on CPU"</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu anijain2305 EikanWang Guobing-Chen zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101306: Update on "preinstall dependencies for torch inductor benchmarking in…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101306</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101306</guid>
+            <pubDate>Fri, 19 May 2023 05:25:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… docker image"</p>
+<p>cc voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.59]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.59</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.59</guid>
+            <pubDate>Fri, 19 May 2023 05:24:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>swc_core v0.76.16</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101378: Update on "add scalar conversion using avx instructions for Half on CPU"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101378</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101378</guid>
+            <pubDate>Fri, 19 May 2023 05:22:35 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Motivation</h3>
+<p>Scalar conversion between Half and Float on CPU is more time consuming compared to BFloat16 &lt;-&gt; Float. There is no direct data type conversion instruction for single Half value on CPU,  so we add scalar conversion with avx instructions for Half to speed up.</p>
+<h3>Testing</h3>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/101378: Update on "add scalar conversion using avx instructions for Half on CPU"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F101378</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F101378</guid>
+            <pubDate>Fri, 19 May 2023 05:22:35 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Motivation</h3>
+<p>Scalar conversion between Half and Float on CPU is more time consuming compared to BFloat16 &lt;-&gt; Float. There is no direct data type conversion instruction for single Half value on CPU,  so we add scalar conversion with avx instructions for Half to speed up.</p>
+<h3>Testing</h3>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Fri, 19 May 2023 05:16:24 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-355+g3ae62c470
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-355+g3ae62c470
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim-qt.exe</code></li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="9c884c48b990ea236d0610229354a94f90e6c6ef7deff37706422df72058a1ec  nvim-linux64.tar.gz
+6889dec56db914dd8eb71ed712af1719cd52afa7f8be69561b555deab52b106f  nvim.appimage
+9d4619618cb0a136047a1f7589f6af972489224e2678d3938d62fafe918284f8  nvim.appimage.zsync
+60ac62a86d9553a0d7e59ccdda8c5493bd6c100d63da0af4b7507c37de52f556  nvim-macos.tar.gz
+1fbc632d2ca658b29f62e79585cea91a6dfe8f1de99f41bcd9d9100aaf28d2e7  nvim-win64.zip
+dbb21b1d44e35fec6ee731751c6c5c1955cc07e46597ff6bedbf3bd4ba1ab606  nvim-win64.msi"><pre class="notranslate"><code>9c884c48b990ea236d0610229354a94f90e6c6ef7deff37706422df72058a1ec  nvim-linux64.tar.gz
+6889dec56db914dd8eb71ed712af1719cd52afa7f8be69561b555deab52b106f  nvim.appimage
+9d4619618cb0a136047a1f7589f6af972489224e2678d3938d62fafe918284f8  nvim.appimage.zsync
+60ac62a86d9553a0d7e59ccdda8c5493bd6c100d63da0af4b7507c37de52f556  nvim-macos.tar.gz
+1fbc632d2ca658b29f62e79585cea91a6dfe8f1de99f41bcd9d9100aaf28d2e7  nvim-win64.zip
+dbb21b1d44e35fec6ee731751c6c5c1955cc07e46597ff6bedbf3bd4ba1ab606  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100609]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100609</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100609</guid>
+            <pubDate>Fri, 19 May 2023 04:48:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>fix failing tests</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v13.4.3-canary.3]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v13.4.3-canary.3</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v13.4.3-canary.3</guid>
+            <pubDate>Fri, 19 May 2023 03:15:06 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Update default for appDocumentPreloading config for minimalMode: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1714527588" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49952" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49952/hovercard" href="https://github.com/vercel/next.js/pull/49952">#49952</a></li>
+<li>Add @vercel/og to external server packages: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1714248006" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49944" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49944/hovercard" href="https://github.com/vercel/next.js/pull/49944">#49944</a></li>
+<li>Fix custom server React resolution with app dir and pages both presented: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1709937437" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49805" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49805/hovercard" href="https://github.com/vercel/next.js/pull/49805">#49805</a></li>
+<li>Error in <code>next export</code> when <code>serverActions</code> is enabled: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1714646622" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49959" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49959/hovercard" href="https://github.com/vercel/next.js/pull/49959">#49959</a></li>
+<li>Reset not-found and error boundary when navigating: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1711942357" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49855" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49855/hovercard" href="https://github.com/vercel/next.js/pull/49855">#49855</a></li>
+<li>Revert "Error in <code>next export</code> when <code>serverActions</code> is enabled": <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1716236471" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/50019" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/50019/hovercard" href="https://github.com/vercel/next.js/pull/50019">#50019</a></li>
+<li>fix: warning fetch for <code>[object Request]</code> specified: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1715817855" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/50003" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/50003/hovercard" href="https://github.com/vercel/next.js/pull/50003">#50003</a></li>
+<li>Remove custom handling for prebundled react env: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1714549993" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49954" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49954/hovercard" href="https://github.com/vercel/next.js/pull/49954">#49954</a></li>
+<li>fix: set cookies followed by <code>redirect()</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1714720892" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49965" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49965/hovercard" href="https://github.com/vercel/next.js/pull/49965">#49965</a></li>
+</ul>
+<h3>Example Changes</h3>
+<ul>
+<li>update with-turbopack example: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1698112611" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49332" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49332/hovercard" href="https://github.com/vercel/next.js/pull/49332">#49332</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Fix going back to page after applying hash link: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1715903086" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/50006" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/50006/hovercard" href="https://github.com/vercel/next.js/pull/50006">#50006</a></li>
+<li>build(cargo): update turbopack: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1716143448" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/50013" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/50013/hovercard" href="https://github.com/vercel/next.js/pull/50013">#50013</a></li>
+<li>Suggest a replay in the bug issue template: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1716459156" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/50022" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/50022/hovercard" href="https://github.com/vercel/next.js/pull/50022">#50022</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/padmaia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/padmaia">@padmaia</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kwonoj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kwonoj">@kwonoj</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101813: Update on "Better cudagraph enablement for dynamic_shapes=True with s…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101813</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101813</guid>
+            <pubDate>Fri, 19 May 2023 02:50:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…tatic shapes"</p>
+<p>cc penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100622]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100622</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100622</guid>
+            <pubDate>Fri, 19 May 2023 01:46:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>nit fix</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: electron v25.0.0-beta.7]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v25.0.0-beta.7</link>
+            <guid>https://github.com/electron/electron/releases/tag/v25.0.0-beta.7</guid>
+            <pubDate>Fri, 19 May 2023 00:59:12 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Note: This is a beta release.  Please file new issues for any bugs you find in it.</p>
+<p>This release is published to npm under the beta tag and can be installed via <code>npm install electron@beta</code>, or <code>npm install electron@25.0.0-beta.7</code>.</p>
+<h1>Release Notes for v25.0.0-beta.7</h1>
+<h2>Features</h2>
+<ul>
+<li>Added several new cursor values to the <code>cursor-changed</code> event. <a href="https://github.com/electron/electron/pull/38363" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38363/hovercard">#38363</a></li>
+</ul>
+<h2>Fixes</h2>
+<ul>
+<li>Fixed an issue where <code>BrowserWindow.isMaximized()</code> could incorrectly return true for minimized or fullscreened windows on macOS. <a href="https://github.com/electron/electron/pull/38307" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38307/hovercard">#38307</a> <span>(Also in <a href="https://github.com/electron/electron/pull/38306" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38306/hovercard">23</a>, <a href="https://github.com/electron/electron/pull/38308" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38308/hovercard">24</a>)</span></li>
+<li>Fixed an issue where <code>BrowserWindow.isVisible()</code> would incorrectly return <code>true</code> for minimized windows on Windows. <a href="https://github.com/electron/electron/pull/38314" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38314/hovercard">#38314</a> <span>(Also in <a href="https://github.com/electron/electron/pull/38315" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38315/hovercard">23</a>, <a href="https://github.com/electron/electron/pull/38313" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38313/hovercard">24</a>)</span></li>
+<li>Fixed an issue where <code>getNormalBounds()</code> returns incorrect bounds for transparent maximized windows on Windows. <a href="https://github.com/electron/electron/pull/38348" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38348/hovercard">#38348</a></li>
+<li>Fixed an issue where accessing <code>BrowserWindow.id</code> threw an error after the window was destroyed. <a href="https://github.com/electron/electron/pull/38311" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38311/hovercard">#38311</a> <span>(Also in <a href="https://github.com/electron/electron/pull/38309" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38309/hovercard">23</a>, <a href="https://github.com/electron/electron/pull/38310" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38310/hovercard">24</a>)</span></li>
+<li>Fixed an issue where calling <code>win.minimize()</code> directly after calling <code>win.maximize()</code>, and then calling <code>win.isMaximized()</code> incorrectly returns <code>true</code>. <a href="https://github.com/electron/electron/pull/38345" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38345/hovercard">#38345</a> <span>(Also in <a href="https://github.com/electron/electron/pull/38344" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38344/hovercard">23</a>, <a href="https://github.com/electron/electron/pull/38343" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38343/hovercard">24</a>)</span></li>
+</ul>
+<h2>Other Changes</h2>
+<ul>
+<li>Backported fix for 1404797. <a href="https://github.com/electron/electron/pull/38333" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38333/hovercard">#38333</a></li>
+</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from spring-boot: v3.1.0]]></title>
@@ -158,29 +478,6 @@
             <guid>https://github.com/hashicorp/vagrant/releases/tag/2.3.6.dev%2B000085-9509f43</guid>
             <pubDate>Thu, 18 May 2023 22:49:38 GMT</pubDate>
             <content:encoded><![CDATA[<p>Vagrant nightly release build</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101836: [pt2] add meta for `linalg_lu_solve`]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101836</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101836</guid>
-            <pubDate>Thu, 18 May 2023 22:24:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101835: [pt2] set `conj` bit in `out_wrapper`]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101835</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101835</guid>
-            <pubDate>Thu, 18 May 2023 22:24:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101825: Update on "Remove some simple config.dynamic_shapes checks - towards …]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101825</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101825</guid>
-            <pubDate>Thu, 18 May 2023 22:07:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…dynamic on by default"</p>
-<p>cc penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from meteor: release/METEOR@3.0-alpha.8]]></title>
@@ -571,22 +868,6 @@ on cpython.</p>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/charliermarsh/ruff/compare/v0.0.267...v0.0.268"><tt>v0.0.267...v0.0.268</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101813: Update on "Better cudagraph enablement for dynamic_shapes=True with s…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101813</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101813</guid>
-            <pubDate>Thu, 18 May 2023 18:56:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…tatic shapes"</p>
-<p>cc penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v25.0.0-beta.7]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v25.0.0-beta.7</link>
-            <guid>https://github.com/electron/electron/releases/tag/v25.0.0-beta.7</guid>
-            <pubDate>Thu, 18 May 2023 18:46:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v25.0.0-beta.7</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from deno: v1.33.4]]></title>
             <link>https://github.com/denoland/deno/releases/tag/v1.33.4</link>
             <guid>https://github.com/denoland/deno/releases/tag/v1.33.4</guid>
@@ -711,13 +992,6 @@ setTimeout w/short delay (<a class="issue-link js-issue-link" data-error-text="F
 <hr>
 <p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.48.0...v5.48.1"><tt>v5.48.0...v5.48.1</tt></a></p>
 <p><g-emoji class="g-emoji" alias="globe_with_meridians" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f310.png">🌐</g-emoji> Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101807: Check devices on meta functions that return inputs]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101807</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101807</guid>
-            <pubDate>Thu, 18 May 2023 17:18:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from spring-boot: v3.0.7]]></title>
@@ -959,9 +1233,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0326cf6343caaa6ea32bb3208e894cb7412e1313/hovercard" href="https://github.com/v8/v8/commit/0326cf6343caaa6ea32bb3208e894cb7412e1313"><tt>0326cf6</tt></a>-refs/heads/main@{#86647}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.4.183.11-pgo: Version 11.4.183.11]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.183.11-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.183.11-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.4.183.11]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.183.11</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.183.11</guid>
             <pubDate>Thu, 18 May 2023 13:51:45 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ifd716f27c77c9b685bb2f27188dd9c2bc1839546<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4544580" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4544580</a><br>
@@ -971,9 +1245,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5483d8e816e0bbce865cbbc3fa0ab357e6330bab/hovercard" href="https://github.com/v8/v8/commit/5483d8e816e0bbce865cbbc3fa0ab357e6330bab"><tt>5483d8e</tt></a>-refs/heads/main@{#87241}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.4.183.11]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.4.183.11</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.4.183.11</guid>
+            <title><![CDATA[Release notes from v8: 11.4.183.11-pgo: Version 11.4.183.11]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.4.183.11-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.4.183.11-pgo</guid>
             <pubDate>Thu, 18 May 2023 13:51:45 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ifd716f27c77c9b685bb2f27188dd9c2bc1839546<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4544580" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4544580</a><br>
@@ -1044,13 +1318,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101797]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101797</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101797</guid>
-            <pubDate>Thu, 18 May 2023 11:13:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Enable test_cpp_wrapper tests on ROCm</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from tools: VSCode Extension v0.24.2]]></title>
             <link>https://github.com/rome/tools/releases/tag/lsp%2Fv0.24.2</link>
             <guid>https://github.com/rome/tools/releases/tag/lsp%2Fv0.24.2</guid>
@@ -1079,15 +1346,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v12.1.1...cli/v12.1.2"><tt>cli/v12.1.1...cli/v12.1.2</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/101792: Update on "[MPS] Dispatch outer bin edges selection function"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101792</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F101792</guid>
-            <pubDate>Thu, 18 May 2023 09:02:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Dispatch the selection function to prevent using <code>is_mps()</code> in <code>Histogram.cpp</code>.</p>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.9.0-Beta-191]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-Beta-191</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.0-Beta-191</guid>
@@ -1100,77 +1358,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/vuejs/core/releases/tag/v3.3.4</guid>
             <pubDate>Thu, 18 May 2023 08:31:59 GMT</pubDate>
             <content:encoded><![CDATA[<p>Please refer to <a href="https://github.com/vuejs/core/blob/main/CHANGELOG.md">CHANGELOG.md</a> for details.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Thu, 18 May 2023 05:15:48 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-350+gc9f47fca8
-Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-350+gc9f47fca8
-Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim-qt.exe</code></li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Search and run <code>nvim-qt.exe</code> or run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="98b156fbab413b5529a27aee27dd29bd63c29edc51e686bc3a68aebd20ea6a9f  nvim-linux64.tar.gz
-dac8137b4ee535b931979bbf4d67420ec180778c746bde5f9fd147af32b5588c  nvim.appimage
-a953e9e13eb4959ecdf447da1cdb263f012452734b633d82dd90174f4c0cea61  nvim.appimage.zsync
-4630f5010488452c6b36633e2e37a6cf72d2e2d01adb3defd04770da7654c35e  nvim-macos.tar.gz
-8895065bb5c65ba3aea05f46fac8b68c75821e382e5a7a79a214da6183a134e9  nvim-win64.zip
-d39e7e28057ace7ce683756acc65fa04882584774e0a12694b0f1ae9ba6cf499  nvim-win64.msi"><pre class="notranslate"><code>98b156fbab413b5529a27aee27dd29bd63c29edc51e686bc3a68aebd20ea6a9f  nvim-linux64.tar.gz
-dac8137b4ee535b931979bbf4d67420ec180778c746bde5f9fd147af32b5588c  nvim.appimage
-a953e9e13eb4959ecdf447da1cdb263f012452734b633d82dd90174f4c0cea61  nvim.appimage.zsync
-4630f5010488452c6b36633e2e37a6cf72d2e2d01adb3defd04770da7654c35e  nvim-macos.tar.gz
-8895065bb5c65ba3aea05f46fac8b68c75821e382e5a7a79a214da6183a134e9  nvim-win64.zip
-d39e7e28057ace7ce683756acc65fa04882584774e0a12694b0f1ae9ba6cf499  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from core: v3.3.3]]></title>
@@ -1424,9 +1611,9 @@ is not used, a mutable dictionary is returned.</p>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.5.142]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.142</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.142</guid>
+            <title><![CDATA[Release notes from v8: 11.5.142-pgo: Version 11.5.142]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.142-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.142-pgo</guid>
             <pubDate>Wed, 17 May 2023 21:46:41 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I164cf185990534c3e39a3f897b9e9f23c20d2cb0<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4544999" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4544999</a><br>
@@ -1435,9 +1622,9 @@ Cr-Commit-Position: refs/heads/11.5.142@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/f18865b35f44b31e422ffb637034b7ccb7285e98/hovercard" href="https://github.com/v8/v8/commit/f18865b35f44b31e422ffb637034b7ccb7285e98"><tt>f18865b</tt></a>-refs/heads/main@{#87740}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.142-pgo: Version 11.5.142]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.142-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.142-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.5.142]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.142</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.142</guid>
             <pubDate>Wed, 17 May 2023 21:46:41 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I164cf185990534c3e39a3f897b9e9f23c20d2cb0<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4544999" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4544999</a><br>
@@ -1533,9 +1720,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.5.141]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.141</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.141</guid>
+            <title><![CDATA[Release notes from v8: 11.5.141-pgo: Version 11.5.141]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.141-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.141-pgo</guid>
             <pubDate>Wed, 17 May 2023 19:02:12 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia91e8ec15685e6e3fd646e90e1f70f489d0ba0b2<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4544998" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4544998</a><br>
@@ -1544,9 +1731,9 @@ Cr-Commit-Position: refs/heads/11.5.141@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/94d5d972687601c0e250210767d421ffccafe053/hovercard" href="https://github.com/v8/v8/commit/94d5d972687601c0e250210767d421ffccafe053"><tt>94d5d97</tt></a>-refs/heads/main@{#87738}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.5.141-pgo: Version 11.5.141]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.5.141-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.5.141-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.5.141]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.5.141</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.5.141</guid>
             <pubDate>Wed, 17 May 2023 19:02:12 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia91e8ec15685e6e3fd646e90e1f70f489d0ba0b2<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4544998" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4544998</a><br>
@@ -3476,6 +3663,20 @@ c23e92c4a0cd343f73d4056e66c961cdf68e73ca699b1129638537a931c4ffc8  opencv-4.7.0-i
 <p><strong>UPDATE:</strong> iOS framework package and checksum were updated after CI issue fix.</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.10.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0</guid>
+            <pubDate>Tue, 16 May 2023 07:59:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-worker@2.10.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.10.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0</guid>
+            <pubDate>Tue, 16 May 2023 07:59:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.10.0</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.10.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.10.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.10.0</guid>
@@ -3497,18 +3698,18 @@ c23e92c4a0cd343f73d4056e66c961cdf68e73ca699b1129638537a931c4ffc8  opencv-4.7.0-i
             <content:encoded><![CDATA[<p>@gatsbyjs/parcel-namer-relative-to-cwd@2.10.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.10.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.10.0</guid>
-            <pubDate>Tue, 16 May 2023 07:59:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-worker@2.10.0</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.11.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.11.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.11.0-next.0</guid>
+            <pubDate>Tue, 16 May 2023 07:49:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>@gatsbyjs/parcel-namer-relative-to-cwd@2.11.0-next.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.10.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.10.0</guid>
-            <pubDate>Tue, 16 May 2023 07:59:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.10.0</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.11.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.11.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.11.0-next.0</guid>
+            <pubDate>Tue, 16 May 2023 07:49:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.11.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.11.0-next.0]]></title>
@@ -3518,20 +3719,6 @@ c23e92c4a0cd343f73d4056e66c961cdf68e73ca699b1129638537a931c4ffc8  opencv-4.7.0-i
             <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.11.0-next.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.11.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.11.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.11.0-next.0</guid>
-            <pubDate>Tue, 16 May 2023 07:49:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-worker@2.11.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.11.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.11.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.11.0-next.0</guid>
-            <pubDate>Tue, 16 May 2023 07:49:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>@gatsbyjs/parcel-namer-relative-to-cwd@2.11.0-next.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@5.11.0-next.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.11.0-next.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.11.0-next.0</guid>
@@ -3539,11 +3726,11 @@ c23e92c4a0cd343f73d4056e66c961cdf68e73ca699b1129638537a931c4ffc8  opencv-4.7.0-i
             <content:encoded><![CDATA[<p>gatsby-transformer-toml@5.11.0-next.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.11.0-next.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.11.0-next.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.11.0-next.0</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-worker@2.11.0-next.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.11.0-next.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.11.0-next.0</guid>
             <pubDate>Tue, 16 May 2023 07:49:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.11.0-next.0</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-worker@2.11.0-next.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from puppeteer: browsers: v1.3.0]]></title>
@@ -3631,83 +3818,6 @@ c23e92c4a0cd343f73d4056e66c961cdf68e73ca699b1129638537a931c4ffc8  opencv-4.7.0-i
             <guid>https://github.com/TryGhost/Ghost/releases/tag/%40tryghost%2Fadmin-x-settings%400.0.2</guid>
             <pubDate>Tue, 16 May 2023 07:11:51 GMT</pubDate>
             <content:encoded><![CDATA[<p>Released Admin-x-settings v0.0.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from code-server: v4.13.0-rc.1]]></title>
-            <link>https://github.com/coder/code-server/releases/tag/v4.13.0-rc.1</link>
-            <guid>https://github.com/coder/code-server/releases/tag/v4.13.0-rc.1</guid>
-            <pubDate>Tue, 16 May 2023 05:37:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Code v1.78.2</p>
-<h3>Changed</h3>
-<ul>
-<li>Updated to Code 1.78.2</li>
-</ul>
-<h3>Fixed</h3>
-<ul>
-<li>Proxying files that contain non-ASCII characters</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.4.3-canary.1]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.4.3-canary.1</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.4.3-canary.1</guid>
-            <pubDate>Tue, 16 May 2023 03:02:22 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>refactor(<a class="issue-link js-issue-link notranslate" rel="noopener noreferrer nofollow" href="https://linear.app/vercel/issue/NEXT-core">next-core</a>): deprecate custom_ecmascript_transforms: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1704620189" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49629" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49629/hovercard" href="https://github.com/vercel/next.js/pull/49629">#49629</a></li>
-<li>Remove old-space-size filtering from dev server: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1708136891" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49727" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49727/hovercard" href="https://github.com/vercel/next.js/pull/49727">#49727</a></li>
-<li>Rework client router filter handling: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1708500222" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49741" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49741/hovercard" href="https://github.com/vercel/next.js/pull/49741">#49741</a></li>
-<li>fix(image): preload should respect referrerPolicy: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1703547069" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49584" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49584/hovercard" href="https://github.com/vercel/next.js/pull/49584">#49584</a></li>
-<li>Fix cookies().set missing in types: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1709961653" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49806" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49806/hovercard" href="https://github.com/vercel/next.js/pull/49806">#49806</a></li>
-<li>fix: Disable <code>tracing/release_max_level_off</code> for wasm, too: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1704953525" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49639" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49639/hovercard" href="https://github.com/vercel/next.js/pull/49639">#49639</a></li>
-<li>Apply user-defined PostCSS transforms to foreign code: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1700499043" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49463" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49463/hovercard" href="https://github.com/vercel/next.js/pull/49463">#49463</a></li>
-<li>add @swc/core to server external packages: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1708081479" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49721" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49721/hovercard" href="https://github.com/vercel/next.js/pull/49721">#49721</a></li>
-<li><code>turbo-binding</code> -&gt; <code>turbopack-binding</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1710272112" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49816" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49816/hovercard" href="https://github.com/vercel/next.js/pull/49816">#49816</a></li>
-<li>refactor(<a class="issue-link js-issue-link notranslate" rel="noopener noreferrer nofollow" href="https://linear.app/vercel/issue/NEXT-core">next-core</a>): consolidate react_refresh options: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1710484142" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49822" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49822/hovercard" href="https://github.com/vercel/next.js/pull/49822">#49822</a></li>
-<li>add support for globally providing mdx components to turbopack: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1710309434" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49818" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49818/hovercard" href="https://github.com/vercel/next.js/pull/49818">#49818</a></li>
-</ul>
-<h3>Example Changes</h3>
-<ul>
-<li>chore: update examples to use draft mode: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1708041213" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49720" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49720/hovercard" href="https://github.com/vercel/next.js/pull/49720">#49720</a></li>
-<li>Add mdx page example to examples/app-dir-mdx: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1621867041" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/47082" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/47082/hovercard" href="https://github.com/vercel/next.js/pull/47082">#47082</a></li>
-<li>Update with-supertokens example: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1709890607" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49804" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49804/hovercard" href="https://github.com/vercel/next.js/pull/49804">#49804</a></li>
-<li>with-clerk example updated to app router: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1708015318" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49717" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49717/hovercard" href="https://github.com/vercel/next.js/pull/49717">#49717</a></li>
-</ul>
-<h3>Misc Changes</h3>
-<ul>
-<li>refactor(scripts): apply fmt: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1707987081" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49716" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49716/hovercard" href="https://github.com/vercel/next.js/pull/49716">#49716</a></li>
-<li>refactor(scripts): fix clippy errors: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1708039199" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/49719" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/49719/hovercard" href="https://github.com/vercel/next.js/pull/49719">#49719</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kwonoj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kwonoj">@kwonoj</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alexanderbluhm/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexanderbluhm">@alexanderbluhm</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Fonger/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Fonger">@Fonger</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kdy1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kdy1">@kdy1</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alexkirsz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexkirsz">@alexkirsz</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/souporserious/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/souporserious">@souporserious</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ForsakenHarmony/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ForsakenHarmony">@ForsakenHarmony</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rishabhpoddar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rishabhpoddar">@rishabhpoddar</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/devagrawal09/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/devagrawal09">@devagrawal09</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from alacritty: Alacritty Version 0.12.1 Release Candidate 2]]></title>
-            <link>https://github.com/alacritty/alacritty/releases/tag/v0.12.1-rc2</link>
-            <guid>https://github.com/alacritty/alacritty/releases/tag/v0.12.1-rc2</guid>
-            <pubDate>Tue, 16 May 2023 01:40:19 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Fixed</h3>
-<ul>
-<li>Very long startup times on Wayland systems with broken xdg-portal setup</li>
-<li>Error on startup with <code>GLX</code> when using old mesa platforms</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.1.0-alpha.19]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.19</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.19</guid>
-            <pubDate>Tue, 16 May 2023 01:24:47 GMT</pubDate>
-            <content:encoded><![CDATA[<h4>Bug Fixes</h4>
-<ul>
-<li>Normalize paths exposed to vite-builder's <code>storybook-stories.js</code> file <a href="https://github.com/storybooks/storybook/pull/22327" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22327/hovercard">#22327</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from alacritty: alacritty_terminal_v0.19.0-rc2]]></title>
-            <link>https://github.com/alacritty/alacritty/releases/tag/alacritty_terminal_v0.19.0-rc2</link>
-            <guid>https://github.com/alacritty/alacritty/releases/tag/alacritty_terminal_v0.19.0-rc2</guid>
-            <pubDate>Tue, 16 May 2023 01:17:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Alacritty Terminal 0.19.0-rc2</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
