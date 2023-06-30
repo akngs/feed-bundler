@@ -4,10 +4,374 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 30 Jun 2023 00:25:32 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 30 Jun 2023 06:07:25 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104400: Update on "[WIP] fix QuantizeAvx512"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104400</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104400</guid>
+            <pubDate>Fri, 30 Jun 2023 06:00:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>For quantize</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="  for (; i &lt; len / VLEN * VLEN; i += VLEN) {
+    __m512 x_vals = _mm512_load_ps(src + i);
+    __m512 x_transformed_v = _mm512_mul_ps(x_vals, inverse_scale_v);
+    x_transformed_v =
+        _mm512_min_ps(x_transformed_v, _mm512_set1_ps(int32_float_max_val));
+    __m512i x_rounded_v = _mm512_cvtps_epi32(x_transformed_v);
+    x_rounded_v = _mm512_add_epi32(x_rounded_v, _mm512_set1_epi32(zero_point));
+    __m512i x_clipped_v =
+        _mm512_max_epi32(min_v, _mm512_min_epi32(max_v, x_rounded_v));
+
+    x_clipped_v = _mm512_shuffle_epi8(x_clipped_v, shuffle_mask_v);
+    x_clipped_v = _mm512_permutexvar_epi32(permute_mask_l8_v, x_clipped_v);
+    _mm_storeu_si128(
+        reinterpret_cast&lt;__m128i*&gt;(dst + i),
+        _mm512_castsi512_si128(x_clipped_v));
+  }"><pre class="notranslate"><code>  for (; i &lt; len / VLEN * VLEN; i += VLEN) {
+    __m512 x_vals = _mm512_load_ps(src + i);
+    __m512 x_transformed_v = _mm512_mul_ps(x_vals, inverse_scale_v);
+    x_transformed_v =
+        _mm512_min_ps(x_transformed_v, _mm512_set1_ps(int32_float_max_val));
+    __m512i x_rounded_v = _mm512_cvtps_epi32(x_transformed_v);
+    x_rounded_v = _mm512_add_epi32(x_rounded_v, _mm512_set1_epi32(zero_point));
+    __m512i x_clipped_v =
+        _mm512_max_epi32(min_v, _mm512_min_epi32(max_v, x_rounded_v));
+
+    x_clipped_v = _mm512_shuffle_epi8(x_clipped_v, shuffle_mask_v);
+    x_clipped_v = _mm512_permutexvar_epi32(permute_mask_l8_v, x_clipped_v);
+    _mm_storeu_si128(
+        reinterpret_cast&lt;__m128i*&gt;(dst + i),
+        _mm512_castsi512_si128(x_clipped_v));
+  }
+</code></pre></div>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="    x_clipped_v = _mm512_shuffle_epi8(x_clipped_v, shuffle_mask_v);
+    x_clipped_v = _mm512_permutexvar_epi32(permute_mask_l8_v, x_clipped_v);"><pre class="notranslate"><code>    x_clipped_v = _mm512_shuffle_epi8(x_clipped_v, shuffle_mask_v);
+    x_clipped_v = _mm512_permutexvar_epi32(permute_mask_l8_v, x_clipped_v);
+</code></pre></div>
+<p>is aiming to cast <code>int32</code> to <code>int8</code> and shuffle 16 <code>int8</code> to the first 128 bits.</p>
+<p>For example, <code>A1</code> represent 8bit</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="    x_clipped_v = _mm512_shuffle_epi8(x_clipped_v, shuffle_mask_v);
+    A1A2A3**A4** B1B2B3**B4** C1C2C3**C4** D1D2D3**D4**            -&gt; D4C4B4A4 other 32 * 3 bit
+    E1E2E3**E4** F1F2F3**F4** G1G2G3**G4** H1H2H3**H4**            -&gt; H4G4F4E4 other 32 * 3 bit
+    I1I2I3**I4** J1J2J3**J4** K1K2K3**K4** L1L2L3**L4**            -&gt; L4K4J4I4 other 32 * 3 bit
+    M1M2M3**M4** N1N2N3**N4** O1O2O3**O4** P1P2P3**P4**            -&gt; P4O4N4M4 other 32 * 3 bit
+    x_clipped_v = _mm512_permutexvar_epi32(permute_mask_l8_v, x_clipped_v);
+    D4C4B4A4 other 32 * 3 bit        -&gt; D4C4B4A4 H4G4F4E4 L4K4J4I4 P4O4N4M4 
+    H4G4F4E4 other 32 * 3 bit           other 3 * 4 * 32 bits
+    L4K4J4I4 other 32 * 3 bit
+    P4O4N4M4 other 32 * 3 bit
+"><pre class="notranslate"><code>    x_clipped_v = _mm512_shuffle_epi8(x_clipped_v, shuffle_mask_v);
+    A1A2A3**A4** B1B2B3**B4** C1C2C3**C4** D1D2D3**D4**            -&gt; D4C4B4A4 other 32 * 3 bit
+    E1E2E3**E4** F1F2F3**F4** G1G2G3**G4** H1H2H3**H4**            -&gt; H4G4F4E4 other 32 * 3 bit
+    I1I2I3**I4** J1J2J3**J4** K1K2K3**K4** L1L2L3**L4**            -&gt; L4K4J4I4 other 32 * 3 bit
+    M1M2M3**M4** N1N2N3**N4** O1O2O3**O4** P1P2P3**P4**            -&gt; P4O4N4M4 other 32 * 3 bit
+    x_clipped_v = _mm512_permutexvar_epi32(permute_mask_l8_v, x_clipped_v);
+    D4C4B4A4 other 32 * 3 bit        -&gt; D4C4B4A4 H4G4F4E4 L4K4J4I4 P4O4N4M4 
+    H4G4F4E4 other 32 * 3 bit           other 3 * 4 * 32 bits
+    L4K4J4I4 other 32 * 3 bit
+    P4O4N4M4 other 32 * 3 bit
+
+</code></pre></div>
+<p>Based on <a href="https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm512_permutexvar_epi32&amp;ig_expand=4966,5088" rel="nofollow">https://www.intel.com/content/www/us/en/docs/intrinsics-guide/index.html#text=_mm512_permutexvar_epi32&amp;ig_expand=4966,5088</a>.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="FOR j := 0 to 15
+	i := j*32
+	id := idx[i+3:i]*32
+	dst[i+31:i] := a[id+31:id]
+ENDFOR
+dst[MAX:512] := 0"><pre class="notranslate"><code>FOR j := 0 to 15
+	i := j*32
+	id := idx[i+3:i]*32
+	dst[i+31:i] := a[id+31:id]
+ENDFOR
+dst[MAX:512] := 0
+</code></pre></div>
+<p>the <code>permute_mask_l8_v</code> should satisfy</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="permute_mask_l8_v[3:0] = 0
+permute_mask_l8_v[3 + 32:0 + 32] = 4
+permute_mask_l8_v[3 + 64:0 + 64] = 8
+permute_mask_l8_v[3 + 96:0 + 96] = 12"><pre class="notranslate"><code>permute_mask_l8_v[3:0] = 0
+permute_mask_l8_v[3 + 32:0 + 32] = 4
+permute_mask_l8_v[3 + 64:0 + 64] = 8
+permute_mask_l8_v[3 + 96:0 + 96] = 12
+</code></pre></div>
+<p>The other part of <code>permute_mask_l8_v</code> does not matters.</p>
+<p><code>AVX2</code> version is correct.</p>
+<p>It is not exposed before it is only called with fixed length <code>64</code> <a href="https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/cpu/vec/vec512/vec512_qint.h#L545-L546">https://github.com/pytorch/pytorch/blob/main/aten/src/ATen/cpu/vec/vec512/vec512_qint.h#L545-L546</a>.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/100857: Update on "inductor: legalize fp16"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100857</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F100857</guid>
+            <pubDate>Fri, 30 Jun 2023 05:49:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10 soumith voznesenskym penguinwu EikanWang Guobing-Chen blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104121]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104121</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104121</guid>
+            <pubDate>Fri, 30 Jun 2023 05:48:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Updated comments</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.7.65-pgo: Version 11.7.65]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.65-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.65-pgo</guid>
+            <pubDate>Fri, 30 Jun 2023 05:31:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I683d025f765b99edc46387cae82116a3555b2110<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4658180" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4658180</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.65@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/1439f78ef7965fe035f8cfaaa919a2e0780abeed/hovercard" href="https://github.com/v8/v8/commit/1439f78ef7965fe035f8cfaaa919a2e0780abeed"><tt>1439f78</tt></a>-refs/heads/main@{#88570}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.7.65]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.65</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.65</guid>
+            <pubDate>Fri, 30 Jun 2023 05:31:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I683d025f765b99edc46387cae82116a3555b2110<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4658180" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4658180</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.65@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/1439f78ef7965fe035f8cfaaa919a2e0780abeed/hovercard" href="https://github.com/v8/v8/commit/1439f78ef7965fe035f8cfaaa919a2e0780abeed"><tt>1439f78</tt></a>-refs/heads/main@{#88570}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104309: [ET][XNNPACK] Add support for quantized LeakyReLU (#104309)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104309</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104309</guid>
+            <pubDate>Fri, 30 Jun 2023 05:21:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1777936341" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/104309" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/104309/hovercard" href="https://github.com/pytorch/pytorch/pull/104309">#104309</a></p>
+<p>X-link: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1777932928" data-permission-text="Title is private" data-url="https://github.com/pytorch/executorch/issues/1" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/executorch/pull/1/hovercard" href="https://github.com/pytorch/executorch/pull/1">pytorch/executorch#1</a></p>
+<p>Also adds support for backend_config</p>
+<p>Test Plan: <code>buck test fbcode//mode/dev-nosan fbcode//executorch/backends/xnnpack/test:</code></p>
+<p>Reviewed By: mcr229</p>
+<p>Differential Revision: D47043207</p>
+<p>fbshipit-source-id: 3e2f7b614713ae5c3fba6ea3056376f15826de17</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Fri, 30 Jun 2023 05:16:34 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-601+gd55d7646c
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-601+gd55d7646c
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="e6a961750b4bdae119aaafb46ff585de0cc6e87aace05d1e5f0b209b451669dc  nvim-linux64.tar.gz
+01cf8adb03925348dedf0cdea2690b2321586a310d65775810770468e0ba4851  nvim.appimage
+f6453d4a14825b7b5ebbecba3785bffca94b4f6cb104188dd2c96c04c3660b95  nvim.appimage.zsync
+08db4ff9c6269154c418380117104c6e2040a9784874d5582293fbd2f2ff89c5  nvim-macos.tar.gz
+4eff90ac2f35ec90e4f4090ed9ab93967bca16f0fa552f034a89af0ea784e31b  nvim-win64.zip
+0a1a290a3d5f7765d748d1551b13b93ffb2a657df9cad89d54ab67f04034e3e5  nvim-win64.msi"><pre class="notranslate"><code>e6a961750b4bdae119aaafb46ff585de0cc6e87aace05d1e5f0b209b451669dc  nvim-linux64.tar.gz
+01cf8adb03925348dedf0cdea2690b2321586a310d65775810770468e0ba4851  nvim.appimage
+f6453d4a14825b7b5ebbecba3785bffca94b4f6cb104188dd2c96c04c3660b95  nvim.appimage.zsync
+08db4ff9c6269154c418380117104c6e2040a9784874d5582293fbd2f2ff89c5  nvim-macos.tar.gz
+4eff90ac2f35ec90e4f4090ed9ab93967bca16f0fa552f034a89af0ea784e31b  nvim-win64.zip
+0a1a290a3d5f7765d748d1551b13b93ffb2a657df9cad89d54ab67f04034e3e5  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from vagrant: 2.3.8.dev+000048-848f2a7f]]></title>
+            <link>https://github.com/hashicorp/vagrant/releases/tag/2.3.8.dev%2B000048-848f2a7f</link>
+            <guid>https://github.com/hashicorp/vagrant/releases/tag/2.3.8.dev%2B000048-848f2a7f</guid>
+            <pubDate>Fri, 30 Jun 2023 04:45:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Vagrant nightly release build</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/104444: [PyTorch Vulkan] add Vulkan support for `aten::masked_fill` (#104444)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F104444</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F104444</guid>
+            <pubDate>Fri, 30 Jun 2023 04:37:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1781587613" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/104444" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/104444/hovercard" href="https://github.com/pytorch/pytorch/pull/104444">#104444</a></p>
+<p>Implemented <code>aten::masked_fill</code> for Vulkan backend, see <a href="https://pytorch.org/docs/stable/generated/torch.Tensor.masked_fill.html" rel="nofollow">https://pytorch.org/docs/stable/generated/torch.Tensor.masked_fill.html</a> for the behavior of this operator.</p>
+<p>Some explanation of the implementation:</p>
+<ul>
+<li>The shapes of the input tensor and mask should be broadcastable (see <a href="https://pytorch.org/docs/stable/notes/broadcasting.html" rel="nofollow">broadcasting semantics</a>). For example, the input tensor is of shape [3, 1, 5] and mask of shape [2, 1]. Then the output is of shape [3, 2, 5].</li>
+<li>A straightforward implementation is to generate an output and a mask, both of shape [3, 2, 5], by applying <code>repeat</code> operations on the input tensor and mask respectively. Then we traverse the mask and fill elements of output with <code>value</code> where mask is <code>True</code>.</li>
+<li>However the <code>repeat</code> operation on mask is unnecessary and incurs extra time and space overhead. Instead we can keep the mask as it is and traverse the original mask and compute the corresponding broadcasted positions in the output tensor (see the shader file <code>masked_fill.glsl</code> for such computation).</li>
+</ul>
+<p>Some explanation of the test:</p>
+<ul>
+<li>We test all possible broadcasting of the input tensor and mask. Manually setting all possible broadcastable shapes is intimidating. Instead we apply the following algorithm to automatically generate all possible cases which only requires one input of the shapes of the input tensor and mask.
+<ul>
+<li>First we set an identical shape for the <code>input_shape</code> and <code>mask_shape</code>, e.g. both are of [3, 5, 2, 3].</li>
+<li>Then we truncate all possible proceeding dimensions of <code>input_shape</code> and <code>mask_shape</code> respectively. Denote the results as <code>curr_input_shape</code> and <code>curr_mask_shape</code>, e.g. <code>curr_input_shape = [5, 2, 3]</code> and <code>curr_mask_shape = [2, 3]</code>.</li>
+<li>Next, for both <code>curr_input_shape</code> and <code>curr_mask_shape</code> we generate all possible subsets of the indices and set the corresponding elements to 1 for each subset. For example, for <code>curr_input_shape = [5, 2, 3]</code>, a possible <code>input_idx_subset = [0, 2]</code>. We set the 0th and 2nd elements of <code>curr_input_shape</code> to be 1, then <code>curr_input_shape = [1, 2, 1]</code>. Similarly for <code>curr_mask_shape = [2, 3]</code>, a possible <code>mask_idx_subset = [0]</code>, then the updated <code>curr_mask_shape = [1, 3]</code>.</li>
+<li>In the end, we test <code>masked_fill</code> with the combinations of <code>curr_input_shape</code> and <code>curr_mask_shape</code>. In the example above, an output tensor of shape [1, 2, 3] will be generated.</li>
+<li>In <code>vulkan_api_test.cpp</code>, a function <code>gen_all_subsets</code> is implemented to generate all possible subsets of a given set of indices through backtracking.</li>
+</ul>
+</li>
+</ul>
+<p>Test Plan:<br>
+Full test result is shown in P777851326. <code>masked_fill</code> related tests are shown below.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="(base) luwei@luwei-mbp fbsource % buck run --target-platforms ovr_config//platform/macos:arm64-fbsource //xplat/caffe2:pt_vulkan_api_test_binAppleMac\#macosx-arm64 -c pt.vulkan_full_precision=1 -- --gtest_filter=&quot;*mask*&quot;
+Building: finished in 0.1 sec (100%) 264/2820 jobs, 0/2820 updated
+  Total time: 0.1 sec
+BUILD SUCCEEDED
+Running main() from xplat/third-party/gmock/googletest-1.12.1/googletest/src/gtest_main.cc
+Note: Google Test filter = *mask*
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from VulkanAPITest
+[ RUN      ] VulkanAPITest.masked_fill_invalidinputs_exceptions
+[       OK ] VulkanAPITest.masked_fill_invalidinputs_exceptions (35 ms)
+[ RUN      ] VulkanAPITest.masked_fill_scalar_mult4ch
+[       OK ] VulkanAPITest.masked_fill_scalar_mult4ch (582 ms)
+[ RUN      ] VulkanAPITest.masked_fill_scalar_nonmult4ch
+[       OK ] VulkanAPITest.masked_fill_scalar_nonmult4ch (592 ms)
+[ RUN      ] VulkanAPITest.masked_fill_tensor_mult4ch
+[       OK ] VulkanAPITest.masked_fill_tensor_mult4ch (0 ms)
+[ RUN      ] VulkanAPITest.masked_fill_tensor_nonmult4ch
+[       OK ] VulkanAPITest.masked_fill_tensor_nonmult4ch (0 ms)
+[----------] 5 tests from VulkanAPITest (1212 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (1212 ms total)
+[  PASSED  ] 5 tests."><pre class="notranslate"><code>(base) luwei@luwei-mbp fbsource % buck run --target-platforms ovr_config//platform/macos:arm64-fbsource //xplat/caffe2:pt_vulkan_api_test_binAppleMac\#macosx-arm64 -c pt.vulkan_full_precision=1 -- --gtest_filter="*mask*"
+Building: finished in 0.1 sec (100%) 264/2820 jobs, 0/2820 updated
+  Total time: 0.1 sec
+BUILD SUCCEEDED
+Running main() from xplat/third-party/gmock/googletest-1.12.1/googletest/src/gtest_main.cc
+Note: Google Test filter = *mask*
+[==========] Running 5 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 5 tests from VulkanAPITest
+[ RUN      ] VulkanAPITest.masked_fill_invalidinputs_exceptions
+[       OK ] VulkanAPITest.masked_fill_invalidinputs_exceptions (35 ms)
+[ RUN      ] VulkanAPITest.masked_fill_scalar_mult4ch
+[       OK ] VulkanAPITest.masked_fill_scalar_mult4ch (582 ms)
+[ RUN      ] VulkanAPITest.masked_fill_scalar_nonmult4ch
+[       OK ] VulkanAPITest.masked_fill_scalar_nonmult4ch (592 ms)
+[ RUN      ] VulkanAPITest.masked_fill_tensor_mult4ch
+[       OK ] VulkanAPITest.masked_fill_tensor_mult4ch (0 ms)
+[ RUN      ] VulkanAPITest.masked_fill_tensor_nonmult4ch
+[       OK ] VulkanAPITest.masked_fill_tensor_nonmult4ch (0 ms)
+[----------] 5 tests from VulkanAPITest (1212 ms total)
+
+[----------] Global test environment tear-down
+[==========] 5 tests from 1 test suite ran. (1212 ms total)
+[  PASSED  ] 5 tests.
+</code></pre></div>
+<p>Reviewed By: SS-JIA</p>
+<p>Differential Revision: D46423811</p>
+<p>fbshipit-source-id: a0af853da09d2ee53ba050e9624dd529bd52ed74</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from WasmEdge: 0.13.0: [Test] Make unit tests use hex array instead of the raw wasm files]]></title>
+            <link>https://github.com/WasmEdge/WasmEdge/releases/tag/0.13.0</link>
+            <guid>https://github.com/WasmEdge/WasmEdge/releases/tag/0.13.0</guid>
+            <pubDate>Fri, 30 Jun 2023 04:23:42 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Signed-off-by: hydai <a href="mailto:hydai@secondstate.io">hydai@secondstate.io</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104087: Update _sharded_pre_state_dict_hook to include option for use_dtensor…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104087</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104087</guid>
+            <pubDate>Fri, 30 Jun 2023 04:21:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…=True</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.7.64]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.64</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.64</guid>
+            <pubDate>Fri, 30 Jun 2023 03:32:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I67269738c30b0eb043cb70b85ddeb5ed22184d52<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4658078" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4658078</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.64@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e579756d69978d725cfd45903ebf7144dcd9aaad/hovercard" href="https://github.com/v8/v8/commit/e579756d69978d725cfd45903ebf7144dcd9aaad"><tt>e579756</tt></a>-refs/heads/main@{#88568}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.7.64-pgo: Version 11.7.64]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.64-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.64-pgo</guid>
+            <pubDate>Fri, 30 Jun 2023 03:32:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I67269738c30b0eb043cb70b85ddeb5ed22184d52<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4658078" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4658078</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.64@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e579756d69978d725cfd45903ebf7144dcd9aaad/hovercard" href="https://github.com/v8/v8/commit/e579756d69978d725cfd45903ebf7144dcd9aaad"><tt>e579756</tt></a>-refs/heads/main@{#88568}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104387: Update on "Refactor funcol for readability and dynamo tracing"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104387</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104387</guid>
+            <pubDate>Fri, 30 Jun 2023 01:12:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Move eager kernel impls to separate file, which is eaiser to read<br>
+(since users may be confused about 2 versions of each kernel in the same file)<br>
+and easier to set a dynamo policy to trace only the first file currently.</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/103946]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F103946</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F103946</guid>
+            <pubDate>Fri, 30 Jun 2023 00:57:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix Prims as_strided_scatter</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104224]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104224</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104224</guid>
+            <pubDate>Fri, 30 Jun 2023 00:37:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>improve omp detection</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
             <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
@@ -38,71 +402,12 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104449]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104449</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104449</guid>
-            <pubDate>Fri, 30 Jun 2023 00:20:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/104449]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F104449</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F104449</guid>
-            <pubDate>Fri, 30 Jun 2023 00:20:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104447: Update on "lazy init device mesh in fsdp"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104447</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104447</guid>
-            <pubDate>Fri, 30 Jun 2023 00:11:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>since fsdp state is lazy init, we also need to lazy init device mesh<br>
-otherwise devicemesh allgather check would trigger some mismatch in<br>
-allgather counts in fsdp tests</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/104382: Update on "[benchmark][export] Add torch.export passrate for TB/HF/TI…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F104382</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F104382</guid>
-            <pubDate>Fri, 30 Jun 2023 00:08:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…MM benchmarks"</p>
-<p>issues resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1777731324" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/104294" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/104294/hovercard" href="https://github.com/pytorch/pytorch/issues/104294">#104294</a></p>
-<p>local test</p>
-<ul>
-<li>python benchmarks/dynamo/torchbench.py -d cuda --inference --accuracy --progress --export</li>
-<li>python benchmarks/dynamo/timm_models.py -d cuda --inference --accuracy --progress --export</li>
-<li>python benchmarks/dynamo/huggingface.py -d cuda --inference --accuracy --progress --export</li>
-</ul>
-<p>local test result</p>
-<p>timm 75% pass rate P779992909</p>
-<ul>
-<li>1 x ERROR:common:Mutating module attribute rel_indices during export</li>
-</ul>
-<p>huggingface 0% pass rate P779937906</p>
-<ul>
-<li>23 x ERROR:common:Dynamo input and output is a strict subset of traced input/output</li>
-<li>15 x ERROR:common:Dynamo attempts to add additional input during export</li>
-<li>3 x ERROR:common:whole graph export entails exactly one guard export</li>
-<li>1 x ERROR:common:It appears that you're trying to get a value out of symbolic</li>
-</ul>
-<p>torchbench 65% pass rate P779999869</p>
-<ul>
-<li>7 x ERROR:common:Dynamo input and output is a strict subset of traced input/output</li>
-<li>3 x ERROR:common:call_method NNModuleVariable() / UserDefinedObjectVariable</li>
-<li>2 x ERROR:common:Mutating module attribute {xx} during export.</li>
-<li>2 x ERROR:common:inline in skipfiles</li>
-<li>2 x ERROR:common:It appears that you're trying to get a value out of symbolic int/float whose value is data-dependent...</li>
-<li>1 x ERROR:common:guard on data-dependent symbolic int/float</li>
-<li>1 x ERROR:common:Tensor.tolist<br>
-1 x ERROR:common:Tensor.numpy. Turn on config.numpy_ndarray_as_tensor and install torch_np to support tensor.numpy().  [may be dev * env?]</li>
-<li>1 x ERROR:common:missing: BUILD_SET</li>
-<li>1 x ERROR:common:whole graph export entails exactly one guard export</li>
-<li>1 x ERROR:common:call_function BuiltinVariable(str) [GetAttrVariable(UserMethodVariable(&lt;function</li>
-<li>1 x ERROR:common:Dynamic slicing on data-dependent value is not supported<br>
-1 x ERROR:common:Failed running call_function &lt;function interpolate at 0x7f60a8361ea0&gt;(*(FakeTensor(..., device='cuda:0', size=(1, 3, * 427,</li>
-</ul>
-<p>cc voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy chenyang78</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104267: Update on "[ONNX] Create stand alone diagnostic rule on nearest match…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104267</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104267</guid>
+            <pubDate>Fri, 30 Jun 2023 00:21:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… finding in dispatcher"</p>
+<p>Change the diagnostic call in nearest match finding from UnsupportedNodeAnalysis to its own guarding rule.</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
@@ -564,7 +869,7 @@ allgather counts in fsdp tests</p>
 </ul>
 <h3>Contributors</h3>
 <p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/FernandoAscencio/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/FernandoAscencio">@FernandoAscencio</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Zebsterpasha/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zebsterpasha">@Zebsterpasha</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alvsan09/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alvsan09">@alvsan09</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jonah-iden/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jonah-iden">@jonah-iden</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/marcdumais-work/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/marcdumais-work">@marcdumais-work</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/msujew/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/msujew">@msujew</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/paul-marechal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/paul-marechal">@paul-marechal</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/per1234/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/per1234">@per1234</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pisv/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pisv">@pisv</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rschnekenbu/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rschnekenbu">@rschnekenbu</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tortmayr/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tortmayr">@tortmayr</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tsmaeder/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tsmaeder">@tsmaeder</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/vince-fugnitto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/vince-fugnitto">@vince-fugnitto</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/vladarama/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/vladarama">@vladarama</a></p>
-<h3>New Contributors 🚀</h3>
+<h3>New Contributors <g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji></h3>
 <ul>
 <li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/per1234/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/per1234">@per1234</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1729420044" data-permission-text="Title is private" data-url="https://github.com/eclipse-theia/theia/issues/12573" data-hovercard-type="pull_request" data-hovercard-url="/eclipse-theia/theia/pull/12573/hovercard" href="https://github.com/eclipse-theia/theia/pull/12573">#12573</a></li>
 </ul>
@@ -732,7 +1037,7 @@ has been rotated.</p>
             <link>https://github.com/docker/compose/releases/tag/v2.19.0</link>
             <guid>https://github.com/docker/compose/releases/tag/v2.19.0</guid>
             <pubDate>Thu, 29 Jun 2023 20:07:21 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Known Issues 😓</h2>
+            <content:encoded><![CDATA[<h2>Known Issues <g-emoji class="g-emoji" alias="sweat" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f613.png">😓</g-emoji></h2>
 <ul>
 <li>Intermittent "container  is not connected to the network " errors on <code>docker compose up</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1746746643" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10668" data-hovercard-type="issue" data-hovercard-url="/docker/compose/issues/10668/hovercard" href="https://github.com/docker/compose/issues/10668">#10668</a>)</li>
 </ul>
@@ -743,7 +1048,7 @@ has been rotated.</p>
 <li>use <code>--progress</code> to configure progress UI style by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1752109796" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10690" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10690/hovercard" href="https://github.com/docker/compose/pull/10690">#10690</a></li>
 <li>introduce run --cap-add to run maintenance commands using service image by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1747473704" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10669" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10669/hovercard" href="https://github.com/docker/compose/pull/10669">#10669</a></li>
 </ul>
-<h3>Fixes <g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji></h3>
+<h3>Fixes 🐛</h3>
 <ul>
 <li>fix detection of swarm mode by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1718984049" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10591" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10591/hovercard" href="https://github.com/docker/compose/pull/10591">#10591</a></li>
 <li>fix support for project name set by COMPOSE_PROJECT_NAME env var by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1720102915" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10597" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10597/hovercard" href="https://github.com/docker/compose/pull/10597">#10597</a></li>
@@ -761,7 +1066,7 @@ has been rotated.</p>
 <li>fix race condition, waiting for containers when one exit by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1764780857" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10725" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10725/hovercard" href="https://github.com/docker/compose/pull/10725">#10725</a></li>
 <li>warn user build.secrets uid,gid,mode are not implemented by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1756332454" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10709" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10709/hovercard" href="https://github.com/docker/compose/pull/10709">#10709</a></li>
 </ul>
-<h3>Internal <g-emoji class="g-emoji" alias="wrench" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f527.png">🔧</g-emoji></h3>
+<h3>Internal 🔧</h3>
 <ul>
 <li>only set CopyUIDGID when secret is requested to set gid/uid by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1721327957" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10598" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10598/hovercard" href="https://github.com/docker/compose/pull/10598">#10598</a></li>
 <li>only watch configured paths by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndeloof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndeloof">@ndeloof</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1721494580" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10599" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10599/hovercard" href="https://github.com/docker/compose/pull/10599">#10599</a></li>
@@ -822,16 +1127,6 @@ has been rotated.</p>
             <content:encoded><![CDATA[<p>Merge commit '354646246c3e432d4bf9c21c0253d7fe5ba69d11' into main</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104437: Enable more tests]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104437</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104437</guid>
-            <pubDate>Thu, 29 Jun 2023 19:59:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Remove <code>test_segment_reductions</code> from list of blocklisted tests<br>
-Remove <code>@onlyCPU</code> qualifier from test_segment_reductions as it has CUDA<br>
-specific parts</p>
-<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1780843136" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/104410" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/104410/hovercard" href="https://github.com/pytorch/pytorch/issues/104410">#104410</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 11.7.63]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.7.63</link>
             <guid>https://github.com/v8/v8/releases/tag/11.7.63</guid>
@@ -861,13 +1156,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>Tagging 1.27.164 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104425]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104425</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104425</guid>
-            <pubDate>Thu, 29 Jun 2023 18:54:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Remove explicit tolerance for cfloat</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 11.7.62]]></title>
             <link>https://github.com/v8/v8/releases/tag/11.7.62</link>
             <guid>https://github.com/v8/v8/releases/tag/11.7.62</guid>
@@ -888,14 +1176,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653219
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/11.7.62@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/32d673e12bd55d446f6a2833a70ac73801174eb8/hovercard" href="https://github.com/v8/v8/commit/32d673e12bd55d446f6a2833a70ac73801174eb8"><tt>32d673e</tt></a>-refs/heads/main@{#88566}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104428: Update on "[fake_pg] remove init barrier env var"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104428</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104428</guid>
-            <pubDate>Thu, 29 Jun 2023 17:15:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>We can now remove the env var as we by default disable the init barrier</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from puppeteer: browsers: v1.4.3]]></title>
@@ -973,21 +1253,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104423: Fix IndexKernel.cu build]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104423</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104423</guid>
-            <pubDate>Thu, 29 Jun 2023 16:51:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fixes <code>signed-unsigned comparision</code> warnings introduced by<br>
-<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1770203954" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/104054" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/104054/hovercard" href="https://github.com/pytorch/pytorch/pull/104054">#104054</a> that changed type of <code>num_indices</code> to unsigned</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104422: sparse.sampled_addmm: skip tests when TEST_WITH_TORCHINDUCTOR]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104422</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104422</guid>
-            <pubDate>Thu, 29 Jun 2023 16:46:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 2.12.5]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/2.12.5</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/2.12.5</guid>
@@ -1041,9 +1306,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.61]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.61</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.61</guid>
+            <title><![CDATA[Release notes from v8: 11.7.61-pgo: Version 11.7.61]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.61-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.61-pgo</guid>
             <pubDate>Thu, 29 Jun 2023 15:19:08 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I7c4448717c5c5fd1f3206169794b0ba0deeda860<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653217" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4653217</a><br>
@@ -1052,9 +1317,9 @@ Cr-Commit-Position: refs/heads/11.7.61@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0992e04d0e1bac3da6c250d41bf860fe9461b3ed/hovercard" href="https://github.com/v8/v8/commit/0992e04d0e1bac3da6c250d41bf860fe9461b3ed"><tt>0992e04</tt></a>-refs/heads/main@{#88560}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.7.61-pgo: Version 11.7.61]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.61-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.61-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.7.61]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.61</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.61</guid>
             <pubDate>Thu, 29 Jun 2023 15:19:08 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I7c4448717c5c5fd1f3206169794b0ba0deeda860<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653217" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4653217</a><br>
@@ -1091,35 +1356,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.60]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.60</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.60</guid>
-            <pubDate>Thu, 29 Jun 2023 14:04:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie4bb5a54dcbeb6a6a14abb29031e3eff8bd490e7<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653216" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4653216</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.60@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4746ae4600b6dfd81590704f3277e02528b60843/hovercard" href="https://github.com/v8/v8/commit/4746ae4600b6dfd81590704f3277e02528b60843"><tt>4746ae4</tt></a>-refs/heads/main@{#88557}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.7.60-pgo: Version 11.7.60]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.60-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.60-pgo</guid>
-            <pubDate>Thu, 29 Jun 2023 14:04:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie4bb5a54dcbeb6a6a14abb29031e3eff8bd490e7<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653216" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4653216</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.60@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4746ae4600b6dfd81590704f3277e02528b60843/hovercard" href="https://github.com/v8/v8/commit/4746ae4600b6dfd81590704f3277e02528b60843"><tt>4746ae4</tt></a>-refs/heads/main@{#88557}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/unstable/104404]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F104404</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F104404</guid>
-            <pubDate>Thu, 29 Jun 2023 14:01:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Don't use ephemeral instances for nighly builds, ignore test mocks</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from next.js: v13.4.8-canary.10]]></title>
             <link>https://github.com/vercel/next.js/releases/tag/v13.4.8-canary.10</link>
             <guid>https://github.com/vercel/next.js/releases/tag/v13.4.8-canary.10</guid>
@@ -1148,28 +1384,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/electron/electron/releases/tag/v27.0.0-nightly.20230629</guid>
             <pubDate>Thu, 29 Jun 2023 13:02:28 GMT</pubDate>
             <content:encoded><![CDATA[<p>v27.0.0-nightly.20230629</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.7.59-pgo: Version 11.7.59]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.59-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.59-pgo</guid>
-            <pubDate>Thu, 29 Jun 2023 12:02:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ibac3ced719b916f914c3fc0eb54bb628b98c841a<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653215" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4653215</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.59@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5266b56dde424b3dd98827f3d3677f2211dadebf/hovercard" href="https://github.com/v8/v8/commit/5266b56dde424b3dd98827f3d3677f2211dadebf"><tt>5266b56</tt></a>-refs/heads/main@{#88549}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.59]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.59</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.59</guid>
-            <pubDate>Thu, 29 Jun 2023 12:02:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ibac3ced719b916f914c3fc0eb54bb628b98c841a<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4653215" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4653215</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.59@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5266b56dde424b3dd98827f3d3677f2211dadebf/hovercard" href="https://github.com/v8/v8/commit/5266b56dde424b3dd98827f3d3677f2211dadebf"><tt>5266b56</tt></a>-refs/heads/main@{#88549}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v13.4.8-canary.9]]></title>
@@ -1541,77 +1755,6 @@ Release notes: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/
             <content:encoded><![CDATA[<p>Added tag jdk-21+29 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/e67393fd302686584eaaea2e5eef42336b71cf67/hovercard" href="https://github.com/openjdk/jdk/commit/e67393fd302686584eaaea2e5eef42336b71cf67"><tt>e67393f</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Thu, 29 Jun 2023 05:19:29 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-596+g7d0a23973
-Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-596+g7d0a23973
-Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="bee55c280d9ecf37ae7351dbef80b4d0a099cca32ecc6796e919100995c6726c  nvim-linux64.tar.gz
-dc0cb4eb2c50b3216cdeecf34807aba815d082964658e4fdd1b0e0a1b014333e  nvim.appimage
-b918aa38c8afbfdc0613b97c858e0df6458638b232b8155e2cad70bc9668690b  nvim.appimage.zsync
-4df219af970abc0c19abb62602e06a8ae13f8c733962fe3acdf555b038a1fa8d  nvim-macos.tar.gz
-7f2ee585ed07e6cf5b2df04d4d5e3ca73a5627226c8a56663786181d88eca7a5  nvim-win64.zip
-c9ba12fe995521f6965fc3ba731d7d8c14eec6c59e46dbfc0a2bd2e26727c0b7  nvim-win64.msi"><pre class="notranslate"><code>bee55c280d9ecf37ae7351dbef80b4d0a099cca32ecc6796e919100995c6726c  nvim-linux64.tar.gz
-dc0cb4eb2c50b3216cdeecf34807aba815d082964658e4fdd1b0e0a1b014333e  nvim.appimage
-b918aa38c8afbfdc0613b97c858e0df6458638b232b8155e2cad70bc9668690b  nvim.appimage.zsync
-4df219af970abc0c19abb62602e06a8ae13f8c733962fe3acdf555b038a1fa8d  nvim-macos.tar.gz
-7f2ee585ed07e6cf5b2df04d4d5e3ca73a5627226c8a56663786181d88eca7a5  nvim-win64.zip
-c9ba12fe995521f6965fc3ba731d7d8c14eec6c59e46dbfc0a2bd2e26727c0b7  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from vagrant: 2.3.8.dev+000047-848f2a7f]]></title>
             <link>https://github.com/hashicorp/vagrant/releases/tag/2.3.8.dev%2B000047-848f2a7f</link>
             <guid>https://github.com/hashicorp/vagrant/releases/tag/2.3.8.dev%2B000047-848f2a7f</guid>
@@ -1638,7 +1781,7 @@ c9ba12fe995521f6965fc3ba731d7d8c14eec6c59e46dbfc0a2bd2e26727c0b7  nvim-win64.msi
             <guid>https://github.com/airbnb/visx/releases/tag/v3.2.0</guid>
             <pubDate>Thu, 29 Jun 2023 00:32:01 GMT</pubDate>
             <content:encoded><![CDATA[<h1>v3.2.0 (2023-06-29)</h1>
-<h4><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Bug Fix</h4>
+<h4>🐛 Bug Fix</h4>
 <ul>
 <li>fix: vendor esm-only packages <a href="https://github.com/airbnb/visx/pull/1716" data-hovercard-type="pull_request" data-hovercard-url="/airbnb/visx/pull/1716/hovercard">#1716</a></li>
 <li>vendor: add files entry to package.json <a href="https://github.com/airbnb/visx/pull/1724" data-hovercard-type="pull_request" data-hovercard-url="/airbnb/visx/pull/1724/hovercard">#1724</a></li>
@@ -1917,7 +2060,7 @@ Please report any issues with the release on the <a href="https://github.com/pan
 <li>docs(in the wild): remove broken app link <a href="https://github.com/airbnb/visx/pull/1688" data-hovercard-type="pull_request" data-hovercard-url="/airbnb/visx/pull/1688/hovercard">#1688</a></li>
 <li>fix(xychart): extra space in version definition, that prevents 18.2.0 version t… <a href="https://github.com/airbnb/visx/pull/1686" data-hovercard-type="pull_request" data-hovercard-url="/airbnb/visx/pull/1686/hovercard">#1686</a></li>
 </ul>
-<h3><g-emoji class="g-emoji" alias="memo" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4dd.png">📝</g-emoji> Documentation</h3>
+<h3>📝 Documentation</h3>
 <ul>
 <li>docs(zoom): update handlePinch type description <a href="https://github.com/airbnb/visx/pull/1685" data-hovercard-type="pull_request" data-hovercard-url="/airbnb/visx/pull/1685/hovercard">#1685</a></li>
 <li>docs(in the wild): remove broken app link <a href="https://github.com/airbnb/visx/pull/1688" data-hovercard-type="pull_request" data-hovercard-url="/airbnb/visx/pull/1688/hovercard">#1688</a></li>
@@ -2143,10 +2286,10 @@ Please report any issues with the release on the <a href="https://github.com/pan
 <li>[core:strapi] chore(telemetry): send event ID as a custom (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1764964603" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/17029" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/17029/hovercard" href="https://github.com/strapi/strapi/pull/17029">#17029</a>) <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Baldinof/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Baldinof">@Baldinof</a></li>
 <li>[dependencies] chore(deps-dev): bump nx from 16.3.2 to 16.4.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773546781" data-permission-text="Title is private" data-url="https://github.com/strapi/strapi/issues/17097" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/17097/hovercard" href="https://github.com/strapi/strapi/pull/17097">#17097</a>) <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a></li>
 </ul>
-<h3><g-emoji class="g-emoji" alias="books" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4da.png">📚</g-emoji> Update and Migration Guides</h3>
+<h3>📚 Update and Migration Guides</h3>
 <ul>
 <li>General update guide can be found <a href="https://docs.strapi.io/developer-docs/latest/update-migration-guides/update-version.html" rel="nofollow">here</a></li>
-<li>Migration guides can be found <a href="https://docs.strapi.io/developer-docs/latest/update-migration-guides/migration-guides.html" rel="nofollow">here</a> <g-emoji class="g-emoji" alias="books" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f4da.png">📚</g-emoji></li>
+<li>Migration guides can be found <a href="https://docs.strapi.io/developer-docs/latest/update-migration-guides/migration-guides.html" rel="nofollow">here</a> 📚</li>
 </ul>]]></content:encoded>
         </item>
         <item>
@@ -2331,7 +2474,7 @@ Please report any issues with the release on the <a href="https://github.com/pan
             <pubDate>Wed, 28 Jun 2023 00:44:53 GMT</pubDate>
             <content:encoded><![CDATA[<p>Please see the <a href="https://github.com/observablehq/plot/blob/main/CHANGELOG.md#069">0.6.9 release notes</a> for more!</p>
 <ul>
-<li>Time axes now default to multi-line ticks for better readability. 🎉 <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772176028" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1718" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1718/hovercard" href="https://github.com/observablehq/plot/pull/1718">#1718</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1776509179" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1728" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1728/hovercard" href="https://github.com/observablehq/plot/pull/1728">#1728</a></li>
+<li>Time axes now default to multi-line ticks for better readability. <g-emoji class="g-emoji" alias="tada" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f389.png">🎉</g-emoji> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772176028" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1718" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1718/hovercard" href="https://github.com/observablehq/plot/pull/1718">#1718</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1776509179" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1728" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1728/hovercard" href="https://github.com/observablehq/plot/pull/1728">#1728</a></li>
 <li>Easier piecewise scale construction. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1770204925" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1715" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1715/hovercard" href="https://github.com/observablehq/plot/pull/1715">#1715</a></li>
 <li>Apply pointer-events: none to tips when the pointer transform is not sticky. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1760833547" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1697" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1697/hovercard" href="https://github.com/observablehq/plot/pull/1697">#1697</a></li>
 <li>Add <strong>treeLayout</strong> option to the tree mark, with <em>mirrored</em> labels by default. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1719975988" data-permission-text="Title is private" data-url="https://github.com/observablehq/plot/issues/1610" data-hovercard-type="pull_request" data-hovercard-url="/observablehq/plot/pull/1610/hovercard" href="https://github.com/observablehq/plot/pull/1610">#1610</a></li>
@@ -2817,109 +2960,39 @@ Please report any issues with the release on the <a href="https://github.com/pan
             <guid>https://github.com/ant-design/ant-design/releases/tag/4.24.11</guid>
             <pubDate>Tue, 27 Jun 2023 06:13:12 GMT</pubDate>
             <content:encoded><![CDATA[<ul>
-<li><g-emoji class="g-emoji" alias="new" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f195.png">🆕</g-emoji> Drawer panel support event listener. <a href="https://github.com/ant-design/ant-design/pull/42712" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42712/hovercard">#42712</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
-<li>🐞 Fix Upload <code>onChange</code> sometime not sync when in React 18. <a href="https://github.com/ant-design/ant-design/pull/43200" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43200/hovercard">#43200</a></li>
-<li>🐞 Fix Notification cannot hide close icon by <code>closeIcon={null}</code>. <a href="https://github.com/ant-design/ant-design/pull/42791" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42791/hovercard">#42791</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Drawer <code>id</code> was passed in incorrectly, and now is always added to the popup panel. <a href="https://github.com/ant-design/ant-design/pull/43124" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43124/hovercard">#43124</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
+<li>🆕 Drawer panel support event listener. <a href="https://github.com/ant-design/ant-design/pull/42712" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42712/hovercard">#42712</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Upload <code>onChange</code> sometime not sync when in React 18. <a href="https://github.com/ant-design/ant-design/pull/43200" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43200/hovercard">#43200</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Notification cannot hide close icon by <code>closeIcon={null}</code>. <a href="https://github.com/ant-design/ant-design/pull/42791" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42791/hovercard">#42791</a></li>
+<li>🐞 Fix Drawer <code>id</code> was passed in incorrectly, and now is always added to the popup panel. <a href="https://github.com/ant-design/ant-design/pull/43124" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43124/hovercard">#43124</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix InputNumber with <code>prefix</code> abnormal height under Form.Item of <code>hasFeedBack</code>. <a href="https://github.com/ant-design/ant-design/pull/43048" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43048/hovercard">#43048</a></li>
-<li>🐞 Fix Popover with <code>getPopupContainer</code> sometime makes width too narrow. <a href="https://github.com/ant-design/ant-design/pull/42697" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42697/hovercard">#42697</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Popover with <code>getPopupContainer</code> sometime makes width too narrow. <a href="https://github.com/ant-design/ant-design/pull/42697" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42697/hovercard">#42697</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Select will display the letter A under some circumstances. <a href="https://github.com/ant-design/ant-design/pull/42654" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42654/hovercard">#42654</a> <a href="https://github.com/tchen-l">@tchen-l</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix ConfigProvider that import useless modules from <code>rc-field-form</code> when importing <code>FormProvider</code> . <a href="https://github.com/ant-design/ant-design/pull/42502" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42502/hovercard">#42502</a> <a href="https://github.com/BanShan-Alec">@BanShan-Alec</a></li>
-<li>🐞 Fix Popconfirm trigger <code>onVisibleChange</code> twice. <a href="https://github.com/ant-design/ant-design/pull/42351" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42351/hovercard">#42351</a></li>
-<li>🐞 Fix Form <code>onFieldsChange</code> missing <code>validating</code> status change. <a href="https://github.com/ant-design/ant-design/pull/42263" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42263/hovercard">#42263</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Popover that display empty <code>div</code> when <code>title</code> and <code>content</code> is null. <a href="https://github.com/ant-design/ant-design/commit/19f8505">19f8505</a> <a href="https://github.com/MaHui">@MaHui</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Popconfirm trigger <code>onVisibleChange</code> twice. <a href="https://github.com/ant-design/ant-design/pull/42351" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42351/hovercard">#42351</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Form <code>onFieldsChange</code> missing <code>validating</code> status change. <a href="https://github.com/ant-design/ant-design/pull/42263" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42263/hovercard">#42263</a></li>
+<li>🐞 Fix Popover that display empty <code>div</code> when <code>title</code> and <code>content</code> is null. <a href="https://github.com/ant-design/ant-design/commit/19f8505">19f8505</a> <a href="https://github.com/MaHui">@MaHui</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Upload <code>disabled</code> logic. <a href="https://github.com/ant-design/ant-design/pull/42143" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42143/hovercard">#42143</a> <a href="https://github.com/Wxh16144">@Wxh16144</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix RangePicker wrong panel position under some circumstances. <a href="https://github.com/ant-design/ant-design/pull/43179" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43179/hovercard">#43179</a> <a href="https://github.com/cooljser">@cooljser</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix ConfigProvider makes Form component in the bundle even not use it. <a href="https://github.com/ant-design/ant-design/pull/43207" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43207/hovercard">#43207</a> <a href="https://github.com/yoyo837">@yoyo837</a></li>
-<li>💄 Optimize Spin style to keep height of container the same as child element. <a href="https://github.com/ant-design/ant-design/pull/42163" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42163/hovercard">#42163</a> <a href="https://github.com/cheapCoder">@cheapCoder</a></li>
+<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Optimize Spin style to keep height of container the same as child element. <a href="https://github.com/ant-design/ant-design/pull/42163" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42163/hovercard">#42163</a> <a href="https://github.com/cheapCoder">@cheapCoder</a></li>
 </ul>
 <hr>
 <ul>
 <li><g-emoji class="g-emoji" alias="new" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f195.png">🆕</g-emoji> Drawer 组件面板支持事件监听。<a href="https://github.com/ant-design/ant-design/pull/42712" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42712/hovercard">#42712</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Upload 在 React 18 下 <code>onChange</code> 有时数据不正确的问题。<a href="https://github.com/ant-design/ant-design/pull/43200" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43200/hovercard">#43200</a></li>
+<li>🐞 修复 Upload 在 React 18 下 <code>onChange</code> 有时数据不正确的问题。<a href="https://github.com/ant-design/ant-design/pull/43200" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43200/hovercard">#43200</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Notification 设置 <code>closeIcon={null}</code> 时关闭图标没有消失的问题。<a href="https://github.com/ant-design/ant-design/pull/42791" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42791/hovercard">#42791</a></li>
 <li>🐞 修复 Drawer <code>id</code> 传入位置不正确的问题，现在始终会添加至弹出面板上。<a href="https://github.com/ant-design/ant-design/pull/43124" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43124/hovercard">#43124</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
-<li>🐞 修复 InputNumber 带有 <code>prefix</code> 时在 Form.Item <code>hasFeedBack</code> 内高度异常的问题。<a href="https://github.com/ant-design/ant-design/pull/43048" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43048/hovercard">#43048</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 InputNumber 带有 <code>prefix</code> 时在 Form.Item <code>hasFeedBack</code> 内高度异常的问题。<a href="https://github.com/ant-design/ant-design/pull/43048" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43048/hovercard">#43048</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Popover 设置 <code>getPopupContainer</code> 后，某些时候宽度会过窄的问题。<a href="https://github.com/ant-design/ant-design/pull/42697" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42697/hovercard">#42697</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Select 在某些情况下会显示字母 A 的问题。<a href="https://github.com/ant-design/ant-design/pull/42654" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42654/hovercard">#42654</a> <a href="https://github.com/tchen-l">@tchen-l</a></li>
+<li>🐞 修复 Select 在某些情况下会显示字母 A 的问题。<a href="https://github.com/ant-design/ant-design/pull/42654" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42654/hovercard">#42654</a> <a href="https://github.com/tchen-l">@tchen-l</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 ConfigProvider 引入 <code>FormProvider</code> 时，错误引入 'rc-field-form' 其他的无关依赖的问题。<a href="https://github.com/ant-design/ant-design/pull/42502" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42502/hovercard">#42502</a> <a href="https://github.com/BanShan-Alec">@BanShan-Alec</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Popconfirm 的 <code>onVisibleChange</code> 会重复触发的问题。<a href="https://github.com/ant-design/ant-design/pull/42351" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42351/hovercard">#42351</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Form <code>onFieldsChange</code> 丢失一次 <code>validating</code> 状态变更的更新事件。<a href="https://github.com/ant-design/ant-design/pull/42263" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42263/hovercard">#42263</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Popover 组件当 <code>title</code> 和 <code>content</code> 都为空时展示空气泡的问题<a href="https://github.com/ant-design/ant-design/commit/19f8505">19f8505</a> <a href="https://github.com/MaHui">@MaHui</a></li>
-<li>🐞 修复 Upload 禁用状态逻辑。<a href="https://github.com/ant-design/ant-design/pull/42143" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42143/hovercard">#42143</a> <a href="https://github.com/Wxh16144">@Wxh16144</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Upload 禁用状态逻辑。<a href="https://github.com/ant-design/ant-design/pull/42143" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42143/hovercard">#42143</a> <a href="https://github.com/Wxh16144">@Wxh16144</a></li>
 <li>🐞 修复 RangePicker 在某些情况下面板打开未知不正确的问题。<a href="https://github.com/ant-design/ant-design/pull/43179" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43179/hovercard">#43179</a> <a href="https://github.com/cooljser">@cooljser</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复使用 ConfigProvider 会导致未使用的 Form 组件也被打包的问题。<a href="https://github.com/ant-design/ant-design/pull/43207" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43207/hovercard">#43207</a> <a href="https://github.com/yoyo837">@yoyo837</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 优化 Spin 样式，保持容器与子元素图标高度一致。<a href="https://github.com/ant-design/ant-design/pull/42163" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/42163/hovercard">#42163</a> <a href="https://github.com/cheapCoder">@cheapCoder</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from tools: CLI v12.1.3-nightly.af25635]]></title>
-            <link>https://github.com/rome/tools/releases/tag/cli%2Fv12.1.3-nightly.af25635</link>
-            <guid>https://github.com/rome/tools/releases/tag/cli%2Fv12.1.3-nightly.af25635</guid>
-            <pubDate>Tue, 27 Jun 2023 05:42:30 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>refactor(rome_js_analyze): improve noBannedTypes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1767363046" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4597" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4597/hovercard" href="https://github.com/rome/tools/pull/4597">#4597</a></li>
-<li>refactor(rome_formatter): Use custom trait for unique <code>LabelId</code>s by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MichaReiser/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MichaReiser">@MichaReiser</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1768568175" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4599" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4599/hovercard" href="https://github.com/rome/tools/pull/4599">#4599</a></li>
-<li>feat(rome_service): add <code>extends</code> functionality by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1758246596" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4572" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4572/hovercard" href="https://github.com/rome/tools/pull/4572">#4572</a></li>
-<li>feat(rome_js_parser): Implement the decorator parsing via the option by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1768389871" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4598" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4598/hovercard" href="https://github.com/rome/tools/pull/4598">#4598</a></li>
-<li>chore: remove changelog line and documentation parts by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772625995" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4610" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4610/hovercard" href="https://github.com/rome/tools/pull/4610">#4610</a></li>
-<li>refactor(rome_js_analyze): set version for noUselessConstructor by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772657254" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4611" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4611/hovercard" href="https://github.com/rome/tools/pull/4611">#4611</a></li>
-<li>feat(rome_js_analyze): noGlobalIsNan by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772704294" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4612" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4612/hovercard" href="https://github.com/rome/tools/pull/4612">#4612</a></li>
-<li>fix(rome_js_analyze): suppress false positive diagnostics to nested if statements  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773042730" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4614" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4614/hovercard" href="https://github.com/rome/tools/pull/4614">#4614</a></li>
-<li>feat(rome_js_analyze): add noGlobalIsFinite by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772920757" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4613" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4613/hovercard" href="https://github.com/rome/tools/pull/4613">#4613</a></li>
-<li>feat(rome_js_analyze): add <code>useArrowFunction</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773361791" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4617" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4617/hovercard" href="https://github.com/rome/tools/pull/4617">#4617</a></li>
-<li>feat(playground): Implement playground option <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772006082" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4606" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4606/hovercard" href="https://github.com/rome/tools/issues/4606">#4606</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772078714" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4607" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4607/hovercard" href="https://github.com/rome/tools/pull/4607">#4607</a></li>
-<li>feat(rome_service): add support for JSON linter in the workspace by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772617825" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4609" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4609/hovercard" href="https://github.com/rome/tools/pull/4609">#4609</a></li>
-<li>feat(rome_js_analyze): rule <code>noVoid</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774201682" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4619" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4619/hovercard" href="https://github.com/rome/tools/pull/4619">#4619</a></li>
-<li>docs: fix <code>noCommaOperator</code> example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774432598" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4620" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4620/hovercard" href="https://github.com/rome/tools/pull/4620">#4620</a></li>
-<li>feat(rome_cli): add <code>--no-errors-on-unmatched</code> optoin by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774479640" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4622" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4622/hovercard" href="https://github.com/rome/tools/pull/4622">#4622</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v12.1.3-nightly.50eb45f...cli/v12.1.3-nightly.af25635"><tt>cli/v12.1.3-nightly.50eb45f...cli/v12.1.3-nightly.af25635</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from tools: VSCode Extension v0.25.20230627]]></title>
-            <link>https://github.com/rome/tools/releases/tag/lsp%2Fv0.25.20230627</link>
-            <guid>https://github.com/rome/tools/releases/tag/lsp%2Fv0.25.20230627</guid>
-            <pubDate>Tue, 27 Jun 2023 05:41:59 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>refactor(rome_js_analyze): improve noBannedTypes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1767363046" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4597" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4597/hovercard" href="https://github.com/rome/tools/pull/4597">#4597</a></li>
-<li>refactor(rome_formatter): Use custom trait for unique <code>LabelId</code>s by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MichaReiser/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MichaReiser">@MichaReiser</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1768568175" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4599" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4599/hovercard" href="https://github.com/rome/tools/pull/4599">#4599</a></li>
-<li>feat(rome_service): add <code>extends</code> functionality by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1758246596" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4572" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4572/hovercard" href="https://github.com/rome/tools/pull/4572">#4572</a></li>
-<li>feat(rome_js_parser): Implement the decorator parsing via the option by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1768389871" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4598" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4598/hovercard" href="https://github.com/rome/tools/pull/4598">#4598</a></li>
-<li>chore: remove changelog line and documentation parts by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772625995" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4610" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4610/hovercard" href="https://github.com/rome/tools/pull/4610">#4610</a></li>
-<li>refactor(rome_js_analyze): set version for noUselessConstructor by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772657254" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4611" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4611/hovercard" href="https://github.com/rome/tools/pull/4611">#4611</a></li>
-<li>feat(rome_js_analyze): noGlobalIsNan by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772704294" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4612" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4612/hovercard" href="https://github.com/rome/tools/pull/4612">#4612</a></li>
-<li>fix(rome_js_analyze): suppress false positive diagnostics to nested if statements  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nissy-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nissy-dev">@nissy-dev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773042730" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4614" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4614/hovercard" href="https://github.com/rome/tools/pull/4614">#4614</a></li>
-<li>feat(rome_js_analyze): add noGlobalIsFinite by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772920757" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4613" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4613/hovercard" href="https://github.com/rome/tools/pull/4613">#4613</a></li>
-<li>feat(rome_js_analyze): add <code>useArrowFunction</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773361791" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4617" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4617/hovercard" href="https://github.com/rome/tools/pull/4617">#4617</a></li>
-<li>feat(playground): Implement playground option <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772006082" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4606" data-hovercard-type="issue" data-hovercard-url="/rome/tools/issues/4606/hovercard" href="https://github.com/rome/tools/issues/4606">#4606</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/denbezrukov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/denbezrukov">@denbezrukov</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772078714" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4607" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4607/hovercard" href="https://github.com/rome/tools/pull/4607">#4607</a></li>
-<li>feat(rome_service): add support for JSON linter in the workspace by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772617825" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4609" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4609/hovercard" href="https://github.com/rome/tools/pull/4609">#4609</a></li>
-<li>feat(rome_js_analyze): rule <code>noVoid</code> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774201682" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4619" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4619/hovercard" href="https://github.com/rome/tools/pull/4619">#4619</a></li>
-<li>docs: fix <code>noCommaOperator</code> example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Conaclos/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Conaclos">@Conaclos</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774432598" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4620" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4620/hovercard" href="https://github.com/rome/tools/pull/4620">#4620</a></li>
-<li>feat(rome_cli): add <code>--no-errors-on-unmatched</code> optoin by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ematipico/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ematipico">@ematipico</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774479640" data-permission-text="Title is private" data-url="https://github.com/rome/tools/issues/4622" data-hovercard-type="pull_request" data-hovercard-url="/rome/tools/pull/4622/hovercard" href="https://github.com/rome/tools/pull/4622">#4622</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/rome/tools/compare/cli/v12.1.3-nightly.50eb45f...lsp/v0.25.20230627"><tt>cli/v12.1.3-nightly.50eb45f...lsp/v0.25.20230627</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from vagrant: 2.3.8.dev+000045-f056c293]]></title>
-            <link>https://github.com/hashicorp/vagrant/releases/tag/2.3.8.dev%2B000045-f056c293</link>
-            <guid>https://github.com/hashicorp/vagrant/releases/tag/2.3.8.dev%2B000045-f056c293</guid>
-            <pubDate>Tue, 27 Jun 2023 05:02:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Vagrant nightly release build</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.1.0-alpha.40]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.40</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.1.0-alpha.40</guid>
-            <pubDate>Tue, 27 Jun 2023 03:27:15 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>7.1.0-alpha.40</h2>
-<ul>
-<li>CLI: Parse pnp paths in storybook metadata - <a href="https://github.com/storybookjs/storybook/pull/23199" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23199/hovercard">#23199</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Dependencies: Pin <code>file-system-cache</code> to 2.3.0 - <a href="https://github.com/storybookjs/storybook/pull/23221" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23221/hovercard">#23221</a>, thanks <a href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>PNPM: Hide ModuleNotFound error in pnpm pnp mode - <a href="https://github.com/storybookjs/storybook/pull/23195" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23195/hovercard">#23195</a>, thanks <a href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Svelte: Support v4 - <a href="https://github.com/storybookjs/storybook/pull/22905" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22905/hovercard">#22905</a>, thanks <a href="https://github.com/JReinhold">@JReinhold</a>!</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
