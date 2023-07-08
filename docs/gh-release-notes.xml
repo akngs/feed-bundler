@@ -4,37 +4,277 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 07 Jul 2023 18:06:26 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 08 Jul 2023 00:25:48 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-6107]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6107</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6107</guid>
-            <pubDate>Fri, 07 Jul 2023 17:56:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104811]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104811</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104811</guid>
+            <pubDate>Sat, 08 Jul 2023 00:21:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-6105]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6105</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6105</guid>
-            <pubDate>Fri, 07 Jul 2023 17:47:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/104811]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F104811</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F104811</guid>
+            <pubDate>Sat, 08 Jul 2023 00:21:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104736: Update on "[ONNX] Remove unnecessary deepcopy on args in 'DynamoExport'"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104736</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104736</guid>
-            <pubDate>Fri, 07 Jul 2023 17:47:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>The comment is outdated. There should be no side-effects on <code>args</code> and <code>kwargs</code>.</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/103943: Update on "[ONNX] Refactor FX Registry and Support Custom Operator in…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F103943</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F103943</guid>
+            <pubDate>Sat, 08 Jul 2023 00:20:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… FX Exporter"</p>
+<h2>ONNXRegistry</h2>
+<h3>Motivation</h3>
+<p>In <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1696727263" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/100660" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/100660/hovercard" href="https://github.com/pytorch/pytorch/pull/100660">#100660</a>, we used the torchscript registry to allow dispatcher. However, it doesn't meet the needs of FX exporter. The idea of torchscript exporter is built on top of three  points:</p>
+<p>(1) Use <code>_SymbolicFunctionGroup</code> to dispatch opset version as we need ops to fall back when we don't have it in the current exporter opset version<br>
+(2) One aten maps to multiple supported opset versions, and each version maps to one symbolic function<br>
+(3) Custom symbolic function is considered prior to default symbolic function</p>
+<p>Now that TorchLib will support all aten op across all opset versions, we don't need the opset version dispatch layer. And with onnx overloads created by torchlib, we need a way to support custom operators and prioritize them among all overloads.</p>
+<h3>Feature</h3>
+<p>Introduce a public OnnxRegistry API initiated with fixed opset version which supports user registered operators. <strong>The dispatching opset version is no longer needed as TorchLib is expected to provide full aten support across all opset version. And Dispatcher is expected to prioritize custome operators than the defaults.</strong></p>
+<h3>API:</h3>
+<p>(1) <code>register_custom_op(self, function: OnnxFunction, domain: str, op_name: str, overload: Optional[str] = None)</code>: Register a custom operator into the current OnnxRegistry. This is expected to be used when the default operators don't mee the need of users. <strong>For example, need a different opset version from the registry, or different calculation</strong>.<br>
+(2) <code>is_registered_op(self, domain: str, op_name: str, overload: Optional[str] = None)</code>: Whether the aten op is registered.<br>
+(3) <code>get_functions(domain: str, op_name: str, overload: Optional[str] = None)</code>: Return a set of registered SymbolicFunctions under the aten</p>
+<h3>TODO:</h3>
+<p>(1)<code>remove_op(op_name: str)</code>: removing the whole support for certain op allows decompose the graph to prims.<br>
+(2)Expose OnnxRegistry to users, and disable the opset_version option in export API. Export API should use the ops in registry only.</p>
+<hr>
+<h2>OnnxDispatcher</h2>
+<p>The Changes in the function <code>dispatch</code> and <code>_find_the_perfect_or_nearest_match_onnxfunction</code> are meant to allow complex type and custom operator supports.</p>
+<h3>Respect Custom Ops</h3>
+<p>(1) Override: Check if we can find the perfect match in custom operator overloads prior to defaults<br>
+(2) Tie breaker: If we have the same nearest match of default and custom overload, we choose the custom.</p>
+<h3>Supplementary</h3>
+<p><a href="https://microsoft-my.sharepoint.com/:w:/p/thiagofc/EW-5Q3jWhFNMtQHHtPpJiAQB-P2qAcVRkYjfbmeSddnjWA?e=QUX9zG&amp;wdOrigin=TEAMS-ELECTRON.p2p.bim&amp;wdExp=TEAMS-TREATMENT&amp;wdhostclicktime=1687554493295&amp;web=1" rel="nofollow">Design discussion doc</a></p>
+<p>Please check the Registry and Dispatcher sections.</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.7.122-pgo: Version 11.7.122]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.122-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.122-pgo</guid>
+            <pubDate>Fri, 07 Jul 2023 22:17:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I410790ab1b8f2b186c21a736f1516e5838d0e2bd<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673326" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673326</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.122@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7bfdc25216192e3d110836cc91f03a4e259711a8/hovercard" href="https://github.com/v8/v8/commit/7bfdc25216192e3d110836cc91f03a4e259711a8"><tt>7bfdc25</tt></a>-refs/heads/main@{#88770}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.7.122]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.122</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.122</guid>
+            <pubDate>Fri, 07 Jul 2023 22:17:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I410790ab1b8f2b186c21a736f1516e5838d0e2bd<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673326" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673326</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.122@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7bfdc25216192e3d110836cc91f03a4e259711a8/hovercard" href="https://github.com/v8/v8/commit/7bfdc25216192e3d110836cc91f03a4e259711a8"><tt>7bfdc25</tt></a>-refs/heads/main@{#88770}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104806]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104806</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104806</guid>
+            <pubDate>Fri, 07 Jul 2023 21:59:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Update test_matmul_cuda.py</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.7.121-pgo: Version 11.7.121]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.121-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.121-pgo</guid>
+            <pubDate>Fri, 07 Jul 2023 21:31:49 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I7da8d4be7f9e79bf6a41af2e6f935785be033a53<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673325" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673325</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.121@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e712fff9717c77df75ebdca60e907445da88b8a5/hovercard" href="https://github.com/v8/v8/commit/e712fff9717c77df75ebdca60e907445da88b8a5"><tt>e712fff</tt></a>-refs/heads/main@{#88769}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.7.121]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.121</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.121</guid>
+            <pubDate>Fri, 07 Jul 2023 21:31:49 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I7da8d4be7f9e79bf6a41af2e6f935785be033a53<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673325" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673325</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.121@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e712fff9717c77df75ebdca60e907445da88b8a5/hovercard" href="https://github.com/v8/v8/commit/e712fff9717c77df75ebdca60e907445da88b8a5"><tt>e712fff</tt></a>-refs/heads/main@{#88769}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104803]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104803</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104803</guid>
+            <pubDate>Fri, 07 Jul 2023 21:20:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Handle the list of sub-skips when uploading disabled test stats</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from moby: v24.0.4]]></title>
+            <link>https://github.com/moby/moby/releases/tag/v24.0.4</link>
+            <guid>https://github.com/moby/moby/releases/tag/v24.0.4</guid>
+            <pubDate>Fri, 07 Jul 2023 21:13:35 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>24.0.4</h2>
+<p>For a full list of pull requests and changes in this release, refer to the relevant GitHub milestones:</p>
+<ul>
+<li><a href="https://github.com/docker/cli/issues?q=is%3Aclosed+milestone%3A24.0.4">docker/cli, 24.0.4 milestone</a></li>
+<li><a href="https://github.com/moby/moby/issues?q=is%3Aclosed+milestone%3A24.0.4">moby/moby, 24.0.4 milestone</a></li>
+</ul>
+<h3>Bug fixes and enhancements</h3>
+<ul>
+<li>Fix a regression introduced during 24.0.3 that causes a panic during live-restore of containers with bind mounts. <a href="https://github.com/moby/moby/pull/45903" data-hovercard-type="pull_request" data-hovercard-url="/moby/moby/pull/45903/hovercard">moby/moby#45903</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104802]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104802</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104802</guid>
+            <pubDate>Fri, 07 Jul 2023 21:11:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fix small bugs</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104787: Update on "Fix activation checkpoint for mps"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104787</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104787</guid>
+            <pubDate>Fri, 07 Jul 2023 21:05:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1783053742" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/104478" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/104478/hovercard" href="https://github.com/pytorch/pytorch/issues/104478">#104478</a></p>
+<p>cc heidongxianhua</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-6117]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6117</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6117</guid>
+            <pubDate>Fri, 07 Jul 2023 20:49:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.7.120-pgo: Version 11.7.120]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.120-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.120-pgo</guid>
+            <pubDate>Fri, 07 Jul 2023 20:31:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I22c88bb7072c067c238924d6af9b7b2297f811a2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673324" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673324</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.120@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/adff020217a8de74bff4e1dbbdc02ca44d301b0a/hovercard" href="https://github.com/v8/v8/commit/adff020217a8de74bff4e1dbbdc02ca44d301b0a"><tt>adff020</tt></a>-refs/heads/main@{#88765}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.7.120]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.120</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.120</guid>
+            <pubDate>Fri, 07 Jul 2023 20:31:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I22c88bb7072c067c238924d6af9b7b2297f811a2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673324" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673324</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.120@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/adff020217a8de74bff4e1dbbdc02ca44d301b0a/hovercard" href="https://github.com/v8/v8/commit/adff020217a8de74bff4e1dbbdc02ca44d301b0a"><tt>adff020</tt></a>-refs/heads/main@{#88765}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from mastodon: v4.0.6]]></title>
+            <link>https://github.com/mastodon/mastodon/releases/tag/v4.0.6</link>
+            <guid>https://github.com/mastodon/mastodon/releases/tag/v4.0.6</guid>
+            <pubDate>Fri, 07 Jul 2023 20:12:55 GMT</pubDate>
+            <content:encoded><![CDATA[<h1><themed-picture data-catalyst-inline="true"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="/mastodon/mastodon/raw/v4.0.6/lib/assets/wordmark.dark.png?raw=true">
+  <source media="(prefers-color-scheme: light)" srcset="/mastodon/mastodon/raw/v4.0.6/lib/assets/wordmark.light.png?raw=true">
+  <img alt="Mastodon" src="/mastodon/mastodon/raw/v4.0.6/lib/assets/wordmark.light.png?raw=true" height="34">
+</picture></themed-picture></h1>
+<blockquote>
+<p>This release addresses a few issues that were missed in the last security update and includes changelogs for both updates.</p>
+<p><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> It is a follow-up to the important 4.0.5 security release that fixed multiple <strong>critical security issues</strong> (CVE-2023-36460, CVE-2023-36459).</p>
+<p>Corresponding security releases are available for the <a href="https://github.com/mastodon/mastodon/releases/tag/v4.1.4">4.1.x branch</a> and the <a href="https://github.com/mastodon/mastodon/releases/tag/v3.5.10">3.5.x branch</a>.</p>
+<p>If you are using nightly builds, <strong>do not use this release</strong> but update to <code>nightly-2023-07-07-v4.1.4</code> or newer instead. If you are on the <code>main</code> branch, update to the latest commit.</p>
+</blockquote>
+<h2>Upgrade overview</h2>
+<p>This release contains upgrade notes that deviate from the norm:</p>
+<p><g-emoji class="g-emoji" alias="information_source" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2139.png">ℹ️</g-emoji> Requires streaming API restart<br>
+<g-emoji class="g-emoji" alias="information_source" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2139.png">ℹ️</g-emoji> There are suggested reverse proxy configuration changes<br>
+<g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> The minimal supported ImageMagick version has been bumped to 6.9.7-7</p>
+<p>For more information, scroll down to the upgrade instructions section.</p>
+<h2>Changelog (v4.0.6)</h2>
+<h3>Fixed</h3>
+<ul>
+<li>Fix branding:generate_app_icons failing because of disallowed ICO coder (<a href="https://github.com/mastodon/mastodon/pull/25794" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25794/hovercard">ClearlyClaire</a>)</li>
+<li>Fix crash in admin interface when viewing a remote user with verified links (<a href="https://github.com/mastodon/mastodon/pull/25796" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25796/hovercard">ClearlyClaire</a>)</li>
+<li>Fix processing of media files with unusual names (<a href="https://github.com/mastodon/mastodon/pull/25788" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25788/hovercard">ClearlyClaire</a>)</li>
+</ul>
+<h2>Changelog (v4.0.5)</h2>
+<h3>Changed</h3>
+<ul>
+<li>Change OpenGraph-based embeds to allow fullscreen (<a href="https://github.com/mastodon/mastodon/pull/25058" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25058/hovercard">ClearlyClaire</a>)</li>
+<li>Change profile updates to be sent to recently-mentioned servers (<a href="https://github.com/mastodon/mastodon/pull/24852" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24852/hovercard">ClearlyClaire</a>)</li>
+<li>Change <code>/api/v1/statuses/:id/history</code> to always return at least one item (<a href="https://github.com/mastodon/mastodon/pull/25510" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25510/hovercard">ClearlyClaire</a>)</li>
+<li>Change auto-linking to allow carets in URL query params (<a href="https://github.com/mastodon/mastodon/pull/25216" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25216/hovercard">renchap</a>)</li>
+</ul>
+<h3>Removed</h3>
+<ul>
+<li>Remove invalid <code>X-Frame-Options: ALLOWALL</code> (<a href="https://github.com/mastodon/mastodon/pull/25070" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25070/hovercard">ClearlyClaire</a>)</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li>Fix wrong view being displayed when a webhook fails validation (<a href="https://github.com/mastodon/mastodon/pull/25464" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25464/hovercard">ClearlyClaire</a>)</li>
+<li>Fix soft-deleted post cleanup scheduler overwhelming the streaming server (<a href="https://github.com/mastodon/mastodon/pull/25519" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25519/hovercard">ThisIsMissEm</a>)</li>
+<li>Fix incorrect pagination headers in <code>/api/v2/admin/accounts</code> (<a href="https://github.com/mastodon/mastodon/pull/25477" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25477/hovercard">danielmbrasil</a>)</li>
+<li>Fix performance of streaming by parsing message JSON once (<a href="https://github.com/mastodon/mastodon/pull/25278" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25278/hovercard">ThisIsMissEm</a>, <a href="https://github.com/mastodon/mastodon/pull/25361" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25361/hovercard">ThisIsMissEm</a>)</li>
+<li>Fix CSP headers when <code>S3_ALIAS_HOST</code> includes a path component (<a href="https://github.com/mastodon/mastodon/pull/25273" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25273/hovercard">ClearlyClaire</a>)</li>
+<li>Fix <code>tootctl accounts approve --number N</code> not aproving N earliest registrations (<a href="https://github.com/mastodon/mastodon/pull/24605" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24605/hovercard">danielmbrasil</a>)</li>
+<li>Fix being able to vote on your own polls (<a href="https://github.com/mastodon/mastodon/pull/25015" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25015/hovercard">ClearlyClaire</a>)</li>
+<li>Fix race condition when reblogging a status (<a href="https://github.com/mastodon/mastodon/pull/25016" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25016/hovercard">ClearlyClaire</a>)</li>
+<li>Fix “Authorized applications” inefficiently and incorrectly getting last use date (<a href="https://github.com/mastodon/mastodon/pull/25060" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25060/hovercard">ClearlyClaire</a>)</li>
+<li>Fix multiple N+1s in ConversationsController (<a href="https://github.com/mastodon/mastodon/pull/25134" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25134/hovercard">ClearlyClaire</a>, <a href="https://github.com/mastodon/mastodon/pull/25399" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25399/hovercard">ClearlyClaire</a>, <a href="https://github.com/mastodon/mastodon/pull/25499" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25499/hovercard">ClearlyClaire</a>)</li>
+<li>Fix user archive takeouts when using OpenStack Swift (<a href="https://github.com/mastodon/mastodon/pull/24431" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24431/hovercard">ClearlyClaire</a>)</li>
+<li>Fix searching for remote content by URL not working under certain conditions (<a href="https://github.com/mastodon/mastodon/pull/25637" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25637/hovercard">ClearlyClaire</a>)</li>
+<li>Fix inefficiencies in indexing content for search (<a href="https://github.com/mastodon/mastodon/pull/24285" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24285/hovercard">VyrCossont</a>, <a href="https://github.com/mastodon/mastodon/pull/24342" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24342/hovercard">VyrCossont</a>)</li>
+</ul>
+<h3>Security</h3>
+<ul>
+<li>Add finer permission requirements for managing webhooks (<a href="https://github.com/mastodon/mastodon/pull/25463" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25463/hovercard">ClearlyClaire</a>)</li>
+<li>Update dependencies</li>
+<li>Add hardening headers for user-uploaded files (<a href="https://github.com/mastodon/mastodon/pull/25756" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25756/hovercard">ClearlyClaire</a>)</li>
+<li>Fix verified links possibly hiding important parts of the URL (CVE-2023-36462)</li>
+<li>Fix timeout handling of outbound HTTP requests (CVE-2023-36461)</li>
+<li>Fix arbitrary file creation through media processing (CVE-2023-36460)</li>
+<li>Fix possible XSS in preview cards (CVE-2023-36459)</li>
+</ul>
+<h2>Upgrade notes</h2>
+<p>To get the code for v4.0.6, use <code>git fetch &amp;&amp; git checkout v4.0.6</code>.</p>
+<blockquote>
+<p>As always, <strong>make sure you have backups of the database before performing any upgrades</strong>. If you are using docker-compose, this is how a backup command might look: docker exec mastodon_db_1 pg_dump -Fc -U postgres postgres &gt; name_of_the_backup.dump</p>
+</blockquote>
+<h3>Dependencies</h3>
+<p>Apart from ImageMagick, external dependencies have not changed compared to v4.0.4, the compatible Ruby, PostgreSQL, Node, Elasticsearch and Redis versions are the same, that is:</p>
+<ul>
+<li>Ruby: 2.7 to 3.0</li>
+<li>PostgreSQL: 9.5 or newer</li>
+<li>Elasticsearch (optional, for full-text search): 7.x</li>
+<li>Redis: 4 or newer</li>
+<li>Node: &gt;= 14, &lt; 18</li>
+<li>ImageMagick: 6.9.7-7 or newer</li>
+</ul>
+<p>If your uploaded images are broken after the upgrade, it means your installed ImageMagick version is older than the new minimum version (6.9.7-7), for example if you are running Ubuntu 18.04. If this happens, you can find more informations and ways to fix it <a href="https://github.com/mastodon/mastodon/issues/25776" data-hovercard-type="issue" data-hovercard-url="/mastodon/mastodon/issues/25776/hovercard">on this page</a>.</p>
+<h3>Update steps</h3>
+<p>The following instructions are for updating from 4.0.4.</p>
+<p>If you are upgrading directly from an earlier release, please carefully read the upgrade notes for the skipped releases as well, as they often require extra steps such as database migrations.</p>
+<p><strong>Non-Docker only:</strong></p>
+<ol>
+<li>Install dependencies: <code>bundle install</code> and <code>yarn install</code></li>
+</ol>
+<p><strong>Both Docker and non-Docker:</strong></p>
+<p><g-emoji class="g-emoji" alias="information_source" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2139.png">ℹ️</g-emoji> The recommended configuration for reverse proxies has been updated. Unlike updating Mastodon itself, this is not urgent, but hardening. The change is about setting <code>Content-Security-Policy: default-src 'none'; form-action 'none'</code> and <code>X-Content-Type-Options: nosniff</code> on assets. Check <code>dist/nginx.conf</code> for more information, and <a href="https://docs.joinmastodon.org/admin/optional/object-storage-proxy/" rel="nofollow">the documentation</a> if you are proxying external object storage.</p>
+<ol>
+<li>Restart all Mastodon processes</li>
+</ol>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from mastodon: v4.1.4]]></title>
             <link>https://github.com/mastodon/mastodon/releases/tag/v4.1.4</link>
             <guid>https://github.com/mastodon/mastodon/releases/tag/v4.1.4</guid>
-            <pubDate>Fri, 07 Jul 2023 17:38:38 GMT</pubDate>
+            <pubDate>Fri, 07 Jul 2023 20:12:35 GMT</pubDate>
             <content:encoded><![CDATA[<h1><themed-picture data-catalyst-inline="true"><picture>
   <source media="(prefers-color-scheme: dark)" srcset="/mastodon/mastodon/raw/v4.1.4/lib/assets/wordmark.dark.png?raw=true">
   <source media="(prefers-color-scheme: light)" srcset="/mastodon/mastodon/raw/v4.1.4/lib/assets/wordmark.light.png?raw=true">
@@ -44,7 +284,7 @@
 <p>This release addresses a few issues that were missed in the last security update and includes changelogs for both updates.</p>
 <p><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> It is a follow-up to the important 4.1.3 security release fixing multiple <strong>critical security issues</strong> (CVE-2023-36460, CVE-2023-36459).</p>
 <p>Corresponding security releases are available for the <a href="https://github.com/mastodon/mastodon/releases/tag/v4.0.6">4.0.x branch</a> and the <a href="https://github.com/mastodon/mastodon/releases/tag/v3.5.10">3.5.x branch</a>.<br>
-If you are using nightly builds, <strong>do not use this release</strong> but update to <code>nightly-2023-07-06-security</code> or newer instead. If you are on the <code>main</code> branch, update to the latest commit.</p>
+If you are using nightly builds, <strong>do not use this release</strong> but update to <code>nightly-2023-07-07-v4.1.4</code> or newer instead. If you are on the <code>main</code> branch, update to the latest commit.</p>
 </blockquote>
 <h2>Upgrade overview</h2>
 <p>This release contains upgrade notes that deviate from the norm:</p>
@@ -136,100 +376,325 @@ If you are using nightly builds, <strong>do not use this release</strong> but up
 </ol>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from mastodon: v4.0.6]]></title>
-            <link>https://github.com/mastodon/mastodon/releases/tag/v4.0.6</link>
-            <guid>https://github.com/mastodon/mastodon/releases/tag/v4.0.6</guid>
-            <pubDate>Fri, 07 Jul 2023 17:38:30 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><themed-picture data-catalyst-inline="true"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="/mastodon/mastodon/raw/v4.0.6/lib/assets/wordmark.dark.png?raw=true">
-  <source media="(prefers-color-scheme: light)" srcset="/mastodon/mastodon/raw/v4.0.6/lib/assets/wordmark.light.png?raw=true">
-  <img alt="Mastodon" src="/mastodon/mastodon/raw/v4.0.6/lib/assets/wordmark.light.png?raw=true" height="34">
-</picture></themed-picture></h1>
-<blockquote>
-<p>This release addresses a few issues that were missed in the last security update and includes changelogs for both updates.</p>
-<p><g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> It is a follow-up to the important 4.0.5 security release that fixed multiple <strong>critical security issues</strong> (CVE-2023-36460, CVE-2023-36459).</p>
-<p>Corresponding security releases are available for the <a href="https://github.com/mastodon/mastodon/releases/tag/v4.1.4">4.1.x branch</a> and the <a href="https://github.com/mastodon/mastodon/releases/tag/v3.5.10">3.5.x branch</a>.</p>
-<p>If you are using nightly builds, <strong>do not use this release</strong> but update to <code>nightly-2023-07-06-security</code> or newer instead. If you are on the <code>main</code> branch, update to the latest commit.</p>
-</blockquote>
-<h2>Upgrade overview</h2>
-<p>This release contains upgrade notes that deviate from the norm:</p>
-<p><g-emoji class="g-emoji" alias="information_source" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2139.png">ℹ️</g-emoji> Requires streaming API restart<br>
-<g-emoji class="g-emoji" alias="information_source" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2139.png">ℹ️</g-emoji> There are suggested reverse proxy configuration changes<br>
-<g-emoji class="g-emoji" alias="warning" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/26a0.png">⚠️</g-emoji> The minimal supported ImageMagick version has been bumped to 6.9.7-7</p>
-<p>For more information, scroll down to the upgrade instructions section.</p>
-<h2>Changelog (v4.0.6)</h2>
-<h3>Fixed</h3>
+            <title><![CDATA[Release notes from nx: 16.6.0-beta.0]]></title>
+            <link>https://github.com/nrwl/nx/releases/tag/16.6.0-beta.0</link>
+            <guid>https://github.com/nrwl/nx/releases/tag/16.6.0-beta.0</guid>
+            <pubDate>Fri, 07 Jul 2023 20:10:03 GMT</pubDate>
+            <content:encoded><![CDATA[<h1><a href="https://github.com/nrwl/nx/compare/16.5.0...16.6.0-beta.0">16.6.0-beta.0</a> (2023-07-07)</h1>
+<h3>Bug Fixes</h3>
 <ul>
-<li>Fix branding:generate_app_icons failing because of disallowed ICO coder (<a href="https://github.com/mastodon/mastodon/pull/25794" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25794/hovercard">ClearlyClaire</a>)</li>
-<li>Fix crash in admin interface when viewing a remote user with verified links (<a href="https://github.com/mastodon/mastodon/pull/25796" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25796/hovercard">ClearlyClaire</a>)</li>
-<li>Fix processing of media files with unusual names (<a href="https://github.com/mastodon/mastodon/pull/25788" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25788/hovercard">ClearlyClaire</a>)</li>
+<li><strong>angular:</strong> automatically skip remotes not in the current workspace <a href="https://github.com/nrwl/nx/issues/17473" data-hovercard-type="issue" data-hovercard-url="/nrwl/nx/issues/17473/hovercard">#17473</a> (<a href="https://github.com/nrwl/nx/issues/17497" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17497/hovercard">#17497</a>) (<a href="https://github.com/nrwl/nx/commit/c64f26ef3cb0ce14f383652169df503840f97557">c64f26e</a>)</li>
+<li><strong>bundling:</strong> update the browsers for es5 terser check (<a href="https://github.com/nrwl/nx/issues/17784" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17784/hovercard">#17784</a>) (<a href="https://github.com/nrwl/nx/commit/8c9ad0da69b76def41ef1af615d0795272a0b78f">8c9ad0d</a>)</li>
+<li><strong>core:</strong> add license information for native packages (<a href="https://github.com/nrwl/nx/issues/17964" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17964/hovercard">#17964</a>) (<a href="https://github.com/nrwl/nx/commit/d42d2f46fbad6171288d04c864e54cfae4318969">d42d2f4</a>)</li>
+<li><strong>core:</strong> ensure external dependency hashes are resolved in a deterministic way (<a href="https://github.com/nrwl/nx/issues/17926" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17926/hovercard">#17926</a>) (<a href="https://github.com/nrwl/nx/commit/65adb94bf671117b9307ea22037440836b4da9e3">65adb94</a>)</li>
+<li><strong>core:</strong> ensure yarn runs install with correct version (<a href="https://github.com/nrwl/nx/issues/17997" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17997/hovercard">#17997</a>) (<a href="https://github.com/nrwl/nx/commit/d0c37727c59a036c95041090f78447f0437ab556">d0c3772</a>)</li>
+<li><strong>core:</strong> parse project configs only in js (<a href="https://github.com/nrwl/nx/issues/18009" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18009/hovercard">#18009</a>) (<a href="https://github.com/nrwl/nx/commit/c04053b4e931176d8be6cd364841f3e0990710d2">c04053b</a>)</li>
+<li><strong>js:</strong> add watchIgnore and runBuildTargetDependencies options to speed up build (<a href="https://github.com/nrwl/nx/issues/17953" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17953/hovercard">#17953</a>) (<a href="https://github.com/nrwl/nx/commit/c6a0615fa511bde3fa9bc1ac9981172620dcf943">c6a0615</a>)</li>
+<li><strong>js:</strong> ignore dependencies from non-index root files for create-package-json (<a href="https://github.com/nrwl/nx/issues/17930" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17930/hovercard">#17930</a>) (<a href="https://github.com/nrwl/nx/commit/28a071f2432e34757581ad5713b2e9361bd95f9d">28a071f</a>)</li>
+<li><strong>js:</strong> remove duplicate alias (<a href="https://github.com/nrwl/nx/issues/17978" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17978/hovercard">#17978</a>) (<a href="https://github.com/nrwl/nx/commit/ccd195d60a13008f9410a3382e85e31c4474290b">ccd195d</a>)</li>
+<li><strong>js:</strong> restore registry for only localhost (<a href="https://github.com/nrwl/nx/issues/17999" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17999/hovercard">#17999</a>) (<a href="https://github.com/nrwl/nx/commit/8d5cfcc2b3d35bfdf7c4c610edd14c991ba55e45">8d5cfcc</a>)</li>
+<li><strong>nextjs:</strong> Update @types/react version for yarn resolution (<a href="https://github.com/nrwl/nx/issues/18028" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18028/hovercard">#18028</a>) (<a href="https://github.com/nrwl/nx/commit/b1f19e3e915ecafe7a583649c882ad8fd5ef6e58">b1f19e3</a>)</li>
+<li><strong>storybook:</strong> optional chain .length in utils (<a href="https://github.com/nrwl/nx/issues/18001" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18001/hovercard">#18001</a>) (<a href="https://github.com/nrwl/nx/commit/3edbe49fa2ea0503547ba5bff707a67382fb4d13">3edbe49</a>)</li>
+<li><strong>storybook:</strong> properly identify file as story (<a href="https://github.com/nrwl/nx/issues/18016" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18016/hovercard">#18016</a>) (<a href="https://github.com/nrwl/nx/commit/21007d8922cbf5f0bd2e469d4a5f617364b9dcb3">21007d8</a>)</li>
 </ul>
-<h2>Changelog (v4.0.5)</h2>
-<h3>Changed</h3>
+<h3>Features</h3>
 <ul>
-<li>Change OpenGraph-based embeds to allow fullscreen (<a href="https://github.com/mastodon/mastodon/pull/25058" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25058/hovercard">ClearlyClaire</a>)</li>
-<li>Change profile updates to be sent to recently-mentioned servers (<a href="https://github.com/mastodon/mastodon/pull/24852" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24852/hovercard">ClearlyClaire</a>)</li>
-<li>Change <code>/api/v1/statuses/:id/history</code> to always return at least one item (<a href="https://github.com/mastodon/mastodon/pull/25510" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25510/hovercard">ClearlyClaire</a>)</li>
-<li>Change auto-linking to allow carets in URL query params (<a href="https://github.com/mastodon/mastodon/pull/25216" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25216/hovercard">renchap</a>)</li>
-</ul>
-<h3>Removed</h3>
+<li><strong>bundling:</strong> rename esbuild-project, rollup-project, and webpack-project generators to "configuration" generators for consistency in naming (<a href="https://github.com/nrwl/nx/issues/18003" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18003/hovercard">#18003</a>) (<a href="https://github.com/nrwl/nx/commit/24e45d494f50c6a883a389216ed663b9fb1e2523">24e45d4</a>)</li>
+<li><strong>misc:</strong> change updateBuildableProjectDepsInPackageJson option default value to false (<a href="https://github.com/nrwl/nx/issues/17920" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17920/hovercard">#17920</a>) (<a href="https://github.com/nrwl/nx/commit/64765eb313d33c93bd4db35d86b21ecb43fa5757">64765eb</a>)</li>
+<li><strong>nx-dev:</strong> anchor links to version instead of timestamp (<a href="https://github.com/nrwl/nx/commit/e60702f428e3379689fc79de630884a53957e003">e60702f</a>)</li>
+<li><strong>nx-dev:</strong> changelog anchor links to each version (<a href="https://github.com/nrwl/nx/commit/0f9cece6415a15421170f8e132e8961dbbd1e9f2">0f9cece</a>)</li>
+<li><strong>testing:</strong> renamed cypress-e2e-configuration to configuration to maintain consistency between plugins (<a href="https://github.com/nrwl/nx/issues/17998" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/17998/hovercard">#17998</a>) (<a href="https://github.com/nrwl/nx/commit/9940a0c54467414f0b6365286d4ca5d625ddc1ad">9940a0c</a>)</li>
+<li><strong>vite:</strong> pin Vite version range to patch releases only to avoid conflicts with Angular (<a href="https://github.com/nrwl/nx/issues/18010" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18010/hovercard">#18010</a>) (<a href="https://github.com/nrwl/nx/commit/3fdc66dd691c8385ac2f88eb156936449378ae89">3fdc66d</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104780: Update on "[foreach][Adam] Minimize use of intermediates to decrease …]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104780</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104780</guid>
+            <pubDate>Fri, 07 Jul 2023 20:09:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…peak memory"</p>
+<p>Starts addressing <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1642879292" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/97712" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/97712/hovercard" href="https://github.com/pytorch/pytorch/issues/97712">#97712</a> by</p>
 <ul>
-<li>Remove invalid <code>X-Frame-Options: ALLOWALL</code> (<a href="https://github.com/mastodon/mastodon/pull/25070" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25070/hovercard">ClearlyClaire</a>)</li>
+<li>Minimizing intermediates usage for foreach Adam</li>
+<li>Document the extra memory usage</li>
+<li>Add comments within the code for clarity now that we reuse intermediates</li>
+<li>Add tests</li>
+<li>Did some refactoring</li>
 </ul>
-<h3>Fixed</h3>
+<p>Next steps involve doing this for all other foreach implementations. Note that even after this change, foreach mem usage will be higher than forloop due to the fact that we have a minimum budget of 1 intermediate (to not muddle the input values) and the intermediate will be larger. For capturable, the memory usage is higher due to moving more tensors to CUDA.</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from great_expectations: 0.17.3]]></title>
+            <link>https://github.com/great-expectations/great_expectations/releases/tag/0.17.3</link>
+            <guid>https://github.com/great-expectations/great_expectations/releases/tag/0.17.3</guid>
+            <pubDate>Fri, 07 Jul 2023 20:02:57 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>[FEATURE] Examples of using different store backends in reference environments (<a href="https://github.com/great-expectations/great_expectations/pull/8211" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8211/hovercard">#8211</a>)</li>
+<li>[FEATURE] Add checker to ensure snippets are being used (<a href="https://github.com/great-expectations/great_expectations/pull/8178" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8178/hovercard">#8178</a>)</li>
+<li>[FEATURE] Host data docs for the postgres reference environment (<a href="https://github.com/great-expectations/great_expectations/pull/8221" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8221/hovercard">#8221</a>)</li>
+<li>[FEATURE] Add checker to ensure test files have fixture definition (<a href="https://github.com/great-expectations/great_expectations/pull/8186" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8186/hovercard">#8186</a>)</li>
+<li>[FEATURE] make backend_dependencies required and not optional for doc integration tests (<a href="https://github.com/great-expectations/great_expectations/pull/8216" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8216/hovercard">#8216</a>)</li>
+<li>[FEATURE] View data docs inside snowflake and bigquery reference environments (<a href="https://github.com/great-expectations/great_expectations/pull/8231" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8231/hovercard">#8231</a>)</li>
+<li>[FEATURE] Reference Environment - AWS RDS (<a href="https://github.com/great-expectations/great_expectations/pull/8222" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8222/hovercard">#8222</a>)</li>
+<li>[BUGFIX] Fix yarn install and condition on CI pipeline (<a href="https://github.com/great-expectations/great_expectations/pull/8217" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8217/hovercard">#8217</a>)</li>
+<li>[BUGFIX] Ensure DataAssistantResult.plot_expectations_and_metrics does not raise exceptions when no Metrics or Expectations are available to plot (<a href="https://github.com/great-expectations/great_expectations/pull/8238" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8238/hovercard">#8238</a>)</li>
+<li>[DOCS] update result_format configuration documentation (<a href="https://github.com/great-expectations/great_expectations/pull/8209" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8209/hovercard">#8209</a>)</li>
+<li>[DOCS] Update Install GX (<a href="https://github.com/great-expectations/great_expectations/pull/8206" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8206/hovercard">#8206</a>)</li>
+<li>[DOCS] minor updates to the readme files (<a href="https://github.com/great-expectations/great_expectations/pull/8245" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8245/hovercard">#8245</a>)</li>
+<li>[MAINTENANCE] Arranging call arguments to <code>build_batch_request()</code> utility method to be in consistent order (<a href="https://github.com/great-expectations/great_expectations/pull/8224" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8224/hovercard">#8224</a>)</li>
+<li>[MAINTENANCE] Use python static file server (<a href="https://github.com/great-expectations/great_expectations/pull/8229" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8229/hovercard">#8229</a>)</li>
+<li>[MAINTENANCE] Fix race condition in integration tests using context manager (<a href="https://github.com/great-expectations/great_expectations/pull/8223" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8223/hovercard">#8223</a>)</li>
+<li>[MAINTENANCE] Remove a line ignoring warnings about iteritems (<a href="https://github.com/great-expectations/great_expectations/pull/8227" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8227/hovercard">#8227</a>)</li>
+<li>[MAINTENANCE] Correcting typographical error in test method naming. (<a href="https://github.com/great-expectations/great_expectations/pull/8233" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8233/hovercard">#8233</a>)</li>
+<li>[MAINTENANCE] Reference environment consistency - installed version (<a href="https://github.com/great-expectations/great_expectations/pull/8237" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8237/hovercard">#8237</a>)</li>
+<li>[MAINTENANCE] Reference environment consistency - unpin python version (<a href="https://github.com/great-expectations/great_expectations/pull/8239" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8239/hovercard">#8239</a>)</li>
+<li>[MAINTENANCE] Use data docs container for cloud blob stores (<a href="https://github.com/great-expectations/great_expectations/pull/8240" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8240/hovercard">#8240</a>)</li>
+<li>[MAINTENANCE] Reference Environments: Match the new quickstart (<a href="https://github.com/great-expectations/great_expectations/pull/8242" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8242/hovercard">#8242</a>)</li>
+<li>[MAINTENANCE] Reference Environment - AWS Credentials Clean up (<a href="https://github.com/great-expectations/great_expectations/pull/8230" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8230/hovercard">#8230</a>)</li>
+<li>[MAINTENANCE] Filter altair/jsonschema Deprecation warning (<a href="https://github.com/great-expectations/great_expectations/pull/8244" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8244/hovercard">#8244</a>)</li>
+<li>[MAINTENANCE] Filter <code>jsonschema.RefResolver</code>, <code>ErrorTree</code> warnings in tests (<a href="https://github.com/great-expectations/great_expectations/pull/8246" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8246/hovercard">#8246</a>)</li>
+<li>[MAINTENANCE] Temporarily upper bound Click due to <code>mypy</code> typing issues (<a href="https://github.com/great-expectations/great_expectations/pull/8247" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8247/hovercard">#8247</a>)</li>
+<li>[MAINTENANCE] Update <code>test_deprecation.py</code> in advance of 0.17.3 release (<a href="https://github.com/great-expectations/great_expectations/pull/8251" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8251/hovercard">#8251</a>)</li>
+<li>[MAINTENANCE] enable typechecking in validator.py (<a href="https://github.com/great-expectations/great_expectations/pull/8204" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8204/hovercard">#8204</a>)</li>
+<li>[MAINTENANCE] Refactor validations in Checkpoint to use <code>CheckpointValidationConfig</code> (<a href="https://github.com/great-expectations/great_expectations/pull/8225" data-hovercard-type="pull_request" data-hovercard-url="/great-expectations/great_expectations/pull/8225/hovercard">#8225</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from grafana: v0.0.0-test]]></title>
+            <link>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</link>
+            <guid>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</guid>
+            <pubDate>Fri, 07 Jul 2023 20:02:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Merge commit '6bba86b8631fb7103435cccba0b49eb2108cfab8' into main</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from solana: Testnet - v1.16.3]]></title>
+            <link>https://github.com/solana-labs/solana/releases/tag/v1.16.3</link>
+            <guid>https://github.com/solana-labs/solana/releases/tag/v1.16.3</guid>
+            <pubDate>Fri, 07 Jul 2023 19:51:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This is a Testnet release. It is not recommended for Mainnet Beta</p>
+
+<p>v1.16 removes <code>solana-sys-tuner</code>. For manual tuning please see these <a href="https://docs.solana.com/running-validator/validator-start#system-tuning" rel="nofollow">System Tuning instructions</a></p>
+<h2>Changes</h2>
 <ul>
-<li>Fix wrong view being displayed when a webhook fails validation (<a href="https://github.com/mastodon/mastodon/pull/25464" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25464/hovercard">ClearlyClaire</a>)</li>
-<li>Fix soft-deleted post cleanup scheduler overwhelming the streaming server (<a href="https://github.com/mastodon/mastodon/pull/25519" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25519/hovercard">ThisIsMissEm</a>)</li>
-<li>Fix incorrect pagination headers in <code>/api/v2/admin/accounts</code> (<a href="https://github.com/mastodon/mastodon/pull/25477" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25477/hovercard">danielmbrasil</a>)</li>
-<li>Fix performance of streaming by parsing message JSON once (<a href="https://github.com/mastodon/mastodon/pull/25278" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25278/hovercard">ThisIsMissEm</a>, <a href="https://github.com/mastodon/mastodon/pull/25361" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25361/hovercard">ThisIsMissEm</a>)</li>
-<li>Fix CSP headers when <code>S3_ALIAS_HOST</code> includes a path component (<a href="https://github.com/mastodon/mastodon/pull/25273" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25273/hovercard">ClearlyClaire</a>)</li>
-<li>Fix <code>tootctl accounts approve --number N</code> not aproving N earliest registrations (<a href="https://github.com/mastodon/mastodon/pull/24605" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24605/hovercard">danielmbrasil</a>)</li>
-<li>Fix being able to vote on your own polls (<a href="https://github.com/mastodon/mastodon/pull/25015" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25015/hovercard">ClearlyClaire</a>)</li>
-<li>Fix race condition when reblogging a status (<a href="https://github.com/mastodon/mastodon/pull/25016" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25016/hovercard">ClearlyClaire</a>)</li>
-<li>Fix “Authorized applications” inefficiently and incorrectly getting last use date (<a href="https://github.com/mastodon/mastodon/pull/25060" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25060/hovercard">ClearlyClaire</a>)</li>
-<li>Fix multiple N+1s in ConversationsController (<a href="https://github.com/mastodon/mastodon/pull/25134" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25134/hovercard">ClearlyClaire</a>, <a href="https://github.com/mastodon/mastodon/pull/25399" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25399/hovercard">ClearlyClaire</a>, <a href="https://github.com/mastodon/mastodon/pull/25499" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25499/hovercard">ClearlyClaire</a>)</li>
-<li>Fix user archive takeouts when using OpenStack Swift (<a href="https://github.com/mastodon/mastodon/pull/24431" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24431/hovercard">ClearlyClaire</a>)</li>
-<li>Fix searching for remote content by URL not working under certain conditions (<a href="https://github.com/mastodon/mastodon/pull/25637" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25637/hovercard">ClearlyClaire</a>)</li>
-<li>Fix inefficiencies in indexing content for search (<a href="https://github.com/mastodon/mastodon/pull/24285" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24285/hovercard">VyrCossont</a>, <a href="https://github.com/mastodon/mastodon/pull/24342" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/24342/hovercard">VyrCossont</a>)</li>
-</ul>
-<h3>Security</h3>
+<li>v1.16: Don't attempt to refresh votes on non voting validators (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1779511727" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32315" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32315/hovercard" href="https://github.com/solana-labs/solana/pull/32315">#32315</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1783305603" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32356" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32356/hovercard" href="https://github.com/solana-labs/solana/pull/32356">#32356</a>)</li>
+<li>v1.16: program: Explicitly pull in <code>getrandom</code> with <code>custom</code> feature (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1789995160" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32382" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32382/hovercard" href="https://github.com/solana-labs/solana/pull/32382">#32382</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1790331701" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32389" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32389/hovercard" href="https://github.com/solana-labs/solana/pull/32389">#32389</a>)</li>
+<li>v1.16: Bump solana_rbpf to v0.6.0 (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1779367055" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32313" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32313/hovercard" href="https://github.com/solana-labs/solana/pull/32313">#32313</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1790014508" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32383" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32383/hovercard" href="https://github.com/solana-labs/solana/pull/32383">#32383</a>)</li>
+<li>v1.16: ledger-tool: Manually walk optimistic slots ancestors (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1785376277" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32362" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32362/hovercard" href="https://github.com/solana-labs/solana/pull/32362">#32362</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1789671181" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32379" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32379/hovercard" href="https://github.com/solana-labs/solana/pull/32379">#32379</a>)</li>
+<li>v1.16: rolls out merkle shreds to ~5% of mainnet slots (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1781330515" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32337" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32337/hovercard" href="https://github.com/solana-labs/solana/pull/32337">#32337</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782713900" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32348" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32348/hovercard" href="https://github.com/solana-labs/solana/pull/32348">#32348</a>)</li>
+<li>Update Solang Solidity compiler to v0.3.1 (backport <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1783043856" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32352" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32352/hovercard" href="https://github.com/solana-labs/solana/pull/32352">#32352</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1786176416" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32365" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32365/hovercard" href="https://github.com/solana-labs/solana/pull/32365">#32365</a>)</li>
+<li>v1.16: fix: check if platform-tool/rust/bin/rustc exists (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782906675" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32350" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32350/hovercard" href="https://github.com/solana-labs/solana/pull/32350">#32350</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782988873" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32351" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32351/hovercard" href="https://github.com/solana-labs/solana/pull/32351">#32351</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104795]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104795</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104795</guid>
+            <pubDate>Fri, 07 Jul 2023 19:42:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update cudnn==8.9.2.26 in .ci/docker</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from carbon: v11.33.1]]></title>
+            <link>https://github.com/carbon-design-system/carbon/releases/tag/v11.33.1</link>
+            <guid>https://github.com/carbon-design-system/carbon/releases/tag/v11.33.1</guid>
+            <pubDate>Fri, 07 Jul 2023 19:16:04 GMT</pubDate>
+            <content:encoded><![CDATA[<h1><a href="https://github.com/carbon-design-system/carbon/compare/v11.33.0...v11.33.1">v11.33.1</a> (2023-7-7)</h1>
+<h2><code>carbon-components@11.33.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
 <ul>
-<li>Add finer permission requirements for managing webhooks (<a href="https://github.com/mastodon/mastodon/pull/25463" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25463/hovercard">ClearlyClaire</a>)</li>
-<li>Update dependencies</li>
-<li>Add hardening headers for user-uploaded files (<a href="https://github.com/mastodon/mastodon/pull/25756" data-hovercard-type="pull_request" data-hovercard-url="/mastodon/mastodon/pull/25756/hovercard">ClearlyClaire</a>)</li>
-<li>Fix verified links possibly hiding important parts of the URL (CVE-2023-36462)</li>
-<li>Fix timeout handling of outbound HTTP requests (CVE-2023-36461)</li>
-<li>Fix arbitrary file creation through media processing (CVE-2023-36460)</li>
-<li>Fix possible XSS in preview cards (CVE-2023-36459)</li>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
 </ul>
-<h2>Upgrade notes</h2>
-<p>To get the code for v4.0.6, use <code>git fetch &amp;&amp; git checkout v4.0.6</code>.</p>
-<blockquote>
-<p>As always, <strong>make sure you have backups of the database before performing any upgrades</strong>. If you are using docker-compose, this is how a backup command might look: docker exec mastodon_db_1 pg_dump -Fc -U postgres postgres &gt; name_of_the_backup.dump</p>
-</blockquote>
-<h3>Dependencies</h3>
-<p>Apart from ImageMagick, external dependencies have not changed compared to v4.0.4, the compatible Ruby, PostgreSQL, Node, Elasticsearch and Redis versions are the same, that is:</p>
+<h2><code>carbon-components-react@8.33.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
 <ul>
-<li>Ruby: 2.7 to 3.0</li>
-<li>PostgreSQL: 9.5 or newer</li>
-<li>Elasticsearch (optional, for full-text search): 7.x</li>
-<li>Redis: 4 or newer</li>
-<li>Node: &gt;= 14, &lt; 18</li>
-<li>ImageMagick: 6.9.7-7 or newer</li>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
 </ul>
-<p>If your uploaded images are broken after the upgrade, it means your installed ImageMagick version is older than the new minimum version (6.9.7-7), for example if you are running Ubuntu 18.04. If this happens, you can find more informations and ways to fix it <a href="https://github.com/mastodon/mastodon/issues/25776" data-hovercard-type="issue" data-hovercard-url="/mastodon/mastodon/issues/25776/hovercard">on this page</a>.</p>
-<h3>Update steps</h3>
-<p>The following instructions are for updating from 4.0.4.</p>
-<p>If you are upgrading directly from an earlier release, please carefully read the upgrade notes for the skipped releases as well, as they often require extra steps such as database migrations.</p>
-<p><strong>Non-Docker only:</strong></p>
-<ol>
-<li>Install dependencies: <code>bundle install</code> and <code>yarn install</code></li>
-</ol>
-<p><strong>Both Docker and non-Docker:</strong></p>
-<p><g-emoji class="g-emoji" alias="information_source" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2139.png">ℹ️</g-emoji> The recommended configuration for reverse proxies has been updated. Unlike updating Mastodon itself, this is not urgent, but hardening. The change is about setting <code>Content-Security-Policy: default-src 'none'; form-action 'none'</code> and <code>X-Content-Type-Options: nosniff</code> on assets. Check <code>dist/nginx.conf</code> for more information, and <a href="https://docs.joinmastodon.org/admin/optional/object-storage-proxy/" rel="nofollow">the documentation</a> if you are proxying external object storage.</p>
-<ol>
-<li>Restart all Mastodon processes</li>
-</ol>]]></content:encoded>
+<h2><code>@carbon/cli@11.12.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/cli-reporter@10.7.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/colors@11.17.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/elements@11.25.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/grid@11.16.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(deps): bump semver in /packages/grid/examples/css-grid (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791574282" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14142" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14142/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14142">#14142</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e416444cf"><code>e416444cf</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/icon-helpers@10.42.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/icons@11.22.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/icons-react@11.22.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/icons-vue@10.71.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/layout@11.16.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(deps): bump semver in /packages/layout/examples/preview (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1771583421" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14074" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14074/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14074">#14074</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e11af98b5"><code>e11af98b5</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/motion@11.13.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/pictograms@12.19.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/pictograms-react@11.45.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/react@1.33.1</code></h2>
+<h3>New features <g-emoji class="g-emoji" alias="rocket" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f680.png">🚀</g-emoji></h3>
+<ul>
+<li>feat(Tag): add as prop to Tag to specify wrapping element (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1748312035" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/13959" data-hovercard-type="issue" data-hovercard-url="/carbon-design-system/carbon/issues/13959/hovercard" href="https://github.com/carbon-design-system/carbon/issues/13959">#13959</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1779446472" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14112" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14112/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14112">#14112</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/fcdecdb53"><code>fcdecdb53</code></a>)</li>
+</ul>
+<h3>Bug fixes <g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji></h3>
+<ul>
+<li>fix(ComboButton): import IconButton before Button (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1793896447" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14155" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14155/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14155">#14155</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/61205db61"><code>61205db61</code></a>)</li>
+<li>fix(useid): guard against useId not being exported (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1793856567" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14153" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14153/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14153">#14153</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/b6cc72ab9"><code>b6cc72ab9</code></a>)</li>
+<li>fix(DataTableSkeleton): adjust TypeScript types to match behavior (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1779686347" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14114" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14114/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14114">#14114</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/84cdca4e9"><code>84cdca4e9</code></a>)</li>
+<li>fix(UIShell): various fixes to avoid null pointer assertions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791826982" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14144" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14144/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14144">#14144</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/330b4bf21"><code>330b4bf21</code></a>)</li>
+</ul>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/styles@1.33.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/themes@11.21.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/type@11.20.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>
+<h2><code>@carbon/upgrade@11.9.1</code></h2>
+<h3>Housekeeping <g-emoji class="g-emoji" alias="house" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3e0.png">🏠</g-emoji></h3>
+<ul>
+<li>chore(release): v11.33.1 (<a href="https://github.com/carbon-design-system/carbon/commit/033a51ca9"><code>033a51ca9</code></a>)</li>
+<li>chore(release): v11.33.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791557748" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/14141" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/14141/hovercard" href="https://github.com/carbon-design-system/carbon/pull/14141">#14141</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/3a58934ee"><code>3a58934ee</code></a>)</li>
+<li>chore(release): v11.33.0 (<a href="https://github.com/carbon-design-system/carbon/commit/d2b94759b"><code>d2b94759b</code></a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 11.7.119]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.119</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.119</guid>
+            <pubDate>Fri, 07 Jul 2023 18:21:07 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: If51e17062597bd973a44f39c2fb29384b5cecc95<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673323" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673323</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.119@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b37af0c3d52e8bcdd7ef92609ce94e62d6ee16bf/hovercard" href="https://github.com/v8/v8/commit/b37af0c3d52e8bcdd7ef92609ce94e62d6ee16bf"><tt>b37af0c</tt></a>-refs/heads/main@{#88763}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 11.7.119-pgo: Version 11.7.119]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.119-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.119-pgo</guid>
+            <pubDate>Fri, 07 Jul 2023 18:21:07 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: If51e17062597bd973a44f39c2fb29384b5cecc95<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673323" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673323</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.119@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b37af0c3d52e8bcdd7ef92609ce94e62d6ee16bf/hovercard" href="https://github.com/v8/v8/commit/b37af0c3d52e8bcdd7ef92609ce94e62d6ee16bf"><tt>b37af0c</tt></a>-refs/heads/main@{#88763}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.29.1]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.29.1</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.29.1</guid>
+            <pubDate>Fri, 07 Jul 2023 18:08:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.29.1 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-6107]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6107</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6107</guid>
+            <pubDate>Fri, 07 Jul 2023 17:56:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-6105]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6105</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6105</guid>
+            <pubDate>Fri, 07 Jul 2023 17:47:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from mastodon: v3.5.10]]></title>
@@ -345,11 +810,15 @@ If you are using nightly builds, <strong>do not use this release</strong> but up
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from great_expectations: 0.17.3]]></title>
-            <link>https://github.com/great-expectations/great_expectations/releases/tag/0.17.3</link>
-            <guid>https://github.com/great-expectations/great_expectations/releases/tag/0.17.3</guid>
-            <pubDate>Fri, 07 Jul 2023 17:06:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>"0.17.3"</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: 11.7.118-pgo: Version 11.7.118]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.7.118-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.7.118-pgo</guid>
+            <pubDate>Fri, 07 Jul 2023 17:02:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I4be7b364eff2fd8a01cffc3287119740658119d8<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673321" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673321</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/11.7.118@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8354eb85ea2b9cfd88ece71dfe9cc0e42d150870/hovercard" href="https://github.com/v8/v8/commit/8354eb85ea2b9cfd88ece71dfe9cc0e42d150870"><tt>8354eb8</tt></a>-refs/heads/main@{#88762}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 11.7.118]]></title>
@@ -363,38 +832,11 @@ Cr-Commit-Position: refs/heads/11.7.118@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8354eb85ea2b9cfd88ece71dfe9cc0e42d150870/hovercard" href="https://github.com/v8/v8/commit/8354eb85ea2b9cfd88ece71dfe9cc0e42d150870"><tt>8354eb8</tt></a>-refs/heads/main@{#88762}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.7.118-pgo: Version 11.7.118]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.118-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.118-pgo</guid>
-            <pubDate>Fri, 07 Jul 2023 17:02:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I4be7b364eff2fd8a01cffc3287119740658119d8<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4673321" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4673321</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.118@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8354eb85ea2b9cfd88ece71dfe9cc0e42d150870/hovercard" href="https://github.com/v8/v8/commit/8354eb85ea2b9cfd88ece71dfe9cc0e42d150870"><tt>8354eb8</tt></a>-refs/heads/main@{#88762}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 2.13.0]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/2.13.0</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/2.13.0</guid>
             <pubDate>Fri, 07 Jul 2023 16:56:11 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tagging 2.13.0 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104785: [ONNX] Fix third party custom operator support in torchscript exporter]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104785</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104785</guid>
-            <pubDate>Fri, 07 Jul 2023 16:48:56 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104784: [SPMD] Disable all SPMD tests]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104784</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104784</guid>
-            <pubDate>Fri, 07 Jul 2023 16:48:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SPMD is not actively developed and is out-of-sync with the PyTorch compiler code.  Disable the tests for now.</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D47296840/" rel="nofollow">D47296840</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pandoc: pandoc 3.1.5]]></title>
@@ -505,38 +947,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </details>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104765: Update on "[FSDP][optim_state_dict] The correct way to initialize opt…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104765</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104765</guid>
-            <pubDate>Fri, 07 Jul 2023 16:34:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…imizer states if the corresponding param is empty"</p>
-<p>When using KeyedOptimizer.init_state(), some optimizers initializes the states even if the param is empty (size() == 0) while some optimizer avoid initializing the states. There is no way FSDP can tell. Instead, FSDP should look up <code>optim.state</code>. Fortunatelly, <code>optim.state</code> does not rely on FQNs which some internal users change the FQNs.</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D47285562/" rel="nofollow">D47285562</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.117]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.117</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.117</guid>
-            <pubDate>Fri, 07 Jul 2023 16:16:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2be7faba6b171301a156666ebc3db653ed0e9e97<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670403" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670403</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.117@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/020e7c9e01ba3187418336e262dfc03657439385/hovercard" href="https://github.com/v8/v8/commit/020e7c9e01ba3187418336e262dfc03657439385"><tt>020e7c9</tt></a>-refs/heads/main@{#88761}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.7.117-pgo: Version 11.7.117]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.117-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.117-pgo</guid>
-            <pubDate>Fri, 07 Jul 2023 16:16:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2be7faba6b171301a156666ebc3db653ed0e9e97<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670403" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670403</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.117@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/020e7c9e01ba3187418336e262dfc03657439385/hovercard" href="https://github.com/v8/v8/commit/020e7c9e01ba3187418336e262dfc03657439385"><tt>020e7c9</tt></a>-refs/heads/main@{#88761}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from Ghost: 5.54.0]]></title>
             <link>https://github.com/TryGhost/Ghost/releases/tag/v5.54.0</link>
             <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.54.0</guid>
@@ -551,65 +961,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><g-emoji class="g-emoji" alias="globe_with_meridians" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f310.png">🌐</g-emoji> Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.116]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.116</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.116</guid>
-            <pubDate>Fri, 07 Jul 2023 16:02:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I5909d06df03f41e82230d4c1747a7eb41ca6e6e9<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670401" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670401</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.116@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2c5dbaf8c06b644a9eaaec1aef3d8125a24c6499/hovercard" href="https://github.com/v8/v8/commit/2c5dbaf8c06b644a9eaaec1aef3d8125a24c6499"><tt>2c5dbaf</tt></a>-refs/heads/main@{#88760}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.7.116-pgo: Version 11.7.116]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.116-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.116-pgo</guid>
-            <pubDate>Fri, 07 Jul 2023 16:02:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I5909d06df03f41e82230d4c1747a7eb41ca6e6e9<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670401" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670401</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.116@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2c5dbaf8c06b644a9eaaec1aef3d8125a24c6499/hovercard" href="https://github.com/v8/v8/commit/2c5dbaf8c06b644a9eaaec1aef3d8125a24c6499"><tt>2c5dbaf</tt></a>-refs/heads/main@{#88760}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104758: Update on "Add --check-str support to after_aot minifier"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104758</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104758</guid>
-            <pubDate>Fri, 07 Jul 2023 15:56:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
-<p>cc voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy chenyang78</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.115]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.115</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.115</guid>
-            <pubDate>Fri, 07 Jul 2023 15:01:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I496d0605792a9e70560e71c6b1821197835c921d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670400" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670400</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.115@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4740a6d8b82e8f7bf604d4fe15a6331ed69160c5/hovercard" href="https://github.com/v8/v8/commit/4740a6d8b82e8f7bf604d4fe15a6331ed69160c5"><tt>4740a6d</tt></a>-refs/heads/main@{#88758}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.7.115-pgo: Version 11.7.115]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.115-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.115-pgo</guid>
-            <pubDate>Fri, 07 Jul 2023 15:01:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I496d0605792a9e70560e71c6b1821197835c921d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670400" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670400</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.115@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4740a6d8b82e8f7bf604d4fe15a6331ed69160c5/hovercard" href="https://github.com/v8/v8/commit/4740a6d8b82e8f7bf604d4fe15a6331ed69160c5"><tt>4740a6d</tt></a>-refs/heads/main@{#88758}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104407: Update on "[FSDP][2/N][Easy] Prepare `_auto_wrap` for `fully_shard`"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104407</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104407</guid>
-            <pubDate>Fri, 07 Jul 2023 14:42:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This mainly just changes the <code>_auto_wrap()</code> function signature and generalizes the <code>_check_nested_wrapping()</code> to both wrapper and composable paths (though the composable path will not hit in this PR).</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104774: Add autograd modes table to docs]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104774</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104774</guid>
+            <pubDate>Fri, 07 Jul 2023 15:16:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Signed-off-by: David Radley <a href="mailto:david_radley@uk.ibm.com">david_radley@uk.ibm.com</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from monaco-editor: v0.40.0: Merge pull request #4062 from microsoft/hediet/b/neat-mollusk]]></title>
@@ -619,40 +975,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>0.40.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from grafana: v0.0.0-test]]></title>
-            <link>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</link>
-            <guid>https://github.com/grafana/grafana/releases/tag/v0.0.0-test</guid>
-            <pubDate>Fri, 07 Jul 2023 14:23:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge commit 'd7abf5a970d5be9a001d3365ca523594237ea771' into main</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from Ghost: @tryghost/portal@2.33.5]]></title>
             <link>https://github.com/TryGhost/Ghost/releases/tag/%40tryghost%2Fportal%402.33.5</link>
             <guid>https://github.com/TryGhost/Ghost/releases/tag/%40tryghost%2Fportal%402.33.5</guid>
             <pubDate>Fri, 07 Jul 2023 14:09:49 GMT</pubDate>
             <content:encoded><![CDATA[<p>Released Portal v2.33.5</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 11.7.114-pgo: Version 11.7.114]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.114-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.114-pgo</guid>
-            <pubDate>Fri, 07 Jul 2023 14:02:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ifa9004e65bd9ac0f233669ac9ac37a75799408a6<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670399" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670399</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.114@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a2cbd050e40dcfcf09a2020f9a1ad66cdae19bc3/hovercard" href="https://github.com/v8/v8/commit/a2cbd050e40dcfcf09a2020f9a1ad66cdae19bc3"><tt>a2cbd05</tt></a>-refs/heads/main@{#88757}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 11.7.114]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.7.114</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.7.114</guid>
-            <pubDate>Fri, 07 Jul 2023 14:02:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ifa9004e65bd9ac0f233669ac9ac37a75799408a6<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4670399" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4670399</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/11.7.114@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a2cbd050e40dcfcf09a2020f9a1ad66cdae19bc3/hovercard" href="https://github.com/v8/v8/commit/a2cbd050e40dcfcf09a2020f9a1ad66cdae19bc3"><tt>a2cbd05</tt></a>-refs/heads/main@{#88757}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from jest: v29.6.1]]></title>
@@ -1143,36 +1470,6 @@ Closes <a class="issue-link js-issue-link" data-error-text="Failed to load title
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104580: Update on "[Quant][PT2E] Enable qconv for quantization 2.0 export"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104580</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104580</guid>
-            <pubDate>Fri, 07 Jul 2023 09:02:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
-Enable <code>qconv1d/2d/3d</code>, <code>qconv2d_relu</code>, <code>qconv2d_add</code>, and <code>qconv2d_add_relu</code> operator for quantization 2.0 export with oneDNN library.</p>
-<p><strong>Test Plan</strong></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python -u -m pytest -s -v test_quantized_op.py -k test_qconv1d_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv3d_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_relu_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_add_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_add_relu_pt2e"><pre class="notranslate"><code>python -u -m pytest -s -v test_quantized_op.py -k test_qconv1d_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv3d_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_relu_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_add_pt2e
-python -u -m pytest -s -v test_quantized_op.py -k test_qconv2d_add_relu_pt2e
-</code></pre></div>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104624]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104624</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104624</guid>
-            <pubDate>Fri, 07 Jul 2023 08:50:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fixes</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from mastodon: v3.5.9]]></title>
             <link>https://github.com/mastodon/mastodon/releases/tag/v3.5.9</link>
             <guid>https://github.com/mastodon/mastodon/releases/tag/v3.5.9</guid>
@@ -1545,13 +1842,6 @@ b459abc9ffa764aadf9c1d9bdd069611ffe05330b7302cf0ff0d8f5b7a8a1f94  nvim-macos.tar
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104448]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104448</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104448</guid>
-            <pubDate>Fri, 07 Jul 2023 04:38:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>fix lint</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from electron: electron v26.0.0-beta.3]]></title>
             <link>https://github.com/electron/electron/releases/tag/v26.0.0-beta.3</link>
             <guid>https://github.com/electron/electron/releases/tag/v26.0.0-beta.3</guid>
@@ -1563,13 +1853,6 @@ b459abc9ffa764aadf9c1d9bdd069611ffe05330b7302cf0ff0d8f5b7a8a1f94  nvim-macos.tar
 <ul>
 <li>Added support for flagging a Menu as being keyboard initiated. <a href="https://github.com/electron/electron/pull/38954" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/38954/hovercard">#38954</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104703]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104703</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104703</guid>
-            <pubDate>Fri, 07 Jul 2023 01:45:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>add Half support for conv and deconv</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
@@ -2090,13 +2373,6 @@ results when comparing <code>CacheKey</code> instances to each other.</p>
 <ul>
 <li>Chore: Cleanup document for renderer options (for v6.x) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1564598600" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/9123" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/9123/hovercard" href="https://github.com/pixijs/pixijs/pull/9123">#9123</a>) <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/SuperSodaSea/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/SuperSodaSea">@SuperSodaSea</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.20-dev-6000]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6000</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.20-dev-6000</guid>
-            <pubDate>Thu, 06 Jul 2023 15:17:00 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from puppeteer: puppeteer-core: v20.8.0]]></title>
@@ -3409,51 +3685,6 @@ returns (<a class="issue-link js-issue-link" data-error-text="Failed to load tit
 <h3>Bug Fixes</h3>
 <ul>
 <li><strong>deps:</strong> update dependency read-pkg-up to v10 (<a href="https://github.com/semantic-release/semantic-release/issues/2862" data-hovercard-type="pull_request" data-hovercard-url="/semantic-release/semantic-release/pull/2862/hovercard">#2862</a>) (<a href="https://github.com/semantic-release/semantic-release/commit/70996e0181d28b0651ee0472a3531c1d6274037c">70996e0</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from svelte: svelte@4.0.4]]></title>
-            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%404.0.4</link>
-            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%404.0.4</guid>
-            <pubDate>Tue, 04 Jul 2023 20:44:12 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: claim svg tags in raw mustache tags correctly (<a href="https://github.com/sveltejs/svelte/pull/8910" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/8910/hovercard">#8910</a>)</p>
-</li>
-<li>
-<p>fix: repair invalid raw html content during hydration (<a href="https://github.com/sveltejs/svelte/pull/8912" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/8912/hovercard">#8912</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from stylelint: 15.10.0]]></title>
-            <link>https://github.com/stylelint/stylelint/releases/tag/15.10.0</link>
-            <guid>https://github.com/stylelint/stylelint/releases/tag/15.10.0</guid>
-            <pubDate>Tue, 04 Jul 2023 20:01:26 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>Added: <code>media-query-no-invalid</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1771686477" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6963" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6963/hovercard" href="https://github.com/stylelint/stylelint/pull/6963">#6963</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Added: support for JS objects with <code>extends</code> config option (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1780306652" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6998" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6998/hovercard" href="https://github.com/stylelint/stylelint/pull/6998">#6998</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fpetrakov/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fpetrakov">@fpetrakov</a>).</li>
-<li>Fixed: inconsistent <code>errored</code> properties in <code>stylelint.lint()</code> return value (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1774843280" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6983" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6983/hovercard" href="https://github.com/stylelint/stylelint/pull/6983">#6983</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ybiquitous/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ybiquitous">@ybiquitous</a>).</li>
-<li>Fixed: <code>{selector,value}-no-vendor-prefix</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782329810" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7016" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7016/hovercard" href="https://github.com/stylelint/stylelint/pull/7016">#7016</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>custom-property-pattern</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782168615" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7009" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7009/hovercard" href="https://github.com/stylelint/stylelint/pull/7009">#7009</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>function-linear-gradient-no-nonstandard-direction</code> false positives for <code>&lt;color-interpolation-method&gt;</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1776259209" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6987" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6987/hovercard" href="https://github.com/stylelint/stylelint/pull/6987">#6987</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>function-name-case</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782183862" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7010" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7010/hovercard" href="https://github.com/stylelint/stylelint/pull/7010">#7010</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>function-no-unknown</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782063515" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7004" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7004/hovercard" href="https://github.com/stylelint/stylelint/pull/7004">#7004</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>function-url-quotes</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782203205" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7011" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7011/hovercard" href="https://github.com/stylelint/stylelint/pull/7011">#7011</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>hue-degree-notation</code> false negatives for <code>oklch</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782282759" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7015" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7015/hovercard" href="https://github.com/stylelint/stylelint/pull/7015">#7015</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>hue-degree-notation</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782221588" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7012" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7012/hovercard" href="https://github.com/stylelint/stylelint/pull/7012">#7012</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>media-feature-name-no-unknown</code> false positives for <code>environment-blending</code>, <code>nav-controls</code>, <code>prefers-reduced-data</code>, and <code>video-color-gamut</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773412375" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6978" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6978/hovercard" href="https://github.com/stylelint/stylelint/pull/6978">#6978</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>media-feature-name-no-vendor-prefix</code> positions for <code>*-device-pixel-ratio</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1773369145" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6977" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6977/hovercard" href="https://github.com/stylelint/stylelint/pull/6977">#6977</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>no-descending-specificity</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1784709246" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7026" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7026/hovercard" href="https://github.com/stylelint/stylelint/pull/7026">#7026</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>no-duplicate-at-import-rules</code> false negatives for imports with <code>supports</code> and <code>layer</code> conditions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1781181672" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7001" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7001/hovercard" href="https://github.com/stylelint/stylelint/pull/7001">#7001</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>selector-anb-no-unmatchable</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1787742626" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7042" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7042/hovercard" href="https://github.com/stylelint/stylelint/pull/7042">#7042</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>selector-id-pattern</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782242496" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7013" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7013/hovercard" href="https://github.com/stylelint/stylelint/pull/7013">#7013</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>selector-pseudo-class-no-unknown</code> false negatives for pseudo-elements with matching names (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1772180111" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/6964" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/6964/hovercard" href="https://github.com/stylelint/stylelint/pull/6964">#6964</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Mouvedia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Mouvedia">@Mouvedia</a>).</li>
-<li>Fixed: <code>selector-pseudo-element-no-unknown</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782135789" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7007" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7007/hovercard" href="https://github.com/stylelint/stylelint/pull/7007">#7007</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jeddy3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jeddy3">@jeddy3</a>).</li>
-<li>Fixed: <code>selector-type-case</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1787727904" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7041" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7041/hovercard" href="https://github.com/stylelint/stylelint/pull/7041">#7041</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>selector-type-no-unknown</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1784857006" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7027" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7027/hovercard" href="https://github.com/stylelint/stylelint/pull/7027">#7027</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
-<li>Fixed: <code>unit-disallowed-list</code> false negatives with percentages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1782576635" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7018" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7018/hovercard" href="https://github.com/stylelint/stylelint/pull/7018">#7018</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romainmenke/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romainmenke">@romainmenke</a>).</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
