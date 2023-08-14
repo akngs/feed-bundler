@@ -4,131 +4,100 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Mon, 14 Aug 2023 00:20:01 GMT</lastBuildDate>
+        <lastBuildDate>Mon, 14 Aug 2023 06:06:43 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from cube: v0.33.46]]></title>
-            <link>https://github.com/cube-js/cube/releases/tag/v0.33.46</link>
-            <guid>https://github.com/cube-js/cube/releases/tag/v0.33.46</guid>
-            <pubDate>Mon, 14 Aug 2023 00:17:41 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.33.45...v0.33.46">0.33.46</a> (2023-08-14)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>cubestore:</strong> Missing filter in the middle of an index prunes unnecessary partitions (<a href="https://github.com/cube-js/cube/commit/5690d8da87e1d3959620ba43cd0b0648d3285d68">5690d8d</a>)</li>
-</ul>
-<h3>Features</h3>
-<ul>
-<li><strong>cubesql:</strong> Initial SQL push down support for BigQuery, Clickhouse and MySQL (<a href="https://github.com/cube-js/cube/commit/38467ab7de64803cd51acf4d5fc696938e52f778">38467ab</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from selenium: Nightly]]></title>
-            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
-            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
-            <pubDate>Mon, 14 Aug 2023 00:16:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[javascript] Improving how browsers and drivers are discovered</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107077: Update on "[RFC][dynamo] Separate cache sizes for nn module guard spe…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107077</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107077</guid>
+            <pubDate>Mon, 14 Aug 2023 05:35:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…cialization"</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="TorchDynamo keeps the optimized bytecode resulting from each compilation on the
+extra scratch space of the code object. Currently, the cache is implemented as
+linked list, where each node contains check_fn and the optimized bytecode.
+check_fn is used to find out which code object we are interested in.
+This file has logic to track cache size limit. When a cache size limit is
+reached, we instruct eval_frame.c to fallback to eager for this frame, as this
+frame is friendly to compilation.
 
-<p><span class="issue-keyword tooltipped tooltipped-se">Fixes</span> <a class="issue-link js-issue-link" href="https://github.com/SeleniumHQ/selenium/issues/12456">#12456</a></p>]]></content:encoded>
+There are two different types of cache size limits we are interested in:
+1) Total cache size limit per code object - config.cache_size_limit
+2) Per-specilized instance cache size limit per code object - config.specialized_instance_cache_size_limit
+
+Lets start with understanding why we need (2). Earlier, we had only one
+cache_size_limit, i.e., only (1). But we observed different scenarios where
+situations demanded completely different cache size limit. On one hand, we
+wanted the total cache size limit to be small because functions that are not
+compilation-friendly and recompile on every invocation would take a long time to
+burst the cache. But on the other hand, there was a different commonly-occurring
+scenario that demanded large cache size limit. Dynamo inserts guards on the
+instance of nn module instances (typically seen as a guard on self) to
+differentiate between different instances of nn module. This is a quite common
+pattern in how models are typically constructed. As a result, this would require
+us to have a very large cache_size limit (like 64).
+
+To solve this problem, we introduce a second cache size limit - (2) - which
+tracks the cache size limit per specialized instance. Here specialized instance
+is represented by a tuple of guarded nn module instances (there could be
+multiple guarded nn module instances in the same frame). The tuple could be
+empty as well, denoting the absence of any guarded nn module instance.
+Therefore, this new limit (2) enables us to effectively reduce the cache size
+per specialized instance to a smaller value. With this change, the purpose of
+(1) becomes more of a safeguard mechanism where we want to have a max limit of
+recompilations per frame."><pre class="notranslate"><code>TorchDynamo keeps the optimized bytecode resulting from each compilation on the
+extra scratch space of the code object. Currently, the cache is implemented as
+linked list, where each node contains check_fn and the optimized bytecode.
+check_fn is used to find out which code object we are interested in.
+This file has logic to track cache size limit. When a cache size limit is
+reached, we instruct eval_frame.c to fallback to eager for this frame, as this
+frame is friendly to compilation.
+
+There are two different types of cache size limits we are interested in:
+1) Total cache size limit per code object - config.cache_size_limit
+2) Per-specilized instance cache size limit per code object - config.specialized_instance_cache_size_limit
+
+Lets start with understanding why we need (2). Earlier, we had only one
+cache_size_limit, i.e., only (1). But we observed different scenarios where
+situations demanded completely different cache size limit. On one hand, we
+wanted the total cache size limit to be small because functions that are not
+compilation-friendly and recompile on every invocation would take a long time to
+burst the cache. But on the other hand, there was a different commonly-occurring
+scenario that demanded large cache size limit. Dynamo inserts guards on the
+instance of nn module instances (typically seen as a guard on self) to
+differentiate between different instances of nn module. This is a quite common
+pattern in how models are typically constructed. As a result, this would require
+us to have a very large cache_size limit (like 64).
+
+To solve this problem, we introduce a second cache size limit - (2) - which
+tracks the cache size limit per specialized instance. Here specialized instance
+is represented by a tuple of guarded nn module instances (there could be
+multiple guarded nn module instances in the same frame). The tuple could be
+empty as well, denoting the absence of any guarded nn module instance.
+Therefore, this new limit (2) enables us to effectively reduce the cache size
+per specialized instance to a smaller value. With this change, the purpose of
+(1) becomes more of a safeguard mechanism where we want to have a max limit of
+recompilations per frame.
+</code></pre></div>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy chenyang78 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107109]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107109</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107109</guid>
-            <pubDate>Mon, 14 Aug 2023 00:16:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107109]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107109</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107109</guid>
-            <pubDate>Mon, 14 Aug 2023 00:16:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107104: [dynamo] Treat monkey patched .forward as dynamic]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107104</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107104</guid>
-            <pubDate>Sun, 13 Aug 2023 21:55:41 GMT</pubDate>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107117: [dynamo][eval_frame] Set destroy_extra_state deleter as part of co_extra]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107117</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107117</guid>
+            <pubDate>Mon, 14 Aug 2023 05:35:20 GMT</pubDate>
             <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Sun, 13 Aug 2023 21:49:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2023-08-13 21:48:26 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/0ba5f209026e3cbaa45351014be689187709feb7/hovercard" href="https://github.com/kovidgoyal/kitty/commit/0ba5f209026e3cbaa45351014be689187709feb7"><tt>0ba5f20</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from numpy: v1.26.0b1]]></title>
-            <link>https://github.com/numpy/numpy/releases/tag/v1.26.0b1</link>
-            <guid>https://github.com/numpy/numpy/releases/tag/v1.26.0b1</guid>
-            <pubDate>Sun, 13 Aug 2023 21:22:09 GMT</pubDate>
-            <content:encoded><![CDATA[<p>NumPy 1.26.0b1 release</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106089]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106089</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106089</guid>
-            <pubDate>Sun, 13 Aug 2023 21:09:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge branch 'main' into fix/spaces</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106005]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106005</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106005</guid>
-            <pubDate>Sun, 13 Aug 2023 21:09:09 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge branch 'main' into fix/space</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107082: Merge remote-tracking branch 'upstream/main' into linalg-eigh-illcond…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107082</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107082</guid>
-            <pubDate>Sun, 13 Aug 2023 21:00:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…ition-94772</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107103: Revert "[AOTInductor] Remove call to aot_autograd when receiving Expo…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107103</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107103</guid>
-            <pubDate>Sun, 13 Aug 2023 20:39:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…rtedProgram"</p>
-<p>This reverts <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1821250993" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/105977" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/105977/hovercard" href="https://github.com/pytorch/pytorch/pull/105977">#105977</a></p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107092: Update on "Make StarDep.index throw an error"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107092</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107092</guid>
-            <pubDate>Sun, 13 Aug 2023 16:36:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>There was an issue where <code>hasattr(dep, "index")</code> would incorrectly be True because it was picking up <code>NamedTuple.index</code> (a method).  We were also comparing that method to a <code>sympy.Exper</code> in one place.</p>
-<p>As far as I can tell this wasn't actually causing any bugs (the comparison actually did the right thing), but still good to fix it.</p>
-<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-1.9.30-dev-302]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.30-dev-302</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.30-dev-302</guid>
-            <pubDate>Sun, 13 Aug 2023 16:26:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107100: Changed implementation of log1p for complex inputs to the one mention…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107100</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107100</guid>
-            <pubDate>Sun, 13 Aug 2023 12:49:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…ed in issue <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1846496783" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/107022" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/107022/hovercard" href="https://github.com/pytorch/pytorch/issues/107022">#107022</a>.</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
             <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Sun, 13 Aug 2023 05:15:33 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-819+ge551d623d
+            <pubDate>Mon, 14 Aug 2023 05:15:15 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-835+gdd09630a2
 Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-819+ge551d623d
+LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-835+gdd09630a2
 Build type: RelWithDebInfo
 LuaJIT 2.1.0-beta3
 </code></pre></div>
@@ -179,25 +148,392 @@ LuaJIT 2.1.0-beta3
 <li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
 </ul>
 <h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="d67e9866d6331c3a17043114416c937beabb75685b31c2a7e8996b386bf8a304  nvim-linux64.tar.gz
-0dfad190f47a5d6de669d704fe40fe469a9f09f08e6983d7da648a1a131aa710  nvim.appimage
-907630ed1750b68c84471f786ef0a3d41b0f300ce31280fe1769732fa960f900  nvim.appimage.zsync
-148d8e17cf957834457165cccd8c30524aa746f1cb7ff1888ab7ca972ce42b1c  nvim-macos.tar.gz
-14b2b54db4cd2e1581d823e5f6cc590255de7ee4c719b14ef7e1ec88e51b17dc  nvim-win64.zip
-c7b67660fc12b107c19df0ebb63b98b32820c91da382f6013a7ab6d84d76bcf2  nvim-win64.msi"><pre class="notranslate"><code>d67e9866d6331c3a17043114416c937beabb75685b31c2a7e8996b386bf8a304  nvim-linux64.tar.gz
-0dfad190f47a5d6de669d704fe40fe469a9f09f08e6983d7da648a1a131aa710  nvim.appimage
-907630ed1750b68c84471f786ef0a3d41b0f300ce31280fe1769732fa960f900  nvim.appimage.zsync
-148d8e17cf957834457165cccd8c30524aa746f1cb7ff1888ab7ca972ce42b1c  nvim-macos.tar.gz
-14b2b54db4cd2e1581d823e5f6cc590255de7ee4c719b14ef7e1ec88e51b17dc  nvim-win64.zip
-c7b67660fc12b107c19df0ebb63b98b32820c91da382f6013a7ab6d84d76bcf2  nvim-win64.msi
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cd4242e8e13ae3d29a6542a4480c7d9f6406465455646950c2037765fe41a354  nvim-linux64.tar.gz
+36acce73578bf16bd0103548a1acaf990e79fa8cb8241726ca4f0a4740aab48b  nvim.appimage
+0e8669d2d08a10831ab85699b7b223a27d70a47e34e3efa150a94f9e5dc71f23  nvim.appimage.zsync
+b75646f966279d40abb171a7ccdbc249ee17420b6915f3c053e52c0275fa5172  nvim-macos.tar.gz
+ead78f37c25b19f7d389a018d96b12715b1a60e5a62c9b138eca4b4f42226062  nvim-win64.zip
+8bc5bd9528f7533670f871fc23d5fa861023a0e12415aef9b1f69c2df701d948  nvim-win64.msi"><pre class="notranslate"><code>cd4242e8e13ae3d29a6542a4480c7d9f6406465455646950c2037765fe41a354  nvim-linux64.tar.gz
+36acce73578bf16bd0103548a1acaf990e79fa8cb8241726ca4f0a4740aab48b  nvim.appimage
+0e8669d2d08a10831ab85699b7b223a27d70a47e34e3efa150a94f9e5dc71f23  nvim.appimage.zsync
+b75646f966279d40abb171a7ccdbc249ee17420b6915f3c053e52c0275fa5172  nvim-macos.tar.gz
+ead78f37c25b19f7d389a018d96b12715b1a60e5a62c9b138eca4b4f42226062  nvim-win64.zip
+8bc5bd9528f7533670f871fc23d5fa861023a0e12415aef9b1f69c2df701d948  nvim-win64.msi
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107096: Revert "Revert "Add `_foreach_clamp` (#106574)""]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107096</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107096</guid>
-            <pubDate>Sun, 13 Aug 2023 04:48:56 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This reverts commit <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/354484ea6d85ce2da90fd3e1e5fa9524987bcfe6/hovercard" href="https://github.com/pytorch/pytorch/commit/354484ea6d85ce2da90fd3e1e5fa9524987bcfe6"><tt>354484e</tt></a>.</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107111]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107111</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107111</guid>
+            <pubDate>Mon, 14 Aug 2023 05:10:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>check OMP_PREFIX first</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v13.4.14-canary.4]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v13.4.14-canary.4</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v13.4.14-canary.4</guid>
+            <pubDate>Mon, 14 Aug 2023 04:48:09 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Update swc runners config: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1847811830" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/53939" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/53939/hovercard" href="https://github.com/vercel/next.js/pull/53939">#53939</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Update turbo env handling: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1848977551" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/53970" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/53970/hovercard" href="https://github.com/vercel/next.js/pull/53970">#53970</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.22.6]]></title>
+            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.22.6</link>
+            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.22.6</guid>
+            <pubDate>Mon, 14 Aug 2023 04:36:09 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>fix: correctly restore trailing slash in url pathname for data requests (<a href="https://github.com/sveltejs/kit/pull/10475" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10475/hovercard">#10475</a>)</p>
+</li>
+<li>
+<p>fix: load trailing slash option from server even when there's no load function (<a href="https://github.com/sveltejs/kit/pull/10475" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10475/hovercard">#10475</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106524: Update on "[TP][DTensor Perf] Some perf improvement to reduce DTensor…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106524</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106524</guid>
+            <pubDate>Mon, 14 Aug 2023 03:20:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… CPU overhead"</p>
+<p>By inspecting a small TP benchmark, we found couple things we can optimize:</p>
+<ol>
+<li>We call deep_copy so many times when we initialize DTensor.</li>
+<li>Some shading_prop is not cached successfully.</li>
+<li>We are still calling redistribute when not necessary.</li>
+</ol>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/pytorch/pytorch/assets/6937752/b847d110-eea1-45df-9298-066d0ba07dd7"><img src="https://github.com/pytorch/pytorch/assets/6937752/b847d110-eea1-45df-9298-066d0ba07dd7" alt="image" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/pytorch/pytorch/assets/6937752/fc08f564-caed-496b-80d7-275c1dba3806"><img src="https://github.com/pytorch/pytorch/assets/6937752/fc08f564-caed-496b-80d7-275c1dba3806" alt="image" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/pytorch/pytorch/assets/6937752/fdc06cc4-a4ba-48e8-a118-c041bbd04f5e"><img src="https://github.com/pytorch/pytorch/assets/6937752/fdc06cc4-a4ba-48e8-a118-c041bbd04f5e" alt="image" style="max-width: 100%;"></a></p>
+<p>So we want to:</p>
+<ol>
+<li>Remove the deep_copy, and we now make placements a tuple so we are sure it's immutable.</li>
+<li>Somehow the op_schema gets changed during sharding_op propogation, so we store a hash version of it before passing it to sharding_prop. Ideally we want to figure out why <code>op_schema</code> gets changed, but looks like in both index and detach/view op, all get changed, it might take more time to debug.</li>
+<li>Also when we do hashing of op_schema, we want to hash the entire args_schema not just the args_spec which only contains the DTensorSpec from args which are Dtensors.</li>
+<li>It turns out that sometimes, DTensor has mem_format to be None (not contiguous) and this will lead to redistribute get triggered, so that we only need to compare type/shape and stride in the metadata.</li>
+</ol>
+<p>Also we need to ensure _Partial and Shard have different hash value in the DTensorSpec.</p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/pytorch/pytorch/assets/6937752/321e6890-1ab6-4975-adc9-524c6ef9a76b"><img src="https://github.com/pytorch/pytorch/assets/6937752/321e6890-1ab6-4975-adc9-524c6ef9a76b" alt="image" style="max-width: 100%;"></a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/106762]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F106762</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F106762</guid>
+            <pubDate>Mon, 14 Aug 2023 01:50:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>check function declarations on Vulkan and Metal code</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106986: Update on "Add support for GET_YIELD_FROM_ITER, YIELD_FROM, SEND"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106986</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106986</guid>
+            <pubDate>Mon, 14 Aug 2023 01:41:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy chenyang78 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cube: v0.33.46]]></title>
+            <link>https://github.com/cube-js/cube/releases/tag/v0.33.46</link>
+            <guid>https://github.com/cube-js/cube/releases/tag/v0.33.46</guid>
+            <pubDate>Mon, 14 Aug 2023 01:20:13 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.33.45...v0.33.46">0.33.46</a> (2023-08-14)</h2>
+<h3>Bug Fixes</h3>
+<ul>
+<li><strong>cubestore:</strong> Missing filter in the middle of an index prunes unnecessary partitions (<a href="https://github.com/cube-js/cube/commit/5690d8da87e1d3959620ba43cd0b0648d3285d68">5690d8d</a>)</li>
+</ul>
+<h3>Features</h3>
+<ul>
+<li><strong>cubesql:</strong> Initial SQL push down support for BigQuery, Clickhouse and MySQL (<a href="https://github.com/cube-js/cube/commit/38467ab7de64803cd51acf4d5fc696938e52f778">38467ab</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from assemblyscript: v0.27.9]]></title>
+            <link>https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.27.9</link>
+            <guid>https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.27.9</guid>
+            <pubDate>Mon, 14 Aug 2023 01:08:11 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Bug fixes</h3>
+<ul>
+<li><strong>Error on usage of reference types in fields (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1848356022" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2733" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2733/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2733">#2733</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/321ed3d44c34f9a57d9513769f5ba8447d3293a9/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/321ed3d44c34f9a57d9513769f5ba8447d3293a9"><tt>321ed3d</tt></a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from numpy: v1.26.0b1]]></title>
+            <link>https://github.com/numpy/numpy/releases/tag/v1.26.0b1</link>
+            <guid>https://github.com/numpy/numpy/releases/tag/v1.26.0b1</guid>
+            <pubDate>Mon, 14 Aug 2023 00:45:17 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>NumPy 1.26.0 Release Notes</h1>
+<p>The NumPy 1.26.0 release is a continuation of the 1.25.x release cycle<br>
+with the addition of Python 3.12.0 support. Python 3.12 dropped<br>
+distutils, consequently supporting it required finding a replacement for<br>
+the setup.py/distutils based build system NumPy was using. We have<br>
+chosen to use the Meson build system instead, and this is the first<br>
+NumPy release supporting it. This is also the first release that<br>
+supports Cython 3.0 in addition to retaining 0.29.X compatibility.<br>
+Supporting those two upgrades was a large project, over 100 files have<br>
+been touched in this release. The changelog doesn't capture the full<br>
+extent of the work, special thanks to Ralf Gommers, Sayed Adel, Stéfan<br>
+van der Walt, and Matti Picus who did much of the work in the main<br>
+development branch.</p>
+<p>The highlights of this release are:</p>
+<ul>
+<li>Python 3.12.0 support.</li>
+<li>Cython 3.0.0 compatibility.</li>
+<li>Use of the Meson build system</li>
+<li>Updated SIMD support</li>
+</ul>
+<p>The Python versions supported in this release are 3.9-3.12.</p>
+<h2>Build system changes</h2>
+<p>In this release, NumPy has switched to Meson as the build system and<br>
+meson-python as the build backend. Installing NumPy or building a wheel<br>
+can be done with standard tools like <code>pip</code> and <code>pypa/build</code>. The<br>
+following are supported:</p>
+<ul>
+<li>Regular installs: <code>pip install numpy</code> or (in a cloned repo)<br>
+<code>pip install .</code></li>
+<li>Building a wheel: <code>python -m build</code> (preferred), or <code>pip wheel .</code></li>
+<li>Editable installs: <code>pip install -e . --no-build-isolation</code></li>
+<li>Development builds through the custom CLI implemented with<br>
+<a href="https://github.com/scientific-python/spin">spin</a>: <code>spin build</code>.</li>
+</ul>
+<p>All the regular <code>pip</code> and <code>pypa/build</code> flags (e.g.,<br>
+<code>--no-build-isolation</code>) should work as expected.</p>
+<h3>NumPy-specific build customization</h3>
+<p>Many of the NumPy-specific ways of customizing builds have changed. The<br>
+<code>NPY_*</code> environment variables which control BLAS/LAPACK, SIMD,<br>
+threading, and other such options are no longer supported, nor is a<br>
+<code>site.cfg</code> file to select BLAS and LAPACK. Instead, there are<br>
+command-line flags that can be passed to the build via <code>pip</code>/<code>build</code>'s<br>
+config-settings interface. These flags are all listed in the<br>
+<code>meson_options.txt</code> file in the root of the repo. Detailed documented<br>
+will be available before the final 1.26.0 release; for now please see<br>
+<a href="http://scipy.github.io/devdocs/building/index.html" rel="nofollow">the SciPy "building from source"docs</a> since most<br>
+build customization works in an almost identical way in SciPy as it does<br>
+in NumPy.</p>
+<h3>Build dependencies</h3>
+<p>While the runtime dependencies of NumPy have not changed, the build<br>
+dependencies have. Because we temporarily vendor Meson and meson-python,<br>
+there are several new dependencies - please see the <code>[build-system]</code><br>
+section of <code>pyproject.toml</code> for details.</p>
+<h3>Troubleshooting</h3>
+<p>This build system change is quite large. In case of unexpected issues,<br>
+it is still possible to use a <code>setup.py</code>-based build as a temporary<br>
+workaround (on Python 3.9-3.11, not 3.12), by copying<br>
+<code>pyproject.toml.setuppy</code> to <code>pyproject.toml</code>. However, please open an<br>
+issue with details on the NumPy issue tracker. We aim to phase out<br>
+<code>setup.py</code> builds as soon as possible, and therefore would like to see<br>
+all potential blockers surfaced early on in the 1.26.0 release cycle.</p>
+<h2>Contributors</h2>
+<p>A total of 11 people contributed to this release. People with a "+" by<br>
+their names contributed a patch for the first time.</p>
+<ul>
+<li>Bas van Beek</li>
+<li>Charles Harris</li>
+<li>Matti Picus</li>
+<li>Melissa Weber Mendonça</li>
+<li>Ralf Gommers</li>
+<li>Sayed Adel</li>
+<li>Sebastian Berg</li>
+<li>Stefan van der Walt</li>
+<li>Tyler Reddy</li>
+<li>Warren Weckesser</li>
+</ul>
+<h2>Pull requests merged</h2>
+<p>A total of 18 pull requests were merged for this release.</p>
+<ul>
+<li><a href="https://github.com/numpy/numpy/pull/24305" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24305/hovercard">#24305</a>: MAINT: Prepare 1.26.x branch for development</li>
+<li><a href="https://github.com/numpy/numpy/pull/24308" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24308/hovercard">#24308</a>: MAINT: Massive update of files from main for numpy 1.26</li>
+<li><a href="https://github.com/numpy/numpy/pull/24322" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24322/hovercard">#24322</a>: CI: fix wheel builds on the 1.26.x branch</li>
+<li><a href="https://github.com/numpy/numpy/pull/24326" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24326/hovercard">#24326</a>: BLD: update openblas to newer version</li>
+<li><a href="https://github.com/numpy/numpy/pull/24327" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24327/hovercard">#24327</a>: TYP: Trim down the <code>_NestedSequence.__getitem__</code> signature</li>
+<li><a href="https://github.com/numpy/numpy/pull/24328" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24328/hovercard">#24328</a>: BUG: fix choose refcount leak</li>
+<li><a href="https://github.com/numpy/numpy/pull/24337" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24337/hovercard">#24337</a>: TST: fix running the test suite in builds without BLAS/LAPACK</li>
+<li><a href="https://github.com/numpy/numpy/pull/24338" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24338/hovercard">#24338</a>: BUG: random: Fix generation of nan by dirichlet.</li>
+<li><a href="https://github.com/numpy/numpy/pull/24340" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24340/hovercard">#24340</a>: MAINT: Dependabot updates from main</li>
+<li><a href="https://github.com/numpy/numpy/pull/24342" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24342/hovercard">#24342</a>: MAINT: Add back NPY_RUN_MYPY_IN_TESTSUITE=1</li>
+<li><a href="https://github.com/numpy/numpy/pull/24353" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24353/hovercard">#24353</a>: MAINT: Update <code>extbuild.py</code> from main.</li>
+<li><a href="https://github.com/numpy/numpy/pull/24356" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24356/hovercard">#24356</a>: TST: fix distutils tests for deprecations in recent setuptools...</li>
+<li><a href="https://github.com/numpy/numpy/pull/24375" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24375/hovercard">#24375</a>: MAINT: Update cibuildwheel to version 2.15.0</li>
+<li><a href="https://github.com/numpy/numpy/pull/24381" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24381/hovercard">#24381</a>: MAINT: Fix codespaces setup.sh script</li>
+<li><a href="https://github.com/numpy/numpy/pull/24403" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24403/hovercard">#24403</a>: ENH: Vendor meson for multi-target build support</li>
+<li><a href="https://github.com/numpy/numpy/pull/24404" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24404/hovercard">#24404</a>: BLD: vendor meson-python to make the Windows builds with SIMD...</li>
+<li><a href="https://github.com/numpy/numpy/pull/24405" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24405/hovercard">#24405</a>: BLD, SIMD: The meson CPU dispatcher implementation</li>
+<li><a href="https://github.com/numpy/numpy/pull/24406" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/24406/hovercard">#24406</a>: MAINT: Remove versioneer</li>
+</ul>
+<h2>Checksums</h2>
+<h3>MD5</h3>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="875d02016f215f8ce2513453393f0089  numpy-1.26.0b1-cp310-cp310-macosx_10_9_x86_64.whl
+7df1856729096fbbbbb82b58c1695810  numpy-1.26.0b1-cp310-cp310-macosx_11_0_arm64.whl
+928037510906572ecadb154b8089853f  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+93fb7c8a0e7af169c9bf42d8bfa17c2c  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+a865069d224bf3830671de8e1f374344  numpy-1.26.0b1-cp310-cp310-musllinux_1_1_x86_64.whl
+c53d1d8cb653fc08bd3f931e4c965430  numpy-1.26.0b1-cp310-cp310-win_amd64.whl
+c7e212fbb7e64231747c6c8aac0f8678  numpy-1.26.0b1-cp311-cp311-macosx_10_9_x86_64.whl
+f2df03cdaee283c1f7486d2f66e497dd  numpy-1.26.0b1-cp311-cp311-macosx_11_0_arm64.whl
+8af359b78166474b7a621a482f3073fd  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+4eec2761b87ccd43028697410ed8909d  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+d9f0b03e455e9e99bdbe69e2e729c197  numpy-1.26.0b1-cp311-cp311-musllinux_1_1_x86_64.whl
+dd1c5e4492988e2b3641602b295e7de3  numpy-1.26.0b1-cp311-cp311-win_amd64.whl
+88e35ab901c8315ccdb172abc0d2350c  numpy-1.26.0b1-cp312-cp312-macosx_10_9_x86_64.whl
+ad426a4203844eaa8de6b519e94dc2c0  numpy-1.26.0b1-cp312-cp312-macosx_11_0_arm64.whl
+2e0e7a297de88cfe930c205b1ab8fdb0  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+5d4ea12ab53e506a9887ab8a587f68f6  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+1b3c3a80d2fb928b753545ded60312f3  numpy-1.26.0b1-cp312-cp312-musllinux_1_1_x86_64.whl
+e27356122ee42d84f6965ac802792bc3  numpy-1.26.0b1-cp312-cp312-win_amd64.whl
+1cc0d71476548fa30c27a542e3c3f9bf  numpy-1.26.0b1-cp39-cp39-macosx_10_9_x86_64.whl
+ec4882af449c1754cc7af84a82305aed  numpy-1.26.0b1-cp39-cp39-macosx_11_0_arm64.whl
+142493180019de1ec22c4510bf650366  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+4a0c76b75fa36c54c0d2a9107c838910  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+cb4d1c3b95e3a2662f94475b4b525da0  numpy-1.26.0b1-cp39-cp39-musllinux_1_1_x86_64.whl
+afa3f60467530e022eb1a584a8c48f84  numpy-1.26.0b1-cp39-cp39-win_amd64.whl
+35c77e2f2b25225ae62354f91c26a693  numpy-1.26.0b1-pp39-pypy39_pp73-macosx_10_9_x86_64.whl
+1986181def7286ae37ced5df7c0ca312  numpy-1.26.0b1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+e013942d0d71cb6a680afa89c9aa5259  numpy-1.26.0b1-pp39-pypy39_pp73-win_amd64.whl
+3268568cee06327fa34175aa3805829d  numpy-1.26.0b1.tar.gz"><pre class="notranslate"><code>875d02016f215f8ce2513453393f0089  numpy-1.26.0b1-cp310-cp310-macosx_10_9_x86_64.whl
+7df1856729096fbbbbb82b58c1695810  numpy-1.26.0b1-cp310-cp310-macosx_11_0_arm64.whl
+928037510906572ecadb154b8089853f  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+93fb7c8a0e7af169c9bf42d8bfa17c2c  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+a865069d224bf3830671de8e1f374344  numpy-1.26.0b1-cp310-cp310-musllinux_1_1_x86_64.whl
+c53d1d8cb653fc08bd3f931e4c965430  numpy-1.26.0b1-cp310-cp310-win_amd64.whl
+c7e212fbb7e64231747c6c8aac0f8678  numpy-1.26.0b1-cp311-cp311-macosx_10_9_x86_64.whl
+f2df03cdaee283c1f7486d2f66e497dd  numpy-1.26.0b1-cp311-cp311-macosx_11_0_arm64.whl
+8af359b78166474b7a621a482f3073fd  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+4eec2761b87ccd43028697410ed8909d  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+d9f0b03e455e9e99bdbe69e2e729c197  numpy-1.26.0b1-cp311-cp311-musllinux_1_1_x86_64.whl
+dd1c5e4492988e2b3641602b295e7de3  numpy-1.26.0b1-cp311-cp311-win_amd64.whl
+88e35ab901c8315ccdb172abc0d2350c  numpy-1.26.0b1-cp312-cp312-macosx_10_9_x86_64.whl
+ad426a4203844eaa8de6b519e94dc2c0  numpy-1.26.0b1-cp312-cp312-macosx_11_0_arm64.whl
+2e0e7a297de88cfe930c205b1ab8fdb0  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+5d4ea12ab53e506a9887ab8a587f68f6  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+1b3c3a80d2fb928b753545ded60312f3  numpy-1.26.0b1-cp312-cp312-musllinux_1_1_x86_64.whl
+e27356122ee42d84f6965ac802792bc3  numpy-1.26.0b1-cp312-cp312-win_amd64.whl
+1cc0d71476548fa30c27a542e3c3f9bf  numpy-1.26.0b1-cp39-cp39-macosx_10_9_x86_64.whl
+ec4882af449c1754cc7af84a82305aed  numpy-1.26.0b1-cp39-cp39-macosx_11_0_arm64.whl
+142493180019de1ec22c4510bf650366  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+4a0c76b75fa36c54c0d2a9107c838910  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+cb4d1c3b95e3a2662f94475b4b525da0  numpy-1.26.0b1-cp39-cp39-musllinux_1_1_x86_64.whl
+afa3f60467530e022eb1a584a8c48f84  numpy-1.26.0b1-cp39-cp39-win_amd64.whl
+35c77e2f2b25225ae62354f91c26a693  numpy-1.26.0b1-pp39-pypy39_pp73-macosx_10_9_x86_64.whl
+1986181def7286ae37ced5df7c0ca312  numpy-1.26.0b1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+e013942d0d71cb6a680afa89c9aa5259  numpy-1.26.0b1-pp39-pypy39_pp73-win_amd64.whl
+3268568cee06327fa34175aa3805829d  numpy-1.26.0b1.tar.gz
+</code></pre></div>
+<h3>SHA256</h3>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="9a74361204dc604ba53916ed55aef0ca73e7aa3d0b7e47e1c28aece8c2ad4f59  numpy-1.26.0b1-cp310-cp310-macosx_10_9_x86_64.whl
+ab9e86bb7c9d3e009945b24a92318ff5d8c245e0e0aaaa765825c4561c292d53  numpy-1.26.0b1-cp310-cp310-macosx_11_0_arm64.whl
+b0b73599c80b29dfa7f812cb2e8738ce3f058b413e9f2f478e3cc4e038bb8f8e  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+4a6d4c99396c57e02b0181f01ba42b482f327774057e51fb7fb390a130c95cff  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+02af7482f34aeb9658ece615c922942f1a3908c449a9a6cd9f33fa233ce486d4  numpy-1.26.0b1-cp310-cp310-musllinux_1_1_x86_64.whl
+5a8f04e957259ef93a1e4a29da0b64d49ee842af456257bbb7253925cfe2f7bd  numpy-1.26.0b1-cp310-cp310-win_amd64.whl
+f71e10402e705aaa5908464e489d38e6583c48e40a4721f83195772178c7da9f  numpy-1.26.0b1-cp311-cp311-macosx_10_9_x86_64.whl
+94d5572fea8dca0fa929da9d17fa49e525ceee1e59b04372dfa5bd8a5f688f5f  numpy-1.26.0b1-cp311-cp311-macosx_11_0_arm64.whl
+1f88e6fe42b0d6418e53332e525b299762dbd9e33055d2e0398e6298da5b0cc9  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+c466707e5ce5a44caadb85fd672a5ce0bfc060012df465771e7b10506e1e5dad  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+16313a28cf703ae722b3ac139809360ffef81a45e758f196e538be3bcbee85c9  numpy-1.26.0b1-cp311-cp311-musllinux_1_1_x86_64.whl
+ea85e8e297af49d30830177ecb0c54d1cbca051e4306161f3ceabfa66560b17c  numpy-1.26.0b1-cp311-cp311-win_amd64.whl
+321a063fabc302931029f831f284cf43c301fdeead1b15df2f8aa87673294d4d  numpy-1.26.0b1-cp312-cp312-macosx_10_9_x86_64.whl
+dc36a9e8df48b72dad668d6f4036ed477d8bc2cb1f7a23b688e8e8057afdfee3  numpy-1.26.0b1-cp312-cp312-macosx_11_0_arm64.whl
+3c6c5804671fa1697e3d0cbc608a65c55794fb6682f4e04e9f6d65d0ddfc47c7  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+3aa806da215e9c10ba89e9037a69c7a56367e059615679ef1a5cf937eedfbf61  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+b66135c02ee55f9113dce3c8c5130b5feaead8767cd2c7ad36547a3d5e264230  numpy-1.26.0b1-cp312-cp312-musllinux_1_1_x86_64.whl
+87f2799f475e9e7aee69254dfe357975b163d409550d4641a0bca4cb4f64b725  numpy-1.26.0b1-cp312-cp312-win_amd64.whl
+2b258f67ca4a8245c74470da66a87684ddb3f06dde98760efc7ca792a44ee254  numpy-1.26.0b1-cp39-cp39-macosx_10_9_x86_64.whl
+a31d9109ffed9fc5566e73346a076fffbc7db00e626579ae4d5dfec933b29bfc  numpy-1.26.0b1-cp39-cp39-macosx_11_0_arm64.whl
+18e29ab806ec5e0b05df900d44b3b257a5901c32fc3ddaeb818c520cd9279b4e  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+216b47882877ea5272f279c08bf7e42935728f35c6db2e4843b37db7b29ce016  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+eea337d6d5ab2b6eb657b3f18e8b57a280f16fb5f94df484d9c1a8d3450d9ae9  numpy-1.26.0b1-cp39-cp39-musllinux_1_1_x86_64.whl
+db698c9008217c54a8005ea58bd5836241d7b519c8bb16a698a1b4ec4ca296a8  numpy-1.26.0b1-cp39-cp39-win_amd64.whl
+f250b3099649137f1021f8f95a9404273bcb7539f0bef6d6cf2c91260285edc4  numpy-1.26.0b1-pp39-pypy39_pp73-macosx_10_9_x86_64.whl
+22584a41b1be30543dd8c030affc90d8cb7ec19a56fda7f27fc33f64f8b0fbaa  numpy-1.26.0b1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+8aefe8ab1228e00146e5ae88290c7fdb8221aef45b357aed7f3dff6ac3b3b25a  numpy-1.26.0b1-pp39-pypy39_pp73-win_amd64.whl
+c67eea90827e1e9aa220a3fc380ce8776428deba8ac9e7c931ce7b69e8dce115  numpy-1.26.0b1.tar.gz"><pre class="notranslate"><code>9a74361204dc604ba53916ed55aef0ca73e7aa3d0b7e47e1c28aece8c2ad4f59  numpy-1.26.0b1-cp310-cp310-macosx_10_9_x86_64.whl
+ab9e86bb7c9d3e009945b24a92318ff5d8c245e0e0aaaa765825c4561c292d53  numpy-1.26.0b1-cp310-cp310-macosx_11_0_arm64.whl
+b0b73599c80b29dfa7f812cb2e8738ce3f058b413e9f2f478e3cc4e038bb8f8e  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+4a6d4c99396c57e02b0181f01ba42b482f327774057e51fb7fb390a130c95cff  numpy-1.26.0b1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+02af7482f34aeb9658ece615c922942f1a3908c449a9a6cd9f33fa233ce486d4  numpy-1.26.0b1-cp310-cp310-musllinux_1_1_x86_64.whl
+5a8f04e957259ef93a1e4a29da0b64d49ee842af456257bbb7253925cfe2f7bd  numpy-1.26.0b1-cp310-cp310-win_amd64.whl
+f71e10402e705aaa5908464e489d38e6583c48e40a4721f83195772178c7da9f  numpy-1.26.0b1-cp311-cp311-macosx_10_9_x86_64.whl
+94d5572fea8dca0fa929da9d17fa49e525ceee1e59b04372dfa5bd8a5f688f5f  numpy-1.26.0b1-cp311-cp311-macosx_11_0_arm64.whl
+1f88e6fe42b0d6418e53332e525b299762dbd9e33055d2e0398e6298da5b0cc9  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+c466707e5ce5a44caadb85fd672a5ce0bfc060012df465771e7b10506e1e5dad  numpy-1.26.0b1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+16313a28cf703ae722b3ac139809360ffef81a45e758f196e538be3bcbee85c9  numpy-1.26.0b1-cp311-cp311-musllinux_1_1_x86_64.whl
+ea85e8e297af49d30830177ecb0c54d1cbca051e4306161f3ceabfa66560b17c  numpy-1.26.0b1-cp311-cp311-win_amd64.whl
+321a063fabc302931029f831f284cf43c301fdeead1b15df2f8aa87673294d4d  numpy-1.26.0b1-cp312-cp312-macosx_10_9_x86_64.whl
+dc36a9e8df48b72dad668d6f4036ed477d8bc2cb1f7a23b688e8e8057afdfee3  numpy-1.26.0b1-cp312-cp312-macosx_11_0_arm64.whl
+3c6c5804671fa1697e3d0cbc608a65c55794fb6682f4e04e9f6d65d0ddfc47c7  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+3aa806da215e9c10ba89e9037a69c7a56367e059615679ef1a5cf937eedfbf61  numpy-1.26.0b1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+b66135c02ee55f9113dce3c8c5130b5feaead8767cd2c7ad36547a3d5e264230  numpy-1.26.0b1-cp312-cp312-musllinux_1_1_x86_64.whl
+87f2799f475e9e7aee69254dfe357975b163d409550d4641a0bca4cb4f64b725  numpy-1.26.0b1-cp312-cp312-win_amd64.whl
+2b258f67ca4a8245c74470da66a87684ddb3f06dde98760efc7ca792a44ee254  numpy-1.26.0b1-cp39-cp39-macosx_10_9_x86_64.whl
+a31d9109ffed9fc5566e73346a076fffbc7db00e626579ae4d5dfec933b29bfc  numpy-1.26.0b1-cp39-cp39-macosx_11_0_arm64.whl
+18e29ab806ec5e0b05df900d44b3b257a5901c32fc3ddaeb818c520cd9279b4e  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+216b47882877ea5272f279c08bf7e42935728f35c6db2e4843b37db7b29ce016  numpy-1.26.0b1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+eea337d6d5ab2b6eb657b3f18e8b57a280f16fb5f94df484d9c1a8d3450d9ae9  numpy-1.26.0b1-cp39-cp39-musllinux_1_1_x86_64.whl
+db698c9008217c54a8005ea58bd5836241d7b519c8bb16a698a1b4ec4ca296a8  numpy-1.26.0b1-cp39-cp39-win_amd64.whl
+f250b3099649137f1021f8f95a9404273bcb7539f0bef6d6cf2c91260285edc4  numpy-1.26.0b1-pp39-pypy39_pp73-macosx_10_9_x86_64.whl
+22584a41b1be30543dd8c030affc90d8cb7ec19a56fda7f27fc33f64f8b0fbaa  numpy-1.26.0b1-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+8aefe8ab1228e00146e5ae88290c7fdb8221aef45b357aed7f3dff6ac3b3b25a  numpy-1.26.0b1-pp39-pypy39_pp73-win_amd64.whl
+c67eea90827e1e9aa220a3fc380ce8776428deba8ac9e7c931ce7b69e8dce115  numpy-1.26.0b1.tar.gz
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/97582: use nvtx3 which is a header only library that can simplify building s…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97582</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F97582</guid>
+            <pubDate>Mon, 14 Aug 2023 00:20:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ystem</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/97582: use nvtx3 which is a header only library that can simplify building s…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97582</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F97582</guid>
+            <pubDate>Mon, 14 Aug 2023 00:20:38 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ystem</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from selenium: Nightly]]></title>
+            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
+            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
+            <pubDate>Mon, 14 Aug 2023 00:16:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[javascript] Improving how browsers and drivers are discovered</p>
+
+<p><span class="issue-keyword tooltipped tooltipped-se">Fixes</span> <a class="issue-link js-issue-link" href="https://github.com/SeleniumHQ/selenium/issues/12456">#12456</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107109]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107109</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107109</guid>
+            <pubDate>Mon, 14 Aug 2023 00:16:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107109]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107109</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107109</guid>
+            <pubDate>Mon, 14 Aug 2023 00:16:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Sun, 13 Aug 2023 21:49:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2023-08-13 21:48:26 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/0ba5f209026e3cbaa45351014be689187709feb7/hovercard" href="https://github.com/kovidgoyal/kitty/commit/0ba5f209026e3cbaa45351014be689187709feb7"><tt>0ba5f20</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.30-dev-302]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.30-dev-302</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.30-dev-302</guid>
+            <pubDate>Sun, 13 Aug 2023 16:26:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from cube: v0.33.45]]></title>
@@ -392,9 +728,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.27-pgo: Version 11.8.27]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.27-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.27-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.27]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.27</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.27</guid>
             <pubDate>Fri, 11 Aug 2023 18:58:42 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I3f70b51482eb364d28dc7e2500149c444b0b8703<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4774433" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4774433</a><br>
@@ -403,9 +739,9 @@ Cr-Commit-Position: refs/heads/11.8.27@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ccf08ef975f0e2e6b0964d73c8da809ec6b06307/hovercard" href="https://github.com/v8/v8/commit/ccf08ef975f0e2e6b0964d73c8da809ec6b06307"><tt>ccf08ef</tt></a>-refs/heads/main@{#89506}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.27]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.27</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.27</guid>
+            <title><![CDATA[Release notes from v8: 11.8.27-pgo: Version 11.8.27]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.27-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.27-pgo</guid>
             <pubDate>Fri, 11 Aug 2023 18:58:42 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I3f70b51482eb364d28dc7e2500149c444b0b8703<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4774433" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4774433</a><br>
@@ -437,9 +773,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>Tagging 1.29.25 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.26-pgo: Version 11.8.26]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.26-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.26-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.26]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.26</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.26</guid>
             <pubDate>Fri, 11 Aug 2023 18:05:58 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I71be2dc078d769c29d319996e7c3d61865de8421<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4775444" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4775444</a><br>
@@ -448,9 +784,9 @@ Cr-Commit-Position: refs/heads/11.8.26@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/12676fc4fe7e1890b78beec006e2946fc72f686d/hovercard" href="https://github.com/v8/v8/commit/12676fc4fe7e1890b78beec006e2946fc72f686d"><tt>12676fc</tt></a>-refs/heads/main@{#89505}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.26]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.26</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.26</guid>
+            <title><![CDATA[Release notes from v8: 11.8.26-pgo: Version 11.8.26]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.26-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.26-pgo</guid>
             <pubDate>Fri, 11 Aug 2023 18:05:58 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I71be2dc078d769c29d319996e7c3d61865de8421<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4775444" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4775444</a><br>
@@ -511,9 +847,9 @@ Cr-Commit-Position: refs/heads/11.8.25@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e0d46b92a328c6596d9b45949f13585d11773e29/hovercard" href="https://github.com/v8/v8/commit/e0d46b92a328c6596d9b45949f13585d11773e29"><tt>e0d46b9</tt></a>-refs/heads/main@{#89504}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.24-pgo: Version 11.8.24]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.24-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.24-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.24]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.24</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.24</guid>
             <pubDate>Fri, 11 Aug 2023 17:10:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ib24dc74605f3ebb4db633ca4b69ce2b66c9876ac<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4774427" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4774427</a><br>
@@ -522,9 +858,9 @@ Cr-Commit-Position: refs/heads/11.8.24@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/846c0eebc0112c8c847ee673cbe01e9aaacbb0b8/hovercard" href="https://github.com/v8/v8/commit/846c0eebc0112c8c847ee673cbe01e9aaacbb0b8"><tt>846c0ee</tt></a>-refs/heads/main@{#89503}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.24]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.24</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.24</guid>
+            <title><![CDATA[Release notes from v8: 11.8.24-pgo: Version 11.8.24]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.24-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.24-pgo</guid>
             <pubDate>Fri, 11 Aug 2023 17:10:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ib24dc74605f3ebb4db633ca4b69ce2b66c9876ac<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4774427" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4774427</a><br>
@@ -620,16 +956,16 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <pubDate>Fri, 11 Aug 2023 15:23:02 GMT</pubDate>
             <content:encoded><![CDATA[<ul>
 <li><g-emoji class="g-emoji" alias="sparkles" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/2728.png">✨</g-emoji> Added new enhanced Header Card (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1843245848" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17654" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17654/hovercard" href="https://github.com/TryGhost/Ghost/pull/17654">#17654</a>) - Ronald Langeveld</li>
-<li>🎨 Added support for relative links in emails (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1841040694" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17630" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17630/hovercard" href="https://github.com/TryGhost/Ghost/pull/17630">#17630</a>) - Simon Backx</li>
-<li>🐛 Fixed missing <code>@page</code> object in themes when rendering custom routed page (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1846676491" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17693" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17693/hovercard" href="https://github.com/TryGhost/Ghost/pull/17693">#17693</a>) - Kevin Ansfield</li>
-<li>🐛 Fixed incorrect newsletter subscriber count on dashboard (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1845573744" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17683" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17683/hovercard" href="https://github.com/TryGhost/Ghost/pull/17683">#17683</a>) - Michael Barrett</li>
+<li><g-emoji class="g-emoji" alias="art" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f3a8.png">🎨</g-emoji> Added support for relative links in emails (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1841040694" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17630" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17630/hovercard" href="https://github.com/TryGhost/Ghost/pull/17630">#17630</a>) - Simon Backx</li>
+<li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed missing <code>@page</code> object in themes when rendering custom routed page (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1846676491" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17693" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17693/hovercard" href="https://github.com/TryGhost/Ghost/pull/17693">#17693</a>) - Kevin Ansfield</li>
+<li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed incorrect newsletter subscriber count on dashboard (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1845573744" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17683" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17683/hovercard" href="https://github.com/TryGhost/Ghost/pull/17683">#17683</a>) - Michael Barrett</li>
 <li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed overly small file drop area in beta editor (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1845515530" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17682" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17682/hovercard" href="https://github.com/TryGhost/Ghost/pull/17682">#17682</a>) - Kevin Ansfield</li>
 <li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed member filter by single newsletter subscription (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1844678941" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17668" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17668/hovercard" href="https://github.com/TryGhost/Ghost/pull/17668">#17668</a>) - Michael Barrett</li>
 <li><g-emoji class="g-emoji" alias="bug" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41b.png">🐛</g-emoji> Fixed member signup source attributed to Stripe (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1839056117" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/17606" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/17606/hovercard" href="https://github.com/TryGhost/Ghost/pull/17606">#17606</a>) - Simon Backx</li>
 </ul>
 <hr>
 <p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.58.0...v5.59.0"><tt>v5.58.0...v5.59.0</tt></a></p>
-<p><g-emoji class="g-emoji" alias="globe_with_meridians" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f310.png">🌐</g-emoji> Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
+<p>🌐 Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from eslint: v8.47.0]]></title>
@@ -787,7 +1123,7 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Up: do not warn on successful optional dependency complete by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/milas/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/milas">@milas</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1835000679" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10870" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10870/hovercard" href="https://github.com/docker/compose/pull/10870">#10870</a></li>
 <li>Build: fix missing proxy build args for classic builder by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/milas/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/milas">@milas</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1841927999" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10887" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10887/hovercard" href="https://github.com/docker/compose/pull/10887">#10887</a></li>
 </ul>
-<h3>Internal <g-emoji class="g-emoji" alias="wrench" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f527.png">🔧</g-emoji></h3>
+<h3>Internal 🔧</h3>
 <ul>
 <li>Trace: do not block connecting to OTLP endpoint by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/milas/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/milas">@milas</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1837349086" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10882" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10882/hovercard" href="https://github.com/docker/compose/pull/10882">#10882</a></li>
 <li>Test: fix e2e test for privileged builds by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/milas/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/milas">@milas</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1835122598" data-permission-text="Title is private" data-url="https://github.com/docker/compose/issues/10873" data-hovercard-type="pull_request" data-hovercard-url="/docker/compose/pull/10873/hovercard" href="https://github.com/docker/compose/pull/10873">#10873</a></li>
@@ -825,24 +1161,24 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<ul>
 <li>DatePicker
 <ul>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix DatePicker panel cannot toggle when selecting time with truthy <code>open</code> and truthy <code>defaultOpen</code>. <a href="https://github.com/ant-design/ant-design/pull/44105" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44105/hovercard">#44105</a> <a href="https://github.com/Yuiai01">@Yuiai01</a></li>
+<li>🐞 Fix DatePicker panel cannot toggle when selecting time with truthy <code>open</code> and truthy <code>defaultOpen</code>. <a href="https://github.com/ant-design/ant-design/pull/44105" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44105/hovercard">#44105</a> <a href="https://github.com/Yuiai01">@Yuiai01</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix DatePicker and RangePicker still show the clear button when disable <code>allowClear</code>. <a href="https://github.com/ant-design/ant-design/pull/44015" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44015/hovercard">#44015</a> <a href="https://github.com/bartpio">@bartpio</a></li>
 </ul>
 </li>
 <li>Carousel
 <ul>
 <li>🐞 Fix Carousel do not support <code>id</code> prop. <a href="https://github.com/ant-design/ant-design/pull/44079" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44079/hovercard">#44079</a></li>
-<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Fix Carousel <code>dots</code> extra margin style. <a href="https://github.com/ant-design/ant-design/pull/44076" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44076/hovercard">#44076</a></li>
+<li>💄 Fix Carousel <code>dots</code> extra margin style. <a href="https://github.com/ant-design/ant-design/pull/44076" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44076/hovercard">#44076</a></li>
 </ul>
 </li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Modal footer disabled state that affect by Form. <a href="https://github.com/ant-design/ant-design/pull/43055" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43055/hovercard">#43055</a> <a href="https://github.com/Wxh16144">@Wxh16144</a></li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Upload thumbnail that gif will not play. <a href="https://github.com/ant-design/ant-design/pull/44083" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44083/hovercard">#44083</a> <a href="https://github.com/linxianxi">@linxianxi</a></li>
-<li>🐞 Fix FloatButton that menu mode didn't support <code>badge</code> prop. <a href="https://github.com/ant-design/ant-design/pull/44109" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44109/hovercard">#44109</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
-<li>🐞 Fix Grid &amp; List responsive config take effect after first render which cause screen flick. <a href="https://github.com/ant-design/ant-design/pull/44075" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44075/hovercard">#44075</a></li>
-<li>🐞 Fix that Design Token partially missing when <code>@ant-design/cssinjs</code> version <code>1.15.0</code>. <a href="https://github.com/ant-design/ant-design/pull/44091" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44091/hovercard">#44091</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
-<li>💄 Fix Badge <code>status="processing"</code> with <code>dot</code> wave style issue. <a href="https://github.com/ant-design/ant-design/pull/44153" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44153/hovercard">#44153</a></li>
+<li>🐞 Fix Upload thumbnail that gif will not play. <a href="https://github.com/ant-design/ant-design/pull/44083" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44083/hovercard">#44083</a> <a href="https://github.com/linxianxi">@linxianxi</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix FloatButton that menu mode didn't support <code>badge</code> prop. <a href="https://github.com/ant-design/ant-design/pull/44109" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44109/hovercard">#44109</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix Grid &amp; List responsive config take effect after first render which cause screen flick. <a href="https://github.com/ant-design/ant-design/pull/44075" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44075/hovercard">#44075</a></li>
+<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> Fix that Design Token partially missing when <code>@ant-design/cssinjs</code> version <code>1.15.0</code>. <a href="https://github.com/ant-design/ant-design/pull/44091" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44091/hovercard">#44091</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
+<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Fix Badge <code>status="processing"</code> with <code>dot</code> wave style issue. <a href="https://github.com/ant-design/ant-design/pull/44153" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44153/hovercard">#44153</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Fix Descriptions border styles when it nests itself. <a href="https://github.com/ant-design/ant-design/pull/43454" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43454/hovercard">#43454</a> <a href="https://github.com/Yuiai01">@Yuiai01</a></li>
-<li>💄 Fix Pagination transition style in prev/next buttons. <a href="https://github.com/ant-design/ant-design/pull/44030" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44030/hovercard">#44030</a></li>
+<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Fix Pagination transition style in prev/next buttons. <a href="https://github.com/ant-design/ant-design/pull/44030" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44030/hovercard">#44030</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Fix Popconfirm button group wraps unexpectedly. <a href="https://github.com/ant-design/ant-design/pull/44022" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44022/hovercard">#44022</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Optimize style of Image preview operation icons. <a href="https://github.com/ant-design/ant-design/pull/44141" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44141/hovercard">#44141</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> Optimize Input and InputNumber font size in large mode. <a href="https://github.com/ant-design/ant-design/pull/44000" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44000/hovercard">#44000</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
@@ -862,66 +1198,18 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 修复 Carousel <code>dots</code> 切换点有多余 margin 的问题。<a href="https://github.com/ant-design/ant-design/pull/44076" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44076/hovercard">#44076</a></li>
 </ul>
 </li>
-<li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Modal 页脚禁用态受 Form 影响的问题。<a href="https://github.com/ant-design/ant-design/pull/43055" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43055/hovercard">#43055</a> <a href="https://github.com/Wxh16144">@Wxh16144</a></li>
+<li>🐞 修复 Modal 页脚禁用态受 Form 影响的问题。<a href="https://github.com/ant-design/ant-design/pull/43055" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43055/hovercard">#43055</a> <a href="https://github.com/Wxh16144">@Wxh16144</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Upload gif 缩略图不会动的问题。<a href="https://github.com/ant-design/ant-design/pull/44083" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44083/hovercard">#44083</a> <a href="https://github.com/linxianxi">@linxianxi</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 FloatButton 组件菜单模式不支持 <code>badge</code> 配置的问题。<a href="https://github.com/ant-design/ant-design/pull/44109" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44109/hovercard">#44109</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 Grid 与 List 响应式布局生效稍晚于首次渲染导致屏幕闪动的问题。<a href="https://github.com/ant-design/ant-design/pull/44075" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44075/hovercard">#44075</a></li>
 <li><g-emoji class="g-emoji" alias="lady_beetle" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f41e.png">🐞</g-emoji> 修复 <code>@ant-design/cssinjs</code> 版本小于 <code>1.15.0</code> 时 Design Token 部分丢失的问题。<a href="https://github.com/ant-design/ant-design/pull/44091" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44091/hovercard">#44091</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
 <li>💄 修复 Badge <code>status="processing"</code> 和 <code>dot</code> 配合使用时，波纹样式异常的问题。<a href="https://github.com/ant-design/ant-design/pull/44153" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44153/hovercard">#44153</a></li>
-<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 修复 Descriptions 组件自行嵌套时的边框样式问题。<a href="https://github.com/ant-design/ant-design/pull/43454" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43454/hovercard">#43454</a> <a href="https://github.com/Yuiai01">@Yuiai01</a></li>
+<li>💄 修复 Descriptions 组件自行嵌套时的边框样式问题。<a href="https://github.com/ant-design/ant-design/pull/43454" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/43454/hovercard">#43454</a> <a href="https://github.com/Yuiai01">@Yuiai01</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 修复 Pagination 上下页切换按钮 `transition`` 丢失的问题。<a href="https://github.com/ant-design/ant-design/pull/44030" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44030/hovercard">#44030</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 修复 Popconfirm 按钮组意外换行的问题。<a href="https://github.com/ant-design/ant-design/pull/44022" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44022/hovercard">#44022</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
-<li>💄 优化 Image 组件预览操作图标的样式。<a href="https://github.com/ant-design/ant-design/pull/44141" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44141/hovercard">#44141</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
-<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 优化 Input 和 InputNumber 在大尺寸下的字体大小。<a href="https://github.com/ant-design/ant-design/pull/44000" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44000/hovercard">#44000</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
+<li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 优化 Image 组件预览操作图标的样式。<a href="https://github.com/ant-design/ant-design/pull/44141" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44141/hovercard">#44141</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
+<li>💄 优化 Input 和 InputNumber 在大尺寸下的字体大小。<a href="https://github.com/ant-design/ant-design/pull/44000" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44000/hovercard">#44000</a> <a href="https://github.com/MuxinFeng">@MuxinFeng</a></li>
 <li><g-emoji class="g-emoji" alias="lipstick" fallback-src="https://github.githubassets.com/images/icons/emoji/unicode/1f484.png">💄</g-emoji> 移除 Space 部分未使用的样式。<a href="https://github.com/ant-design/ant-design/pull/44098" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/44098/hovercard">#44098</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from puppeteer: browsers: v1.6.0]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/browsers-v1.6.0</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/browsers-v1.6.0</guid>
-            <pubDate>Fri, 11 Aug 2023 05:58:46 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/browsers-v1.5.1...browsers-v1.6.0">1.6.0</a> (2023-08-10)</h2>
-<h3>Features</h3>
-<ul>
-<li>allow installing chrome/chromedriver by milestone and version prefix (<a href="https://github.com/puppeteer/puppeteer/issues/10720" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/10720/hovercard">#10720</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/bec2357aeedda42cfaf3096c6293c2f49ceb825e">bec2357</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from puppeteer: puppeteer-core: v21.0.3]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v21.0.3</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v21.0.3</guid>
-            <pubDate>Fri, 11 Aug 2023 05:58:44 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Dependencies</h3>
-<ul>
-<li>The following workspace dependencies were updated
-<ul>
-<li>dependencies
-<ul>
-<li>@puppeteer/browsers bumped from 1.5.1 to 1.6.0</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from puppeteer: puppeteer: v21.0.3]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v21.0.3</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v21.0.3</guid>
-            <pubDate>Fri, 11 Aug 2023 05:58:43 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Dependencies</h3>
-<ul>
-<li>The following workspace dependencies were updated
-<ul>
-<li>dependencies
-<ul>
-<li>puppeteer-core bumped from 21.0.2 to 21.0.3</li>
-<li>@puppeteer/browsers bumped from 1.5.1 to 1.6.0</li>
-</ul>
-</li>
-</ul>
-</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
