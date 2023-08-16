@@ -4,10 +4,441 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 16 Aug 2023 00:19:08 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 16 Aug 2023 06:06:38 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/106696]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F106696</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F106696</guid>
+            <pubDate>Thu, 17 Aug 2023 12:44:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>move UTs to test_cpp_extensions_jit.py</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106958: Update on "[Quant][Inductor] Fix the non contiguous load with uint8 d…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106958</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106958</guid>
+            <pubDate>Wed, 16 Aug 2023 05:59:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ata type"</p>
+<p><strong>Summary</strong><br>
+Currently, the load vectorization code generation with <code>non_contiguous</code> and <code>uint8</code> data type has issue in determining the data type. It caused wrong results in <code>shufflenet_v2_x1_0</code> model after we enable the <code>cat</code> quantization recipe.</p>
+<ul>
+<li>Previously code gen with the example in this PR:</li>
+</ul>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cpp_fused_clone_view_0 = async_compile.cpp('''
+#include &quot;/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h&quot;
+extern &quot;C&quot; void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ float tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = flag_to_float_scalar(in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]); return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')"><pre class="notranslate"><code>cpp_fused_clone_view_0 = async_compile.cpp('''
+#include "/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h"
+extern "C" void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ float tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = flag_to_float_scalar(in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]); return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')
+</code></pre></div>
+<ul>
+<li>After this PR, the code gen is:</li>
+</ul>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cpp_fused_clone_view_0 = async_compile.cpp('''
+#include &quot;/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h&quot;
+extern &quot;C&quot; void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ unsigned char tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]; return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')"><pre class="notranslate"><code>cpp_fused_clone_view_0 = async_compile.cpp('''
+#include "/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h"
+extern "C" void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ unsigned char tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]; return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')
+</code></pre></div>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="clear &amp;&amp; python -m pytest test_cpu_repro.py -k test_non_contiguous_load_buf_quant"><pre class="notranslate"><code>clear &amp;&amp; python -m pytest test_cpu_repro.py -k test_non_contiguous_load_buf_quant
+</code></pre></div>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107179: Update on "[dynamo][fallback] Fallback to eager when backend fails wi…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107179</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107179</guid>
+            <pubDate>Wed, 16 Aug 2023 05:42:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…th fake tensor exceptions"</p>
+<p>Example (I think we should fix this test case for real, but using this to test the ux around fallbacks)</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="torch.compile(backend=&quot;aot_eager&quot;)
+def fn(x):
+    return torch.sum(x, dim=1).tolist()
+
+print(fn(torch.rand(4, 4).to(dtype=torch.int64)))"><pre class="notranslate"><code>torch.compile(backend="aot_eager")
+def fn(x):
+    return torch.sum(x, dim=1).tolist()
+
+print(fn(torch.rand(4, 4).to(dtype=torch.int64)))
+</code></pre></div>
+<p>Running the script as is</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING] Backend compiler failed with a fake tensor exception at
+[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING]   File &quot;/data/users/anijain/pytorch/examples/spl.py&quot;, line 5, in fn
+[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING]     return torch.sum(x, dim=1).tolist()
+[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING] Falling back to eager for this frame. Please use TORCH_LOGS=graph_breaks to see the full stack trace.
+[0, 0, 0, 0]"><pre class="notranslate"><code>[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING] Backend compiler failed with a fake tensor exception at
+[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING]   File "/data/users/anijain/pytorch/examples/spl.py", line 5, in fn
+[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING]     return torch.sum(x, dim=1).tolist()
+[2023-08-14 14:53:48,863] torch._dynamo.output_graph: [WARNING] Falling back to eager for this frame. Please use TORCH_LOGS=graph_breaks to see the full stack trace.
+[0, 0, 0, 0]
+</code></pre></div>
+<p>Running the script with TORCH_LOGS="graph_breaks"</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] WON'T CONVERT fn /data/users/anijain/pytorch/examples/spl.py line 3
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] ========== TorchDynamo Stack Trace ==========
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] Traceback (most recent call last):
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_dynamo/output_graph.py&quot;, line 995, in call_user_compiler
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     compiled_fn = compiler_fn(gm, self.example_inputs())
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_dynamo/repro/after_dynamo.py&quot;, line 117, in debug_wrapper
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     compiled_gm = compiler_fn(gm, example_inputs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/__init__.py&quot;, line 1586, in __call__
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return self.compiler_fn(model_, inputs_, **self.kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_dynamo/backends/common.py&quot;, line 55, in compiler_fn
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     cg = aot_module_simplified(gm, example_inputs, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py&quot;, line 3795, in aot_module_simplified
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     compiled_fn = create_aot_dispatcher_function(
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_dynamo/utils.py&quot;, line 194, in time_wrapper
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     r = func(*args, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py&quot;, line 3283, in create_aot_dispatcher_function
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     fw_metadata = run_functionalized_fw_and_collect_metadata(
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py&quot;, line 757, in inner
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     flat_f_outs = f(*flat_f_args)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py&quot;, line 3400, in functional_call
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     out = Interpreter(mod).run(*args[params_len:], **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/fx/interpreter.py&quot;, line 138, in run
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     self.env[node] = self.run_node(node)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/fx/interpreter.py&quot;, line 195, in run_node
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return getattr(self, n.op)(n.target, args, kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/fx/interpreter.py&quot;, line 289, in call_method
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return getattr(self_obj, target)(*args_tail, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/utils/_stats.py&quot;, line 20, in wrapper
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return fn(*args, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_subclasses/fake_tensor.py&quot;, line 1233, in __torch_dispatch__
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return self.dispatch(func, types, args, kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_subclasses/fake_tensor.py&quot;, line 1470, in dispatch
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     op_impl_out = op_impl(self, func, *args, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/torch/_subclasses/fake_tensor.py&quot;, line 501, in local_scalar_dense
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     raise DataDependentOutputException(func)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] torch._subclasses.fake_tensor.DataDependentOutputException: aten._local_scalar_dense.default
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] While executing %item : [num_users=1] = call_method[target=item](args = (%getitem,), kwargs = {})
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] Original traceback:
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File &quot;/data/users/anijain/pytorch/examples/spl.py&quot;, line 5, in fn
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return torch.sum(x, dim=1).tolist()
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]"><pre class="notranslate"><code>[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] WON'T CONVERT fn /data/users/anijain/pytorch/examples/spl.py line 3
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] ========== TorchDynamo Stack Trace ==========
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] Traceback (most recent call last):
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_dynamo/output_graph.py", line 995, in call_user_compiler
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     compiled_fn = compiler_fn(gm, self.example_inputs())
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_dynamo/repro/after_dynamo.py", line 117, in debug_wrapper
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     compiled_gm = compiler_fn(gm, example_inputs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/__init__.py", line 1586, in __call__
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return self.compiler_fn(model_, inputs_, **self.kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_dynamo/backends/common.py", line 55, in compiler_fn
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     cg = aot_module_simplified(gm, example_inputs, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py", line 3795, in aot_module_simplified
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     compiled_fn = create_aot_dispatcher_function(
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_dynamo/utils.py", line 194, in time_wrapper
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     r = func(*args, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py", line 3283, in create_aot_dispatcher_function
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     fw_metadata = run_functionalized_fw_and_collect_metadata(
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py", line 757, in inner
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     flat_f_outs = f(*flat_f_args)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_functorch/aot_autograd.py", line 3400, in functional_call
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     out = Interpreter(mod).run(*args[params_len:], **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/fx/interpreter.py", line 138, in run
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     self.env[node] = self.run_node(node)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/fx/interpreter.py", line 195, in run_node
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return getattr(self, n.op)(n.target, args, kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/fx/interpreter.py", line 289, in call_method
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return getattr(self_obj, target)(*args_tail, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/utils/_stats.py", line 20, in wrapper
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return fn(*args, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_subclasses/fake_tensor.py", line 1233, in __torch_dispatch__
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return self.dispatch(func, types, args, kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_subclasses/fake_tensor.py", line 1470, in dispatch
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     op_impl_out = op_impl(self, func, *args, **kwargs)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/torch/_subclasses/fake_tensor.py", line 501, in local_scalar_dense
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     raise DataDependentOutputException(func)
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] torch._subclasses.fake_tensor.DataDependentOutputException: aten._local_scalar_dense.default
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] While executing %item : [num_users=1] = call_method[target=item](args = (%getitem,), kwargs = {})
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG] Original traceback:
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]   File "/data/users/anijain/pytorch/examples/spl.py", line 5, in fn
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]     return torch.sum(x, dim=1).tolist()
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]
+[2023-08-14 14:54:15,689] torch._dynamo.output_graph.__graph_breaks: [DEBUG]
+</code></pre></div>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy chenyang78 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Wed, 16 Aug 2023 05:30:41 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-847+gc0ac53e0d
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-847+gc0ac53e0d
+Build type: RelWithDebInfo
+LuaJIT 2.1.0-beta3
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="29650bf7cab25579f740f26a82aa6d77a090e64f624e3f0720bd3dafc117b56f  nvim-linux64.tar.gz
+9597a96dca603cb96bdfa9b422c4c6c155ba8061d595ead00b55e6471336df1a  nvim.appimage
+e89e5a9b418764c7cf20705864a429613daf9972eab6ed037e08d22cf60a522c  nvim.appimage.zsync
+9a4faf4de2e0abc5cc9b0cfdd71e107b542fff3cbc58be4504b50e04af7aff0e  nvim-macos.tar.gz
+113d1258aa7450badf3528f54bc895df5ca2e1afebca3d4e17cec47d343a3677  nvim-win64.zip
+529f605d12b640a0811e5bedeed4dca8599441fd607609d914aba9bf6ab1cdb6  nvim-win64.msi"><pre class="notranslate"><code>29650bf7cab25579f740f26a82aa6d77a090e64f624e3f0720bd3dafc117b56f  nvim-linux64.tar.gz
+9597a96dca603cb96bdfa9b422c4c6c155ba8061d595ead00b55e6471336df1a  nvim.appimage
+e89e5a9b418764c7cf20705864a429613daf9972eab6ed037e08d22cf60a522c  nvim.appimage.zsync
+9a4faf4de2e0abc5cc9b0cfdd71e107b542fff3cbc58be4504b50e04af7aff0e  nvim-macos.tar.gz
+113d1258aa7450badf3528f54bc895df5ca2e1afebca3d4e17cec47d343a3677  nvim-win64.zip
+529f605d12b640a0811e5bedeed4dca8599441fd607609d914aba9bf6ab1cdb6  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106904]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106904</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106904</guid>
+            <pubDate>Wed, 16 Aug 2023 05:29:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Expose torch.export() API</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107280: Allow float dtype when Autocast CPU Disabled]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107280</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107280</guid>
+            <pubDate>Wed, 16 Aug 2023 05:17:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107062: Update on "Fakify leaf of FunctionalTensor"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107062</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107062</guid>
+            <pubDate>Wed, 16 Aug 2023 05:03:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR allows dynamo to fakify FunctionalTensorWrapper by unwrapping, replacing and wrapping again for FunctionalTensorWrapper so that FunctionalTensorWrapper can be passed in as input for dynamo.optimize and we can support something like this</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="ff = torch.func.functionalize(f)
+torch.compile(ff)(x)"><pre><span class="pl-s1">ff</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-s1">func</span>.<span class="pl-en">functionalize</span>(<span class="pl-s1">f</span>)
+<span class="pl-s1">torch</span>.<span class="pl-en">compile</span>(<span class="pl-s1">ff</span>)(<span class="pl-s1">x</span>)</pre></div>
+<p>This PR didn't follow the __tensor_flatten__ and __tensor_unflatten__ protocol right now because we're not sure the plan of doing that for FunctionalTensorWrapper (it's implemented in C++).</p>
+<p><strong>Test Plan:</strong><br>
+Add a new test.</p>
+<p>cc voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy chenyang78 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.77]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.77</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.77</guid>
+            <pubDate>Wed, 16 Aug 2023 03:53:56 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/unstable/106750: Remove redundant change for gloo]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F106750</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F106750</guid>
+            <pubDate>Wed, 16 Aug 2023 02:49:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>HIP deprecated symbols are removed by <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/facebookincubator/gloo/commit/d74270ece2619fb9d82137a98be8ac6021ea6186/hovercard" href="https://github.com/facebookincubator/gloo/commit/d74270ece2619fb9d82137a98be8ac6021ea6186">facebookincubator/gloo@<tt>d74270e</tt></a></p>
+<p>There is no need to fix it in pytorch now.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from filament: v1.41.0]]></title>
+            <link>https://github.com/google/filament/releases/tag/v1.41.0</link>
+            <guid>https://github.com/google/filament/releases/tag/v1.41.0</guid>
+            <pubDate>Wed, 16 Aug 2023 02:26:18 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>backend: fix <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1823032248" data-permission-text="Title is private" data-url="https://github.com/google/filament/issues/6997" data-hovercard-type="issue" data-hovercard-url="/google/filament/issues/6997/hovercard" href="https://github.com/google/filament/issues/6997">#6997</a> : picking can fail on Adreno [<g-emoji class="g-emoji" alias="warning">⚠️</g-emoji> <strong>New Material Version</strong>]</li>
+<li>backend: A partial workaround for PowerVR devices (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1114564037" data-permission-text="Title is private" data-url="https://github.com/google/filament/issues/5118" data-hovercard-type="issue" data-hovercard-url="/google/filament/issues/5118/hovercard" href="https://github.com/google/filament/issues/5118">#5118</a>, b/190221124) [<g-emoji class="g-emoji" alias="warning">⚠️</g-emoji> <strong>Recompile Materials</strong>]</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107100]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107100</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107100</guid>
+            <pubDate>Wed, 16 Aug 2023 01:02:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Changed control flow based on <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/peterbell10/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/peterbell10">@peterbell10</a> 's feedback.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107004: Update on "Enable Lowering Channels last Conv1x1 when max autotune is…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107004</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107004</guid>
+            <pubDate>Wed, 16 Aug 2023 00:36:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… set"</p>
+<p>This can lead to a large speedup when max autotune is set, e.g. resnet 2.1x -&gt; 2.5x, particularly in combination with freezing.</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
             <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
@@ -27,60 +458,15 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107193: Update on "Fix inductor torch.cat edge case for empty tensor"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107193</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107193</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107193: Update on "Fix inductor torch.cat edge case for empty tensor"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107193</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107193</guid>
             <pubDate>Wed, 16 Aug 2023 00:18:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>Align with eager behavior on this edge case- essentially, the empty<br>
 tensor is ignored by the operator.</p>
 <p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1849082709" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/107118" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/107118/hovercard" href="https://github.com/pytorch/pytorch/issues/107118">#107118</a><br>
 cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov chillee jansel eellison</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107272]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107272</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107272</guid>
-            <pubDate>Wed, 16 Aug 2023 00:18:11 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107272]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107272</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107272</guid>
-            <pubDate>Wed, 16 Aug 2023 00:18:11 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from filament: v1.41.0]]></title>
-            <link>https://github.com/google/filament/releases/tag/v1.41.0</link>
-            <guid>https://github.com/google/filament/releases/tag/v1.41.0</guid>
-            <pubDate>Wed, 16 Aug 2023 00:13:08 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>backend: fix <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1823032248" data-permission-text="Title is private" data-url="https://github.com/google/filament/issues/6997" data-hovercard-type="issue" data-hovercard-url="/google/filament/issues/6997/hovercard" href="https://github.com/google/filament/issues/6997">#6997</a> : picking can fail on Adreno [<g-emoji class="g-emoji" alias="warning">⚠️</g-emoji> <strong>New Material Version</strong>]</li>
-<li>backend: A partial workaround for PowerVR devices (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1114564037" data-permission-text="Title is private" data-url="https://github.com/google/filament/issues/5118" data-hovercard-type="issue" data-hovercard-url="/google/filament/issues/5118/hovercard" href="https://github.com/google/filament/issues/5118">#5118</a>, b/190221124) [<g-emoji class="g-emoji" alias="warning">⚠️</g-emoji> <strong>Recompile Materials</strong>]</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107154]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107154</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107154</guid>
-            <pubDate>Wed, 16 Aug 2023 00:12:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Comment updates + error type updates</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107154]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107154</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107154</guid>
-            <pubDate>Wed, 16 Aug 2023 00:12:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Comment updates + error type updates</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/107271: Fakify param/buffers]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107271</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F107271</guid>
-            <pubDate>Wed, 16 Aug 2023 00:12:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from sqlalchemy: 2.0.20]]></title>
@@ -347,29 +733,11 @@ Re-added to the ci testing using version 0.2.0.</p>
 <p><em>Plus 424 more</em></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107255]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107255</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107255</guid>
-            <pubDate>Tue, 15 Aug 2023 21:12:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update submodule NCCL to v2.18.3</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 1.29.27]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/1.29.27</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/1.29.27</guid>
             <pubDate>Tue, 15 Aug 2023 20:53:24 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tagging 1.29.27 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107250: [functional collectives] Move back to registering finalizers on wrapp…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107250</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107250</guid>
-            <pubDate>Tue, 15 Aug 2023 19:39:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…ers.</p>
-<p>We cannot use inner tensors for finalizers as they are uncollective until waited.</p>
-<p>This PR adds a bunch of tests for the observable behavior we want, including the<br>
-necessary scafold for us to test code for their waitiness.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from postcss: 8.4.28]]></title>
@@ -474,13 +842,6 @@ necessary scafold for us to test code for their waitiness.</p>
 <li><strong>testing:</strong> use helper to determine project name and root directory in cypress project generator (<a href="https://github.com/nrwl/nx/issues/18608" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18608/hovercard">#18608</a>) (<a href="https://github.com/nrwl/nx/commit/3627df4d038b70f3a35db08c89378e61363c046d">3627df4</a>)</li>
 <li><strong>nx-cloud:</strong> add styles and cleanup to ai feed container (<a href="https://github.com/nrwl/nx/issues/18593" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/18593/hovercard">#18593</a>) (<a href="https://github.com/nrwl/nx/commit/a29de8b3431a58d5a2461d32cffb90f02df8be31">a29de8b</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107249: [export] avoid calling the callable during export.]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107249</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107249</guid>
-            <pubDate>Tue, 15 Aug 2023 18:47:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from mongo: r4.4.24]]></title>
@@ -799,13 +1160,6 @@ necessary scafold for us to test code for their waitiness.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/unstable/107027]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F107027</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F107027</guid>
-            <pubDate>Tue, 15 Aug 2023 13:27:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Remove tanh expected failure on ROCm</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from arangodb: v3.10.10]]></title>
             <link>https://github.com/arangodb/arangodb/releases/tag/v3.10.10</link>
             <guid>https://github.com/arangodb/arangodb/releases/tag/v3.10.10</guid>
@@ -854,9 +1208,9 @@ necessary scafold for us to test code for their waitiness.</p>
 <p>🌐 Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.31-pgo: Version 11.8.31]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.31-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.31-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.31]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.31</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.31</guid>
             <pubDate>Tue, 15 Aug 2023 11:04:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie3a6543b163edb92b119d4fcbce4f08bbed49d6d<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4780235" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4780235</a><br>
@@ -865,9 +1219,9 @@ Cr-Commit-Position: refs/heads/11.8.31@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/600c599bb0fbaa8f081c68295d6422d2f008b6ac/hovercard" href="https://github.com/v8/v8/commit/600c599bb0fbaa8f081c68295d6422d2f008b6ac"><tt>600c599</tt></a>-refs/heads/main@{#89521}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.31]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.31</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.31</guid>
+            <title><![CDATA[Release notes from v8: 11.8.31-pgo: Version 11.8.31]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.31-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.31-pgo</guid>
             <pubDate>Tue, 15 Aug 2023 11:04:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie3a6543b163edb92b119d4fcbce4f08bbed49d6d<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4780235" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4780235</a><br>
@@ -945,77 +1299,6 @@ hostname was present. (<a class="issue-link js-issue-link" data-error-text="Fail
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.30-dev-400</guid>
             <pubDate>Tue, 15 Aug 2023 08:11:33 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Tue, 15 Aug 2023 05:15:06 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-836+g6d93bdd45
-Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3"><pre class="notranslate"><code>NVIM v0.10.0-dev-836+g6d93bdd45
-Build type: RelWithDebInfo
-LuaJIT 2.1.0-beta3
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="db53278e5a06e5ce72e9c5793e3ab756e81bda4b2be30907d6762546df2e0ac2  nvim-linux64.tar.gz
-85d4038612333afdcbf650b2389069e694023847de7eb147edd51797617aafff  nvim.appimage
-25e7bdb8a9c6dcabbddf1b819da0b4f5248a60350e8b93bda5e3fbd613946f5c  nvim.appimage.zsync
-5dd4cc85e5a5311f86f1890462151c3f7d4423b0615638419f479a1622caad61  nvim-macos.tar.gz
-257a3251288f2edfc17e5cc8067732d612161953768967ef49eec0ae2571de11  nvim-win64.zip
-54a0677734cf9400000223dd94c90f540e874f33744c5b501e4e5e7adf362f02  nvim-win64.msi"><pre class="notranslate"><code>db53278e5a06e5ce72e9c5793e3ab756e81bda4b2be30907d6762546df2e0ac2  nvim-linux64.tar.gz
-85d4038612333afdcbf650b2389069e694023847de7eb147edd51797617aafff  nvim.appimage
-25e7bdb8a9c6dcabbddf1b819da0b4f5248a60350e8b93bda5e3fbd613946f5c  nvim.appimage.zsync
-5dd4cc85e5a5311f86f1890462151c3f7d4423b0615638419f479a1622caad61  nvim-macos.tar.gz
-257a3251288f2edfc17e5cc8067732d612161953768967ef49eec0ae2571de11  nvim-win64.zip
-54a0677734cf9400000223dd94c90f540e874f33744c5b501e4e5e7adf362f02  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from cube: v0.33.47]]></title>
@@ -1738,18 +2021,6 @@ f250b3099649137f1021f8f95a9404273bcb7539f0bef6d6cf2c91260285edc4  numpy-1.26.0b1
 8aefe8ab1228e00146e5ae88290c7fdb8221aef45b357aed7f3dff6ac3b3b25a  numpy-1.26.0b1-pp39-pypy39_pp73-win_amd64.whl
 c67eea90827e1e9aa220a3fc380ce8776428deba8ac9e7c931ce7b69e8dce115  numpy-1.26.0b1.tar.gz
 </code></pre></div>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cube: v0.33.45]]></title>
-            <link>https://github.com/cube-js/cube/releases/tag/v0.33.45</link>
-            <guid>https://github.com/cube-js/cube/releases/tag/v0.33.45</guid>
-            <pubDate>Sun, 13 Aug 2023 03:16:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.33.44...v0.33.45">0.33.45</a> (2023-08-13)</h2>
-<h3>Features</h3>
-<ul>
-<li><strong>cubesql:</strong> CASE WHEN SQL push down (<a href="https://github.com/cube-js/cube/issues/7029" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/7029/hovercard">#7029</a>) (<a href="https://github.com/cube-js/cube/commit/80e4a609cdb983db0a600d0fff0fd5bfe31652ed">80e4a60</a>)</li>
-<li><strong>cubesql:</strong> Whole SQL query push down to data sources (<a href="https://github.com/cube-js/cube/issues/6629" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/6629/hovercard">#6629</a>) (<a href="https://github.com/cube-js/cube/commit/0e8a76a20cb37e675997f384785dd06e09175113">0e8a76a</a>)</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
