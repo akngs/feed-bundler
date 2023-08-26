@@ -4,23 +4,213 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 26 Aug 2023 06:06:20 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 26 Aug 2023 12:06:51 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107840]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107840</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107840</guid>
-            <pubDate>Sat, 26 Aug 2023 05:55:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge branch 'main' into mlazos/concat-opt</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107951: Update on "[Quant][PT2E]Make _fuse_conv_bn_ support graph capture by …]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107951</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107951</guid>
+            <pubDate>Sat, 26 Aug 2023 08:50:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…torch._dynamo.export"</p>
+<p><strong>Summary</strong><br>
+The latest check-in <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/a0cfaf068887a608c00de4f5ceaf30242c6af720/hovercard" href="https://github.com/pytorch/pytorch/commit/a0cfaf068887a608c00de4f5ceaf30242c6af720"><tt>a0cfaf0</tt></a> for the conv-bn folding assumes the graph is captured by the new graph capture API <code>torch._export.capture_pre_autograd_graph</code>. Since we still need to use the original graph capture API <code>torch._dynamo_export</code> in 2.1 release. So, this check-in made negative impact to workloads' performance heavily. Made this PR to fix this issue by trying to make the conv-bn folding function workable with both new and original graph capture API.</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/mps/106292: made get_cpl_state static and added dispatch1djob to gamma.mm since f…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F106292</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F106292</guid>
-            <pubDate>Sat, 26 Aug 2023 05:32:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…unction had been made static elsewhere</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106958: Update on "[Quant][Inductor] Fix the non contiguous load with uint8 d…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106958</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106958</guid>
+            <pubDate>Sat, 26 Aug 2023 08:50:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ata type"</p>
+<p><strong>Summary</strong><br>
+Currently, the load vectorization code generation with <code>non_contiguous</code> and <code>uint8</code> data type has issue in determining the data type. It caused wrong results in <code>shufflenet_v2_x1_0</code> model after we enable the <code>cat</code> quantization recipe.</p>
+<ul>
+<li>Previously code gen with the example in this PR:</li>
+</ul>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cpp_fused_clone_view_0 = async_compile.cpp('''
+#include &quot;/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h&quot;
+extern &quot;C&quot; void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ float tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = flag_to_float_scalar(in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]); return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')"><pre class="notranslate"><code>cpp_fused_clone_view_0 = async_compile.cpp('''
+#include "/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h"
+extern "C" void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ float tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = flag_to_float_scalar(in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]); return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')
+</code></pre></div>
+<ul>
+<li>After this PR, the code gen is:</li>
+</ul>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="cpp_fused_clone_view_0 = async_compile.cpp('''
+#include &quot;/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h&quot;
+extern &quot;C&quot; void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ unsigned char tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]; return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')"><pre class="notranslate"><code>cpp_fused_clone_view_0 = async_compile.cpp('''
+#include "/tmp/torchinductor_root/i5/ci5uspp363v3ky6jkccllm3bxudy2fkdpqinkqhmpehfihejs7ko.h"
+extern "C" void kernel(const unsigned char* in_ptr0,
+                       float* out_ptr0)
+{
+    #pragma omp parallel num_threads(56)
+    {
+        {
+            #pragma omp for 
+            for(long i0=static_cast&lt;long&gt;(0L); i0&lt;static_cast&lt;long&gt;(232L); i0+=static_cast&lt;long&gt;(1L))
+            {
+                for(long i1=static_cast&lt;long&gt;(0L); i1&lt;static_cast&lt;long&gt;(784L); i1+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = ([&amp;]() { __at_align__ unsigned char tmpbuf[16]; for (long i1_inner = 0; i1_inner &lt; 16; i1_inner++) tmpbuf[i1_inner] = in_ptr0[static_cast&lt;long&gt;((116L*(static_cast&lt;long&gt;(i0) % static_cast&lt;long&gt;(2L))) + (232L*i1) + (232L*i1_inner) + (at::native::div_floor_integer(i0, 2L)))]; return at::vec::Vectorized&lt;uint8_t&gt;::loadu_one_fourth(tmpbuf); })();
+                    auto tmp1 = at::vec::convert_uint8_to_float(tmp0);
+                    auto tmp2 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(0.0));
+                    auto tmp3 = tmp1 - tmp2;
+                    auto tmp4 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(1.0));
+                    auto tmp5 = tmp3 * tmp4;
+                    auto tmp6 = tmp5 * tmp4;
+                    auto tmp7 = tmp6.round();
+                    auto tmp8 = tmp7 + tmp2;
+                    auto tmp9 = at::vec::maximum(tmp8, tmp2);
+                    auto tmp10 = at::vec::Vectorized&lt;float&gt;(static_cast&lt;float&gt;(255.0));
+                    auto tmp11 = at::vec::minimum(tmp9, tmp10);
+                    auto tmp12 = at::vec::convert_float_to_uint8(tmp11);
+                    auto tmp13 = at::vec::convert_uint8_to_float(tmp12);
+                    auto tmp14 = tmp13 - tmp2;
+                    auto tmp15 = tmp14 * tmp4;
+                    tmp15.store(out_ptr0 + static_cast&lt;long&gt;(i1 + (784L*i0)));
+                }
+            }
+        }
+    }
+}
+''')
+</code></pre></div>
+<p><strong>Test Plan</strong></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="clear &amp;&amp; python -m pytest test_cpu_repro.py -k test_non_contiguous_load_buf_quant"><pre class="notranslate"><code>clear &amp;&amp; python -m pytest test_cpu_repro.py -k test_non_contiguous_load_buf_quant
+</code></pre></div>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107144]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107144</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107144</guid>
+            <pubDate>Sat, 26 Aug 2023 08:16:13 GMT</pubDate>
+            <content:encoded><![CDATA[<p>clang8=&gt;clang9</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107966]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107966</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107966</guid>
+            <pubDate>Sat, 26 Aug 2023 07:26:52 GMT</pubDate>
+            <content:encoded><![CDATA[<p>apply clang-tidy fix</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107932: Update on "Automatically run dynamo in torch.cond"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107932</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107932</guid>
+            <pubDate>Sat, 26 Aug 2023 06:51:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>The key modification is:</p>
+<ol>
+<li>moving cond from functorch/experimental/ to torch/_higher_order_ops/cond.py</li>
+<li>always turn on dynamo in cond_compiled except on windows because torch.compile doesn't support windows rn.</li>
+<li>change test behaviors after turning on torch.compile  for many eager tests.</li>
+<li>expected fail a few tests in test_control_flow.py due to SymBool. Current plan is to wait for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1864543997" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/107850" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/107850/hovercard" href="https://github.com/pytorch/pytorch/pull/107850">#107850</a> and forward fix.</li>
+<li>Add new tests in test_control_flow.py to check cond can use dynamo to automatically lift the closures as input.</li>
+</ol>
+<p>cc voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx chenyang78 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
@@ -94,29 +284,6 @@ f061f246f96a807b7078e523e9a915ee8db8022c3b2debea634e5d3339466ed0  nvim-win64.zip
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/mps/105637]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F105637</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F105637</guid>
-            <pubDate>Sat, 26 Aug 2023 04:10:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge branch 'main' into mps_max_unpool2d</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/107932: Update on "Automatically run dynamo in torch.cond"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107932</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107932</guid>
-            <pubDate>Sat, 26 Aug 2023 04:03:01 GMT</pubDate>
-            <content:encoded><![CDATA[<p>The key modification is:</p>
-<ol>
-<li>moving cond from functorch/experimental/ to torch/_higher_order_ops/cond.py</li>
-<li>always turn on dynamo in cond_compiled except on windows because torch.compile doesn't support windows rn.</li>
-<li>change test behaviors after turning on torch.compile  for many eager tests.</li>
-<li>expected fail a few tests in test_control_flow.py due to SymBool. Current plan is to wait for <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1864543997" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/107850" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/107850/hovercard" href="https://github.com/pytorch/pytorch/pull/107850">#107850</a> and forward fix.</li>
-<li>Add new tests in test_control_flow.py to check cond can use dynamo to automatically lift the closures as input.</li>
-</ol>
-<p>cc voznesenskym penguinwu anijain2305 EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx chenyang78 aakhundov</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/107973]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107973</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F107973</guid>
@@ -124,18 +291,16 @@ f061f246f96a807b7078e523e9a915ee8db8022c3b2debea634e5d3339466ed0  nvim-win64.zip
             <content:encoded><![CDATA[<p>fix doctest wrt public interface</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/periodic/104487]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F104487</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F104487</guid>
-            <pubDate>Sat, 26 Aug 2023 02:03:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update CUDAGraph.cpp</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/104487]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104487</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F104487</guid>
-            <pubDate>Sat, 26 Aug 2023 02:03:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update CUDAGraph.cpp</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/106935: Update on "[Quant][Inductor] add UT of dequant promotion for linear"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106935</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F106935</guid>
+            <pubDate>Sat, 26 Aug 2023 01:51:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Summary</strong><br>
+Previously the UT of dequant promotion in Inductor only tests convolution. Now add linear case in the UT. This is for quantization PT2E with Inductor.</p>
+<p><strong>Test plan</strong><br>
+python test/inductor/test_mkldnn_pattern_matcher.py -k test_dequant_promotion</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/107835: Update on "[dtensor] fix new_empty_strided op"]]></title>
@@ -746,9 +911,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>🌐 Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.90-pgo: Version 11.8.90]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.90-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.90-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.90]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.90</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.90</guid>
             <pubDate>Fri, 25 Aug 2023 14:45:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Iaa0ab0eb2acd836c2d5cad0daacd471e907e4e41<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4812103" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4812103</a><br>
@@ -757,9 +922,9 @@ Cr-Commit-Position: refs/heads/11.8.90@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/fa0d18c519a98549156fd4138cd94f8eec57022b/hovercard" href="https://github.com/v8/v8/commit/fa0d18c519a98549156fd4138cd94f8eec57022b"><tt>fa0d18c</tt></a>-refs/heads/main@{#89630}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.90]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.90</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.90</guid>
+            <title><![CDATA[Release notes from v8: 11.8.90-pgo: Version 11.8.90]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.90-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.90-pgo</guid>
             <pubDate>Fri, 25 Aug 2023 14:45:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Iaa0ab0eb2acd836c2d5cad0daacd471e907e4e41<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4812103" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4812103</a><br>
@@ -830,9 +995,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/A7med3bdulBaset/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/A7med3bdulBaset">@A7med3bdulBaset</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ztanner/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ztanner">@ztanner</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/balazsorban44/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/balazsorban44">@balazsorban44</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> for helping!</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.89-pgo: Version 11.8.89]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.89-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.89-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.89]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.89</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.89</guid>
             <pubDate>Fri, 25 Aug 2023 13:10:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia558f65466ca5c260b1ebc17e493f96a91f0c2ea<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4812102" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4812102</a><br>
@@ -841,9 +1006,9 @@ Cr-Commit-Position: refs/heads/11.8.89@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7d1685463c3802b139b888e3c5a3ca75134765af/hovercard" href="https://github.com/v8/v8/commit/7d1685463c3802b139b888e3c5a3ca75134765af"><tt>7d16854</tt></a>-refs/heads/main@{#89629}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.89]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.89</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.89</guid>
+            <title><![CDATA[Release notes from v8: 11.8.89-pgo: Version 11.8.89]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.89-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.89-pgo</guid>
             <pubDate>Fri, 25 Aug 2023 13:10:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia558f65466ca5c260b1ebc17e493f96a91f0c2ea<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4812102" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4812102</a><br>
@@ -859,9 +1024,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>v28.0.0-nightly.20230825</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 11.8.88-pgo: Version 11.8.88]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.88-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.88-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 11.8.88]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.88</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.88</guid>
             <pubDate>Fri, 25 Aug 2023 12:58:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Id90bb23ff19719bc9becaf72ef138cc20d32ca49<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4813693" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4813693</a><br>
@@ -870,9 +1035,9 @@ Cr-Commit-Position: refs/heads/11.8.88@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2d47ce5ac65f6a47db971663083d600828696ada/hovercard" href="https://github.com/v8/v8/commit/2d47ce5ac65f6a47db971663083d600828696ada"><tt>2d47ce5</tt></a>-refs/heads/main@{#89627}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 11.8.88]]></title>
-            <link>https://github.com/v8/v8/releases/tag/11.8.88</link>
-            <guid>https://github.com/v8/v8/releases/tag/11.8.88</guid>
+            <title><![CDATA[Release notes from v8: 11.8.88-pgo: Version 11.8.88]]></title>
+            <link>https://github.com/v8/v8/releases/tag/11.8.88-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/11.8.88-pgo</guid>
             <pubDate>Fri, 25 Aug 2023 12:58:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Id90bb23ff19719bc9becaf72ef138cc20d32ca49<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4813693" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4813693</a><br>
@@ -2160,6 +2325,13 @@ This adds the <code>/api/v1/instance/translation_languages</code> REST API endpo
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/jestjs/jest/compare/v29.6.3...v29.6.4"><tt>v29.6.3...v29.6.4</tt></a></p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.12.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.12.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.12.0</guid>
+            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@5.12.0</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from gatsby: @gatsbyjs/parcel-namer-relative-to-cwd@2.12.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.12.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/%40gatsbyjs%2Fparcel-namer-relative-to-cwd%402.12.0</guid>
@@ -2174,39 +2346,11 @@ This adds the <code>/api/v1/instance/translation_languages</code> REST API endpo
             <content:encoded><![CDATA[<p>gatsby-transformer-screenshot@5.12.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.12.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.0</guid>
-            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.12.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@5.12.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.12.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.12.0</guid>
-            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-toml@5.12.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@8.12.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.12.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.12.0</guid>
-            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@8.12.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-yaml@5.12.0]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.12.0</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-yaml%405.12.0</guid>
             <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-transformer-yaml@5.12.0</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.12.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.12.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.12.0</guid>
-            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.12.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.12.0]]></title>
@@ -2216,11 +2360,18 @@ This adds the <code>/api/v1/instance/translation_languages</code> REST API endpo
             <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.12.0</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.12.0]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.12.0</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sharp%405.12.0</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-xml@5.12.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.12.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-xml%405.12.0</guid>
             <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sharp@5.12.0</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-transformer-xml@5.12.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-toml@5.12.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.12.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-toml%405.12.0</guid>
+            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-toml@5.12.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-worker@2.12.0]]></title>
@@ -2228,6 +2379,20 @@ This adds the <code>/api/v1/instance/translation_languages</code> REST API endpo
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-worker%402.12.0</guid>
             <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-worker@2.12.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.12.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.0</guid>
+            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.12.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-react-docgen@8.12.0]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.12.0</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-react-docgen%408.12.0</guid>
+            <pubDate>Thu, 24 Aug 2023 11:00:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-react-docgen@8.12.0</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from spring-boot: v3.1.3]]></title>
@@ -3607,70 +3772,6 @@ UID: d7bbe725-9e48-4af8-a0cb-6cb255d873a3
             <guid>https://github.com/electron/electron/releases/tag/v28.0.0-nightly.20230823</guid>
             <pubDate>Wed, 23 Aug 2023 13:01:59 GMT</pubDate>
             <content:encoded><![CDATA[<p>v28.0.0-nightly.20230823</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.4.0-alpha.1]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.4.0-alpha.1</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.4.0-alpha.1</guid>
-            <pubDate>Wed, 23 Aug 2023 10:09:08 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>7.4.0-alpha.1</h2>
-<ul>
-<li>Build: Migrate @storybook/scripts to strict-ts - <a href="https://github.com/storybookjs/storybook/pull/23818" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23818/hovercard">#23818</a>, thanks <a href="https://github.com/stilt0n">@stilt0n</a>!</li>
-<li>CLI: Exclude addon-styling from upgrade - <a href="https://github.com/storybookjs/storybook/pull/23841" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23841/hovercard">#23841</a>, thanks <a href="https://github.com/Integrayshaun">@Integrayshaun</a>!</li>
-<li>Core: Add error categorization framework - <a href="https://github.com/storybookjs/storybook/pull/23653" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23653/hovercard">#23653</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Core: Fix error thrown if <code>docs.defaultName</code> is unset - <a href="https://github.com/storybookjs/storybook/pull/23893" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23893/hovercard">#23893</a>, thanks <a href="https://github.com/stilt0n">@stilt0n</a>!</li>
-<li>Core: Fix race-condition relating to <code>addons.setConfig</code> - <a href="https://github.com/storybookjs/storybook/pull/23802" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23802/hovercard">#23802</a>, thanks <a href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Maintenance: Move filtering of sidebar into the state - <a href="https://github.com/storybookjs/storybook/pull/23911" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23911/hovercard">#23911</a>, thanks <a href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Maintenance: Revert "WebpackBuilder: Remove need for <code>react</code> as peerDependency" - <a href="https://github.com/storybookjs/storybook/pull/23882" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23882/hovercard">#23882</a>, thanks <a href="https://github.com/vanessayuenn">@vanessayuenn</a>!</li>
-<li>Manager API: Fix <code>api.getAddonState</code>default value - <a href="https://github.com/storybookjs/storybook/pull/23804" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23804/hovercard">#23804</a>, thanks <a href="https://github.com/sookmax">@sookmax</a>!</li>
-<li>Publish: Don't distribute src files or unnecessary template files - <a href="https://github.com/storybookjs/storybook/pull/23853" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23853/hovercard">#23853</a>, thanks <a href="https://github.com/shilman">@shilman</a>!</li>
-<li>UI: Add an experimental API for adding sidebar filter functions at runtime - <a href="https://github.com/storybookjs/storybook/pull/23722" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23722/hovercard">#23722</a>, thanks <a href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>UI: Removal of experimental components - <a href="https://github.com/storybookjs/storybook/pull/23907" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23907/hovercard">#23907</a>, thanks <a href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Vue3: Add support for  Global Apps install - <a href="https://github.com/storybookjs/storybook/pull/23772" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23772/hovercard">#23772</a>, thanks <a href="https://github.com/chakAs3">@chakAs3</a>!</li>
-<li>Vue3: Use slot value directly if it's a string in source decorator - <a href="https://github.com/storybookjs/storybook/pull/23784" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23784/hovercard">#23784</a>, thanks <a href="https://github.com/nasvillanueva">@nasvillanueva</a>!</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@1.23.0]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.23.0</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%401.23.0</guid>
-            <pubDate>Wed, 23 Aug 2023 10:06:06 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Minor Changes</h3>
-<ul>
-<li>
-<p>feat: add warning for mistyped route filenames (<a href="https://github.com/sveltejs/kit/pull/10558" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10558/hovercard">#10558</a>)</p>
-</li>
-<li>
-<p>feat: accept <code>URL</code> in <code>redirect</code> (<a href="https://github.com/sveltejs/kit/pull/10570" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10570/hovercard">#10570</a>)</p>
-</li>
-</ul>
-<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: adjust the type of <code>Navigation["type"]</code> (<a href="https://github.com/sveltejs/kit/pull/10599" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10599/hovercard">#10599</a>)</p>
-</li>
-<li>
-<p>fix: allow logging <code>$page.url</code> during prerendering (<a href="https://github.com/sveltejs/kit/pull/10567" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10567/hovercard">#10567</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-cloudflare@2.3.3]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%402.3.3</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%402.3.3</guid>
-            <pubDate>Wed, 23 Aug 2023 10:06:03 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: correctly include <code>config.kit.paths.base</code> (<a href="https://github.com/sveltejs/kit/pull/10604" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/10604/hovercard">#10604</a>)</p>
-</li>
-<li>
-<p>Updated dependencies [<a href="https://github.com/sveltejs/kit/commit/7c37a2fb3bff0f47f817bc8049b454abe591b8a0"><code>7c37a2fb3</code></a>, <a href="https://github.com/sveltejs/kit/commit/998fe2f19833df4ffc08f29e924cc8e1591f7734"><code>998fe2f19</code></a>, <a href="https://github.com/sveltejs/kit/commit/23721d1fbed04083069f07c068289282819ff4cb"><code>23721d1fb</code></a>, <a href="https://github.com/sveltejs/kit/commit/32afba695088b946aefe96da75b36de9b0667fbe"><code>32afba695</code></a>]:</p>
-<ul>
-<li>@sveltejs/kit@1.23.0</li>
-</ul>
-</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
