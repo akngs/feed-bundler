@@ -4,15 +4,538 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 20 Oct 2023 18:06:29 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 21 Oct 2023 00:19:53 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/111681: Update on "Make require_stride_order peek into AliasedLayout"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F111681</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F111681</guid>
+            <pubDate>Sat, 21 Oct 2023 00:18:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p><code>require_stride_order</code> doesn't know how to handle storage with <code>AliasedLayout</code>. It always resorts to a copy even when the view refers to a storage with <code>FixedLayout</code>. This causes an unneccessary allocation + copy for collective outputs. Peeking into <code>AliasedLayout</code> in <code>require_stride_order</code> seems to be the proper way to address the issue.</p>
+<p>Original program:</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import tempfile
+
+import torch
+import torch.distributed as dist
+from torch.distributed._functional_collectives import *  # noqa
+from torch._inductor.utils import run_and_get_triton_code
+
+
+def func(arg: torch.Tensor) -&gt; torch.Tensor:
+    buf0 = arg + 42
+    out0 = torch.ops.c10d_functional.all_reduce(buf0, &quot;avg&quot;, &quot;default&quot;, [0], 1)
+    out0 = torch.ops.c10d_functional.wait_tensor(out0)
+    return out0
+
+
+if __name__ == &quot;__main__&quot;:
+    with tempfile.NamedTemporaryFile(delete=False) as tmpf:
+        dist.init_process_group(
+            backend=&quot;nccl&quot;, init_method=f&quot;file://{tmpf.name}&quot;, rank=0, world_size=1
+        )
+        device = torch.device(&quot;cuda:0&quot;)
+
+        compiled = torch.compile(func)
+        print(run_and_get_triton_code(compiled, torch.rand(4, 4, device=device)))
+
+        torch.cuda.synchronize()
+        dist.destroy_process_group()"><pre><span class="pl-k">import</span> <span class="pl-s1">tempfile</span>
+
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span> <span class="pl-k">as</span> <span class="pl-s1">dist</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">distributed</span>.<span class="pl-s1">_functional_collectives</span> <span class="pl-k">import</span> <span class="pl-c1">*</span>  <span class="pl-c"># noqa</span>
+<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">_inductor</span>.<span class="pl-s1">utils</span> <span class="pl-k">import</span> <span class="pl-s1">run_and_get_triton_code</span>
+
+
+<span class="pl-k">def</span> <span class="pl-en">func</span>(<span class="pl-s1">arg</span>: <span class="pl-s1">torch</span>.<span class="pl-v">Tensor</span>) <span class="pl-c1">-&gt;</span> <span class="pl-s1">torch</span>.<span class="pl-v">Tensor</span>:
+    <span class="pl-s1">buf0</span> <span class="pl-c1">=</span> <span class="pl-s1">arg</span> <span class="pl-c1">+</span> <span class="pl-c1">42</span>
+    <span class="pl-s1">out0</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-s1">ops</span>.<span class="pl-s1">c10d_functional</span>.<span class="pl-en">all_reduce</span>(<span class="pl-s1">buf0</span>, <span class="pl-s">"avg"</span>, <span class="pl-s">"default"</span>, [<span class="pl-c1">0</span>], <span class="pl-c1">1</span>)
+    <span class="pl-s1">out0</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-s1">ops</span>.<span class="pl-s1">c10d_functional</span>.<span class="pl-en">wait_tensor</span>(<span class="pl-s1">out0</span>)
+    <span class="pl-k">return</span> <span class="pl-s1">out0</span>
+
+
+<span class="pl-k">if</span> <span class="pl-s1">__name__</span> <span class="pl-c1">==</span> <span class="pl-s">"__main__"</span>:
+    <span class="pl-k">with</span> <span class="pl-s1">tempfile</span>.<span class="pl-v">NamedTemporaryFile</span>(<span class="pl-s1">delete</span><span class="pl-c1">=</span><span class="pl-c1">False</span>) <span class="pl-k">as</span> <span class="pl-s1">tmpf</span>:
+        <span class="pl-s1">dist</span>.<span class="pl-en">init_process_group</span>(
+            <span class="pl-s1">backend</span><span class="pl-c1">=</span><span class="pl-s">"nccl"</span>, <span class="pl-s1">init_method</span><span class="pl-c1">=</span><span class="pl-s">f"file://<span class="pl-s1"><span class="pl-kos">{</span><span class="pl-s1">tmpf</span>.<span class="pl-s1">name</span><span class="pl-kos">}</span></span>"</span>, <span class="pl-s1">rank</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">world_size</span><span class="pl-c1">=</span><span class="pl-c1">1</span>
+        )
+        <span class="pl-s1">device</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">device</span>(<span class="pl-s">"cuda:0"</span>)
+
+        <span class="pl-s1">compiled</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">compile</span>(<span class="pl-s1">func</span>)
+        <span class="pl-en">print</span>(<span class="pl-en">run_and_get_triton_code</span>(<span class="pl-s1">compiled</span>, <span class="pl-s1">torch</span>.<span class="pl-en">rand</span>(<span class="pl-c1">4</span>, <span class="pl-c1">4</span>, <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s1">device</span>)))
+
+        <span class="pl-s1">torch</span>.<span class="pl-s1">cuda</span>.<span class="pl-en">synchronize</span>()
+        <span class="pl-s1">dist</span>.<span class="pl-en">destroy_process_group</span>()</pre></div>
+<p>Before:</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="def call(args):
+    arg0_1, = args
+    args.clear()
+    assert_size_stride(arg0_1, (4, 4), (4, 1))
+    with torch.cuda._DeviceGuard(0):
+        torch.cuda.set_device(0) # no-op to ensure context
+        buf0 = empty_strided((4, 4), (4, 1), device='cuda', dtype=torch.float32)
+        # Source Nodes: [buf0], Original ATen: [aten.add]
+        stream0 = get_cuda_stream(0)
+        triton_poi_fused_add_0.run(arg0_1, buf0, 16, grid=grid(16), stream=stream0)
+        del arg0_1
+        buf1 = buf0; del buf0  # reuse
+        buf2_pg = c10d._find_or_create_pg_by_ranks_and_tag('default', [0], 1)
+        buf2 = buf1
+        buf2_work = dist.all_reduce(buf2, async_op=True, group=buf2_pg, op=fun_col_impl._str_to_reduce_op('avg'))
+        fun_col_impl._register_tensor_work(buf2, buf2_work)
+        buf1 = _wait_tensor(buf1)
+        buf3 = buf1
+        buf4 = empty_strided((4, 4), (4, 1), device='cuda', dtype=torch.float32)
+        # Source Nodes: [out0_1], Original ATen: [c10d_functional.wait_tensor]
+        triton_poi_fused_wait_tensor_1.run(buf3, buf4, 16, grid=grid(16), stream=stream0)
+        del buf1
+        del buf3
+        return (buf4, )"><pre><span class="pl-k">def</span> <span class="pl-en">call</span>(<span class="pl-s1">args</span>):
+    <span class="pl-s1">arg0_1</span>, <span class="pl-c1">=</span> <span class="pl-s1">args</span>
+    <span class="pl-s1">args</span>.<span class="pl-en">clear</span>()
+    <span class="pl-en">assert_size_stride</span>(<span class="pl-s1">arg0_1</span>, (<span class="pl-c1">4</span>, <span class="pl-c1">4</span>), (<span class="pl-c1">4</span>, <span class="pl-c1">1</span>))
+    <span class="pl-k">with</span> <span class="pl-s1">torch</span>.<span class="pl-s1">cuda</span>.<span class="pl-en">_DeviceGuard</span>(<span class="pl-c1">0</span>):
+        <span class="pl-s1">torch</span>.<span class="pl-s1">cuda</span>.<span class="pl-en">set_device</span>(<span class="pl-c1">0</span>) <span class="pl-c"># no-op to ensure context</span>
+        <span class="pl-s1">buf0</span> <span class="pl-c1">=</span> <span class="pl-en">empty_strided</span>((<span class="pl-c1">4</span>, <span class="pl-c1">4</span>), (<span class="pl-c1">4</span>, <span class="pl-c1">1</span>), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s">'cuda'</span>, <span class="pl-s1">dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-s1">float32</span>)
+        <span class="pl-c"># Source Nodes: [buf0], Original ATen: [aten.add]</span>
+        <span class="pl-s1">stream0</span> <span class="pl-c1">=</span> <span class="pl-en">get_cuda_stream</span>(<span class="pl-c1">0</span>)
+        <span class="pl-s1">triton_poi_fused_add_0</span>.<span class="pl-en">run</span>(<span class="pl-s1">arg0_1</span>, <span class="pl-s1">buf0</span>, <span class="pl-c1">16</span>, <span class="pl-s1">grid</span><span class="pl-c1">=</span><span class="pl-en">grid</span>(<span class="pl-c1">16</span>), <span class="pl-s1">stream</span><span class="pl-c1">=</span><span class="pl-s1">stream0</span>)
+        <span class="pl-k">del</span> <span class="pl-s1">arg0_1</span>
+        <span class="pl-s1">buf1</span> <span class="pl-c1">=</span> <span class="pl-s1">buf0</span>; <span class="pl-k">del</span> <span class="pl-s1">buf0</span>  <span class="pl-c"># reuse</span>
+        <span class="pl-s1">buf2_pg</span> <span class="pl-c1">=</span> <span class="pl-s1">c10d</span>.<span class="pl-en">_find_or_create_pg_by_ranks_and_tag</span>(<span class="pl-s">'default'</span>, [<span class="pl-c1">0</span>], <span class="pl-c1">1</span>)
+        <span class="pl-s1">buf2</span> <span class="pl-c1">=</span> <span class="pl-s1">buf1</span>
+        <span class="pl-s1">buf2_work</span> <span class="pl-c1">=</span> <span class="pl-s1">dist</span>.<span class="pl-en">all_reduce</span>(<span class="pl-s1">buf2</span>, <span class="pl-s1">async_op</span><span class="pl-c1">=</span><span class="pl-c1">True</span>, <span class="pl-s1">group</span><span class="pl-c1">=</span><span class="pl-s1">buf2_pg</span>, <span class="pl-s1">op</span><span class="pl-c1">=</span><span class="pl-s1">fun_col_impl</span>.<span class="pl-en">_str_to_reduce_op</span>(<span class="pl-s">'avg'</span>))
+        <span class="pl-s1">fun_col_impl</span>.<span class="pl-en">_register_tensor_work</span>(<span class="pl-s1">buf2</span>, <span class="pl-s1">buf2_work</span>)
+        <span class="pl-s1">buf1</span> <span class="pl-c1">=</span> <span class="pl-en">_wait_tensor</span>(<span class="pl-s1">buf1</span>)
+        <span class="pl-s1">buf3</span> <span class="pl-c1">=</span> <span class="pl-s1">buf1</span>
+        <span class="pl-s1">buf4</span> <span class="pl-c1">=</span> <span class="pl-en">empty_strided</span>((<span class="pl-c1">4</span>, <span class="pl-c1">4</span>), (<span class="pl-c1">4</span>, <span class="pl-c1">1</span>), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s">'cuda'</span>, <span class="pl-s1">dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-s1">float32</span>)
+        <span class="pl-c"># Source Nodes: [out0_1], Original ATen: [c10d_functional.wait_tensor]</span>
+        <span class="pl-s1">triton_poi_fused_wait_tensor_1</span>.<span class="pl-en">run</span>(<span class="pl-s1">buf3</span>, <span class="pl-s1">buf4</span>, <span class="pl-c1">16</span>, <span class="pl-s1">grid</span><span class="pl-c1">=</span><span class="pl-en">grid</span>(<span class="pl-c1">16</span>), <span class="pl-s1">stream</span><span class="pl-c1">=</span><span class="pl-s1">stream0</span>)
+        <span class="pl-k">del</span> <span class="pl-s1">buf1</span>
+        <span class="pl-k">del</span> <span class="pl-s1">buf3</span>
+        <span class="pl-k">return</span> (<span class="pl-s1">buf4</span>, )</pre></div>
+<p>After:</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="def call(args):
+    arg0_1, = args
+    args.clear()
+    assert_size_stride(arg0_1, (4, 4), (4, 1))
+    with torch.cuda._DeviceGuard(0):
+        torch.cuda.set_device(0) # no-op to ensure context
+        buf0 = empty_strided((4, 4), (4, 1), device='cuda', dtype=torch.float32)
+        # Source Nodes: [buf0], Original ATen: [aten.add]
+        stream0 = get_cuda_stream(0)
+        triton_poi_fused_add_0.run(arg0_1, buf0, 16, grid=grid(16), stream=stream0)
+        del arg0_1
+        buf1 = buf0; del buf0  # reuse
+        buf2_pg = c10d._find_or_create_pg_by_ranks_and_tag('default', [0], 1)
+        buf2 = buf1
+        buf2_work = dist.all_reduce(buf2, async_op=True, group=buf2_pg, op=fun_col_impl._str_to_reduce_op('avg'))
+        fun_col_impl._register_tensor_work(buf2, buf2_work)
+        buf1 = _wait_tensor(buf1)
+        buf3 = buf1
+        del buf3
+        return (buf1, )"><pre><span class="pl-k">def</span> <span class="pl-en">call</span>(<span class="pl-s1">args</span>):
+    <span class="pl-s1">arg0_1</span>, <span class="pl-c1">=</span> <span class="pl-s1">args</span>
+    <span class="pl-s1">args</span>.<span class="pl-en">clear</span>()
+    <span class="pl-en">assert_size_stride</span>(<span class="pl-s1">arg0_1</span>, (<span class="pl-c1">4</span>, <span class="pl-c1">4</span>), (<span class="pl-c1">4</span>, <span class="pl-c1">1</span>))
+    <span class="pl-k">with</span> <span class="pl-s1">torch</span>.<span class="pl-s1">cuda</span>.<span class="pl-en">_DeviceGuard</span>(<span class="pl-c1">0</span>):
+        <span class="pl-s1">torch</span>.<span class="pl-s1">cuda</span>.<span class="pl-en">set_device</span>(<span class="pl-c1">0</span>) <span class="pl-c"># no-op to ensure context</span>
+        <span class="pl-s1">buf0</span> <span class="pl-c1">=</span> <span class="pl-en">empty_strided</span>((<span class="pl-c1">4</span>, <span class="pl-c1">4</span>), (<span class="pl-c1">4</span>, <span class="pl-c1">1</span>), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s">'cuda'</span>, <span class="pl-s1">dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-s1">float32</span>)
+        <span class="pl-c"># Source Nodes: [buf0], Original ATen: [aten.add]</span>
+        <span class="pl-s1">stream0</span> <span class="pl-c1">=</span> <span class="pl-en">get_cuda_stream</span>(<span class="pl-c1">0</span>)
+        <span class="pl-s1">triton_poi_fused_add_0</span>.<span class="pl-en">run</span>(<span class="pl-s1">arg0_1</span>, <span class="pl-s1">buf0</span>, <span class="pl-c1">16</span>, <span class="pl-s1">grid</span><span class="pl-c1">=</span><span class="pl-en">grid</span>(<span class="pl-c1">16</span>), <span class="pl-s1">stream</span><span class="pl-c1">=</span><span class="pl-s1">stream0</span>)
+        <span class="pl-k">del</span> <span class="pl-s1">arg0_1</span>
+        <span class="pl-s1">buf1</span> <span class="pl-c1">=</span> <span class="pl-s1">buf0</span>; <span class="pl-k">del</span> <span class="pl-s1">buf0</span>  <span class="pl-c"># reuse</span>
+        <span class="pl-s1">buf2_pg</span> <span class="pl-c1">=</span> <span class="pl-s1">c10d</span>.<span class="pl-en">_find_or_create_pg_by_ranks_and_tag</span>(<span class="pl-s">'default'</span>, [<span class="pl-c1">0</span>], <span class="pl-c1">1</span>)
+        <span class="pl-s1">buf2</span> <span class="pl-c1">=</span> <span class="pl-s1">buf1</span>
+        <span class="pl-s1">buf2_work</span> <span class="pl-c1">=</span> <span class="pl-s1">dist</span>.<span class="pl-en">all_reduce</span>(<span class="pl-s1">buf2</span>, <span class="pl-s1">async_op</span><span class="pl-c1">=</span><span class="pl-c1">True</span>, <span class="pl-s1">group</span><span class="pl-c1">=</span><span class="pl-s1">buf2_pg</span>, <span class="pl-s1">op</span><span class="pl-c1">=</span><span class="pl-s1">fun_col_impl</span>.<span class="pl-en">_str_to_reduce_op</span>(<span class="pl-s">'avg'</span>))
+        <span class="pl-s1">fun_col_impl</span>.<span class="pl-en">_register_tensor_work</span>(<span class="pl-s1">buf2</span>, <span class="pl-s1">buf2_work</span>)
+        <span class="pl-s1">buf1</span> <span class="pl-c1">=</span> <span class="pl-en">_wait_tensor</span>(<span class="pl-s1">buf1</span>)
+        <span class="pl-s1">buf3</span> <span class="pl-c1">=</span> <span class="pl-s1">buf1</span>
+        <span class="pl-k">del</span> <span class="pl-s1">buf3</span>
+        <span class="pl-k">return</span> (<span class="pl-s1">buf1</span>, )</pre></div>
+<p>Test Plan:</p>
+<p>Reviewers:</p>
+<p>Subscribers:</p>
+<p>Tasks:</p>
+<p>Tags:</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111720]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111720</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111720</guid>
+            <pubDate>Sat, 21 Oct 2023 00:18:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/111720]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F111720</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F111720</guid>
+            <pubDate>Sat, 21 Oct 2023 00:18:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/periodic/111609: [Pytorch][Vulkan] mean.dim (#111609)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F111609</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fperiodic%2F111609</guid>
+            <pubDate>Sat, 21 Oct 2023 00:17:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p>We implement <a href="https://pytorch.org/docs/stable/generated/torch.mean.html" rel="nofollow"><code>torch.mean(input, dim, keepdim)</code></a> for tensors of 2d to 4d.</p>
+<p>Since 0-dim tensor hasn't been supported yet, we only support <code>dim.size() &lt; input.dim()</code> for now. We will support following cases in the future work:</p>
+<ul>
+<li><code>dim.size() == input.dim()</code></li>
+<li><code>input.dim() == 1</code></li>
+</ul>
+<p>Test Plan:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[luwei@devbig984.prn1 /data/users/luwei/fbsource (970fcd90c)]$ LD_LIBRARY_PATH=third-party/swiftshader/lib/linux-x64/ buck run fbcode/mode/dev-nosan //xplat/caffe2:pt_vulkan_api_test_bin -- --gtest_filter=&quot;*mean*&quot;
+Building: finished in 0.1 sec (100%) 339/339 jobs, 0/339 updated
+  Total time: 0.1 sec
+BUILD SUCCEEDED
+Running main() from third-party/googletest/1.11.0/googletest/googletest/src/gtest_main.cc
+Note: Google Test filter = *mean*
+[==========] Running 7 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 7 tests from VulkanAPITest
+[ RUN      ] VulkanAPITest.mean_invalid_inputs
+[       OK ] VulkanAPITest.mean_invalid_inputs (46 ms)
+[ RUN      ] VulkanAPITest.mean_dim_2d
+[       OK ] VulkanAPITest.mean_dim_2d (127 ms)
+[ RUN      ] VulkanAPITest.mean_dim_3d
+[       OK ] VulkanAPITest.mean_dim_3d (103 ms)
+[ RUN      ] VulkanAPITest.mean_dim_4d
+[       OK ] VulkanAPITest.mean_dim_4d (89 ms)
+[ RUN      ] VulkanAPITest.mean_dim_keepdim_2d
+[       OK ] VulkanAPITest.mean_dim_keepdim_2d (66 ms)
+[ RUN      ] VulkanAPITest.mean_dim_keepdim_3d
+[       OK ] VulkanAPITest.mean_dim_keepdim_3d (127 ms)
+[ RUN      ] VulkanAPITest.mean_dim_keepdim_4d
+[       OK ] VulkanAPITest.mean_dim_keepdim_4d (4 ms)
+[----------] 7 tests from VulkanAPITest (564 ms total)
+
+[----------] Global test environment tear-down
+[==========] 7 tests from 1 test suite ran. (564 ms total)
+[  PASSED  ] 7 tests."><pre class="notranslate"><code>[luwei@devbig984.prn1 /data/users/luwei/fbsource (970fcd90c)]$ LD_LIBRARY_PATH=third-party/swiftshader/lib/linux-x64/ buck run fbcode/mode/dev-nosan //xplat/caffe2:pt_vulkan_api_test_bin -- --gtest_filter="*mean*"
+Building: finished in 0.1 sec (100%) 339/339 jobs, 0/339 updated
+  Total time: 0.1 sec
+BUILD SUCCEEDED
+Running main() from third-party/googletest/1.11.0/googletest/googletest/src/gtest_main.cc
+Note: Google Test filter = *mean*
+[==========] Running 7 tests from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 7 tests from VulkanAPITest
+[ RUN      ] VulkanAPITest.mean_invalid_inputs
+[       OK ] VulkanAPITest.mean_invalid_inputs (46 ms)
+[ RUN      ] VulkanAPITest.mean_dim_2d
+[       OK ] VulkanAPITest.mean_dim_2d (127 ms)
+[ RUN      ] VulkanAPITest.mean_dim_3d
+[       OK ] VulkanAPITest.mean_dim_3d (103 ms)
+[ RUN      ] VulkanAPITest.mean_dim_4d
+[       OK ] VulkanAPITest.mean_dim_4d (89 ms)
+[ RUN      ] VulkanAPITest.mean_dim_keepdim_2d
+[       OK ] VulkanAPITest.mean_dim_keepdim_2d (66 ms)
+[ RUN      ] VulkanAPITest.mean_dim_keepdim_3d
+[       OK ] VulkanAPITest.mean_dim_keepdim_3d (127 ms)
+[ RUN      ] VulkanAPITest.mean_dim_keepdim_4d
+[       OK ] VulkanAPITest.mean_dim_keepdim_4d (4 ms)
+[----------] 7 tests from VulkanAPITest (564 ms total)
+
+[----------] Global test environment tear-down
+[==========] 7 tests from 1 test suite ran. (564 ms total)
+[  PASSED  ] 7 tests.
+</code></pre></div>
+<p>Reviewed By: yipjustin</p>
+<p>Differential Revision: D50312990</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from solana: Testnet - v1.17.3]]></title>
+            <link>https://github.com/solana-labs/solana/releases/tag/v1.17.3</link>
+            <guid>https://github.com/solana-labs/solana/releases/tag/v1.17.3</guid>
+            <pubDate>Sat, 21 Oct 2023 00:16:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This is a Testnet release. It is not recommended for Mainnet Beta.</p>
+
+<ul>
+<li>The v1.17 minimum dynamic port range is now 14 so you may need to expand the range specified by <code>--dynamic-port-range</code>
+<ul>
+<li>This is expanded from the v1.16 minimum of 13</li>
+</ul>
+</li>
+<li>Archive formats<code>[bz2, gzip, tar, none]</code> have been deprecated for the <code>--snapshot-archive-format</code> argument (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1922087528" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33484" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33484/hovercard" href="https://github.com/solana-labs/solana/pull/33484">#33484</a>)
+<ul>
+<li>Existing snapshots with these formats can still be read, but <code>solana-validator</code> and <code>solana-ledger-tool</code> must be updated to use a different archive format. The recommended value is <code>zstd</code>, which is also the default if the <code>--snapshot-archive-format</code> argument is removed altogether</li>
+</ul>
+</li>
+</ul>
+<h2>Changes</h2>
+<ul>
+<li>v1.17: [zk-token-sdk] Limit max seed length for key derivations (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1944019015" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33700" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33700/hovercard" href="https://github.com/solana-labs/solana/pull/33700">#33700</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954945771" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33795" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33795/hovercard" href="https://github.com/solana-labs/solana/pull/33795">#33795</a>)</li>
+<li>v1.17: prunes repair QUIC connections (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952779388" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33775" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33775/hovercard" href="https://github.com/solana-labs/solana/pull/33775">#33775</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954882507" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33792" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33792/hovercard" href="https://github.com/solana-labs/solana/pull/33792">#33792</a>)</li>
+<li>v1.17: separates out routing shreds from establishing connections (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1933583832" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33599" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33599/hovercard" href="https://github.com/solana-labs/solana/pull/33599">#33599</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952574359" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33772" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33772/hovercard" href="https://github.com/solana-labs/solana/pull/33772">#33772</a>)</li>
+<li>v1.17: docs: move rpc info to rpc docs (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946507399" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33723" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33723/hovercard" href="https://github.com/solana-labs/solana/pull/33723">#33723</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948148235" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33738" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33738/hovercard" href="https://github.com/solana-labs/solana/pull/33738">#33738</a>)</li>
+<li>v1.17: separates out routing repair requests from establishing connections (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948376976" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33742" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33742/hovercard" href="https://github.com/solana-labs/solana/pull/33742">#33742</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952264280" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33769" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33769/hovercard" href="https://github.com/solana-labs/solana/pull/33769">#33769</a>)</li>
+<li>v1.17: program error: add <code>ArithmeticOverflow</code> (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951477916" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33767" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33767/hovercard" href="https://github.com/solana-labs/solana/pull/33767">#33767</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953562950" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33779" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33779/hovercard" href="https://github.com/solana-labs/solana/pull/33779">#33779</a>)</li>
+<li>v1.17: SDK: update error variants in <code>Feature::from_account_info</code> (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949141712" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33750" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33750/hovercard" href="https://github.com/solana-labs/solana/pull/33750">#33750</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953565332" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33780" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33780/hovercard" href="https://github.com/solana-labs/solana/pull/33780">#33780</a>)</li>
+<li>v1.17: program error: add <code>InvalidAccountOwner</code> (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951470679" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33766" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33766/hovercard" href="https://github.com/solana-labs/solana/pull/33766">#33766</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952632313" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33773" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33773/hovercard" href="https://github.com/solana-labs/solana/pull/33773">#33773</a>)</li>
+<li>v1.17: Fix non-determinism in account_hash_ignore_slot on genesis (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1942157930" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33692" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33692/hovercard" href="https://github.com/solana-labs/solana/pull/33692">#33692</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1945971283" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33720" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33720/hovercard" href="https://github.com/solana-labs/solana/pull/33720">#33720</a>)</li>
+<li>v1.17: token-2022: Update to use program build with zk-ops enabled (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948510833" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33747" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33747/hovercard" href="https://github.com/solana-labs/solana/pull/33747">#33747</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1950517503" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33757" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33757/hovercard" href="https://github.com/solana-labs/solana/pull/33757">#33757</a>)</li>
+<li>v1.17: down samples outgoing gossip pull requests (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1945939507" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33719" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33719/hovercard" href="https://github.com/solana-labs/solana/pull/33719">#33719</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949795222" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33752" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33752/hovercard" href="https://github.com/solana-labs/solana/pull/33752">#33752</a>)</li>
+<li>v1.17: remove redundant pubkey update record (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946122600" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33722" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33722/hovercard" href="https://github.com/solana-labs/solana/pull/33722">#33722</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947923997" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33735" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33735/hovercard" href="https://github.com/solana-labs/solana/pull/33735">#33735</a>)</li>
+<li>v1.17: Enable frozen_abi on banking trace file (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1923355013" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33501" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33501/hovercard" href="https://github.com/solana-labs/solana/pull/33501">#33501</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931203240" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33578" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33578/hovercard" href="https://github.com/solana-labs/solana/pull/33578">#33578</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from selenium: Nightly]]></title>
+            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
+            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
+            <pubDate>Sat, 21 Oct 2023 00:15:01 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Commits</h2>
+<ul>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/80a86cae16f645068ee5b6abc99db1df6f53e7a2/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/80a86cae16f645068ee5b6abc99db1df6f53e7a2"><tt>80a86ca</tt></a>: [bidi][java] Add request data types from Network module (Puja Jagani)</li>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/ff3bbc03f15400a604ba3c6942b41620f8f69558/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/ff3bbc03f15400a604ba3c6942b41620f8f69558"><tt>ff3bbc0</tt></a>: [grid] remove the http2-settings header in the reverse proxy (Jörg Sautter)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.94-nightly-20231021.1]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.94-nightly-20231021.1</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.94-nightly-20231021.1</guid>
+            <pubDate>Sat, 21 Oct 2023 00:07:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>chore: Publish 1.3.94-nightly-20231021.1</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111614: Update on "[dynamo] fix None routing bug during var_getattr on UDO"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111614</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111614</guid>
+            <pubDate>Fri, 20 Oct 2023 23:52:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v13.5.7-canary.13]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v13.5.7-canary.13</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v13.5.7-canary.13</guid>
+            <pubDate>Fri, 20 Oct 2023 23:24:23 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Update React from a41957507 to d803f519e: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1950494680" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57015" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57015/hovercard" href="https://github.com/vercel/next.js/pull/57015">#57015</a></li>
+<li>prefer Option&lt;Vc&gt; over Vc: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953650311" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57104" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57104/hovercard" href="https://github.com/vercel/next.js/pull/57104">#57104</a></li>
+<li>chore: drop <code>form-data</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954762026" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57141" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57141/hovercard" href="https://github.com/vercel/next.js/pull/57141">#57141</a></li>
+<li>chore: drop web streams polyfilling on <code>globalThis</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953069556" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57077" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57077/hovercard" href="https://github.com/vercel/next.js/pull/57077">#57077</a></li>
+<li>chore: create template from <code>next-edge-ssr-loader</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1938247340" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56715" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56715/hovercard" href="https://github.com/vercel/next.js/pull/56715">#56715</a></li>
+<li>Remove the experimental <code>serverActions</code> flag: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954813103" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57145" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57145/hovercard" href="https://github.com/vercel/next.js/pull/57145">#57145</a></li>
+<li>Route Handler Types: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952833371" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57070" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57070/hovercard" href="https://github.com/vercel/next.js/pull/57070">#57070</a></li>
+<li>Revert "Add retry for fetching subsetted Google Fonts": <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1955014221" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57154" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57154/hovercard" href="https://github.com/vercel/next.js/pull/57154">#57154</a></li>
+<li>Display experimental features for next build: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954974052" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57152" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57152/hovercard" href="https://github.com/vercel/next.js/pull/57152">#57152</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>make test case less flaky: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954700726" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57138" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57138/hovercard" href="https://github.com/vercel/next.js/pull/57138">#57138</a></li>
+<li>Refine eslint rule: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954800795" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57143" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57143/hovercard" href="https://github.com/vercel/next.js/pull/57143">#57143</a></li>
+<li>Update eslint config: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954877650" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57146" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57146/hovercard" href="https://github.com/vercel/next.js/pull/57146">#57146</a></li>
+<li>Reduce e2e deploy concurrency: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954770095" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57142" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57142/hovercard" href="https://github.com/vercel/next.js/pull/57142">#57142</a></li>
+<li>Mark most GTMParams as optional: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954996319" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/57153" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/57153/hovercard" href="https://github.com/vercel/next.js/pull/57153">#57153</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gnoff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gnoff">@gnoff</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/balazsorban44/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/balazsorban44">@balazsorban44</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ForsakenHarmony/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ForsakenHarmony">@ForsakenHarmony</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/philwolstenholme/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/philwolstenholme">@philwolstenholme</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wyattjoh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wyattjoh">@wyattjoh</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111672]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111672</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111672</guid>
+            <pubDate>Fri, 20 Oct 2023 23:15:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Update GenerateEmbeddingSpMDM invocation for bf16</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from solana: Mainnet - v1.16.18]]></title>
+            <link>https://github.com/solana-labs/solana/releases/tag/v1.16.18</link>
+            <guid>https://github.com/solana-labs/solana/releases/tag/v1.16.18</guid>
+            <pubDate>Fri, 20 Oct 2023 22:40:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This is a stable release suitable for use on Mainnet Beta</p>
+
+<p>v1.16 removes <code>solana-sys-tuner</code>. For manual tuning please see these <a href="https://docs.solana.com/running-validator/validator-start#system-tuning" rel="nofollow">System Tuning instructions</a></p>
+<ul>
+<li>
+<p>In previous v1.16 releases, the <code>TransactionStatus</code> and <code>AddressSignatures</code> columns were not properly cleaned. This could have resulted in excessive storage use for nodes running with <code>--enable-rpc-transaction-history</code>. This has been fixed with <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1812883937" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/32548" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/32548/hovercard" href="https://github.com/solana-labs/solana/pull/32548">#32548</a></p>
+</li>
+<li>
+<p>Hidden CLI flag, <code>--no-skip-initial-accounts-db-clean</code>, was added to work around nodes with 128 GB of RAM that OOM at startup</p>
+</li>
+</ul>
+<h2>Changes</h2>
+<ul>
+<li>v1.16: Change getHealth to compare optimistically confirmed slots (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1936902887" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33651" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33651/hovercard" href="https://github.com/solana-labs/solana/pull/33651">#33651</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1945840554" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33716" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33716/hovercard" href="https://github.com/solana-labs/solana/pull/33716">#33716</a>)</li>
+<li>v1.16: Update SPL downstream CI to use 1.16 compatible branch (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952040247" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33768" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33768/hovercard" href="https://github.com/solana-labs/solana/pull/33768">#33768</a>)</li>
+<li>v1.16: Fix non-determinism in account_hash_ignore_slot on genesis (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1942157930" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33692" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33692/hovercard" href="https://github.com/solana-labs/solana/pull/33692">#33692</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947641573" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33728" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33728/hovercard" href="https://github.com/solana-labs/solana/pull/33728">#33728</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111714]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111714</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111714</guid>
+            <pubDate>Fri, 20 Oct 2023 22:36:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>move tf override tensor to torch_function.py</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111703: Fixed a memory leak in PyTorchFileReader. Added a test to prevent reg…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111703</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111703</guid>
+            <pubDate>Fri, 20 Oct 2023 22:25:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ressions.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Fri, 20 Oct 2023 21:49:12 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2023-10-20 21:49:11 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/c9a95cacd9412b8cc0106eccb691a09d492d676e/hovercard" href="https://github.com/kovidgoyal/kitty/commit/c9a95cacd9412b8cc0106eccb691a09d492d676e"><tt>c9a95ca</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111627: Update on "[inductor] Implement clone removal for user defined triton…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111627</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111627</guid>
+            <pubDate>Fri, 20 Oct 2023 21:36:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>… kernel via reinplace_scatters"</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: electron v27.0.2]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v27.0.2</link>
+            <guid>https://github.com/electron/electron/releases/tag/v27.0.2</guid>
+            <pubDate>Fri, 20 Oct 2023 21:17:06 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Release Notes for v27.0.2</h1>
+<h2>Fixes</h2>
+<ul>
+<li>Functions called over the <code>contextBridge</code> are now called with the expected receiver (<code>this</code>). <a href="https://github.com/electron/electron/pull/40262" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/40262/hovercard">#40262</a> <span>(Also in <a href="https://github.com/electron/electron/pull/40263" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/40263/hovercard">28</a>)</span></li>
+</ul>
+<h2>Other Changes</h2>
+<ul>
+<li>Backported fix for 1473422. <a href="https://github.com/electron/electron/pull/40280" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/40280/hovercard">#40280</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from eslint: v8.52.0]]></title>
+            <link>https://github.com/eslint/eslint/releases/tag/v8.52.0</link>
+            <guid>https://github.com/eslint/eslint/releases/tag/v8.52.0</guid>
+            <pubDate>Fri, 20 Oct 2023 21:00:51 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Features</h2>
+<ul>
+<li><a href="https://github.com/eslint/eslint/commit/70648ee49c07f7b533d09f6bf8a5291e5a5a8601"><code>70648ee</code></a> feat: report-unused-disable-directive to report unused eslint-enable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1916881734" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17611" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17611/hovercard" href="https://github.com/eslint/eslint/pull/17611">#17611</a>) (Yosuke Ota)</li>
+</ul>
+<h2>Bug Fixes</h2>
+<ul>
+<li><a href="https://github.com/eslint/eslint/commit/5de9637fc925729a83d5a5e9e868a41792a184e3"><code>5de9637</code></a> fix: Ensure shared references in rule configs are separated (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952621207" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17666" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17666/hovercard" href="https://github.com/eslint/eslint/pull/17666">#17666</a>) (Nicholas C. Zakas)</li>
+<li><a href="https://github.com/eslint/eslint/commit/dcfe5739c374c9d7ed21f14027870ec0fd453661"><code>dcfe573</code></a> fix: add preceding semicolon in suggestions of <code>no-object-constructor</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1943113256" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17649" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17649/hovercard" href="https://github.com/eslint/eslint/pull/17649">#17649</a>) (Francesco Trotta)</li>
+</ul>
+<h2>Documentation</h2>
+<ul>
+<li><a href="https://github.com/eslint/eslint/commit/476d58a584d5d2db003c4c22ffee90e63566164d"><code>476d58a</code></a> docs: Add note about invalid CLI flags when using flat config. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952531668" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17664" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17664/hovercard" href="https://github.com/eslint/eslint/pull/17664">#17664</a>) (Nicholas C. Zakas)</li>
+<li><a href="https://github.com/eslint/eslint/commit/660ed3afd128ad529234a855345629982caf1bc7"><code>660ed3a</code></a> docs: Plugin flat config migration guide (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1936043210" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17640" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17640/hovercard" href="https://github.com/eslint/eslint/pull/17640">#17640</a>) (Nicholas C. Zakas)</li>
+<li><a href="https://github.com/eslint/eslint/commit/a58aa200fccedae7e2e9b6129246f2cedab14f8d"><code>a58aa20</code></a> docs: fix examples for several rules (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1941711459" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17645" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17645/hovercard" href="https://github.com/eslint/eslint/pull/17645">#17645</a>) (Milos Djermanovic)</li>
+<li><a href="https://github.com/eslint/eslint/commit/179929bd46892f18f2aef0c159d5cc361cb69987"><code>179929b</code></a> docs: Remove trailing newline from the code of Playground links (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1936146311" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17641" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17641/hovercard" href="https://github.com/eslint/eslint/pull/17641">#17641</a>) (Francesco Trotta)</li>
+<li><a href="https://github.com/eslint/eslint/commit/f8e5c30636450d4a8baf51f0e227685e6d77ac64"><code>f8e5c30</code></a> docs: Update README (GitHub Actions Bot)</li>
+<li><a href="https://github.com/eslint/eslint/commit/b7ef2f34fe12b68a366e1b4bf5f64d7332c6e72e"><code>b7ef2f3</code></a> docs: Enable pretty code formatter output (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1933425502" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17635" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17635/hovercard" href="https://github.com/eslint/eslint/pull/17635">#17635</a>) (Nicholas C. Zakas)</li>
+<li><a href="https://github.com/eslint/eslint/commit/0bcb9a8db608a3d0bd2645f99e0707b9a9bbaaf0"><code>0bcb9a8</code></a> docs: Fix syntax errors in rule examples (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931731111" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17633" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17633/hovercard" href="https://github.com/eslint/eslint/pull/17633">#17633</a>) (Francesco Trotta)</li>
+<li><a href="https://github.com/eslint/eslint/commit/61b90839633ef300ac7707a651f65f532e65f42d"><code>61b9083</code></a> docs: Make no-continue example code work (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1937031770" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17643" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17643/hovercard" href="https://github.com/eslint/eslint/pull/17643">#17643</a>) (Zhongyuan Zhou)</li>
+<li><a href="https://github.com/eslint/eslint/commit/9fafe450c31ed9b6bdd9dcd6c115255943b8c1c2"><code>9fafe45</code></a> docs: upgrade to 11ty 2.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931693932" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17632" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17632/hovercard" href="https://github.com/eslint/eslint/pull/17632">#17632</a>) (Percy Ma)</li>
+<li><a href="https://github.com/eslint/eslint/commit/ff8e4bf327b5c92b0623b0fc5f8f101954f785db"><code>ff8e4bf</code></a> docs: Update README (GitHub Actions Bot)</li>
+<li><a href="https://github.com/eslint/eslint/commit/fab249ae6addac2ee18cd81cee80916010bb469e"><code>fab249a</code></a> docs: Update README (GitHub Actions Bot)</li>
+<li><a href="https://github.com/eslint/eslint/commit/392305bf4797e3ebc696dfca48bd874741fca845"><code>392305b</code></a> docs: Update <code>no-irregular-whitespace</code> and fix examples (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931231696" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17626" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17626/hovercard" href="https://github.com/eslint/eslint/pull/17626">#17626</a>) (Francesco Trotta)</li>
+<li><a href="https://github.com/eslint/eslint/commit/6b8acfb770589f3941df41c3910d3b8ffc3e1e45"><code>6b8acfb</code></a> docs: Add real whitespace to <code>no-trailing-spaces</code> examples (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931541391" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17630" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17630/hovercard" href="https://github.com/eslint/eslint/pull/17630">#17630</a>) (Francesco Trotta)</li>
+<li><a href="https://github.com/eslint/eslint/commit/1000187e00949332babcee4d37d46c96a6a554a8"><code>1000187</code></a> docs: Fix examples in <code>unicode-bom</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931548156" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17631" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17631/hovercard" href="https://github.com/eslint/eslint/pull/17631">#17631</a>) (Francesco Trotta)</li>
+<li><a href="https://github.com/eslint/eslint/commit/000290c4c923cc1473e21b4bdbdc0c42765ef7dd"><code>000290c</code></a> docs: Update README (GitHub Actions Bot)</li>
+</ul>
+<h2>Chores</h2>
+<ul>
+<li><a href="https://github.com/eslint/eslint/commit/6d1f0c2da0309c06c21149b8d71a8f439a70d7e8"><code>6d1f0c2</code></a> chore: upgrade @eslint/js@8.52.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954974787" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17671" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17671/hovercard" href="https://github.com/eslint/eslint/pull/17671">#17671</a>) (Milos Djermanovic)</li>
+<li><a href="https://github.com/eslint/eslint/commit/d63d4fe0942e6747ab60e758aa36076f43041a30"><code>d63d4fe</code></a> chore: package.json update for @eslint/js release (ESLint Jenkins)</li>
+<li><a href="https://github.com/eslint/eslint/commit/f30cefee6bda2789ede18e1664b84c2638ea1bb5"><code>f30cefe</code></a> test: fix FlatESLint tests for caching (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947923590" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17658" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17658/hovercard" href="https://github.com/eslint/eslint/pull/17658">#17658</a>) (Milos Djermanovic)</li>
+<li><a href="https://github.com/eslint/eslint/commit/ef650cb612510bcfa1379c1f0af56dd563b3a705"><code>ef650cb</code></a> test: update tests for no-promise-executor-return (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949502398" data-permission-text="Title is private" data-url="https://github.com/eslint/eslint/issues/17661" data-hovercard-type="pull_request" data-hovercard-url="/eslint/eslint/pull/17661/hovercard" href="https://github.com/eslint/eslint/pull/17661">#17661</a>) (Milos Djermanovic)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from polars: Python Polars 0.19.10]]></title>
+            <link>https://github.com/pola-rs/polars/releases/tag/py-0.19.10</link>
+            <guid>https://github.com/pola-rs/polars/releases/tag/py-0.19.10</guid>
+            <pubDate>Fri, 20 Oct 2023 20:48:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><g-emoji class="g-emoji" alias="warning">⚠️</g-emoji> Deprecations</h2>
+<ul>
+<li>Deprecate <code>DataType.is_nested</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951658014" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11844" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11844/hovercard" href="https://github.com/pola-rs/polars/pull/11844">#11844</a>)</li>
+</ul>
+<h2>🚀 Performance improvements</h2>
+<ul>
+<li>fix accidental quadratic behavior; cache null_count (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954120030" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11889" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11889/hovercard" href="https://github.com/pola-rs/polars/pull/11889">#11889</a>)</li>
+<li>fix quadratic behavior in append sorted check (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954302169" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11893" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11893/hovercard" href="https://github.com/pola-rs/polars/pull/11893">#11893</a>)</li>
+<li>optimise <code>read_database</code> Databricks queries made using SQLAlchemy connections (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953874452" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11885" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11885/hovercard" href="https://github.com/pola-rs/polars/pull/11885">#11885</a>)</li>
+<li>properly push down slice before left/asof join (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952206524" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11854" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11854/hovercard" href="https://github.com/pola-rs/polars/pull/11854">#11854</a>)</li>
+</ul>
+<h2>✨ Enhancements</h2>
+<ul>
+<li>Introduce list.sample (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951658022" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11845" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11845/hovercard" href="https://github.com/pola-rs/polars/pull/11845">#11845</a>)</li>
+<li>don't require empty config for cloud scan_parquet (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948915766" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11819" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11819/hovercard" href="https://github.com/pola-rs/polars/pull/11819">#11819</a>)</li>
+</ul>
+<h2>🐞 Bug fixes</h2>
+<ul>
+<li>raise a suitable error from <code>read_excel</code> and/or <code>read_ods</code> when target sheet does not exist (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954922352" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11906" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11906/hovercard" href="https://github.com/pola-rs/polars/pull/11906">#11906</a>)</li>
+<li>use physcial append (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954313933" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11894" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11894/hovercard" href="https://github.com/pola-rs/polars/pull/11894">#11894</a>)</li>
+<li>Add <code>include_nulls</code> parameter to <code>update</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1950247576" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11830" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11830/hovercard" href="https://github.com/pola-rs/polars/pull/11830">#11830</a>)</li>
+<li>recursively apply <code>cast_unchecked</code> in lists (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953779605" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11884" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11884/hovercard" href="https://github.com/pola-rs/polars/pull/11884">#11884</a>)</li>
+<li>recursively check allowed streaming dtypes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953566597" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11879" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11879/hovercard" href="https://github.com/pola-rs/polars/pull/11879">#11879</a>)</li>
+<li>Frame slicing single column (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949663378" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11825" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11825/hovercard" href="https://github.com/pola-rs/polars/pull/11825">#11825</a>)</li>
+<li>fix project pushdown for double projection contains count (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951422719" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11843" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11843/hovercard" href="https://github.com/pola-rs/polars/pull/11843">#11843</a>)</li>
+<li>Propagate validity when cast primitive to list (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951771790" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11846" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11846/hovercard" href="https://github.com/pola-rs/polars/pull/11846">#11846</a>)</li>
+<li>Edge cases for list count formatting (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946257518" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11780" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11780/hovercard" href="https://github.com/pola-rs/polars/pull/11780">#11780</a>)</li>
+</ul>
+<h2>🛠️ Other improvements</h2>
+<ul>
+<li>Further assert utils refactor (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1954037984" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11888" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11888/hovercard" href="https://github.com/pola-rs/polars/pull/11888">#11888</a>)</li>
+<li>load 40x40 avatar from github and add loading=lazy attribute. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953902830" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11886" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11886/hovercard" href="https://github.com/pola-rs/polars/pull/11886">#11886</a>)</li>
+<li>Fix Cargo warning for parquet2 dependency (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953681817" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11882" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11882/hovercard" href="https://github.com/pola-rs/polars/pull/11882">#11882</a>)</li>
+<li>Allow manual trigger for docs deployment (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953635956" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11881" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11881/hovercard" href="https://github.com/pola-rs/polars/pull/11881">#11881</a>)</li>
+<li>add section about plugins (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952371777" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11855" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11855/hovercard" href="https://github.com/pola-rs/polars/pull/11855">#11855</a>)</li>
+<li>fix incorrect example of valid time zones (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953151969" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11873" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11873/hovercard" href="https://github.com/pola-rs/polars/pull/11873">#11873</a>)</li>
+<li>fix typo in code example in section Expressions - Basic operators (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951954729" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11848" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11848/hovercard" href="https://github.com/pola-rs/polars/pull/11848">#11848</a>)</li>
+<li>Bump docs dependencies (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952178026" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11852" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11852/hovercard" href="https://github.com/pola-rs/polars/pull/11852">#11852</a>)</li>
+<li>add missing polars-ops tests to CI (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952461033" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11859" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11859/hovercard" href="https://github.com/pola-rs/polars/pull/11859">#11859</a>)</li>
+<li>Assert utils refactor (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948322414" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/11813" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/11813/hovercard" href="https://github.com/pola-rs/polars/pull/11813">#11813</a>)</li>
+</ul>
+<p>Thank you to all our contributors for making this release possible!<br>
+<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Walnut356/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Walnut356">@Walnut356</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alexander-beedie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexander-beedie">@alexander-beedie</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dannyvankooten/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dannyvankooten">@dannyvankooten</a>, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>[bot], <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ewoolsey/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ewoolsey">@ewoolsey</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jrycw/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jrycw">@jrycw</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mcrumiller/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mcrumiller">@mcrumiller</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nameexhaustion/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nameexhaustion">@nameexhaustion</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/orlp/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/orlp">@orlp</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/reswqa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/reswqa">@reswqa</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ritchie46/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ritchie46">@ritchie46</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rjthoen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rjthoen">@rjthoen</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/romanovacca/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/romanovacca">@romanovacca</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/stinodego/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/stinodego">@stinodego</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111702: [inductor] Move inductor ops to CompositeExplicitAutograd]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111702</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111702</guid>
+            <pubDate>Fri, 20 Oct 2023 20:26:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Relands <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1942891553" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/111274" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/111274/hovercard" href="https://github.com/pytorch/pytorch/pull/111274">#111274</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.29.68]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.29.68</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.29.68</guid>
+            <pubDate>Fri, 20 Oct 2023 20:07:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.29.68 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from code-server: v4.18.0]]></title>
+            <link>https://github.com/coder/code-server/releases/tag/v4.18.0</link>
+            <guid>https://github.com/coder/code-server/releases/tag/v4.18.0</guid>
+            <pubDate>Fri, 20 Oct 2023 20:01:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Code v1.83.1</p>
+<h3>Changed</h3>
+<ul>
+<li>Updated to Code 1.83.1.</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from cube: v0.34.6]]></title>
             <link>https://github.com/cube-js/cube/releases/tag/v0.34.6</link>
             <guid>https://github.com/cube-js/cube/releases/tag/v0.34.6</guid>
-            <pubDate>Fri, 20 Oct 2023 18:04:52 GMT</pubDate>
+            <pubDate>Fri, 20 Oct 2023 18:23:40 GMT</pubDate>
             <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.34.5...v0.34.6">0.34.6</a> (2023-10-20)</h2>
 <h3>Bug Fixes</h3>
 <ul>
@@ -27,6 +550,13 @@
 </ul>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-5792]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-5792</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-5792</guid>
+            <pubDate>Fri, 20 Oct 2023 18:12:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from Ghost: 5.70.1]]></title>
             <link>https://github.com/TryGhost/Ghost/releases/tag/v5.70.1</link>
             <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.70.1</guid>
@@ -37,6 +567,28 @@
 <hr>
 <p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.70.0...v5.70.1"><tt>v5.70.0...v5.70.1</tt></a></p>
 <p>🌐 Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.0.174]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.0.174</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.0.174</guid>
+            <pubDate>Fri, 20 Oct 2023 17:52:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I79d7cf95bab71eb5d690bcf189e445ccb6c0805b<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4955717" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4955717</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.0.174@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/24a064af1e004b7b154eb7016511a2b449e2ab0f/hovercard" href="https://github.com/v8/v8/commit/24a064af1e004b7b154eb7016511a2b449e2ab0f"><tt>24a064a</tt></a>-refs/heads/main@{#90522}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.0.174-pgo: Version 12.0.174]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.0.174-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.0.174-pgo</guid>
+            <pubDate>Fri, 20 Oct 2023 17:52:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I79d7cf95bab71eb5d690bcf189e445ccb6c0805b<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4955717" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4955717</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.0.174@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/24a064af1e004b7b154eb7016511a2b449e2ab0f/hovercard" href="https://github.com/v8/v8/commit/24a064af1e004b7b154eb7016511a2b449e2ab0f"><tt>24a064a</tt></a>-refs/heads/main@{#90522}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from sentry: 23.10.1]]></title>
@@ -73,18 +625,11 @@
 <p><em>Plus 209 more</em></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from electron: v27.0.2]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v27.0.2</link>
-            <guid>https://github.com/electron/electron/releases/tag/v27.0.2</guid>
-            <pubDate>Fri, 20 Oct 2023 17:47:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v27.0.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111605]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111605</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111605</guid>
-            <pubDate>Fri, 20 Oct 2023 17:40:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge branch 'main' into kflu_aot_inductor_test_dynamic_batch</p>]]></content:encoded>
+            <title><![CDATA[Release notes from aws-cli: 2.13.28]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/2.13.28</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/2.13.28</guid>
+            <pubDate>Fri, 20 Oct 2023 17:37:59 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 2.13.28 release.</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v13.5.7-canary.12]]></title>
@@ -209,13 +754,6 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111668: [ez] Remove temp files]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111668</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111668</guid>
-            <pubDate>Fri, 20 Oct 2023 16:48:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Accidentally added by <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1950598717" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/111504" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/111504/hovercard" href="https://github.com/pytorch/pytorch/pull/111504">#111504</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 12.0.173]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.0.173</link>
             <guid>https://github.com/v8/v8/releases/tag/12.0.173</guid>
@@ -245,9 +783,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.0.172]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.0.172</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.0.172</guid>
+            <title><![CDATA[Release notes from v8: 12.0.172-pgo: Version 12.0.172]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.0.172-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.0.172-pgo</guid>
             <pubDate>Fri, 20 Oct 2023 16:34:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia9308b974ef04a93141ec21e913c57f902663ebf<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4955716" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4955716</a><br>
@@ -256,9 +794,9 @@ Cr-Commit-Position: refs/heads/12.0.172@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9cd63ca66e7a9d15cf8ab14860a6c612e718079c/hovercard" href="https://github.com/v8/v8/commit/9cd63ca66e7a9d15cf8ab14860a6c612e718079c"><tt>9cd63ca</tt></a>-refs/heads/main@{#90519}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.0.172-pgo: Version 12.0.172]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.0.172-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.0.172-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.0.172]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.0.172</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.0.172</guid>
             <pubDate>Fri, 20 Oct 2023 16:34:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia9308b974ef04a93141ec21e913c57f902663ebf<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4955716" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4955716</a><br>
@@ -627,13 +1165,6 @@ flutter upgrade
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111658: [Easy] Fixed typo in `init_device_mesh` note]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111658</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111658</guid>
-            <pubDate>Fri, 20 Oct 2023 15:33:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pixijs: v7.3.2]]></title>
             <link>https://github.com/pixijs/pixijs/releases/tag/v7.3.2</link>
             <guid>https://github.com/pixijs/pixijs/releases/tag/v7.3.2</guid>
@@ -781,28 +1312,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4958312
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/12.0.170@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/f43c235a8758295385ca39be63d1319296f169be/hovercard" href="https://github.com/v8/v8/commit/f43c235a8758295385ca39be63d1319296f169be"><tt>f43c235</tt></a>-refs/heads/main@{#90517}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.0.169]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.0.169</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.0.169</guid>
-            <pubDate>Fri, 20 Oct 2023 14:22:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I9c114f63ee2b383d1cf61b047e570f5d546c4264<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4958310" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4958310</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.0.169@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a62f302dd6d236fb5dfca7aa6f495c7e2807a012/hovercard" href="https://github.com/v8/v8/commit/a62f302dd6d236fb5dfca7aa6f495c7e2807a012"><tt>a62f302</tt></a>-refs/heads/main@{#90515}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.0.169-pgo: Version 12.0.169]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.0.169-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.0.169-pgo</guid>
-            <pubDate>Fri, 20 Oct 2023 14:22:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I9c114f63ee2b383d1cf61b047e570f5d546c4264<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/4958310" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/4958310</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.0.169@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a62f302dd6d236fb5dfca7aa6f495c7e2807a012/hovercard" href="https://github.com/v8/v8/commit/a62f302dd6d236fb5dfca7aa6f495c7e2807a012"><tt>a62f302</tt></a>-refs/heads/main@{#90515}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from swc: v1.3.94-nightly-20231020.2]]></title>
@@ -1053,13 +1562,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/pypa/pipenv/compare/v2023.10.3...v2023.10.20"><tt>v2023.10.3...v2023.10.20</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111492: Merge branch 'jon-chuang/fix-set-contains-is-not-list-contains' into …]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111492</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111492</guid>
-            <pubDate>Fri, 20 Oct 2023 12:34:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…jon-chuang/support-comparison-tensor-constant</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from polars: Python Polars 0.19.9]]></title>
             <link>https://github.com/pola-rs/polars/releases/tag/py-0.19.9</link>
             <guid>https://github.com/pola-rs/polars/releases/tag/py-0.19.9</guid>
@@ -1156,39 +1658,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>🌐 Help us translate Ghost + Portal: <a href="https://forum.ghost.org/t/help-translate-ghost-beta/37461" rel="nofollow">https://forum.ghost.org/t/help-translate-ghost-beta/37461</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-source-drupal@6.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-drupal%406.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-drupal%406.12.2</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.2</guid>
             <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-source-drupal@6.12.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-plugin-utils@4.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-plugin-utils%404.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-plugin-utils%404.12.2</guid>
-            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-plugin-utils@4.12.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-remark-autolink-headers@6.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-remark-autolink-headers%406.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-remark-autolink-headers%406.12.2</guid>
-            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-remark-autolink-headers@6.12.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-source-contentful@8.12.3]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-contentful%408.12.3</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-contentful%408.12.3</guid>
-            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-source-contentful@8.12.3</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.12.2</guid>
-            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.12.2</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.12.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-transformer-sharp@5.12.2]]></title>
@@ -1198,25 +1672,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-transformer-sharp@5.12.2</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-transformer-remark@6.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-remark%406.12.2</guid>
+            <title><![CDATA[Release notes from gatsby: gatsby-source-contentful@8.12.3]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-contentful%408.12.3</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-contentful%408.12.3</guid>
             <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-transformer-remark@6.12.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-source-wordpress@7.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.12.2</guid>
-            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-source-wordpress@7.12.2</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-source-shopify@8.12.2]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-shopify%408.12.2</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-shopify%408.12.2</guid>
-            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-source-shopify@8.12.2</p>]]></content:encoded>
+            <content:encoded><![CDATA[<p>gatsby-source-contentful@8.12.3</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-remark-images@7.12.2]]></title>
@@ -1226,11 +1686,46 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>gatsby-remark-images@7.12.2</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111647]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111647</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111647</guid>
-            <pubDate>Fri, 20 Oct 2023 11:21:40 GMT</pubDate>
-            <content:encoded><![CDATA[<p>add</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: gatsby-source-wordpress@7.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.12.2</guid>
+            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-source-wordpress@7.12.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-remark-autolink-headers@6.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-remark-autolink-headers%406.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-remark-autolink-headers%406.12.2</guid>
+            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-remark-autolink-headers@6.12.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-transformer-sqip@5.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-transformer-sqip%405.12.2</guid>
+            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-transformer-sqip@5.12.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-plugin-utils@4.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-plugin-utils%404.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-plugin-utils%404.12.2</guid>
+            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-plugin-utils@4.12.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-source-shopify@8.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-shopify%408.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-shopify%408.12.2</guid>
+            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-source-shopify@8.12.2</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-source-drupal@6.12.2]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-drupal%406.12.2</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-drupal%406.12.2</guid>
+            <pubDate>Fri, 20 Oct 2023 11:47:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-source-drupal@6.12.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-5724]]></title>
@@ -1319,13 +1814,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-5708]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-5708</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-5708</guid>
-            <pubDate>Fri, 20 Oct 2023 09:50:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from storybook: v7.6.0-alpha.1]]></title>
             <link>https://github.com/storybookjs/storybook/releases/tag/v7.6.0-alpha.1</link>
             <guid>https://github.com/storybookjs/storybook/releases/tag/v7.6.0-alpha.1</guid>
@@ -1339,21 +1827,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Doc Blocks: Remove <code>defaultProps</code> in <code>Stories</code> block - <a href="https://github.com/storybookjs/storybook/pull/24506" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24506/hovercard">#24506</a>, thanks <a href="https://github.com/WouterK12">@WouterK12</a>!</li>
 <li>Themes: Run postinstall in shell for windows - <a href="https://github.com/storybookjs/storybook/pull/24389" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24389/hovercard">#24389</a>, thanks <a href="https://github.com/Integrayshaun">@Integrayshaun</a>!</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111614: Update on "[dynamo] fix None routing bug during var_getattr on UDO"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111614</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111614</guid>
-            <pubDate>Fri, 20 Oct 2023 07:53:15 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111635]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111635</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111635</guid>
-            <pubDate>Fri, 20 Oct 2023 06:25:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>fix lint</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from jupyterlite: v0.2.0rc1]]></title>
@@ -1381,134 +1854,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.2.0-rc.1</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.2.0-rc.1</guid>
-            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
-<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
-<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
-<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
-<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
-<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
-<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
-<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
-<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
-<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
-<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
-<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
-<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
-<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
-<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
-<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
-<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
-<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
-<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
-<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
-<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
-<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
-<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/notebook-application-extension@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.2.0-rc.1</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.2.0-rc.1</guid>
-            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
-<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
-<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
-<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
-<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
-<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
-<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
-<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
-<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
-<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
-<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
-<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
-<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
-<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
-<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
-<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
-<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
-<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
-<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
-<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
-<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
-<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
-<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/types@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.2.0-rc.1</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.2.0-rc.1</guid>
-            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
-<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
-<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
-<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
-<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
-<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
-<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
-<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
-<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
-<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
-<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
-<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
-<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
-<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
-<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
-<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
-<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
-<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
-<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
-<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
-<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
-<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
-<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.2.0-rc.1</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.2.0-rc.1</guid>
-            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
-<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
-<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
-<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
-<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
-<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
-<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
-<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
-<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
-<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
-<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
-<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
-<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
-<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
-<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
-<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
-<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
-<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
-<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
-<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
-<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
-<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
-<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
-<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.0-rc.1</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.0-rc.1</guid>
             <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
@@ -1570,6 +1915,70 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.0-rc.1</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.0-rc.1</guid>
+            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
+<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
+<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
+<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
+<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
+<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
+<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
+<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
+<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
+<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
+<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
+<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
+<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
+<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
+<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
+<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
+<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
+<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
+<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
+<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
+<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
+<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
+<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.2.0-rc.1</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.2.0-rc.1</guid>
+            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
+<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
+<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
+<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
+<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
+<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
+<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
+<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
+<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
+<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
+<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
+<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
+<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
+<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
+<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
+<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
+<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
+<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
+<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
+<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
+<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
+<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
+<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.2.0-rc.1</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.2.0-rc.1</guid>
@@ -1602,9 +2011,73 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/notebook-application-extension@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.2.0-rc.1</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.2.0-rc.1</guid>
+            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
+<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
+<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
+<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
+<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
+<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
+<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
+<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
+<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
+<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
+<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
+<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
+<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
+<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
+<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
+<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
+<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
+<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
+<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
+<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
+<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
+<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
+<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.2.0-rc.1</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.2.0-rc.1</guid>
+            <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
+<p>jupyterlite-0.2.0rc1-py3-none-any.whl: c1b4c9ee27fc0335323837eff1372fd40c58f959512160cd9adf9e5561322118</p>
+<p>jupyterlite-0.2.0rc1.tar.gz: 20d1e578d94ff7b7b0fbfc03916fb92f2d8d8dcb7d3360f23a366885d6edc621</p>
+<p>jupyterlite-application-0.2.0-rc.1.tgz: 1074a79e8cdf0612ef685eb074c3e27581c595a07627f0b8f11204e203540523</p>
+<p>jupyterlite-application-extension-0.2.0-rc.1.tgz: 6ea977d98465497abfae77e012770f8b69c60f5c9e584f1e62b52f268c4bbc56</p>
+<p>jupyterlite-contents-0.2.0-rc.1.tgz: 972bc1fc26330c1c074989978ff32dfa19e0a0c1667ee5edd89fc2d5e74988f2</p>
+<p>jupyterlite-iframe-extension-0.2.0-rc.1.tgz: 0c670d94e9af20623e90e9d3d90f3c89b70305b1450c4e321e3786cd9aa2665c</p>
+<p>jupyterlite-javascript-kernel-0.2.0-rc.1.tgz: aa6a5a8c62c41b42869eec54b05595dc510bfae834a3a0b22478ce58f3612248</p>
+<p>jupyterlite-javascript-kernel-extension-0.2.0-rc.1.tgz: 169e30c43738f0ae8d7c6c88b999dd30c08639246c38d6c8c131cceeebd33a3e</p>
+<p>jupyterlite-kernel-0.2.0-rc.1.tgz: 20bec637c380d0f251ccd5b1849b1ae1140a09dcf2f20c02a97691b574bd2062</p>
+<p>jupyterlite-licenses-0.2.0-rc.1.tgz: c6ea3dc6eda096d24227f8b0a131bca60e92aafc155eee3cc2fe1f005da2f729</p>
+<p>jupyterlite-localforage-0.2.0-rc.1.tgz: 2fd76d09ce514295e30a23749cb9231240fadf9608e6bafe742dede6ec83143a</p>
+<p>jupyterlite-notebook-application-extension-0.2.0-rc.1.tgz: f7f8a7250c574c88e723472d2c02641676e0539dc9eef051f66aca63bf283d58</p>
+<p>jupyterlite-repl-extension-0.2.0-rc.1.tgz: 76c94bfbb0772983a53b3b62c22a1368c7c406d1a8aad69731ffc3fdbc332dc9</p>
+<p>jupyterlite-server-0.2.0-rc.1.tgz: 3c2b2643b1175693852a40d8d0de9a5329ebe9c824d8ea1130a9e255261294cf</p>
+<p>jupyterlite-server-extension-0.2.0-rc.1.tgz: 14e696a849b285ccccde2612fc662313ae8e6b43bcec4e5c6bda95eb21ca70b3</p>
+<p>jupyterlite-session-0.2.0-rc.1.tgz: 534f7b78cd56af5529462af91409696618c5bab06da787951d14d644153f822c</p>
+<p>jupyterlite-settings-0.2.0-rc.1.tgz: f983d0e0d9b6a5aed650dc42722537b69613f2259c86109074d3a7c3e7fb37b0</p>
+<p>jupyterlite-translation-0.2.0-rc.1.tgz: 2774c5860d185bd084eadf5b33c6395f9135fea4050981228bba7f3c13457068</p>
+<p>jupyterlite-types-0.2.0-rc.1.tgz: 6de541403eb0aec4e541a4e0bcc042eef0d7b2d1491cc26fc31c7d966faeb1f3</p>
+<p>jupyterlite-ui-components-0.2.0-rc.1.tgz: 7c673f21145e14127174d540d5c00e576768fe3dc175a34101af37866e4f33db</p>
+<p>jupyterlite_core-0.2.0rc1-py3-none-any.whl: f2369fe84fcdc1346d9d452db315b6a180c5a8dd34005907df18945ffab61b0c</p>
+<p>jupyterlite_core-0.2.0rc1.tar.gz: c2ad1993246a61d31a465647ebddcb2449e069150ea0534e62c275d9fc6bbeaf</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1-py3-none-any.whl: a8271c9c0068ab4408490ca233e1a2bb6b9062fb445269ae3d69f33e7beb0931</p>
+<p>jupyterlite_javascript_kernel-0.2.0rc1.tar.gz: 3faea69897c09dd4b7c9dc73850ad5608656541904d96391f9b12e379563fec7</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/types@0.2.0-rc.1: Publish 0.2.0rc1]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.2.0-rc.1</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.2.0-rc.1</guid>
             <pubDate>Fri, 20 Oct 2023 05:44:41 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: db9662369a0eeae5833033dac2b94949b2ce92afacd83410d32ddc313dbb7f6a</p>
@@ -1740,13 +2213,6 @@ e84b44a6e57763612025afd0a71e9adcfc8520be2b06741ae95e8362834e98c6  nvim-win64.msi
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111625: Update on "[TP] Refactor style to make it work with torch.compile"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111625</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111625</guid>
-            <pubDate>Fri, 20 Oct 2023 05:04:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from ruff: v0.1.1]]></title>
             <link>https://github.com/astral-sh/ruff/releases/tag/v0.1.1</link>
             <guid>https://github.com/astral-sh/ruff/releases/tag/v0.1.1</guid>
@@ -1823,21 +2289,6 @@ e84b44a6e57763612025afd0a71e9adcfc8520be2b06741ae95e8362834e98c6  nvim-win64.msi
             <content:encoded><![CDATA[<p>Please refer to <a href="https://github.com/vuejs/core/blob/main/CHANGELOG.md">CHANGELOG.md</a> for details.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111600]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111600</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111600</guid>
-            <pubDate>Fri, 20 Oct 2023 02:04:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>getting better at coding on phone</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/111627: [inductor] Implement clone removal for user defined triton kernel via…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111627</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F111627</guid>
-            <pubDate>Fri, 20 Oct 2023 01:36:56 GMT</pubDate>
-            <content:encoded><![CDATA[<p>… reinplace_scatters</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from swc: v1.3.94-nightly-20231020.1]]></title>
             <link>https://github.com/swc-project/swc/releases/tag/v1.3.94-nightly-20231020.1</link>
             <guid>https://github.com/swc-project/swc/releases/tag/v1.3.94-nightly-20231020.1</guid>
@@ -1865,18 +2316,6 @@ e84b44a6e57763612025afd0a71e9adcfc8520be2b06741ae95e8362834e98c6  nvim-win64.msi
 arguments, short arguments, and some other circumstances</li>
 </ul>
 <p>More details about these changes can be found on our GitHub repo.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from selenium: Nightly]]></title>
-            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
-            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
-            <pubDate>Fri, 20 Oct 2023 00:20:22 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Commits</h2>
-<ul>
-<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/cee7f6ba27e87bc9785d59fe95da08eb5575e318/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/cee7f6ba27e87bc9785d59fe95da08eb5575e318"><tt>cee7f6b</tt></a>: Prevent browser to be created and unused in case a short session-request-timeout is set (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1921414135" data-permission-text="Title is private" data-url="https://github.com/SeleniumHQ/selenium/issues/12848" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/12848/hovercard" href="https://github.com/SeleniumHQ/selenium/pull/12848">#12848</a>) (bhecquet) <a href="https://github.com/SeleniumHQ/selenium/pull/12848" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/12848/hovercard">#12848</a></li>
-<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/6f97b8da62bb502514b9bb641a0374e3bff745e5/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/6f97b8da62bb502514b9bb641a0374e3bff745e5"><tt>6f97b8d</tt></a>: [dotnet] Fix driver service path determination when starting it directly (Nikolay Borisenko)</li>
-<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/d0dc0c2d01146df25d29bfa92c95283fb5551644/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/d0dc0c2d01146df25d29bfa92c95283fb5551644"><tt>d0dc0c2</tt></a>: [rust] Remove redundant call in logger (Boni Garcia)</li>
-</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from flutter: 3.16.0-14.0.pre: Roll Flutter Engine from 504a99d93f42 to cc3356c0e68f (2 revisions) (…]]></title>
@@ -1924,13 +2363,6 @@ is aware of the problem.</p>
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wbinnssmith/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wbinnssmith">@wbinnssmith</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kwonoj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kwonoj">@kwonoj</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Thu, 19 Oct 2023 21:47:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2023-10-19 21:47:13 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/512a6723983a3fadd605f323bfb0048ad2a9f266/hovercard" href="https://github.com/kovidgoyal/kitty/commit/512a6723983a3fadd605f323bfb0048ad2a9f266"><tt>512a672</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from vagrant: 2.4.1.dev+000100-f33ac0bc]]></title>
@@ -3762,154 +4194,6 @@ Co-authored-by: CountBleck <a href="mailto:Mr.YouKnowWhoIAm@protonmail.com">Mr.Y
 <li>Leosvel Pérez Espinosa <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/leosvelperez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/leosvelperez">@leosvelperez</a></li>
 <li>MaxKless @34165455+MaxKless</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.5.6-canary.5]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.5.6-canary.5</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.5.6-canary.5</guid>
-            <pubDate>Tue, 17 Oct 2023 23:22:55 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from rxdb: 15.0.0-beta.10]]></title>
-            <link>https://github.com/pubkey/rxdb/releases/tag/15.0.0-beta.10</link>
-            <guid>https://github.com/pubkey/rxdb/releases/tag/15.0.0-beta.10</guid>
-            <pubDate>Tue, 17 Oct 2023 22:09:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p align="center">
-            <a href="https://rxdb.info/" rel="nofollow">
-                <img src="https://camo.githubusercontent.com/8898befd529bc4f43a25bf0b61fdd2aa1d4f59c7ec142df882b8d717f53d2261/68747470733a2f2f727864622e696e666f2f66696c65732f6c6f676f2f6c6f676f5f746578742e737667" width="380px" alt="JavaScript Database" data-canonical-src="https://rxdb.info/files/logo/logo_text.svg" style="max-width: 100%;">
-            </a>
-        </p>
-<h2>Changes:</h2>
-<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from oclif: 4.0.3]]></title>
-            <link>https://github.com/oclif/oclif/releases/tag/4.0.3</link>
-            <guid>https://github.com/oclif/oclif/releases/tag/4.0.3</guid>
-            <pubDate>Tue, 17 Oct 2023 21:57:17 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
-<ul>
-<li>bump plugin-warn-if-update (<a href="https://github.com/oclif/oclif/commit/06779a2b73915aa484327e3697864d17faa7bde6">06779a2</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.6.0-alpha.0]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.6.0-alpha.0</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.6.0-alpha.0</guid>
-            <pubDate>Tue, 17 Oct 2023 21:47:37 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>7.6.0-alpha.0</h2>
-<p>Empty release identical to <code>7.5.0</code>.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v13.5.6-canary.4]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v13.5.6-canary.4</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v13.5.6-canary.4</guid>
-            <pubDate>Tue, 17 Oct 2023 21:22:41 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Adding  component to @next/third-parties: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1916092718" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56106" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56106/hovercard" href="https://github.com/vercel/next.js/pull/56106">#56106</a></li>
-<li>Replace <code>Promise.withResolvers</code> polyfill with <code>DetachedPromise</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948077599" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56954" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56954/hovercard" href="https://github.com/vercel/next.js/pull/56954">#56954</a></li>
-<li>chore(next/image)!: mark <code>onLoadingComplete</code> as deprecated in favor of <code>onLoad</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947660284" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56944" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56944/hovercard" href="https://github.com/vercel/next.js/pull/56944">#56944</a></li>
-<li>chore: lower Node.js version requirement: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947631512" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56943" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56943/hovercard" href="https://github.com/vercel/next.js/pull/56943">#56943</a></li>
-</ul>
-<h3>Misc Changes</h3>
-<ul>
-<li>chore: reduce <code>fs-extra</code> usage in <code>scripts/</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946540998" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56917" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56917/hovercard" href="https://github.com/vercel/next.js/pull/56917">#56917</a></li>
-<li>chore(test): set <code>COREPACK_ENABLE_STRICT: 0</code> for create-<a class="issue-link js-issue-link notranslate" rel="noopener noreferrer nofollow" href="https://linear.app/vercel/issue/NEXT-app">next-app</a> tests: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948104660" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/56955" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/56955/hovercard" href="https://github.com/vercel/next.js/pull/56955">#56955</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/janicklas-ralph/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/janicklas-ralph">@janicklas-ralph</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wyattjoh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wyattjoh">@wyattjoh</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/SukkaW/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/SukkaW">@SukkaW</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/styfle/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/styfle">@styfle</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/balazsorban44/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/balazsorban44">@balazsorban44</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.16.0-12.0.pre: Roll Flutter Engine from 62a90a91cee3 to 659e68a097b5 (3 revisions) (…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.16.0-12.0.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.16.0-12.0.pre</guid>
-            <pubDate>Tue, 17 Oct 2023 19:41:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948046883" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/136746" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/136746/hovercard" href="https://github.com/flutter/flutter/pull/136746">#136746</a>)</p>
-<p><a class="commit-link" href="https://github.com/flutter/engine/compare/62a90a91cee3...659e68a097b5">flutter/engine@<tt>62a90a9...659e68a</tt></a></p>
-<p>2023-10-17 <a href="mailto:zanderso@users.noreply.github.com">zanderso@users.noreply.github.com</a> Shift some engine DEPS from github to mirrors (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1930994827" data-permission-text="Title is private" data-url="https://github.com/flutter/engine/issues/46633" data-hovercard-type="pull_request" data-hovercard-url="/flutter/engine/pull/46633/hovercard" href="https://github.com/flutter/engine/pull/46633">flutter/engine#46633</a>)<br>
-2023-10-17 <a href="mailto:skia-flutter-autoroll@skia.org">skia-flutter-autoroll@skia.org</a> Roll Skia from 8b3f2ef48a90 to 1a332d2b35d9 (1 revision) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947876754" data-permission-text="Title is private" data-url="https://github.com/flutter/engine/issues/47009" data-hovercard-type="pull_request" data-hovercard-url="/flutter/engine/pull/47009/hovercard" href="https://github.com/flutter/engine/pull/47009">flutter/engine#47009</a>)<br>
-2023-10-17 <a href="mailto:skia-flutter-autoroll@skia.org">skia-flutter-autoroll@skia.org</a> Roll Dart SDK from 2418bda7a457 to 99ce477503f8 (1 revision) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1947862775" data-permission-text="Title is private" data-url="https://github.com/flutter/engine/issues/47008" data-hovercard-type="pull_request" data-hovercard-url="/flutter/engine/pull/47008/hovercard" href="https://github.com/flutter/engine/pull/47008">flutter/engine#47008</a>)</p>
-<p>If this roll has caused a breakage, revert this CL and stop the roller<br>
-using the controls here:<br>
-<a href="https://autoroll.skia.org/r/flutter-engine-flutter-autoroll" rel="nofollow">https://autoroll.skia.org/r/flutter-engine-flutter-autoroll</a><br>
-Please CC <a href="mailto:jimgraham@google.com">jimgraham@google.com</a>,<a href="mailto:rmistry@google.com">rmistry@google.com</a>,<a href="mailto:zra@google.com">zra@google.com</a> on the revert to ensure that a human<br>
-is aware of the problem.</p>
-<p>To file a bug in Flutter: <a href="https://github.com/flutter/flutter/issues/new/choose">https://github.com/flutter/flutter/issues/new/choose</a></p>
-<p>To report a problem with the AutoRoller itself, please file a bug:<br>
-<a href="https://issues.skia.org/issues/new?component=1389291&amp;template=1850622" rel="nofollow">https://issues.skia.org/issues/new?component=1389291&amp;template=1850622</a></p>
-<p>Documentation for the AutoRoller is here:<br>
-<a href="https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md" rel="nofollow">https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v7.5.0]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v7.5.0</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v7.5.0</guid>
-            <pubDate>Tue, 17 Oct 2023 19:34:47 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>7.5.0</h2>
-<p>Storybook 7.5 enhances your Storybook experience with several key updates:</p>
-<ul>
-<li>💃🏼 Now supports Lit 3.0 and Vite 5</li>
-<li>👻 storiesOf and storyStoreV6 officially deprecated</li>
-<li>🔨 Fix Webpack5 build errors not being propagated</li>
-<li>🀄 Support rename font import for Next.js</li>
-<li>⬆️ Upgrade react-docgen to 6.0.x and improve argTypes</li>
-<li>✨ Many Angular improvements such as introducing argsToTemplate , new schema debugging options, support for standalone directives, etc.</li>
-</ul>
-<details>
-  <summary>
-    List of all updates
-  </summary>
-<ul>
-<li>Angular: Introduce argsToTemplate for property and event Bindings - <a href="https://github.com/storybookjs/storybook/pull/24434" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24434/hovercard">#24434</a>, thanks <a href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Angular: Add schema options (debugWebpack, webpackStatsJson, and more) - <a href="https://github.com/storybookjs/storybook/pull/24388" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24388/hovercard">#24388</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Angular: Categorize legacy build options error - <a href="https://github.com/storybookjs/storybook/pull/24014" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24014/hovercard">#24014</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Angular: Fix Angular 15 support and add zone.js v0.14.x support - <a href="https://github.com/storybookjs/storybook/pull/24367" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24367/hovercard">#24367</a>, thanks <a href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Angular: Allow loading standalone directives - <a href="https://github.com/storybookjs/storybook/pull/24448" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24448/hovercard">#24448</a>, thanks <a href="https://github.com/osnoser1">@osnoser1</a>!</li>
-<li>CLI: Inform the user how to dedupe and strip color from info command - <a href="https://github.com/storybookjs/storybook/pull/24087" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24087/hovercard">#24087</a>, thanks <a href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>CLI: Add more information to storybook info command - <a href="https://github.com/storybookjs/storybook/pull/24003" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24003/hovercard">#24003</a>, thanks <a href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>CLI: Change /Date$/ to /Dates$/i - <a href="https://github.com/storybookjs/storybook/pull/24195" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24195/hovercard">#24195</a>, thanks <a href="https://github.com/arup1221">@arup1221</a>!</li>
-<li>CLI: Improve sanitization logic in crash reports - <a href="https://github.com/storybookjs/storybook/pull/24028" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24028/hovercard">#24028</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>CLI: Remove random commas in storybook upgrade logs - <a href="https://github.com/storybookjs/storybook/pull/22333" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22333/hovercard">#22333</a>, thanks <a href="https://github.com/joaonunomota">@joaonunomota</a>!</li>
-<li>Controls: Fix select / multiselect when value contains multiple spaces - <a href="https://github.com/storybookjs/storybook/pull/22334" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22334/hovercard">#22334</a>, thanks <a href="https://github.com/oxcened">@oxcened</a>!</li>
-<li>Core: Add class name to Storybook error name - <a href="https://github.com/storybookjs/storybook/pull/24371" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24371/hovercard">#24371</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Core: Deprecate storyStoreV6 (including storiesOf) and storyIndexers - <a href="https://github.com/storybookjs/storybook/pull/23938" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23938/hovercard">#23938</a>, thanks <a href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Doc Blocks: Add title to Meta prop types - <a href="https://github.com/storybookjs/storybook/pull/23370" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23370/hovercard">#23370</a>, thanks <a href="https://github.com/iqbalcodes6602">@iqbalcodes6602</a>!</li>
-<li>ManagerAPI: Fix bug with story redirection when URL has partial storyId - <a href="https://github.com/storybookjs/storybook/pull/24345" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24345/hovercard">#24345</a>, thanks <a href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>NextJS: Support rename font import - <a href="https://github.com/storybookjs/storybook/pull/24406" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24406/hovercard">#24406</a>, thanks <a href="https://github.com/yoshi2no">@yoshi2no</a>!</li>
-<li>NextJS: Change babel plugins from proposal-... to transform-... - <a href="https://github.com/storybookjs/storybook/pull/24290" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24290/hovercard">#24290</a>, thanks <a href="https://github.com/roottool">@roottool</a>!</li>
-<li>NextJS: Fix default next image loader when src has params - <a href="https://github.com/storybookjs/storybook/pull/24187" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24187/hovercard">#24187</a>, thanks <a href="https://github.com/json-betsec">@json-betsec</a>!</li>
-<li>NextJS: Fix Image Context re-use via singleton - <a href="https://github.com/storybookjs/storybook/pull/24146" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24146/hovercard">#24146</a>, thanks <a href="https://github.com/martinnabhan">@martinnabhan</a>!</li>
-<li>NextJS: Improve support for Windows-style paths - <a href="https://github.com/storybookjs/storybook/pull/23695" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23695/hovercard">#23695</a>, thanks <a href="https://github.com/T99">@T99</a>!</li>
-<li>React: Upgrade <code>react-docgen</code> to <code>6.0.x</code> and improve argTypes - <a href="https://github.com/storybookjs/storybook/pull/23825" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23825/hovercard">#23825</a>, thanks <a href="https://github.com/shilman">@shilman</a>!</li>
-<li>Svelte: Fix docs generating when using <code>lang="ts"</code> or optional chaining - <a href="https://github.com/storybookjs/storybook/pull/24096" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24096/hovercard">#24096</a>, thanks <a href="https://github.com/j3rem1e">@j3rem1e</a>!</li>
-<li>UI: Filter some manager errors - <a href="https://github.com/storybookjs/storybook/pull/24217" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24217/hovercard">#24217</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>UI: Fix className missing in syntaxhighlighter - <a href="https://github.com/storybookjs/storybook/pull/24491" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24491/hovercard">#24491</a>, thanks <a href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>UI: Update ScrollArea with radix - <a href="https://github.com/storybookjs/storybook/pull/24413" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24413/hovercard">#24413</a>, thanks <a href="https://github.com/cdedreuille">@cdedreuille</a>!</li>
-<li>UI: Improve contrast ratio between focus / hover - <a href="https://github.com/storybookjs/storybook/pull/24205" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24205/hovercard">#24205</a>, thanks <a href="https://github.com/chocoscoding">@chocoscoding</a>!</li>
-<li>Vite: Move mdx-plugin from <code>@storybook/builder-vite</code> to <code>@storybook/addon-docs</code> - <a href="https://github.com/storybookjs/storybook/pull/24166" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24166/hovercard">#24166</a>, thanks <a href="https://github.com/bryanjtc">@bryanjtc</a>!</li>
-<li>Vite: Support Vite 5 - <a href="https://github.com/storybookjs/storybook/pull/24395" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24395/hovercard">#24395</a>, thanks <a href="https://github.com/IanVS">@IanVS</a>!</li>
-<li>Web-components: Add Lit3 support - <a href="https://github.com/storybookjs/storybook/pull/24437" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24437/hovercard">#24437</a>, thanks <a href="https://github.com/shilman">@shilman</a>!</li>
-<li>Webpack: Display errors on build - <a href="https://github.com/storybookjs/storybook/pull/24377" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24377/hovercard">#24377</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Webpack: Categorize builder error - <a href="https://github.com/storybookjs/storybook/pull/24031" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24031/hovercard">#24031</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Webpack: Use logger.warn on warnings - <a href="https://github.com/storybookjs/storybook/pull/24472" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/24472/hovercard">#24472</a>, thanks <a href="https://github.com/yannbf">@yannbf</a>!</li>
-</ul>
-</details>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from ts-node: v11.0.0-beta.1]]></title>
-            <link>https://github.com/TypeStrong/ts-node/releases/tag/v11.0.0-beta.1</link>
-            <guid>https://github.com/TypeStrong/ts-node/releases/tag/v11.0.0-beta.1</guid>
-            <pubDate>Tue, 17 Oct 2023 18:41:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>11.0.0-beta.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.29.65]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.29.65</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.29.65</guid>
-            <pubDate>Tue, 17 Oct 2023 18:17:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.29.65 release.</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
