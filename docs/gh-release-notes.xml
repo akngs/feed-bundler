@@ -4,96 +4,280 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 09 Nov 2023 00:21:03 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 09 Nov 2023 06:06:37 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/113131]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113131</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113131</guid>
-            <pubDate>Thu, 09 Nov 2023 13:43:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>rename function.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/mps/113312: Update on "[MPS] Move non-nll loss tests outside TestNLLLoss"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F113312</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F113312</guid>
-            <pubDate>Thu, 09 Nov 2023 00:19:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>The diff looks messy but this PR essentially does one thing: Move non-nll loss tests in <code>TestNLLLoss</code> class to <code>TestMPS</code> class.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/mps/113313: Update on "[MPS] Remove redundant topk test and move all pad tests in…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F113313</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fmps%2F113313</guid>
-            <pubDate>Thu, 09 Nov 2023 00:19:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…side a class"</p>
-<p>Summary:</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113080: Update on "[dynamo] handle setting .data on a tensor"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113080</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113080</guid>
+            <pubDate>Thu, 09 Nov 2023 05:55:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p><strong>Dynamo</strong></p>
+<p>We don't want setattr in the graph. Setting data has interesting implications on both aliasing and on the autograd engine.</p>
+<p>The safe recipe is:</p>
 <ol>
-<li>The removed <code>topk</code> test is essentially very similar to the following test, so I remove it:</li>
+<li>Disable grad</li>
+<li>Call set_()</li>
+<li>Manually lower the version counter on the object to hide it from the autograd engine</li>
 </ol>
-<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="def test_topk(self):
-        def helper(shape):
-            cpu_x = torch.randn(shape, device='cpu', dtype=torch.float, requires_grad=False)
-            x = cpu_x.detach().clone().to('mps')
-            for largest_val in [True, False]:
-                if (type(shape) == tuple):
-                    for curr_dim in range(0, len(shape)):
-                        dim_size = shape[curr_dim]
-                        for k in range(1, dim_size + 1):
-                            topk_values, topk_indices = torch.topk(x, k, dim=curr_dim, largest=largest_val)
-                            topk_values_cpu, topk_indices_cpu = torch.topk(cpu_x, k, dim=curr_dim, largest=largest_val)
-                            self.assertEqual(topk_values, topk_values_cpu)
-                            self.assertEqual(topk_indices, topk_indices_cpu)
-                else:
-                    for k in range(1, shape):
-                        topk_values, topk_indices = torch.topk(x, k, dim=0, largest=largest_val)
-                        topk_values_cpu, topk_indices_cpu = torch.topk(cpu_x, k, dim=0, largest=largest_val)
-                        self.assertEqual(topk_values, topk_values_cpu)
-                        self.assertEqual(topk_indices, topk_indices_cpu)
-
-        helper(2)
-        helper((5, 1))
-        helper((1, 5))
-        helper((5, 9, 7, 4))
-        helper((50, 20, 7, 4))"><pre><span class="pl-k">def</span> <span class="pl-en">test_topk</span>(<span class="pl-s1">self</span>):
-        <span class="pl-k">def</span> <span class="pl-en">helper</span>(<span class="pl-s1">shape</span>):
-            <span class="pl-s1">cpu_x</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randn</span>(<span class="pl-s1">shape</span>, <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s">'cpu'</span>, <span class="pl-s1">dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-s1">float</span>, <span class="pl-s1">requires_grad</span><span class="pl-c1">=</span><span class="pl-c1">False</span>)
-            <span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-s1">cpu_x</span>.<span class="pl-en">detach</span>().<span class="pl-en">clone</span>().<span class="pl-en">to</span>(<span class="pl-s">'mps'</span>)
-            <span class="pl-k">for</span> <span class="pl-s1">largest_val</span> <span class="pl-c1">in</span> [<span class="pl-c1">True</span>, <span class="pl-c1">False</span>]:
-                <span class="pl-k">if</span> (<span class="pl-en">type</span>(<span class="pl-s1">shape</span>) <span class="pl-c1">==</span> <span class="pl-s1">tuple</span>):
-                    <span class="pl-k">for</span> <span class="pl-s1">curr_dim</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">0</span>, <span class="pl-en">len</span>(<span class="pl-s1">shape</span>)):
-                        <span class="pl-s1">dim_size</span> <span class="pl-c1">=</span> <span class="pl-s1">shape</span>[<span class="pl-s1">curr_dim</span>]
-                        <span class="pl-k">for</span> <span class="pl-s1">k</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-s1">dim_size</span> <span class="pl-c1">+</span> <span class="pl-c1">1</span>):
-                            <span class="pl-s1">topk_values</span>, <span class="pl-s1">topk_indices</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">topk</span>(<span class="pl-s1">x</span>, <span class="pl-s1">k</span>, <span class="pl-s1">dim</span><span class="pl-c1">=</span><span class="pl-s1">curr_dim</span>, <span class="pl-s1">largest</span><span class="pl-c1">=</span><span class="pl-s1">largest_val</span>)
-                            <span class="pl-s1">topk_values_cpu</span>, <span class="pl-s1">topk_indices_cpu</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">topk</span>(<span class="pl-s1">cpu_x</span>, <span class="pl-s1">k</span>, <span class="pl-s1">dim</span><span class="pl-c1">=</span><span class="pl-s1">curr_dim</span>, <span class="pl-s1">largest</span><span class="pl-c1">=</span><span class="pl-s1">largest_val</span>)
-                            <span class="pl-s1">self</span>.<span class="pl-en">assertEqual</span>(<span class="pl-s1">topk_values</span>, <span class="pl-s1">topk_values_cpu</span>)
-                            <span class="pl-s1">self</span>.<span class="pl-en">assertEqual</span>(<span class="pl-s1">topk_indices</span>, <span class="pl-s1">topk_indices_cpu</span>)
-                <span class="pl-k">else</span>:
-                    <span class="pl-k">for</span> <span class="pl-s1">k</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">1</span>, <span class="pl-s1">shape</span>):
-                        <span class="pl-s1">topk_values</span>, <span class="pl-s1">topk_indices</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">topk</span>(<span class="pl-s1">x</span>, <span class="pl-s1">k</span>, <span class="pl-s1">dim</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">largest</span><span class="pl-c1">=</span><span class="pl-s1">largest_val</span>)
-                        <span class="pl-s1">topk_values_cpu</span>, <span class="pl-s1">topk_indices_cpu</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">topk</span>(<span class="pl-s1">cpu_x</span>, <span class="pl-s1">k</span>, <span class="pl-s1">dim</span><span class="pl-c1">=</span><span class="pl-c1">0</span>, <span class="pl-s1">largest</span><span class="pl-c1">=</span><span class="pl-s1">largest_val</span>)
-                        <span class="pl-s1">self</span>.<span class="pl-en">assertEqual</span>(<span class="pl-s1">topk_values</span>, <span class="pl-s1">topk_values_cpu</span>)
-                        <span class="pl-s1">self</span>.<span class="pl-en">assertEqual</span>(<span class="pl-s1">topk_indices</span>, <span class="pl-s1">topk_indices_cpu</span>)
-
-        <span class="pl-en">helper</span>(<span class="pl-c1">2</span>)
-        <span class="pl-en">helper</span>((<span class="pl-c1">5</span>, <span class="pl-c1">1</span>))
-        <span class="pl-en">helper</span>((<span class="pl-c1">1</span>, <span class="pl-c1">5</span>))
-        <span class="pl-en">helper</span>((<span class="pl-c1">5</span>, <span class="pl-c1">9</span>, <span class="pl-c1">7</span>, <span class="pl-c1">4</span>))
-        <span class="pl-en">helper</span>((<span class="pl-c1">50</span>, <span class="pl-c1">20</span>, <span class="pl-c1">7</span>, <span class="pl-c1">4</span>))</pre></div>
-<p><a href="https://github.com/pytorch/pytorch/blob/297c26bb8e8c10be6ee4d889a3003e942dd86cfd/test/test_mps.py#L8054-L8091">https://github.com/pytorch/pytorch/blob/297c26bb8e8c10be6ee4d889a3003e942dd86cfd/test/test_mps.py#L8054-L8091</a></p>
-<ol start="2">
-<li>Move all pad tests to one standalone class.</li>
+<p>This is effectively the same exact thing as setting .data, and it composes properly with aot_autograd and inductor.</p>
+<p><strong>aot_autograd</strong></p>
+<p>For aot_autograd, there's another snag.</p>
+<p>Specifically, when we invoke aot_autograd, we call <code>fake_mode.from_tensor()</code>, relying on memo to get the right tensor out. For .data mutations, this doesn't work, because the memoized fake_tensor is in the state it will be in at the end of the trace, not at the beginning. This means that the .data call is already applied, and the tensor shape (as in the case of these tests) mismatches. aot_autograd produces an invalid graph, with illegal calls like <code>torch.ops.aten.view.default(primals_2, [0])</code> where primals is actually sized <code>([6])</code> on input.</p>
+<p>The new plan here is to:</p>
+<ol>
+<li>Snapshot shape and stride at fake tensor creation time</li>
+<li>Pipe those in alongside the real tensor at from_tensor time</li>
+<li>Instead of calling into shape_env to create new sizes, if a force_fresh flag is set, we create a new fake_tensor but reuse the original symint sizes and strides.</li>
 </ol>
+<p>cc penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/113320]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113320</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113320</guid>
-            <pubDate>Thu, 09 Nov 2023 00:18:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/112518: Update on "[NCCL PG] ADD a separate monitoring thread to ensure we co…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F112518</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F112518</guid>
+            <pubDate>Thu, 09 Nov 2023 05:52:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…llect debug info and check watchdog heartbeat"</p>
+<p>This PR has the following goals:</p>
+<ol>
+<li>Detect the potential hang/stuck in the watchdog thread (or calling into abort) during PG destroy by listening to a heartbeat locally. The former is to detect if the NCCL watchdog system is still healthy and the latter is to ensure we don't silently let the process hang there for hours when calling Cuda APIs.</li>
+<li>Once heartbeat cannot be heard, we dump debug information (for now, we just use the flight recorder implemented in <a href="https://github.com/pytorch/pytorch/pull/110960/files">https://github.com/pytorch/pytorch/pull/110960/files</a>) to disk. (How and where to dump the debug info will be addressed in the following PR).</li>
+<li>Finally, we initiate std::abort via <code>LOG(FATAL)</code> to kill the process.</li>
+</ol>
+<p>cc seemethere malfet osalpekar atalman</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jdk: jdk-22+23]]></title>
+            <link>https://github.com/openjdk/jdk/releases/tag/jdk-22%2B23</link>
+            <guid>https://github.com/openjdk/jdk/releases/tag/jdk-22%2B23</guid>
+            <pubDate>Thu, 09 Nov 2023 05:38:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Added tag jdk-22+23 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/8555e0f6c40c045f7763777a9bf976de99c0534c/hovercard" href="https://github.com/openjdk/jdk/commit/8555e0f6c40c045f7763777a9bf976de99c0534c"><tt>8555e0f</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from assemblyscript: v0.27.16]]></title>
+            <link>https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.27.16</link>
+            <guid>https://github.com/AssemblyScript/assemblyscript/releases/tag/v0.27.16</guid>
+            <pubDate>Thu, 09 Nov 2023 05:38:03 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Bug fixes</h3>
+<ul>
+<li><strong>Return the assigned value in assignments (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946744143" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2773" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2773/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2773">#2773</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/94fa207c4f88bbf1c7c9689a2931c850d2eca5cb/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/94fa207c4f88bbf1c7c9689a2931c850d2eca5cb"><tt>94fa207</tt></a>)<br>
+Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946361575" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2770" data-hovercard-type="issue" data-hovercard-url="/AssemblyScript/assemblyscript/issues/2770/hovercard" href="https://github.com/AssemblyScript/assemblyscript/issues/2770">#2770</a>.</li>
+</ul>
+<h3>Other</h3>
+<ul>
+<li><strong>General cleanup (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1921003929" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2757" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2757/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2757">#2757</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/a7e168b93f1b5258457297177cc3b6eda9abe736/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/a7e168b93f1b5258457297177cc3b6eda9abe736"><tt>a7e168b</tt></a>)</li>
+<li><strong>deps: Update binaryen to 116.0.0-nightly.20231102 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1972105415" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2777" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2777/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2777">#2777</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/af2a2500657b925ba099d4cb6aa6280f99353f51/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/af2a2500657b925ba099d4cb6aa6280f99353f51"><tt>af2a250</tt></a>)</li>
+<li><strong>ci: Build action-node to install nodejs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1973894894" data-permission-text="Title is private" data-url="https://github.com/AssemblyScript/assemblyscript/issues/2779" data-hovercard-type="pull_request" data-hovercard-url="/AssemblyScript/assemblyscript/pull/2779/hovercard" href="https://github.com/AssemblyScript/assemblyscript/pull/2779">#2779</a>)</strong> (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/AssemblyScript/assemblyscript/commit/cdb39db35ea3ade6f2f1a9ec5cfa7c11c5f4639a/hovercard" href="https://github.com/AssemblyScript/assemblyscript/commit/cdb39db35ea3ade6f2f1a9ec5cfa7c11c5f4639a"><tt>cdb39db</tt></a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Thu, 09 Nov 2023 05:14:53 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-43b0e27
+Build type: RelWithDebInfo
+LuaJIT 2.1.1699392533"><pre class="notranslate"><code>NVIM v0.10.0-dev-43b0e27
+Build type: RelWithDebInfo
+LuaJIT 2.1.1699392533
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
+that work on older glibc versions can find them at<br>
+<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="9d6e1f8336ea9b212ea839aa04145519858776d26b72c501516d037c6467bc97  nvim-linux64.tar.gz
+286742b29972c74ee6145810e4b63e35970fff1c0a9dff56779c1ca8f8fcf393  nvim.appimage
+d640e0b922cc8d4dd4f5137d6c337c7df5741ca1aa35e70135e0d6792022e829  nvim.appimage.zsync
+5ac9e2c8daeaaeedf7996c3e3a77d4fed16459bf256324893623d883bfa5c530  nvim-macos.tar.gz
+17c586b37c9ad80724613144610fd850015ea892574509377dee26031b99500f  nvim-win64.zip
+a9a6df6020b5ab07df5327c2fb053cfd97ad2f56c9774ee2480d430f12da4b2a  nvim-win64.msi"><pre class="notranslate"><code>9d6e1f8336ea9b212ea839aa04145519858776d26b72c501516d037c6467bc97  nvim-linux64.tar.gz
+286742b29972c74ee6145810e4b63e35970fff1c0a9dff56779c1ca8f8fcf393  nvim.appimage
+d640e0b922cc8d4dd4f5137d6c337c7df5741ca1aa35e70135e0d6792022e829  nvim.appimage.zsync
+5ac9e2c8daeaaeedf7996c3e3a77d4fed16459bf256324893623d883bfa5c530  nvim-macos.tar.gz
+17c586b37c9ad80724613144610fd850015ea892574509377dee26031b99500f  nvim-win64.zip
+a9a6df6020b5ab07df5327c2fb053cfd97ad2f56c9774ee2480d430f12da4b2a  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113275: Update on "[inductor] Move things into torch/testing/_internal/induct…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113275</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113275</guid>
+            <pubDate>Thu, 09 Nov 2023 04:52:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…or_utils.py"</p>
+<p>This PR is just moving things around, so code shared by multiple tests files is in torch/testing/_internal/inductor_utils.py.</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113278: Update on "[dynamo] Add run_inductor_tests entrypoint"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113278</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113278</guid>
+            <pubDate>Thu, 09 Nov 2023 04:52:22 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113163]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113163</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113163</guid>
+            <pubDate>Thu, 09 Nov 2023 03:41:01 GMT</pubDate>
+            <content:encoded><![CDATA[<p>remove add options</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/112536: Update on "Enable 2d + AC torch.compile"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F112536</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F112536</guid>
+            <pubDate>Thu, 09 Nov 2023 02:59:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR enables AC + torch.compile to work with FSDP + TP, the fix to<br>
+high order op path is that we need to check both tensor and tensor<br>
+subclass bases to make sourceless builder</p>
+<p>NOTE: selective AC + 2D is still not working, need to fix this<br>
+separately</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v14.0.2-canary.25]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v14.0.2-canary.25</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v14.0.2-canary.25</guid>
+            <pubDate>Thu, 09 Nov 2023 02:45:25 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>pass postpone through staticGenerationStore: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1984585428" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58229" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58229/hovercard" href="https://github.com/vercel/next.js/pull/58229">#58229</a></li>
+<li>Updated React from 7508dcd5c to 746890329: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1984691158" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58233" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58233/hovercard" href="https://github.com/vercel/next.js/pull/58233">#58233</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Fix test: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1984576895" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58228" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58228/hovercard" href="https://github.com/vercel/next.js/pull/58228">#58228</a></li>
+<li>fix ppr test flake: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1984644618" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58232" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58232/hovercard" href="https://github.com/vercel/next.js/pull/58232">#58232</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ztanner/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ztanner">@ztanner</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sebmarkbage/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sebmarkbage">@sebmarkbage</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gnoff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gnoff">@gnoff</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113327]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113327</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113327</guid>
+            <pubDate>Thu, 09 Nov 2023 02:36:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Revert PR <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1842496371" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/106840" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/106840/hovercard" href="https://github.com/pytorch/pytorch/pull/106840">#106840</a> as int_mm only works on CUDA 11.7</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113322: Update on "[dtensor] full_tensor to return synchronously"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113322</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113322</guid>
+            <pubDate>Thu, 09 Nov 2023 02:30:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>full_tensor API should return synchronously instead of<br>
+AsyncCollectiveTensor and if the return is that, we do the wait<br>
+directly, this makes the full_tensor API be more percise</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.1.91]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.1.91</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.1.91</guid>
+            <pubDate>Thu, 09 Nov 2023 01:58:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ib8009dfdb5088de66034679d2a392cdc110717c7<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5012989" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5012989</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.1.91@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/207b5f553aafb8e8b37c30568daaf09f750b708e/hovercard" href="https://github.com/v8/v8/commit/207b5f553aafb8e8b37c30568daaf09f750b708e"><tt>207b5f5</tt></a>-refs/heads/main@{#90824}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.1.91-pgo: Version 12.1.91]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.1.91-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.1.91-pgo</guid>
+            <pubDate>Thu, 09 Nov 2023 01:58:39 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ib8009dfdb5088de66034679d2a392cdc110717c7<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5012989" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5012989</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.1.91@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/207b5f553aafb8e8b37c30568daaf09f750b708e/hovercard" href="https://github.com/v8/v8/commit/207b5f553aafb8e8b37c30568daaf09f750b708e"><tt>207b5f5</tt></a>-refs/heads/main@{#90824}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.29.82]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.29.82</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.29.82</guid>
+            <pubDate>Thu, 09 Nov 2023 01:24:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.29.82 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.97-nightly-20231109.1]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231109.1</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231109.1</guid>
+            <pubDate>Thu, 09 Nov 2023 01:16:41 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/113314: Update on "Make FakeProcessGroup traceable"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113314</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113314</guid>
+            <pubDate>Thu, 09 Nov 2023 01:09:23 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR mimics what we have done to trace ProcessGroup. This allows use to use FakeProcessGroup with torch.compile. FakeProcessGroup allows us to use world_size &gt; 1 without creating multiple processes thus enabling the usage of PDB to debug bucketing DDP allreduce in the Inductor. We can theoretically use GLOO with world_size==1 to achieve the same goal. However, the <code>wait()</code> seems to be optimized away when the world_size is 1.</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D51136463/" rel="nofollow">D51136463</a></p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from selenium: Nightly]]></title>
+            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
+            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
+            <pubDate>Thu, 09 Nov 2023 00:22:17 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Commits</h2>
+<ul>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/2448031295deee0d30071dc5c04726527af68e38/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/2448031295deee0d30071dc5c04726527af68e38"><tt>2448031</tt></a>: Roll browsers (Simon Mavi Stewart)</li>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/16c335f72d2df391f4212735e1e63bda740c8842/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/16c335f72d2df391f4212735e1e63bda740c8842"><tt>16c335f</tt></a>: Update rules_dotnet  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1983920253" data-permission-text="Title is private" data-url="https://github.com/SeleniumHQ/selenium/issues/13117" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13117/hovercard" href="https://github.com/SeleniumHQ/selenium/pull/13117">#13117</a>) (Daniel P. Purkhús) <a href="https://github.com/SeleniumHQ/selenium/pull/13117" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13117/hovercard">#13117</a></li>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/a5591ef9c87ebb0fbb2ac367bf130abc0730413a/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/a5591ef9c87ebb0fbb2ac367bf130abc0730413a"><tt>a5591ef</tt></a>: [java] fixed events without parameters <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1981573696" data-permission-text="Title is private" data-url="https://github.com/SeleniumHQ/selenium/issues/13109" data-hovercard-type="issue" data-hovercard-url="/SeleniumHQ/selenium/issues/13109/hovercard" href="https://github.com/SeleniumHQ/selenium/issues/13109">#13109</a> (Jörg Sautter)</li>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/eb82278c994503919deb248238b2fc568db0c4c2/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/eb82278c994503919deb248238b2fc568db0c4c2"><tt>eb82278</tt></a>: [java] moved the method to the correct place (Jörg Sautter)</li>
+</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/113320]]></title>
@@ -101,28 +285,6 @@
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F113320</guid>
             <pubDate>Thu, 09 Nov 2023 00:18:23 GMT</pubDate>
             <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.3.97-nightly-20231109.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231109.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231109.1</guid>
-            <pubDate>Thu, 09 Nov 2023 00:06:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: Publish 1.3.97-nightly-20231109.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/113229: Update on "[AOTI] Implement support for user defined kernels that use…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113229</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113229</guid>
-            <pubDate>Thu, 09 Nov 2023 00:01:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>… triton.autotune"</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/113317: [AOTI] Use expr_printer to print sympy expr]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113317</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F113317</guid>
-            <pubDate>Thu, 09 Nov 2023 00:01:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from mongo: r7.1.1-rc0]]></title>
@@ -322,16 +484,6 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/unstable/106581: Update on "[inductor] Add ir.Scan and lower aten.cumsum on CUDA"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F106581</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F106581</guid>
-            <pubDate>Wed, 08 Nov 2023 21:57:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This adds the <code>ir.Scan</code> node (currently only supported on CUDA) which re-uses the existing reduction kernel machinery to support different kinds of non-pointwise ops. Just like reductions it supports prologue and epilogue fusions and has both persistent and non-persistent kernel generation.</p>
-<p>Currently this doesn't support the equivalent of <code>Reduction.create_multilayer</code> and will instead fall back to eager in those cases. This is because splitting into multiple kernel invocations ends up being far slower than cub's single kernel strategy which matches the performance of a copy kernel.</p>
-<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng Xia-Weiwen wenzhe-nrv jiayisunx ipiszy ngimel yf225 chenyang78 kadeng muchulee8 aakhundov</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
             <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
             <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
@@ -346,9 +498,9 @@
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.1.90]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.1.90</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.1.90</guid>
+            <title><![CDATA[Release notes from v8: 12.1.90-pgo: Version 12.1.90]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.1.90-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.1.90-pgo</guid>
             <pubDate>Wed, 08 Nov 2023 21:10:35 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia1340bb0dd27304d1e07d6b21cb4529c3b463e54<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5012987" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5012987</a><br>
@@ -357,9 +509,9 @@ Cr-Commit-Position: refs/heads/12.1.90@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a3cc2f3723e7e1c200991076cd1a9c936cd3a7e7/hovercard" href="https://github.com/v8/v8/commit/a3cc2f3723e7e1c200991076cd1a9c936cd3a7e7"><tt>a3cc2f3</tt></a>-refs/heads/main@{#90823}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.1.90-pgo: Version 12.1.90]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.1.90-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.1.90-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.1.90]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.1.90</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.1.90</guid>
             <pubDate>Wed, 08 Nov 2023 21:10:35 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia1340bb0dd27304d1e07d6b21cb4529c3b463e54<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5012987" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5012987</a><br>
@@ -885,13 +1037,6 @@ instead of importing React directly.</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/unstable/105141]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F105141</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Funstable%2F105141</guid>
-            <pubDate>Wed, 08 Nov 2023 14:47:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update test_cpp_wrapper.py</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from nx: 17.1.0-beta.4]]></title>
             <link>https://github.com/nrwl/nx/releases/tag/17.1.0-beta.4</link>
             <guid>https://github.com/nrwl/nx/releases/tag/17.1.0-beta.4</guid>
@@ -947,9 +1092,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.1.87]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.1.87</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.1.87</guid>
+            <title><![CDATA[Release notes from v8: 12.1.87-pgo: Version 12.1.87]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.1.87-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.1.87-pgo</guid>
             <pubDate>Wed, 08 Nov 2023 13:52:38 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I503ba56d6a503823c946b4a00fa08dd89861c2a1<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5014063" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5014063</a><br>
@@ -958,9 +1103,9 @@ Cr-Commit-Position: refs/heads/12.1.87@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/42f459e030ea93350f01d7fd81e12559872430ba/hovercard" href="https://github.com/v8/v8/commit/42f459e030ea93350f01d7fd81e12559872430ba"><tt>42f459e</tt></a>-refs/heads/main@{#90808}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.1.87-pgo: Version 12.1.87]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.1.87-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.1.87-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.1.87]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.1.87</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.1.87</guid>
             <pubDate>Wed, 08 Nov 2023 13:52:38 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I503ba56d6a503823c946b4a00fa08dd89861c2a1<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5014063" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5014063</a><br>
@@ -2004,35 +2149,6 @@ as an example).</p>
             <content:encoded><![CDATA[<p>v29.0.0-nightly.20231108</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: v2.1.1-rc6: remove _shard_tensor() call (#111687)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/v2.1.1-rc6</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/v2.1.1-rc6</guid>
-            <pubDate>Wed, 08 Nov 2023 12:49:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Co-authored-by: Andrey Talman <a href="mailto:atalman@fb.com">atalman@fb.com</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.1.86]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.1.86</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.1.86</guid>
-            <pubDate>Wed, 08 Nov 2023 11:34:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I6cbca3f91820928183d0a9727ed8c2a796088fd3<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5013063" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5013063</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.1.86@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e48c47268c53499814c88c35064d564dbb92e6fd/hovercard" href="https://github.com/v8/v8/commit/e48c47268c53499814c88c35064d564dbb92e6fd"><tt>e48c472</tt></a>-refs/heads/main@{#90805}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.1.86-pgo: Version 12.1.86]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.1.86-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.1.86-pgo</guid>
-            <pubDate>Wed, 08 Nov 2023 11:34:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I6cbca3f91820928183d0a9727ed8c2a796088fd3<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5013063" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5013063</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.1.86@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e48c47268c53499814c88c35064d564dbb92e6fd/hovercard" href="https://github.com/v8/v8/commit/e48c47268c53499814c88c35064d564dbb92e6fd"><tt>e48c472</tt></a>-refs/heads/main@{#90805}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cdk: v2.105.0]]></title>
             <link>https://github.com/aws/aws-cdk/releases/tag/v2.105.0</link>
             <guid>https://github.com/aws/aws-cdk/releases/tag/v2.105.0</guid>
@@ -2126,80 +2242,6 @@ class definition (<a class="issue-link js-issue-link" data-error-text="Failed to
 <li>Black's pre-commit integration will now run only on git hooks appropriate for a code<br>
 formatter (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1935512068" data-permission-text="Title is private" data-url="https://github.com/psf/black/issues/3940" data-hovercard-type="pull_request" data-hovercard-url="/psf/black/pull/3940/hovercard" href="https://github.com/psf/black/pull/3940">#3940</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Wed, 08 Nov 2023 05:14:43 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-3d8f0cb
-Build type: RelWithDebInfo
-LuaJIT 2.1.1699198486"><pre class="notranslate"><code>NVIM v0.10.0-dev-3d8f0cb
-Build type: RelWithDebInfo
-LuaJIT 2.1.1699198486
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
-that work on older glibc versions can find them at<br>
-<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="eafcad1aea4517d9c5440066f030b46722fdcf244b1f0ed9c7fa6d95ab5d6860  nvim-linux64.tar.gz
-01550cb627c36363e2b5c1c9606edf42379dbd45aa2fb9af17cff06766e5ad4e  nvim.appimage
-a56504752e0b62c9acf8132015c46efa1e5f31ae4df54f89bd229f67be784acc  nvim.appimage.zsync
-c43ead801f3eddaa81cd588911b06e83f6edaed84dddcfdb04560779afada15c  nvim-macos.tar.gz
-49a74f8b213c17d3e69390d9a150e5b3948b8160ef8cdfa9e4db9bb4c10d6174  nvim-win64.zip
-22fee028c16e7b88535eed528727fc869c015dac86a57a7fb37e269201dcfa09  nvim-win64.msi"><pre class="notranslate"><code>eafcad1aea4517d9c5440066f030b46722fdcf244b1f0ed9c7fa6d95ab5d6860  nvim-linux64.tar.gz
-01550cb627c36363e2b5c1c9606edf42379dbd45aa2fb9af17cff06766e5ad4e  nvim.appimage
-a56504752e0b62c9acf8132015c46efa1e5f31ae4df54f89bd229f67be784acc  nvim.appimage.zsync
-c43ead801f3eddaa81cd588911b06e83f6edaed84dddcfdb04560779afada15c  nvim-macos.tar.gz
-49a74f8b213c17d3e69390d9a150e5b3948b8160ef8cdfa9e4db9bb4c10d6174  nvim-win64.zip
-22fee028c16e7b88535eed528727fc869c015dac86a57a7fb37e269201dcfa09  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from flutter: 3.17.0-4.0.pre]]></title>
@@ -2325,13 +2367,6 @@ c43ead801f3eddaa81cd588911b06e83f6edaed84dddcfdb04560779afada15c  nvim-macos.tar
             <link>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231108.1</link>
             <guid>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231108.1</guid>
             <pubDate>Wed, 08 Nov 2023 01:18:27 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from selenium: Nightly]]></title>
-            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
-            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
-            <pubDate>Wed, 08 Nov 2023 00:21:34 GMT</pubDate>
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
@@ -2745,23 +2780,6 @@ is aware of the problem.</p>
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from next.js: v14.0.2-canary.15]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v14.0.2-canary.15</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v14.0.2-canary.15</guid>
-            <pubDate>Mon, 06 Nov 2023 21:06:25 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>fix: normalization and invariant fixes for ppr: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1979945311" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58105" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58105/hovercard" href="https://github.com/vercel/next.js/pull/58105">#58105</a></li>
-</ul>
-<h3>Misc Changes</h3>
-<ul>
-<li>Fix update-turbopack-test-manifest.yml workflow: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1979673685" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58097" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58097/hovercard" href="https://github.com/vercel/next.js/pull/58097">#58097</a></li>
-<li>Adjust update-turbopack-test-manifest.yml to run once per day: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1979930261" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/58104" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/58104/hovercard" href="https://github.com/vercel/next.js/pull/58104">#58104</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jridgewell/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jridgewell">@jridgewell</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wyattjoh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wyattjoh">@wyattjoh</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from connexion: 3.0.1]]></title>
             <link>https://github.com/spec-first/connexion/releases/tag/3.0.1</link>
             <guid>https://github.com/spec-first/connexion/releases/tag/3.0.1</guid>
@@ -2890,46 +2908,6 @@ is aware of the problem.</p>
 <hr>
 <p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.71.2...v5.72.0"><tt>v5.71.2...v5.72.0</tt></a></p>
 <p>💻 We're looking for DevOps engineers to join Ghost: <a href="https://careers.ghost.org/devops-engineer" rel="nofollow">https://careers.ghost.org/devops-engineer</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cube: v0.34.15]]></title>
-            <link>https://github.com/cube-js/cube/releases/tag/v0.34.15</link>
-            <guid>https://github.com/cube-js/cube/releases/tag/v0.34.15</guid>
-            <pubDate>Mon, 06 Nov 2023 04:08:31 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.34.14...v0.34.15">0.34.15</a> (2023-11-06)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>cubestore:</strong> Fix broadcasting for worker services (<a href="https://github.com/cube-js/cube/issues/7375" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/7375/hovercard">#7375</a>) (<a href="https://github.com/cube-js/cube/commit/1726632e9ffa223f8dba9a9c0914d13cb2ad283b">1726632</a>)</li>
-<li>Single value non-additive pre-aggregation match in views (<a href="https://github.com/cube-js/cube/commit/9666f24650e93ad6fd6990f6b82fb957e26c2885">9666f24</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.3.97-nightly-20231106.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231106.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.97-nightly-20231106.1</guid>
-            <pubDate>Mon, 06 Nov 2023 01:26:30 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.17.0-2.0.pre: Roll Flutter Engine from 0d8c7ceacc01 to 555ffa17b55c (1 revision) (#…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.17.0-2.0.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.17.0-2.0.pre</guid>
-            <pubDate>Mon, 06 Nov 2023 00:59:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…137921)</p>
-<p><a class="commit-link" href="https://github.com/flutter/engine/compare/0d8c7ceacc01...555ffa17b55c">flutter/engine@<tt>0d8c7ce...555ffa1</tt></a></p>
-<p>2023-11-05 <a href="mailto:skia-flutter-autoroll@skia.org">skia-flutter-autoroll@skia.org</a> Roll Fuchsia Mac SDK from IH6mGM_PvyJB5x7SM... to V3diHxFGlypUQKNH_... (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1978007460" data-permission-text="Title is private" data-url="https://github.com/flutter/engine/issues/47696" data-hovercard-type="pull_request" data-hovercard-url="/flutter/engine/pull/47696/hovercard" href="https://github.com/flutter/engine/pull/47696">flutter/engine#47696</a>)</p>
-<p>Also rolling transitive DEPS:<br>
-fuchsia/sdk/core/mac-amd64 from IH6mGM_PvyJB to V3diHxFGlypU</p>
-<p>If this roll has caused a breakage, revert this CL and stop the roller<br>
-using the controls here:<br>
-<a href="https://autoroll.skia.org/r/flutter-engine-flutter-autoroll" rel="nofollow">https://autoroll.skia.org/r/flutter-engine-flutter-autoroll</a><br>
-Please CC <a href="mailto:rmistry@google.com">rmistry@google.com</a>,<a href="mailto:zra@google.com">zra@google.com</a> on the revert to ensure that a human<br>
-is aware of the problem.</p>
-<p>To file a bug in Flutter: <a href="https://github.com/flutter/flutter/issues/new/choose">https://github.com/flutter/flutter/issues/new/choose</a></p>
-<p>To report a problem with the AutoRoller itself, please file a bug:<br>
-<a href="https://issues.skia.org/issues/new?component=1389291&amp;template=1850622" rel="nofollow">https://issues.skia.org/issues/new?component=1389291&amp;template=1850622</a></p>
-<p>Documentation for the AutoRoller is here:<br>
-<a href="https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md" rel="nofollow">https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md</a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
