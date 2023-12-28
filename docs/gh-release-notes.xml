@@ -4,7 +4,7 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 28 Dec 2023 12:08:05 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 28 Dec 2023 18:06:45 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
@@ -30,11 +30,376 @@
             <content:encoded><![CDATA[<p>[1/3] Intel GPU Runtime Upstreaming for Stream</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from sqlalchemy: 2.0.24]]></title>
+            <link>https://github.com/sqlalchemy/sqlalchemy/releases/tag/rel_2_0_24</link>
+            <guid>https://github.com/sqlalchemy/sqlalchemy/releases/tag/rel_2_0_24</guid>
+            <pubDate>Thu, 28 Dec 2023 17:00:48 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>2.0.24</h1>
+<p>Released: December 28, 2023</p>
+<h2>orm</h2>
+<ul>
+<li>
+<p><strong>[orm] [bug]</strong> Improved a fix first implemented for <a href="https://www.sqlalchemy.org/trac/ticket/3208" rel="nofollow">#3208</a> released in version<br>
+0.9.8, where the registry of classes used internally by declarative could<br>
+be subject to a race condition in the case where individual mapped classes<br>
+are being garbage collected at the same time while new mapped classes are<br>
+being constructed, as can happen in some test suite configurations or<br>
+dynamic class creation environments.   In addition to the weakref check<br>
+already added, the list of items being iterated is also copied first to<br>
+avoid "list changed while iterating" errors.  Pull request courtesy Yilei<br>
+Yang.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.51</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10782" rel="nofollow">#10782</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Fixed issue where use of <code>_orm.foreign()</code> annotation on a<br>
+non-initialized <code>_orm.mapped_column()</code> construct would produce an<br>
+expression without a type, which was then not updated at initialization<br>
+time of the actual column, leading to issues such as relationships not<br>
+determining <code>use_get</code> appropriately.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10597" rel="nofollow">#10597</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Improved the error message produced when the unit of work process sets the<br>
+value of a primary key column to NULL due to a related object with a<br>
+dependency rule on that column being deleted, to include not just the<br>
+destination object and column name but also the source column from which<br>
+the NULL value is originating.  Pull request courtesy Jan Vollmer.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10668" rel="nofollow">#10668</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Modified the <code>__init_subclass__()</code> method used by<br>
+<code>_orm.MappedAsDataclass</code>, <code>_orm.DeclarativeBase</code> and<br>
+<code>_orm.DeclarativeBaseNoMeta</code> to accept arbitrary <code>**kw</code> and to<br>
+propagate them to the <code>super()</code> call, allowing greater flexibility in<br>
+arranging custom superclasses and mixins which make use of<br>
+<code>__init_subclass__()</code> keyword arguments.  Pull request courtesy Michael<br>
+Oliver.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10732" rel="nofollow">#10732</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Ensured the use case of <code>Bundle</code> objects used in the<br>
+<code>returning()</code> portion of ORM-enabled INSERT, UPDATE and DELETE statements<br>
+is tested and works fully.   This was never explicitly implemented or<br>
+tested previously and did not work correctly in the 1.4 series; in the 2.0<br>
+series, ORM UPDATE/DELETE with WHERE criteria was missing an implementation<br>
+method preventing <code>Bundle</code> objects from working.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10776" rel="nofollow">#10776</a></p>
+</li>
+<li>
+<p><strong>[orm] [bug]</strong> Fixed 2.0 regression in <code>MutableList</code> where a routine that detects<br>
+sequences would not correctly filter out string or bytes instances, making<br>
+it impossible to assign a string value to a specific index (while<br>
+non-sequence values would work fine).</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10784" rel="nofollow">#10784</a></p>
+</li>
+</ul>
+<h2>engine</h2>
+<ul>
+<li>
+<p><strong>[engine] [bug]</strong> Fixed URL-encoding of the username and password components of<br>
+<code>engine.URL</code> objects when converting them to string using the<br>
+<code>_engine.URL.render_as_string()</code> method, by using Python standard<br>
+library <code>urllib.parse.quote</code> while allowing for plus signs and spaces to<br>
+remain unchanged as supported by SQLAlchemy's non-standard URL parsing,<br>
+rather than the legacy home-grown routine from many years ago. Pull request<br>
+courtesy of Xavier NUNN.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10662" rel="nofollow">#10662</a></p>
+</li>
+</ul>
+<h2>sql</h2>
+<ul>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed issue in stringify for SQL elements, where a specific dialect is not<br>
+passed,  where a dialect-specific element such as the PostgreSQL "on<br>
+conflict do update" construct is encountered and then fails to provide for<br>
+a stringify dialect with the appropriate state to render the construct,<br>
+leading to internal errors.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10753" rel="nofollow">#10753</a></p>
+</li>
+<li>
+<p><strong>[sql] [bug]</strong> Fixed issue where stringifying or compiling a <code>CTE</code> that was<br>
+against a DML construct such as an <code>_sql.insert()</code> construct would fail<br>
+to stringify, due to a mis-detection that the statement overall is an<br>
+INSERT, leading to internal errors.</p>
+</li>
+</ul>
+<h2>schema</h2>
+<ul>
+<li>
+<p><strong>[schema] [bug]</strong> Fixed issue where error reporting for unexpected schema item when creating<br>
+objects like <code>_schema.Table</code> would incorrectly handle an argument<br>
+that was itself passed as a tuple, leading to a formatting error.  The<br>
+error message has been modernized to use f-strings.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10654" rel="nofollow">#10654</a></p>
+</li>
+</ul>
+<h2>typing</h2>
+<ul>
+<li>
+<p><strong>[typing] [bug]</strong> Completed pep-484 typing for the <code>sqlalchemy.sql.functions</code> module.<br>
+<code>_sql.select()</code> constructs made against <code>func</code> elements should now<br>
+have filled-in return types.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/6810" rel="nofollow">#6810</a></p>
+</li>
+</ul>
+<h2>asyncio</h2>
+<ul>
+<li><strong>[asyncio] [change]</strong> The <code>async_fallback</code> dialect argument is now deprecated, and will be<br>
+removed in SQLAlchemy 2.1.   This flag has not been used for SQLAlchemy's<br>
+test suite for some time.   asyncio dialects can still run in a synchronous<br>
+style by running code within a greenlet using <code>_util.greenlet_spawn()</code>.</li>
+</ul>
+<h2>postgresql</h2>
+<ul>
+<li>
+<p><strong>[postgresql] [bug]</strong> Adjusted the asyncpg dialect such that when the <code>terminate()</code> method is<br>
+used to discard an invalidated connection, the dialect will first attempt<br>
+to gracefully close the connection using <code>.close()</code> with a timeout, if<br>
+the operation is proceeding within an async event loop context only. This<br>
+allows the asyncpg driver to attend to finalizing a <code>TimeoutError</code><br>
+including being able to close a long-running query server side, which<br>
+otherwise can keep running after the program has exited.</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10717" rel="nofollow">#10717</a></p>
+</li>
+</ul>
+<h2>mysql</h2>
+<ul>
+<li>
+<p><strong>[mysql] [bug]</strong> Fixed regression introduced by the fix in ticket <a href="https://www.sqlalchemy.org/trac/ticket/10492" rel="nofollow">#10492</a> when using<br>
+pool pre-ping with PyMySQL version older than 1.0.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.51</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10650" rel="nofollow">#10650</a></p>
+</li>
+<li>
+<p><strong>[mysql] [bug]</strong> Fixed regression introduced by the fix in ticket <a href="https://www.sqlalchemy.org/trac/ticket/10492" rel="nofollow">#10492</a> when using<br>
+pool pre-ping with PyMySQL version older than 1.0.</p>
+<p>This change is also <strong>backported</strong> to: 1.4.51</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10650" rel="nofollow">#10650</a></p>
+</li>
+</ul>
+<h2>tests</h2>
+<ul>
+<li>
+<p><strong>[tests] [bug]</strong> Improvements to the test suite to further harden its ability to run<br>
+when Python <code>greenlet</code> is not installed.   There is now a tox<br>
+target that includes the token "nogreenlet" that will run the suite<br>
+with greenlet not installed (note that it still temporarily installs<br>
+greenlet as part of the tox config, however).</p>
+<p>References: <a href="https://www.sqlalchemy.org/trac/ticket/10747" rel="nofollow">#10747</a></p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from polars: Python Polars 0.20.3-rc.2]]></title>
+            <link>https://github.com/pola-rs/polars/releases/tag/py-0.20.3-rc.2</link>
+            <guid>https://github.com/pola-rs/polars/releases/tag/py-0.20.3-rc.2</guid>
+            <pubDate>Thu, 28 Dec 2023 16:47:27 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>🚀 Performance improvements</h2>
+<ul>
+<li>don't needlessly allocate validity in concat/rechunk (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058377154" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13288" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13288/hovercard" href="https://github.com/pola-rs/polars/pull/13288">#13288</a>)</li>
+<li>add fast path to <code>count_bits_set_by_offsets</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056587782" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13253" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13253/hovercard" href="https://github.com/pola-rs/polars/pull/13253">#13253</a>)</li>
+<li>make <code>.dt.truncate('*mo')</code> more than 3x faster (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2053103635" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13192" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13192/hovercard" href="https://github.com/pola-rs/polars/pull/13192">#13192</a>)</li>
+</ul>
+<h2>✨ Enhancements</h2>
+<ul>
+<li>change doc links to new url docs.pola.rs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058416932" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13290" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13290/hovercard" href="https://github.com/pola-rs/polars/pull/13290">#13290</a>)</li>
+<li>support horizontal concatenation of LazyFrames (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2049590211" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13139" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13139/hovercard" href="https://github.com/pola-rs/polars/pull/13139">#13139</a>)</li>
+<li>Rename <code>Utf8</code> data type to <code>String</code>, keep <code>Utf8</code> as alias (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057172377" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13257" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13257/hovercard" href="https://github.com/pola-rs/polars/pull/13257">#13257</a>)</li>
+<li>dispatch strict_cast via cast (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057003702" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13255" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13255/hovercard" href="https://github.com/pola-rs/polars/pull/13255">#13255</a>)</li>
+<li>Impl any/all for array type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056085370" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13250" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13250/hovercard" href="https://github.com/pola-rs/polars/pull/13250">#13250</a>)</li>
+<li>add cancellable queries (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052586746" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13178" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13178/hovercard" href="https://github.com/pola-rs/polars/pull/13178">#13178</a>)</li>
+<li>add <code>offset</code> parameter to <code>gather_every</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2050841539" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13156" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13156/hovercard" href="https://github.com/pola-rs/polars/pull/13156">#13156</a>)</li>
+<li>Support <code>Array</code> dtype AnyValue Series construction (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2019419389" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/12817" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/12817/hovercard" href="https://github.com/pola-rs/polars/pull/12817">#12817</a>)</li>
+<li>Allow <code>step</code> parameter in <code>int_ranges</code> to take an expression (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2050109598" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13148" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13148/hovercard" href="https://github.com/pola-rs/polars/pull/13148">#13148</a>)</li>
+<li>make python <code>map_batches</code> safer (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052991050" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13181" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13181/hovercard" href="https://github.com/pola-rs/polars/pull/13181">#13181</a>)</li>
+<li>Implement <code>count</code> for DataFrame/LazyFrame (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2050282821" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13153" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13153/hovercard" href="https://github.com/pola-rs/polars/pull/13153">#13153</a>)</li>
+</ul>
+<h2>🐞 Bug fixes</h2>
+<ul>
+<li>sorting categorical lexically bugs on null values (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057689055" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13271" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13271/hovercard" href="https://github.com/pola-rs/polars/pull/13271">#13271</a>)</li>
+<li>improve replace on categoricals (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054828768" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13223" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13223/hovercard" href="https://github.com/pola-rs/polars/pull/13223">#13223</a>)</li>
+<li>round trip to JSON and back should preserve Enum type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057477143" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13267" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13267/hovercard" href="https://github.com/pola-rs/polars/pull/13267">#13267</a>)</li>
+<li>fix return type hint of list series any/all (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057336410" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13265" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13265/hovercard" href="https://github.com/pola-rs/polars/pull/13265">#13265</a>)</li>
+<li>sink_csv deadlock (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055072980" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13239" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13239/hovercard" href="https://github.com/pola-rs/polars/pull/13239">#13239</a>)</li>
+<li>Correctly use <code>read_parquet</code> for all binary inputs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054722943" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13218" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13218/hovercard" href="https://github.com/pola-rs/polars/pull/13218">#13218</a>)</li>
+<li><code>is_in</code> operator for categoricals (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054076270" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13205" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13205/hovercard" href="https://github.com/pola-rs/polars/pull/13205">#13205</a>)</li>
+<li>Better handle mismatched dtypes in <code>replace</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054568934" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13213" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13213/hovercard" href="https://github.com/pola-rs/polars/pull/13213">#13213</a>)</li>
+<li>Fix <code>replace</code> fast path by casting <code>old</code> input to the right data type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052479260" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13176" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13176/hovercard" href="https://github.com/pola-rs/polars/pull/13176">#13176</a>)</li>
+<li>ndjson nested null schema inference (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054088958" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13206" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13206/hovercard" href="https://github.com/pola-rs/polars/pull/13206">#13206</a>)</li>
+<li>don't cast to unknown dtypes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2053686078" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13197" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13197/hovercard" href="https://github.com/pola-rs/polars/pull/13197">#13197</a>)</li>
+<li>maintain old join behavior in window expression (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052606760" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13179" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13179/hovercard" href="https://github.com/pola-rs/polars/pull/13179">#13179</a>)</li>
+</ul>
+<h2>🛠️ Other improvements</h2>
+<ul>
+<li>Copy Makefile build commands to top level (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058459556" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13293" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13293/hovercard" href="https://github.com/pola-rs/polars/pull/13293">#13293</a>)</li>
+<li>Fix release flags (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058500390" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13298" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13298/hovercard" href="https://github.com/pola-rs/polars/pull/13298">#13298</a>)</li>
+<li>Re-enable consortium standard tests (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058481217" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13296" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13296/hovercard" href="https://github.com/pola-rs/polars/pull/13296">#13296</a>)</li>
+<li>Update CODEOWNERS (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058440093" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13292" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13292/hovercard" href="https://github.com/pola-rs/polars/pull/13292">#13292</a>)</li>
+<li>Add CPU compatibility check (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2048995294" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13134" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13134/hovercard" href="https://github.com/pola-rs/polars/pull/13134">#13134</a>)</li>
+<li>Change base url of docs/guide to <code>docs.pola.rs</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058111447" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13281" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13281/hovercard" href="https://github.com/pola-rs/polars/pull/13281">#13281</a>)</li>
+<li>Fix source link for dev docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058072498" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13279" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13279/hovercard" href="https://github.com/pola-rs/polars/pull/13279">#13279</a>)</li>
+<li>fix return type hint of list series any/all (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057336410" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13265" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13265/hovercard" href="https://github.com/pola-rs/polars/pull/13265">#13265</a>)</li>
+<li>Fix display of overloaded signatures (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057272283" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13258" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13258/hovercard" href="https://github.com/pola-rs/polars/pull/13258">#13258</a>)</li>
+<li>clean up bytecode parsing a bit (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054789756" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13221" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13221/hovercard" href="https://github.com/pola-rs/polars/pull/13221">#13221</a>)</li>
+<li>Add a couple of docstring examples to Series methods (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055701185" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13244" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13244/hovercard" href="https://github.com/pola-rs/polars/pull/13244">#13244</a>)</li>
+<li>remove unnecessary arg unpacking (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055161403" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13241" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13241/hovercard" href="https://github.com/pola-rs/polars/pull/13241">#13241</a>)</li>
+<li>update rustc (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054766913" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13219" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13219/hovercard" href="https://github.com/pola-rs/polars/pull/13219">#13219</a>)</li>
+<li>fix horizontal concatenation documentation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2049629025" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13141" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13141/hovercard" href="https://github.com/pola-rs/polars/pull/13141">#13141</a>)</li>
+<li>Replace blackdoc by ruff's new docstring formatter (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2053043634" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13182" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13182/hovercard" href="https://github.com/pola-rs/polars/pull/13182">#13182</a>)</li>
+<li>Update ruff &amp; ruff settings (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2048579740" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13126" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13126/hovercard" href="https://github.com/pola-rs/polars/pull/13126">#13126</a>)</li>
+<li>Link to latest object_store docs in api doc (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052978625" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13180" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13180/hovercard" href="https://github.com/pola-rs/polars/pull/13180">#13180</a>)</li>
+<li>Fix failing test (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052049510" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13171" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13171/hovercard" href="https://github.com/pola-rs/polars/pull/13171">#13171</a>)</li>
+</ul>
+<p>Thank you to all our contributors for making this release possible!<br>
+<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MarcoGorelli/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MarcoGorelli">@MarcoGorelli</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/TNieuwdorp/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/TNieuwdorp">@TNieuwdorp</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/adamreeve/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/adamreeve">@adamreeve</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alexander-beedie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexander-beedie">@alexander-beedie</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/c-peters/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/c-peters">@c-peters</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cjfuller/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cjfuller">@cjfuller</a>, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>[bot], <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mcrumiller/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mcrumiller">@mcrumiller</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/orlp/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/orlp">@orlp</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/petrosbar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/petrosbar">@petrosbar</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/r-brink/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/r-brink">@r-brink</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/reswqa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/reswqa">@reswqa</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ritchie46/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ritchie46">@ritchie46</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/robvanmieghem/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/robvanmieghem">@robvanmieghem</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/stinodego/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/stinodego">@stinodego</a></p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/xpu/116495]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116495</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116495</guid>
             <pubDate>Thu, 28 Dec 2023 16:43:50 GMT</pubDate>
             <content:encoded><![CDATA[<p>[3+/4] Intel GPU Runtime Upstreaming for Device</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11454]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11454</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11454</guid>
+            <pubDate>Thu, 28 Dec 2023 16:40:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rust: Rust 1.75.0]]></title>
+            <link>https://github.com/rust-lang/rust/releases/tag/1.75.0</link>
+            <guid>https://github.com/rust-lang/rust/releases/tag/1.75.0</guid>
+            <pubDate>Thu, 28 Dec 2023 16:21:59 GMT</pubDate>
+            <content:encoded><![CDATA[<p><a id="user-content-1.75.0-Language"></a></p>
+<h2>Language</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/115822/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115822/hovercard">Stabilize <code>async fn</code> and return-position <code>impl Trait</code> in traits.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116015/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116015/hovercard">Allow function pointer signatures containing <code>&amp;mut T</code> in <code>const</code> contexts.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116692/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116692/hovercard">Match <code>usize</code>/<code>isize</code> exhaustively with half-open ranges.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116894/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116894/hovercard">Guarantee that <code>char</code> has the same size and alignment as <code>u32</code>.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116988/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116988/hovercard">Document that the null pointer has the 0 address.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/103208/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/103208/hovercard">Allow partially moved values in <code>match</code>.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/113053/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/113053/hovercard">Add notes about non-compliant FP behavior on 32bit x86 targets.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116485/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116485/hovercard">Stabilize ratified RISC-V target features.</a></li>
+</ul>
+<p><a id="user-content-1.75.0-Compiler"></a></p>
+<h2>Compiler</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/112875/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/112875/hovercard">Rework negative coherence to properly consider impls that only partly overlap.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116493/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116493/hovercard">Bump <code>COINDUCTIVE_OVERLAP_IN_COHERENCE</code> to deny, and warn in dependencies.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116733/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116733/hovercard">Consider alias bounds when computing liveness in NLL.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116618/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116618/hovercard">Add the V (vector) extension to the <code>riscv64-linux-android</code> target spec.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116505" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116505/hovercard">Automatically enable cross-crate inlining for small functions</a></li>
+<li>Add several new tier 3 targets:
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/117049/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/117049/hovercard"><code>csky-unknown-linux-gnuabiv2hf</code></a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/117170/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/117170/hovercard"><code>i586-unknown-netbsd</code></a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/117356/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/117356/hovercard"><code>mipsel-unknown-netbsd</code></a></li>
+</ul>
+</li>
+</ul>
+<p>Refer to Rust's <a href="https://doc.rust-lang.org/nightly/rustc/platform-support.html" rel="nofollow">platform support page</a> for more information on Rust's tiered platform support.</p>
+<p><a id="user-content-1.75.0-Libraries"></a></p>
+<h2>Libraries</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/96979/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/96979/hovercard">Override <code>Waker::clone_from</code> to avoid cloning <code>Waker</code>s unnecessarily.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/110604/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/110604/hovercard">Implement <code>BufRead</code> for <code>VecDeque&lt;u8&gt;</code>.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/110729/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/110729/hovercard">Implement <code>FusedIterator</code> for <code>DecodeUtf16</code> when the inner iterator does.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/113747/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/113747/hovercard">Implement <code>Not, Bit{And,Or}{,Assign}</code> for IP addresses.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/114589/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/114589/hovercard">Implement <code>Default</code> for <code>ExitCode</code>.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115333/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115333/hovercard">Guarantee representation of None in NPO</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115577/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115577/hovercard">Document when atomic loads are guaranteed read-only.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116172/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116172/hovercard">Broaden the consequences of recursive TLS initialization.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116461/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116461/hovercard">Windows: Support sub-millisecond sleep.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/100806/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/100806/hovercard">Fix generic bound of <code>str::SplitInclusive</code>'s <code>DoubleEndedIterator</code> impl</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115108/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115108/hovercard">Fix exit status / wait status on non-Unix <code>cfg(unix)</code> platforms.</a></li>
+</ul>
+<p><a id="user-content-1.75.0-Stabilized-APIs"></a></p>
+<h2>Stabilized APIs</h2>
+<ul>
+<li><a href="https://doc.rust-lang.org/stable/core/sync/atomic/struct.AtomicUsize.html#method.from_ptr" rel="nofollow"><code>Atomic*::from_ptr</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/fs/struct.FileTimes.html" rel="nofollow"><code>FileTimes</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/os/windows/fs/trait.FileTimesExt.html" rel="nofollow"><code>FileTimesExt</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/fs/struct.File.html#method.set_modified" rel="nofollow"><code>File::set_modified</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/std/fs/struct.File.html#method.set_times" rel="nofollow"><code>File::set_times</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/net/enum.IpAddr.html#method.to_canonical" rel="nofollow"><code>IpAddr::to_canonical</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/net/struct.Ipv6Addr.html#method.to_canonical" rel="nofollow"><code>Ipv6Addr::to_canonical</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/option/enum.Option.html#method.as_slice" rel="nofollow"><code>Option::as_slice</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/option/enum.Option.html#method.as_mut_slice" rel="nofollow"><code>Option::as_mut_slice</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.byte_add" rel="nofollow"><code>pointer::byte_add</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.byte_offset" rel="nofollow"><code>pointer::byte_offset</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.byte_offset_from" rel="nofollow"><code>pointer::byte_offset_from</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.byte_sub" rel="nofollow"><code>pointer::byte_sub</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.wrapping_byte_add" rel="nofollow"><code>pointer::wrapping_byte_add</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.wrapping_byte_offset" rel="nofollow"><code>pointer::wrapping_byte_offset</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/primitive.pointer.html#method.wrapping_byte_sub" rel="nofollow"><code>pointer::wrapping_byte_sub</code></a></li>
+</ul>
+<p>These APIs are now stable in const contexts:</p>
+<ul>
+<li><a href="https://doc.rust-lang.org/stable/core/net/struct.Ipv6Addr.html#method.to_ipv4_mapped" rel="nofollow"><code>Ipv6Addr::to_ipv4_mapped</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/mem/union.MaybeUninit.html#method.assume_init_read" rel="nofollow"><code>MaybeUninit::assume_init_read</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/mem/union.MaybeUninit.html#method.zeroed" rel="nofollow"><code>MaybeUninit::zeroed</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/mem/fn.discriminant.html" rel="nofollow"><code>mem::discriminant</code></a></li>
+<li><a href="https://doc.rust-lang.org/stable/core/mem/fn.zeroed.html" rel="nofollow"><code>mem::zeroed</code></a></li>
+</ul>
+<p><a id="user-content-1.75.0-Cargo"></a></p>
+<h2>Cargo</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/cargo/pull/12779/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/cargo/pull/12779/hovercard">Add new packages to <code>[workspace.members]</code> automatically.</a></li>
+<li><a href="https://github.com/rust-lang/cargo/pull/12786/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/cargo/pull/12786/hovercard">Allow version-less <code>Cargo.toml</code> manifests.</a></li>
+<li><a href="https://github.com/rust-lang/cargo/pull/12889" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/cargo/pull/12889/hovercard">Make browser links out of HTML file paths.</a></li>
+</ul>
+<p><a id="user-content-1.75.0-Rustdoc"></a></p>
+<h2>Rustdoc</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/117450/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/117450/hovercard">Accept less invalid Rust in rustdoc.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/113241/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/113241/hovercard">Document lack of object safety on affected traits.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115439/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115439/hovercard">Hide <code>#[repr(transparent)]</code> if it isn't part of the public ABI.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116142/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116142/hovercard">Show enum discriminant if it is a C-like variant.</a></li>
+</ul>
+<p><a id="user-content-1.75.0-Compatibility-Notes"></a></p>
+<h2>Compatibility Notes</h2>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/114521/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/114521/hovercard">FreeBSD targets now require at least version 12.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115238/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115238/hovercard">Formally demote tier 2 MIPS targets to tier 3.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115524/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115524/hovercard">Make misalignment a hard error in <code>const</code> contexts.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/115583/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/115583/hovercard">Fix detecting references to packed unsized fields.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/116412/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116412/hovercard">Remove support for compiler plugins.</a></li>
+</ul>
+<p><a id="user-content-1.75.0-Internal-Changes"></a></p>
+<h2>Internal Changes</h2>
+<p>These changes do not affect any public interfaces of Rust, but they represent significant improvements to the performance or internals of rustc and related tools.</p>
+<ul>
+<li><a href="https://github.com/rust-lang/rust/pull/116352/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/116352/hovercard">Optimize <code>librustc_driver.so</code> with BOLT.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/117435/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/117435/hovercard">Enable parallel rustc front end in dev and nightly builds.</a></li>
+<li><a href="https://github.com/rust-lang/rust/pull/81746/" data-hovercard-type="pull_request" data-hovercard-url="/rust-lang/rust/pull/81746/hovercard">Distribute <code>rustc-codegen-cranelift</code> as rustup component on the nightly channel.</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cargo: 0.76.0]]></title>
+            <link>https://github.com/rust-lang/cargo/releases/tag/0.76.0</link>
+            <guid>https://github.com/rust-lang/cargo/releases/tag/0.76.0</guid>
+            <pubDate>Thu, 28 Dec 2023 16:21:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>0.76.0 release</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/116500: Update on "Migrate state_dict bc test to OptimizerInfo, increase cove…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116500</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116500</guid>
+            <pubDate>Thu, 28 Dec 2023 16:19:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…rage"</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/116496: Update on "Migrate repr,  deterministic state_dict test to OptimizerI…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116496</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116496</guid>
+            <pubDate>Thu, 28 Dec 2023 16:16:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…nfo"</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/xpu/116390]]></title>
@@ -44,12 +409,98 @@
             <content:encoded><![CDATA[<p>[3/4] Intel GPU Runtime Upstreaming for Device</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/116500: Update on "Migrate state_dict bc test to OptimizerInfo, increase cove…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116500</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116500</guid>
-            <pubDate>Thu, 28 Dec 2023 10:58:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…rage"</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from opencv: OpenCV 4.9.0]]></title>
+            <link>https://github.com/opencv/opencv/releases/tag/4.9.0</link>
+            <guid>https://github.com/opencv/opencv/releases/tag/4.9.0</guid>
+            <pubDate>Thu, 28 Dec 2023 15:57:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>OpenCV 4.9.0 has been released.</p>
+<p>🛠️ Change log is <a href="https://github.com/opencv/opencv/wiki/ChangeLog#version490">here</a>.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="d181481fdabf6c02b1b45a3b382a583c531bb4d6b0582d0fbbb686487f071218  opencv-4.9.0-android-sdk.zip
+0fce577941eea0db27d2c37b7c46785db23de6520b725b8f0dca7c46b368b18c  opencv-4.9.0-ios-framework.zip
+fefddff0623fbd5a6fa0cecb9bccd4b822478354e6c587ebb6e40ab09dacba51  opencv-4.9.0-windows.exe
+1e71ceb6220c94bd917ee48b29284e43883e066a3c7129e27f5c2a4ffbab8275  opencv-4.9.0-docs.zip"><pre class="notranslate"><code>d181481fdabf6c02b1b45a3b382a583c531bb4d6b0582d0fbbb686487f071218  opencv-4.9.0-android-sdk.zip
+0fce577941eea0db27d2c37b7c46785db23de6520b725b8f0dca7c46b368b18c  opencv-4.9.0-ios-framework.zip
+fefddff0623fbd5a6fa0cecb9bccd4b822478354e6c587ebb6e40ab09dacba51  opencv-4.9.0-windows.exe
+1e71ceb6220c94bd917ee48b29284e43883e066a3c7129e27f5c2a4ffbab8275  opencv-4.9.0-docs.zip
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/116100]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116100</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116100</guid>
+            <pubDate>Thu, 28 Dec 2023 14:59:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>address review comments</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11447]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11447</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11447</guid>
+            <pubDate>Thu, 28 Dec 2023 13:44:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from polars: Python Polars 0.20.3-rc.1]]></title>
+            <link>https://github.com/pola-rs/polars/releases/tag/py-0.20.3-rc.1</link>
+            <guid>https://github.com/pola-rs/polars/releases/tag/py-0.20.3-rc.1</guid>
+            <pubDate>Thu, 28 Dec 2023 13:13:05 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>🚀 Performance improvements</h2>
+<ul>
+<li>add fast path to <code>count_bits_set_by_offsets</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056587782" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13253" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13253/hovercard" href="https://github.com/pola-rs/polars/pull/13253">#13253</a>)</li>
+<li>make <code>.dt.truncate('*mo')</code> more than 3x faster (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2053103635" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13192" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13192/hovercard" href="https://github.com/pola-rs/polars/pull/13192">#13192</a>)</li>
+</ul>
+<h2>✨ Enhancements</h2>
+<ul>
+<li>Rename <code>Utf8</code> data type to <code>String</code>, keep <code>Utf8</code> as alias (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057172377" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13257" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13257/hovercard" href="https://github.com/pola-rs/polars/pull/13257">#13257</a>)</li>
+<li>dispatch strict_cast via cast (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057003702" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13255" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13255/hovercard" href="https://github.com/pola-rs/polars/pull/13255">#13255</a>)</li>
+<li>Impl any/all for array type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056085370" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13250" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13250/hovercard" href="https://github.com/pola-rs/polars/pull/13250">#13250</a>)</li>
+<li>add cancellable queries (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052586746" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13178" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13178/hovercard" href="https://github.com/pola-rs/polars/pull/13178">#13178</a>)</li>
+<li>add <code>offset</code> parameter to <code>gather_every</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2050841539" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13156" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13156/hovercard" href="https://github.com/pola-rs/polars/pull/13156">#13156</a>)</li>
+<li>Support <code>Array</code> dtype AnyValue Series construction (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2019419389" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/12817" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/12817/hovercard" href="https://github.com/pola-rs/polars/pull/12817">#12817</a>)</li>
+<li>Allow <code>step</code> parameter in <code>int_ranges</code> to take an expression (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2050109598" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13148" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13148/hovercard" href="https://github.com/pola-rs/polars/pull/13148">#13148</a>)</li>
+<li>make python <code>map_batches</code> safer (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052991050" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13181" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13181/hovercard" href="https://github.com/pola-rs/polars/pull/13181">#13181</a>)</li>
+<li>Implement <code>count</code> for DataFrame/LazyFrame (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2050282821" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13153" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13153/hovercard" href="https://github.com/pola-rs/polars/pull/13153">#13153</a>)</li>
+</ul>
+<h2>🐞 Bug fixes</h2>
+<ul>
+<li>sorting categorical lexically bugs on null values (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057689055" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13271" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13271/hovercard" href="https://github.com/pola-rs/polars/pull/13271">#13271</a>)</li>
+<li>improve replace on categoricals (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054828768" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13223" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13223/hovercard" href="https://github.com/pola-rs/polars/pull/13223">#13223</a>)</li>
+<li>round trip to JSON and back should preserve Enum type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057477143" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13267" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13267/hovercard" href="https://github.com/pola-rs/polars/pull/13267">#13267</a>)</li>
+<li>fix return type hint of list series any/all (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057336410" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13265" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13265/hovercard" href="https://github.com/pola-rs/polars/pull/13265">#13265</a>)</li>
+<li>sink_csv deadlock (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055072980" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13239" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13239/hovercard" href="https://github.com/pola-rs/polars/pull/13239">#13239</a>)</li>
+<li>Correctly use <code>read_parquet</code> for all binary inputs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054722943" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13218" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13218/hovercard" href="https://github.com/pola-rs/polars/pull/13218">#13218</a>)</li>
+<li><code>is_in</code> operator for categoricals (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054076270" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13205" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13205/hovercard" href="https://github.com/pola-rs/polars/pull/13205">#13205</a>)</li>
+<li>Better handle mismatched dtypes in <code>replace</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054568934" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13213" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13213/hovercard" href="https://github.com/pola-rs/polars/pull/13213">#13213</a>)</li>
+<li>Fix <code>replace</code> fast path by casting <code>old</code> input to the right data type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052479260" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13176" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13176/hovercard" href="https://github.com/pola-rs/polars/pull/13176">#13176</a>)</li>
+<li>ndjson nested null schema inference (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054088958" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13206" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13206/hovercard" href="https://github.com/pola-rs/polars/pull/13206">#13206</a>)</li>
+<li>don't cast to unknown dtypes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2053686078" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13197" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13197/hovercard" href="https://github.com/pola-rs/polars/pull/13197">#13197</a>)</li>
+<li>maintain old join behavior in window expression (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052606760" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13179" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13179/hovercard" href="https://github.com/pola-rs/polars/pull/13179">#13179</a>)</li>
+</ul>
+<h2>🛠️ Other improvements</h2>
+<ul>
+<li>Add CPU compatibility check (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2048995294" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13134" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13134/hovercard" href="https://github.com/pola-rs/polars/pull/13134">#13134</a>)</li>
+<li>Change base url of docs/guide to <code>docs.pola.rs</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058111447" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13281" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13281/hovercard" href="https://github.com/pola-rs/polars/pull/13281">#13281</a>)</li>
+<li>Fix source link for dev docs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058072498" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13279" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13279/hovercard" href="https://github.com/pola-rs/polars/pull/13279">#13279</a>)</li>
+<li>fix return type hint of list series any/all (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057336410" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13265" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13265/hovercard" href="https://github.com/pola-rs/polars/pull/13265">#13265</a>)</li>
+<li>Fix display of overloaded signatures (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057272283" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13258" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13258/hovercard" href="https://github.com/pola-rs/polars/pull/13258">#13258</a>)</li>
+<li>clean up bytecode parsing a bit (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054789756" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13221" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13221/hovercard" href="https://github.com/pola-rs/polars/pull/13221">#13221</a>)</li>
+<li>Add a couple of docstring examples to Series methods (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055701185" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13244" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13244/hovercard" href="https://github.com/pola-rs/polars/pull/13244">#13244</a>)</li>
+<li>remove unnecessary arg unpacking (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055161403" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13241" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13241/hovercard" href="https://github.com/pola-rs/polars/pull/13241">#13241</a>)</li>
+<li>update rustc (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2054766913" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13219" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13219/hovercard" href="https://github.com/pola-rs/polars/pull/13219">#13219</a>)</li>
+<li>fix horizontal concatenation documentation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2049629025" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13141" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13141/hovercard" href="https://github.com/pola-rs/polars/pull/13141">#13141</a>)</li>
+<li>Replace blackdoc by ruff's new docstring formatter (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2053043634" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13182" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13182/hovercard" href="https://github.com/pola-rs/polars/pull/13182">#13182</a>)</li>
+<li>Update ruff &amp; ruff settings (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2048579740" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13126" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13126/hovercard" href="https://github.com/pola-rs/polars/pull/13126">#13126</a>)</li>
+<li>Link to latest object_store docs in api doc (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052978625" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13180" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13180/hovercard" href="https://github.com/pola-rs/polars/pull/13180">#13180</a>)</li>
+<li>Fix failing test (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052049510" data-permission-text="Title is private" data-url="https://github.com/pola-rs/polars/issues/13171" data-hovercard-type="pull_request" data-hovercard-url="/pola-rs/polars/pull/13171/hovercard" href="https://github.com/pola-rs/polars/pull/13171">#13171</a>)</li>
+</ul>
+<p>Thank you to all our contributors for making this release possible!<br>
+<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MarcoGorelli/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MarcoGorelli">@MarcoGorelli</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/TNieuwdorp/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/TNieuwdorp">@TNieuwdorp</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/adamreeve/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/adamreeve">@adamreeve</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alexander-beedie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alexander-beedie">@alexander-beedie</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/c-peters/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/c-peters">@c-peters</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cjfuller/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cjfuller">@cjfuller</a>, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>, <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a>[bot], <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mcrumiller/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mcrumiller">@mcrumiller</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/orlp/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/orlp">@orlp</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/petrosbar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/petrosbar">@petrosbar</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/r-brink/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/r-brink">@r-brink</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/reswqa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/reswqa">@reswqa</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ritchie46/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ritchie46">@ritchie46</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/robvanmieghem/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/robvanmieghem">@robvanmieghem</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/stinodego/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/stinodego">@stinodego</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11442]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11442</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11442</guid>
+            <pubDate>Thu, 28 Dec 2023 12:18:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11437]]></title>
@@ -193,13 +644,6 @@ af0228e5c564be154b23fd084e5e39bc864eb0d25bf02980ea326b1faaffeecc  nvim-win64.msi
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/116482: Fix edge case for size 1 channels dim in AdaptiveMaxPool]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116482</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116482</guid>
-            <pubDate>Thu, 28 Dec 2023 03:36:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from osquery: 5.11.0]]></title>
             <link>https://github.com/osquery/osquery/releases/tag/5.11.0</link>
             <guid>https://github.com/osquery/osquery/releases/tag/5.11.0</guid>
@@ -250,13 +694,6 @@ af0228e5c564be154b23fd084e5e39bc864eb0d25bf02980ea326b1faaffeecc  nvim-win64.msi
 <li><strong>linter:</strong> flat config should always set path to config when using API</li>
 <li><strong>nextjs:</strong> update migration to handle projects without eslintrc</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/116474]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116474</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F116474</guid>
-            <pubDate>Thu, 28 Dec 2023 00:18:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v14.0.5-canary.29]]></title>
@@ -465,13 +902,6 @@ Cr-Commit-Position: refs/heads/12.2.150@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/56a4c6f912071a49bf9932205dae4f7010e610cb/hovercard" href="https://github.com/v8/v8/commit/56a4c6f912071a49bf9932205dae4f7010e610cb"><tt>56a4c6f</tt></a>-refs/heads/main@{#91643}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from opencv: 4.9.0]]></title>
-            <link>https://github.com/opencv/opencv/releases/tag/4.9.0</link>
-            <guid>https://github.com/opencv/opencv/releases/tag/4.9.0</guid>
-            <pubDate>Wed, 27 Dec 2023 18:00:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Release OpenCV 4.9.0</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 2.15.5]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/2.15.5</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/2.15.5</guid>
@@ -621,20 +1051,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11393]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11393</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11393</guid>
-            <pubDate>Wed, 27 Dec 2023 13:26:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11388]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11388</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11388</guid>
-            <pubDate>Wed, 27 Dec 2023 12:41:06 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from arangodb: v3.10.12.1]]></title>
             <link>https://github.com/arangodb/arangodb/releases/tag/v3.10.12.1</link>
             <guid>https://github.com/arangodb/arangodb/releases/tag/v3.10.12.1</guid>
@@ -710,6 +1126,69 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <h3>Contributors to this release</h3>
 <p>(<a href="https://github.com/jupyter/notebook/graphs/contributors?from=2023-12-04&amp;to=2023-12-27&amp;type=c">GitHub contributors page for this release</a>)</p>
 <p><a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Aakx+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@akx</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ablink1073+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@blink1073</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Adependabot+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@dependabot</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Agithub-actions+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ahaok1402+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@haok1402</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ajtpio+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Apre-commit-ci+updated%3A2023-12-04..2023-12-27&amp;type=Issues">@pre-commit-ci</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.1.0-alpha.2</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.1.0-alpha.2</guid>
+            <pubDate>Wed, 27 Dec 2023 09:47:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.1.0-alpha.2.tgz: 8dd019b8dbe117bb87fc7cdab2303bd0a71abbacd6de1b6fa69fc8817d251be7</p>
+<p>jupyter-notebook-application-extension-7.1.0-alpha.2.tgz: 2512525b196e8cf444a1132311253135ef5eb0534420df485f814f2206c3554e</p>
+<p>jupyter-notebook-console-extension-7.1.0-alpha.2.tgz: 32868732c18e289a758855a9cc7899fa97c8e50d95fca7c2e040833cf75fb51d</p>
+<p>jupyter-notebook-docmanager-extension-7.1.0-alpha.2.tgz: 007b9d8e8aef2b27828838c117631568d7b4f10785e31203e3cd3561fbf17866</p>
+<p>jupyter-notebook-documentsearch-extension-7.1.0-alpha.2.tgz: bcdc7c8de86da5960a3df3bf5756f9f95d1d26203382fc108948279f3cce862b</p>
+<p>jupyter-notebook-help-extension-7.1.0-alpha.2.tgz: d4549fcfeb08544659eaa18b9e97b59431d4d1afcf61d85d95ee040b4971ca77</p>
+<p>jupyter-notebook-lab-extension-7.1.0-alpha.2.tgz: 82967be33b08b012d6bac52c90e395db10ba05f555bf095897ad7d0c35ac9e0b</p>
+<p>jupyter-notebook-notebook-extension-7.1.0-alpha.2.tgz: f5e7277be941a0f8352f78d9387d2981025b182aeed001ca6b9a2290ebe3c767</p>
+<p>jupyter-notebook-terminal-extension-7.1.0-alpha.2.tgz: 9c12bd24044364d49c583e16558a2d377d239bc485487a46810141dd8c3e4924</p>
+<p>jupyter-notebook-tree-7.1.0-alpha.2.tgz: 84049e3d05c9ecff6272975e5addecae58980205dcefa943bd9d69f9470dc05c</p>
+<p>jupyter-notebook-tree-extension-7.1.0-alpha.2.tgz: 518b3159c253f41a4403a0246c080181f438fda8c1cba9672d74a11910e122e6</p>
+<p>jupyter-notebook-ui-components-7.1.0-alpha.2.tgz: e68d676ab71608028f36a5fcf19bcf56adb14a4d447ca54737cf37b010473b51</p>
+<p>notebook-7.1.0a2-py3-none-any.whl: a8b9788da47a12a58c08075b5a8f5f0665f77ad49751b8f445cc175efd90ce2c</p>
+<p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.1.0-alpha.2</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.1.0-alpha.2</guid>
+            <pubDate>Wed, 27 Dec 2023 09:47:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.1.0-alpha.2.tgz: 8dd019b8dbe117bb87fc7cdab2303bd0a71abbacd6de1b6fa69fc8817d251be7</p>
+<p>jupyter-notebook-application-extension-7.1.0-alpha.2.tgz: 2512525b196e8cf444a1132311253135ef5eb0534420df485f814f2206c3554e</p>
+<p>jupyter-notebook-console-extension-7.1.0-alpha.2.tgz: 32868732c18e289a758855a9cc7899fa97c8e50d95fca7c2e040833cf75fb51d</p>
+<p>jupyter-notebook-docmanager-extension-7.1.0-alpha.2.tgz: 007b9d8e8aef2b27828838c117631568d7b4f10785e31203e3cd3561fbf17866</p>
+<p>jupyter-notebook-documentsearch-extension-7.1.0-alpha.2.tgz: bcdc7c8de86da5960a3df3bf5756f9f95d1d26203382fc108948279f3cce862b</p>
+<p>jupyter-notebook-help-extension-7.1.0-alpha.2.tgz: d4549fcfeb08544659eaa18b9e97b59431d4d1afcf61d85d95ee040b4971ca77</p>
+<p>jupyter-notebook-lab-extension-7.1.0-alpha.2.tgz: 82967be33b08b012d6bac52c90e395db10ba05f555bf095897ad7d0c35ac9e0b</p>
+<p>jupyter-notebook-notebook-extension-7.1.0-alpha.2.tgz: f5e7277be941a0f8352f78d9387d2981025b182aeed001ca6b9a2290ebe3c767</p>
+<p>jupyter-notebook-terminal-extension-7.1.0-alpha.2.tgz: 9c12bd24044364d49c583e16558a2d377d239bc485487a46810141dd8c3e4924</p>
+<p>jupyter-notebook-tree-7.1.0-alpha.2.tgz: 84049e3d05c9ecff6272975e5addecae58980205dcefa943bd9d69f9470dc05c</p>
+<p>jupyter-notebook-tree-extension-7.1.0-alpha.2.tgz: 518b3159c253f41a4403a0246c080181f438fda8c1cba9672d74a11910e122e6</p>
+<p>jupyter-notebook-ui-components-7.1.0-alpha.2.tgz: e68d676ab71608028f36a5fcf19bcf56adb14a4d447ca54737cf37b010473b51</p>
+<p>notebook-7.1.0a2-py3-none-any.whl: a8b9788da47a12a58c08075b5a8f5f0665f77ad49751b8f445cc175efd90ce2c</p>
+<p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.1.0-alpha.2</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.1.0-alpha.2</guid>
+            <pubDate>Wed, 27 Dec 2023 09:47:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.1.0-alpha.2.tgz: 8dd019b8dbe117bb87fc7cdab2303bd0a71abbacd6de1b6fa69fc8817d251be7</p>
+<p>jupyter-notebook-application-extension-7.1.0-alpha.2.tgz: 2512525b196e8cf444a1132311253135ef5eb0534420df485f814f2206c3554e</p>
+<p>jupyter-notebook-console-extension-7.1.0-alpha.2.tgz: 32868732c18e289a758855a9cc7899fa97c8e50d95fca7c2e040833cf75fb51d</p>
+<p>jupyter-notebook-docmanager-extension-7.1.0-alpha.2.tgz: 007b9d8e8aef2b27828838c117631568d7b4f10785e31203e3cd3561fbf17866</p>
+<p>jupyter-notebook-documentsearch-extension-7.1.0-alpha.2.tgz: bcdc7c8de86da5960a3df3bf5756f9f95d1d26203382fc108948279f3cce862b</p>
+<p>jupyter-notebook-help-extension-7.1.0-alpha.2.tgz: d4549fcfeb08544659eaa18b9e97b59431d4d1afcf61d85d95ee040b4971ca77</p>
+<p>jupyter-notebook-lab-extension-7.1.0-alpha.2.tgz: 82967be33b08b012d6bac52c90e395db10ba05f555bf095897ad7d0c35ac9e0b</p>
+<p>jupyter-notebook-notebook-extension-7.1.0-alpha.2.tgz: f5e7277be941a0f8352f78d9387d2981025b182aeed001ca6b9a2290ebe3c767</p>
+<p>jupyter-notebook-terminal-extension-7.1.0-alpha.2.tgz: 9c12bd24044364d49c583e16558a2d377d239bc485487a46810141dd8c3e4924</p>
+<p>jupyter-notebook-tree-7.1.0-alpha.2.tgz: 84049e3d05c9ecff6272975e5addecae58980205dcefa943bd9d69f9470dc05c</p>
+<p>jupyter-notebook-tree-extension-7.1.0-alpha.2.tgz: 518b3159c253f41a4403a0246c080181f438fda8c1cba9672d74a11910e122e6</p>
+<p>jupyter-notebook-ui-components-7.1.0-alpha.2.tgz: e68d676ab71608028f36a5fcf19bcf56adb14a4d447ca54737cf37b010473b51</p>
+<p>notebook-7.1.0a2-py3-none-any.whl: a8b9788da47a12a58c08075b5a8f5f0665f77ad49751b8f445cc175efd90ce2c</p>
+<p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/docmanager-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
@@ -838,69 +1317,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.1.0-alpha.2</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.1.0-alpha.2</guid>
-            <pubDate>Wed, 27 Dec 2023 09:47:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.1.0-alpha.2.tgz: 8dd019b8dbe117bb87fc7cdab2303bd0a71abbacd6de1b6fa69fc8817d251be7</p>
-<p>jupyter-notebook-application-extension-7.1.0-alpha.2.tgz: 2512525b196e8cf444a1132311253135ef5eb0534420df485f814f2206c3554e</p>
-<p>jupyter-notebook-console-extension-7.1.0-alpha.2.tgz: 32868732c18e289a758855a9cc7899fa97c8e50d95fca7c2e040833cf75fb51d</p>
-<p>jupyter-notebook-docmanager-extension-7.1.0-alpha.2.tgz: 007b9d8e8aef2b27828838c117631568d7b4f10785e31203e3cd3561fbf17866</p>
-<p>jupyter-notebook-documentsearch-extension-7.1.0-alpha.2.tgz: bcdc7c8de86da5960a3df3bf5756f9f95d1d26203382fc108948279f3cce862b</p>
-<p>jupyter-notebook-help-extension-7.1.0-alpha.2.tgz: d4549fcfeb08544659eaa18b9e97b59431d4d1afcf61d85d95ee040b4971ca77</p>
-<p>jupyter-notebook-lab-extension-7.1.0-alpha.2.tgz: 82967be33b08b012d6bac52c90e395db10ba05f555bf095897ad7d0c35ac9e0b</p>
-<p>jupyter-notebook-notebook-extension-7.1.0-alpha.2.tgz: f5e7277be941a0f8352f78d9387d2981025b182aeed001ca6b9a2290ebe3c767</p>
-<p>jupyter-notebook-terminal-extension-7.1.0-alpha.2.tgz: 9c12bd24044364d49c583e16558a2d377d239bc485487a46810141dd8c3e4924</p>
-<p>jupyter-notebook-tree-7.1.0-alpha.2.tgz: 84049e3d05c9ecff6272975e5addecae58980205dcefa943bd9d69f9470dc05c</p>
-<p>jupyter-notebook-tree-extension-7.1.0-alpha.2.tgz: 518b3159c253f41a4403a0246c080181f438fda8c1cba9672d74a11910e122e6</p>
-<p>jupyter-notebook-ui-components-7.1.0-alpha.2.tgz: e68d676ab71608028f36a5fcf19bcf56adb14a4d447ca54737cf37b010473b51</p>
-<p>notebook-7.1.0a2-py3-none-any.whl: a8b9788da47a12a58c08075b5a8f5f0665f77ad49751b8f445cc175efd90ce2c</p>
-<p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.1.0-alpha.2</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.1.0-alpha.2</guid>
-            <pubDate>Wed, 27 Dec 2023 09:47:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.1.0-alpha.2.tgz: 8dd019b8dbe117bb87fc7cdab2303bd0a71abbacd6de1b6fa69fc8817d251be7</p>
-<p>jupyter-notebook-application-extension-7.1.0-alpha.2.tgz: 2512525b196e8cf444a1132311253135ef5eb0534420df485f814f2206c3554e</p>
-<p>jupyter-notebook-console-extension-7.1.0-alpha.2.tgz: 32868732c18e289a758855a9cc7899fa97c8e50d95fca7c2e040833cf75fb51d</p>
-<p>jupyter-notebook-docmanager-extension-7.1.0-alpha.2.tgz: 007b9d8e8aef2b27828838c117631568d7b4f10785e31203e3cd3561fbf17866</p>
-<p>jupyter-notebook-documentsearch-extension-7.1.0-alpha.2.tgz: bcdc7c8de86da5960a3df3bf5756f9f95d1d26203382fc108948279f3cce862b</p>
-<p>jupyter-notebook-help-extension-7.1.0-alpha.2.tgz: d4549fcfeb08544659eaa18b9e97b59431d4d1afcf61d85d95ee040b4971ca77</p>
-<p>jupyter-notebook-lab-extension-7.1.0-alpha.2.tgz: 82967be33b08b012d6bac52c90e395db10ba05f555bf095897ad7d0c35ac9e0b</p>
-<p>jupyter-notebook-notebook-extension-7.1.0-alpha.2.tgz: f5e7277be941a0f8352f78d9387d2981025b182aeed001ca6b9a2290ebe3c767</p>
-<p>jupyter-notebook-terminal-extension-7.1.0-alpha.2.tgz: 9c12bd24044364d49c583e16558a2d377d239bc485487a46810141dd8c3e4924</p>
-<p>jupyter-notebook-tree-7.1.0-alpha.2.tgz: 84049e3d05c9ecff6272975e5addecae58980205dcefa943bd9d69f9470dc05c</p>
-<p>jupyter-notebook-tree-extension-7.1.0-alpha.2.tgz: 518b3159c253f41a4403a0246c080181f438fda8c1cba9672d74a11910e122e6</p>
-<p>jupyter-notebook-ui-components-7.1.0-alpha.2.tgz: e68d676ab71608028f36a5fcf19bcf56adb14a4d447ca54737cf37b010473b51</p>
-<p>notebook-7.1.0a2-py3-none-any.whl: a8b9788da47a12a58c08075b5a8f5f0665f77ad49751b8f445cc175efd90ce2c</p>
-<p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.1.0-alpha.2: Publish 7.1.0a2]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.1.0-alpha.2</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.1.0-alpha.2</guid>
-            <pubDate>Wed, 27 Dec 2023 09:47:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.1.0-alpha.2.tgz: 8dd019b8dbe117bb87fc7cdab2303bd0a71abbacd6de1b6fa69fc8817d251be7</p>
-<p>jupyter-notebook-application-extension-7.1.0-alpha.2.tgz: 2512525b196e8cf444a1132311253135ef5eb0534420df485f814f2206c3554e</p>
-<p>jupyter-notebook-console-extension-7.1.0-alpha.2.tgz: 32868732c18e289a758855a9cc7899fa97c8e50d95fca7c2e040833cf75fb51d</p>
-<p>jupyter-notebook-docmanager-extension-7.1.0-alpha.2.tgz: 007b9d8e8aef2b27828838c117631568d7b4f10785e31203e3cd3561fbf17866</p>
-<p>jupyter-notebook-documentsearch-extension-7.1.0-alpha.2.tgz: bcdc7c8de86da5960a3df3bf5756f9f95d1d26203382fc108948279f3cce862b</p>
-<p>jupyter-notebook-help-extension-7.1.0-alpha.2.tgz: d4549fcfeb08544659eaa18b9e97b59431d4d1afcf61d85d95ee040b4971ca77</p>
-<p>jupyter-notebook-lab-extension-7.1.0-alpha.2.tgz: 82967be33b08b012d6bac52c90e395db10ba05f555bf095897ad7d0c35ac9e0b</p>
-<p>jupyter-notebook-notebook-extension-7.1.0-alpha.2.tgz: f5e7277be941a0f8352f78d9387d2981025b182aeed001ca6b9a2290ebe3c767</p>
-<p>jupyter-notebook-terminal-extension-7.1.0-alpha.2.tgz: 9c12bd24044364d49c583e16558a2d377d239bc485487a46810141dd8c3e4924</p>
-<p>jupyter-notebook-tree-7.1.0-alpha.2.tgz: 84049e3d05c9ecff6272975e5addecae58980205dcefa943bd9d69f9470dc05c</p>
-<p>jupyter-notebook-tree-extension-7.1.0-alpha.2.tgz: 518b3159c253f41a4403a0246c080181f438fda8c1cba9672d74a11910e122e6</p>
-<p>jupyter-notebook-ui-components-7.1.0-alpha.2.tgz: e68d676ab71608028f36a5fcf19bcf56adb14a4d447ca54737cf37b010473b51</p>
-<p>notebook-7.1.0a2-py3-none-any.whl: a8b9788da47a12a58c08075b5a8f5f0665f77ad49751b8f445cc175efd90ce2c</p>
-<p>notebook-7.1.0a2.tar.gz: bcbd202e9661a8a261dbc01a47bc3fd6e86d82b21ade117c4f47642ac47e9d4c</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from YouTube.js: v8.1.0-deno]]></title>
             <link>https://github.com/LuanRT/YouTube.js/releases/tag/v8.1.0-deno</link>
             <guid>https://github.com/LuanRT/YouTube.js/releases/tag/v8.1.0-deno</guid>
@@ -998,13 +1414,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>Tagging 1.32.8 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-11364]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11364</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-11364</guid>
-            <pubDate>Tue, 26 Dec 2023 16:57:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from core: v3.4.0-rc.2]]></title>
             <link>https://github.com/vuejs/core/releases/tag/v3.4.0-rc.2</link>
             <guid>https://github.com/vuejs/core/releases/tag/v3.4.0-rc.2</guid>
@@ -1033,28 +1442,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LukeSchlangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LukeSchlangen">@LukeSchlangen</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/RiskyMH/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/RiskyMH">@RiskyMH</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.2.149]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.149</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.149</guid>
-            <pubDate>Mon, 25 Dec 2023 18:05:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I1b4f3d506b2205f68f1e6018342b24c8afdf203d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5151875" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5151875</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.2.149@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c931822888622e1e9bd3d7fcfb7dc5e88a2e0bf3/hovercard" href="https://github.com/v8/v8/commit/c931822888622e1e9bd3d7fcfb7dc5e88a2e0bf3"><tt>c931822</tt></a>-refs/heads/main@{#91641}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.2.149-pgo: Version 12.2.149]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.149-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.149-pgo</guid>
-            <pubDate>Mon, 25 Dec 2023 18:05:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I1b4f3d506b2205f68f1e6018342b24c8afdf203d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5151875" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5151875</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.2.149@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c931822888622e1e9bd3d7fcfb7dc5e88a2e0bf3/hovercard" href="https://github.com/v8/v8/commit/c931822888622e1e9bd3d7fcfb7dc5e88a2e0bf3"><tt>c931822</tt></a>-refs/heads/main@{#91641}</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
