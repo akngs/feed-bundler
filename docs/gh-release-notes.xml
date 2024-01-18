@@ -4,10 +4,97 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 18 Jan 2024 00:22:12 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 18 Jan 2024 02:08:51 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117575: Place .lrodata later in the binary (#117575)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117575</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117575</guid>
+            <pubDate>Thu, 18 Jan 2024 01:57:05 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p>By default, in LLD 16, .lrodata is placed immediately after .rodata.<br>
+However, .lrodata can be very large in our compiled models, which leads to<br>
+relocation out-of-range errors for relative relocations. So we place it<br>
+after other the sections that are referenced from .text using relative<br>
+relocations. This is the default behavior in GNU ld.</p>
+<p>Test Plan:<br>
+This tests a local compile, which would previously error out with <code>(.gcc_except_table+0x68): relocation R_X86_64_PC32 out of range</code>:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="manifold get \
+  ads_storage_fblearner/tree/user/facebook/fblearner/predictor/959835952/263/gpu_lowering/input.predictor.disagg.gpu.merge \
+  ~/500x-input-predictor.disagg.gpu.merge
+
+buck run mode/dev-nosan -c fbcode.platform010_cuda_version=12 -c fbcode.nvcc_arch=h100 -c fbcode.use_link_groups=false \
+  caffe2/torch/fb/model_transform/experimental/benchmark:mts_gpu_benchmark -- \
+  --local-model ~/500x-input.predictor.disagg.gpu.merge --lower-backend AOT_INDUCTOR \
+  --fp8-linear-quantization-type dynamic_quantization --disable-acc-tracer-aot-inductor"><pre class="notranslate"><code>manifold get \
+  ads_storage_fblearner/tree/user/facebook/fblearner/predictor/959835952/263/gpu_lowering/input.predictor.disagg.gpu.merge \
+  ~/500x-input-predictor.disagg.gpu.merge
+
+buck run mode/dev-nosan -c fbcode.platform010_cuda_version=12 -c fbcode.nvcc_arch=h100 -c fbcode.use_link_groups=false \
+  caffe2/torch/fb/model_transform/experimental/benchmark:mts_gpu_benchmark -- \
+  --local-model ~/500x-input.predictor.disagg.gpu.merge --lower-backend AOT_INDUCTOR \
+  --fp8-linear-quantization-type dynamic_quantization --disable-acc-tracer-aot-inductor
+</code></pre></div>
+<p>Also tested the benchmark on Tupperware:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="manifold get ads_storage_fblearner/tree/user/facebook/fblearner/predictor/463113248/1962/gpu_lowering/input.predictor.disagg.gpu.merge
+tw scp ~/input.predictor.disagg.gpu.merge tsp_ldc/inference_enablement/gpu_aot_inductor_lowering_cws_task_rc:/tw_cores/30x.input.predictor.disagg.gpu.merge
+
+buck build mode/opt -c fbcode.platform010_cuda_version=12 -c fbcode.nvcc_arch=a100,h100 -c fbcode.use_link_groups=false caffe2/torch/fb/model_transform/experimental/benchmark:mts_gpu_benchmark --show-output
+tw scp ../buck-out/v2/gen/fbcode/d4e968a4fa529f71/caffe2/torch/fb/model_transform/experimental/benchmark/__mts_gpu_benchmark__/mts_gpu_benchmark.par tsp_ldc/inference_enablement/gpu_aot_inductor_lowering_cws_task_rc:/tw_cores/mts_gpu_benchmark.par
+
+tw ssh tsp_ldc/inference_enablement/gpu_aot_inductor_lowering_cws_task_rc
+ /tw_cores/mts_gpu_benchmark.par --local-model /tw_cores/30x.input.predictor.disagg.gpu.merge --lower-backend AOT_INDUCTOR --disable-acc-tracer-aot-inductor"><pre class="notranslate"><code>manifold get ads_storage_fblearner/tree/user/facebook/fblearner/predictor/463113248/1962/gpu_lowering/input.predictor.disagg.gpu.merge
+tw scp ~/input.predictor.disagg.gpu.merge tsp_ldc/inference_enablement/gpu_aot_inductor_lowering_cws_task_rc:/tw_cores/30x.input.predictor.disagg.gpu.merge
+
+buck build mode/opt -c fbcode.platform010_cuda_version=12 -c fbcode.nvcc_arch=a100,h100 -c fbcode.use_link_groups=false caffe2/torch/fb/model_transform/experimental/benchmark:mts_gpu_benchmark --show-output
+tw scp ../buck-out/v2/gen/fbcode/d4e968a4fa529f71/caffe2/torch/fb/model_transform/experimental/benchmark/__mts_gpu_benchmark__/mts_gpu_benchmark.par tsp_ldc/inference_enablement/gpu_aot_inductor_lowering_cws_task_rc:/tw_cores/mts_gpu_benchmark.par
+
+tw ssh tsp_ldc/inference_enablement/gpu_aot_inductor_lowering_cws_task_rc
+ /tw_cores/mts_gpu_benchmark.par --local-model /tw_cores/30x.input.predictor.disagg.gpu.merge --lower-backend AOT_INDUCTOR --disable-acc-tracer-aot-inductor
+</code></pre></div>
+<p>Reviewed By: muchulee8, desertfire, khabinov, chenyang78</p>
+<p>Differential Revision: D52557846</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117610: [AOTI] Add torch._export.aot_load (#117610)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117610</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117610</guid>
+            <pubDate>Thu, 18 Jan 2024 01:28:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+X-link: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086468422" data-permission-text="Title is private" data-url="https://github.com/pytorch/benchmark/issues/2119" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/benchmark/pull/2119/hovercard" href="https://github.com/pytorch/benchmark/pull/2119">pytorch/benchmark#2119</a></p>
+<p>Add a torch._export.aot_load API that can load an AOTInductor-compiled model.so into a python executable.</p>
+<p>Test Plan: CI</p>
+<p>Reviewed By: khabinov, angelayi</p>
+<p>Differential Revision: D52825456</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.105-nightly-20240118.1]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.105-nightly-20240118.1</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.105-nightly-20240118.1</guid>
+            <pubDate>Thu, 18 Jan 2024 01:20:07 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-Beta3-release-17]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-Beta3-release-17</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-Beta3-release-17</guid>
+            <pubDate>Thu, 18 Jan 2024 01:06:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117664: Allow explicit shutdown of the compile-worker pools (#117664)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117664</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117664</guid>
+            <pubDate>Thu, 18 Jan 2024 00:56:49 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p>Allow the trainer to explicitly shutdown the compile-worker pools to save CPU resource, thereby avoiding QPS degradation.</p>
+<p>bypass-github-pytorch-ci-checks</p>
+<p>Test Plan: <a href="https://www.internalfb.com/mlhub/pipelines/runs/fblearner/522362736" rel="nofollow">https://www.internalfb.com/mlhub/pipelines/runs/fblearner/522362736</a></p>
+<p>Reviewed By: yanboliang</p>
+<p>Differential Revision: D52839313</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/117594]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117594</link>
@@ -61,147 +148,12 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/117709: [copy][inductor] Faster C++ kernel python bindings]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117709</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117709</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117709: [copy][inductor] Faster C++ kernel python bindings]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117709</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117709</guid>
             <pubDate>Thu, 18 Jan 2024 00:11:40 GMT</pubDate>
             <content:encoded><![CDATA[<p>This is a throw-away copy of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2082451896" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117500" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/117500/hovercard" href="https://github.com/pytorch/pytorch/pull/117500">#117500</a> to import into fbcode for testing<br>
 there.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.3.105-nightly-20240118.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.3.105-nightly-20240118.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.105-nightly-20240118.1</guid>
-            <pubDate>Thu, 18 Jan 2024 00:10:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: Publish 1.3.105-nightly-20240118.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117500: Update on "[inductor] Faster C++ kernel python bindings"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117500</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117500</guid>
-            <pubDate>Thu, 18 Jan 2024 00:09:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Calling C++ from Python via ctypes is notoriously slow.  This switches to generating our own C++ bindings directly, which is a &gt;5x speedup on this kernel-launch-bound microbenchmark:</p>
-<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="from ctypes import c_void_p
-import torch
-from torch import empty
-from torch._inductor.codecache import AsyncCompile
-from torch._dynamo.testing import rand_strided
-from torch._inductor.utils import print_performance
-from torch._inductor.wrapper_benchmark import compiled_module_main
-
-async_compile = AsyncCompile()
-
-src = '''
-#include &quot;/tmp/torchinductor_jansel/gb/cgbau5vlj6cetmcjbjbtw6x4rrivaln6f45s5d72gy2bfx5foz3k.h&quot;
-extern &quot;C&quot; void kernel(const float* in_ptr0,
-                       float* out_ptr0)
-{
-    {
-        auto tmp0 = in_ptr0[static_cast&lt;long&gt;(0L)];
-        auto tmp1 = static_cast&lt;float&gt;(1.0);
-        auto tmp2 = decltype(tmp0)(tmp0 + tmp1);
-        out_ptr0[static_cast&lt;long&gt;(0L)] = tmp2;
-    }
-}
-'''
-
-cpp_fused_add_ctypes = async_compile.cpp(src)
-cpp_fused_add_cpython = async_compile.cpp_pybinding([&quot;const float*&quot;, &quot;float*&quot;], src)
-
-async_compile.wait(globals())
-del async_compile
-
-
-def call(arg0_1):
-    buf0 = empty((1,), device='cpu', dtype=torch.float32)
-    if use_ctypes:
-        for _ in range(100):
-            cpp_fused_add_ctypes(c_void_p(arg0_1.data_ptr()), c_void_p(buf0.data_ptr()))
-    else:
-        for _ in range(100):
-            cpp_fused_add_cpython(arg0_1, buf0)
-    del arg0_1
-    return (buf0,)
-
-
-def benchmark_compiled_module(times=1000, repeat=100):
-    arg0_1 = rand_strided((1,), (1,), device='cpu', dtype=torch.float32)
-    return print_performance(lambda: call(arg0_1), times=times, repeat=repeat)
-
-
-print(&quot;old ctypes bindings: &quot;, end='')
-use_ctypes = True
-compiled_module_main('None', benchmark_compiled_module)
-print(&quot;new bindings:        &quot;, end='')
-use_ctypes = False
-compiled_module_main('None', benchmark_compiled_module)"><pre><span class="pl-k">from</span> <span class="pl-s1">ctypes</span> <span class="pl-k">import</span> <span class="pl-s1">c_void_p</span>
-<span class="pl-k">import</span> <span class="pl-s1">torch</span>
-<span class="pl-k">from</span> <span class="pl-s1">torch</span> <span class="pl-k">import</span> <span class="pl-s1">empty</span>
-<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">_inductor</span>.<span class="pl-s1">codecache</span> <span class="pl-k">import</span> <span class="pl-v">AsyncCompile</span>
-<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">_dynamo</span>.<span class="pl-s1">testing</span> <span class="pl-k">import</span> <span class="pl-s1">rand_strided</span>
-<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">_inductor</span>.<span class="pl-s1">utils</span> <span class="pl-k">import</span> <span class="pl-s1">print_performance</span>
-<span class="pl-k">from</span> <span class="pl-s1">torch</span>.<span class="pl-s1">_inductor</span>.<span class="pl-s1">wrapper_benchmark</span> <span class="pl-k">import</span> <span class="pl-s1">compiled_module_main</span>
-
-<span class="pl-s1">async_compile</span> <span class="pl-c1">=</span> <span class="pl-v">AsyncCompile</span>()
-
-<span class="pl-s1">src</span> <span class="pl-c1">=</span> <span class="pl-s">'''</span>
-<span class="pl-s">#include "/tmp/torchinductor_jansel/gb/cgbau5vlj6cetmcjbjbtw6x4rrivaln6f45s5d72gy2bfx5foz3k.h"</span>
-<span class="pl-s">extern "C" void kernel(const float* in_ptr0,</span>
-<span class="pl-s">                       float* out_ptr0)</span>
-<span class="pl-s">{</span>
-<span class="pl-s">    {</span>
-<span class="pl-s">        auto tmp0 = in_ptr0[static_cast&lt;long&gt;(0L)];</span>
-<span class="pl-s">        auto tmp1 = static_cast&lt;float&gt;(1.0);</span>
-<span class="pl-s">        auto tmp2 = decltype(tmp0)(tmp0 + tmp1);</span>
-<span class="pl-s">        out_ptr0[static_cast&lt;long&gt;(0L)] = tmp2;</span>
-<span class="pl-s">    }</span>
-<span class="pl-s">}</span>
-<span class="pl-s">'''</span>
-
-<span class="pl-s1">cpp_fused_add_ctypes</span> <span class="pl-c1">=</span> <span class="pl-s1">async_compile</span>.<span class="pl-en">cpp</span>(<span class="pl-s1">src</span>)
-<span class="pl-s1">cpp_fused_add_cpython</span> <span class="pl-c1">=</span> <span class="pl-s1">async_compile</span>.<span class="pl-en">cpp_pybinding</span>([<span class="pl-s">"const float*"</span>, <span class="pl-s">"float*"</span>], <span class="pl-s1">src</span>)
-
-<span class="pl-s1">async_compile</span>.<span class="pl-en">wait</span>(<span class="pl-en">globals</span>())
-<span class="pl-k">del</span> <span class="pl-s1">async_compile</span>
-
-
-<span class="pl-k">def</span> <span class="pl-en">call</span>(<span class="pl-s1">arg0_1</span>):
-    <span class="pl-s1">buf0</span> <span class="pl-c1">=</span> <span class="pl-en">empty</span>((<span class="pl-c1">1</span>,), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s">'cpu'</span>, <span class="pl-s1">dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-s1">float32</span>)
-    <span class="pl-k">if</span> <span class="pl-s1">use_ctypes</span>:
-        <span class="pl-k">for</span> <span class="pl-s1">_</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">100</span>):
-            <span class="pl-en">cpp_fused_add_ctypes</span>(<span class="pl-en">c_void_p</span>(<span class="pl-s1">arg0_1</span>.<span class="pl-en">data_ptr</span>()), <span class="pl-en">c_void_p</span>(<span class="pl-s1">buf0</span>.<span class="pl-en">data_ptr</span>()))
-    <span class="pl-k">else</span>:
-        <span class="pl-k">for</span> <span class="pl-s1">_</span> <span class="pl-c1">in</span> <span class="pl-en">range</span>(<span class="pl-c1">100</span>):
-            <span class="pl-en">cpp_fused_add_cpython</span>(<span class="pl-s1">arg0_1</span>, <span class="pl-s1">buf0</span>)
-    <span class="pl-k">del</span> <span class="pl-s1">arg0_1</span>
-    <span class="pl-k">return</span> (<span class="pl-s1">buf0</span>,)
-
-
-<span class="pl-k">def</span> <span class="pl-en">benchmark_compiled_module</span>(<span class="pl-s1">times</span><span class="pl-c1">=</span><span class="pl-c1">1000</span>, <span class="pl-s1">repeat</span><span class="pl-c1">=</span><span class="pl-c1">100</span>):
-    <span class="pl-s1">arg0_1</span> <span class="pl-c1">=</span> <span class="pl-en">rand_strided</span>((<span class="pl-c1">1</span>,), (<span class="pl-c1">1</span>,), <span class="pl-s1">device</span><span class="pl-c1">=</span><span class="pl-s">'cpu'</span>, <span class="pl-s1">dtype</span><span class="pl-c1">=</span><span class="pl-s1">torch</span>.<span class="pl-s1">float32</span>)
-    <span class="pl-k">return</span> <span class="pl-en">print_performance</span>(<span class="pl-k">lambda</span>: <span class="pl-en">call</span>(<span class="pl-s1">arg0_1</span>), <span class="pl-s1">times</span><span class="pl-c1">=</span><span class="pl-s1">times</span>, <span class="pl-s1">repeat</span><span class="pl-c1">=</span><span class="pl-s1">repeat</span>)
-
-
-<span class="pl-en">print</span>(<span class="pl-s">"old ctypes bindings: "</span>, <span class="pl-s1">end</span><span class="pl-c1">=</span><span class="pl-s">''</span>)
-<span class="pl-s1">use_ctypes</span> <span class="pl-c1">=</span> <span class="pl-c1">True</span>
-<span class="pl-en">compiled_module_main</span>(<span class="pl-s">'None'</span>, <span class="pl-s1">benchmark_compiled_module</span>)
-<span class="pl-en">print</span>(<span class="pl-s">"new bindings:        "</span>, <span class="pl-s1">end</span><span class="pl-c1">=</span><span class="pl-s">''</span>)
-<span class="pl-s1">use_ctypes</span> <span class="pl-c1">=</span> <span class="pl-c1">False</span>
-<span class="pl-en">compiled_module_main</span>(<span class="pl-s">'None'</span>, <span class="pl-s1">benchmark_compiled_module</span>)</pre></div>
-<p>Output:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="old ctypes bindings: 0.000073
-new bindings:        0.000013"><pre class="notranslate"><code>old ctypes bindings: 0.000073
-new bindings:        0.000013
-</code></pre></div>
-<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/117708]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117708</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117708</guid>
-            <pubDate>Thu, 18 Jan 2024 00:07:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Update xla.txt</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from cabal: cabal-head]]></title>
@@ -214,9 +166,9 @@ new bindings:        0.000013
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/117707: [PT2][split_cat] fix a bug in merge_splits]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117707</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117707</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117707: [PT2][split_cat] fix a bug in merge_splits]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117707</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117707</guid>
             <pubDate>Thu, 18 Jan 2024 00:05:24 GMT</pubDate>
             <content:encoded><![CDATA[<p>Summary: Recently, we found merge splits (D45204109) is not working for AFOC model, thus patch a fix.</p>
 <p>Test Plan:<br>
@@ -229,13 +181,6 @@ after the fix: P1047603217</p>
 <p>f522253163<br>
 after the fix: P1047764917</p>
 <p>Differential Revision: D52856359</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117677]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117677</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117677</guid>
-            <pubDate>Thu, 18 Jan 2024 00:04:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Don't trigger pull_request on main</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/xpu/117611: Update on "[WIP] [1/2] Intel GPU Runtime Upstreaming for Stream"]]></title>
@@ -262,11 +207,13 @@ after the fix: P1047764917</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117680]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117680</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117680</guid>
-            <pubDate>Thu, 18 Jan 2024 00:01:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Don't trigger pull_request on main</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117658: Update on "Document and type torch._inductor.virtualized"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117658</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117658</guid>
+            <pubDate>Thu, 18 Jan 2024 00:00:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Signed-off-by: Edward Z. Yang &lt;ezyangmeta.com&gt;</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/117650: Update on "Catch some missing unbacked symbol dependencies"]]></title>
@@ -1174,9 +1121,9 @@ variable:
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.2.262]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.262</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.262</guid>
+            <title><![CDATA[Release notes from v8: 12.2.262-pgo: Version 12.2.262]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.262-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.262-pgo</guid>
             <pubDate>Wed, 17 Jan 2024 18:46:33 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I778a99a6a6c6bc6bef670be56101056ed173f36d<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5207111" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5207111</a><br>
@@ -1185,9 +1132,9 @@ Cr-Commit-Position: refs/heads/12.2.262@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/e646bf851a7594c73dd11a56694f961a64f62a07/hovercard" href="https://github.com/v8/v8/commit/e646bf851a7594c73dd11a56694f961a64f62a07"><tt>e646bf8</tt></a>-refs/heads/main@{#91891}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.2.262-pgo: Version 12.2.262]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.262-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.262-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.2.262]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.262</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.262</guid>
             <pubDate>Wed, 17 Jan 2024 18:46:33 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I778a99a6a6c6bc6bef670be56101056ed173f36d<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5207111" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5207111</a><br>
@@ -1252,9 +1199,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.2.261]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.261</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.261</guid>
+            <title><![CDATA[Release notes from v8: 12.2.261-pgo: Version 12.2.261]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.261-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.261-pgo</guid>
             <pubDate>Wed, 17 Jan 2024 17:52:33 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie314eacde6eff9a9599915346b4c0df7381e1f4b<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5206391" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5206391</a><br>
@@ -1263,9 +1210,9 @@ Cr-Commit-Position: refs/heads/12.2.261@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/01a71263b57e76c9d5ad5c053b591eda05b4698a/hovercard" href="https://github.com/v8/v8/commit/01a71263b57e76c9d5ad5c053b591eda05b4698a"><tt>01a7126</tt></a>-refs/heads/main@{#91890}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.2.261-pgo: Version 12.2.261]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.261-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.261-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.2.261]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.261</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.261</guid>
             <pubDate>Wed, 17 Jan 2024 17:52:33 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie314eacde6eff9a9599915346b4c0df7381e1f4b<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5206391" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5206391</a><br>
@@ -1360,9 +1307,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a> for helping!</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.2.260-pgo: Version 12.2.260]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.260-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.260-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.2.260]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.260</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.260</guid>
             <pubDate>Wed, 17 Jan 2024 15:40:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ib533eda8fd71664ab48fa518de520a67bb6c6bd3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5205910" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5205910</a><br>
@@ -1371,9 +1318,9 @@ Cr-Commit-Position: refs/heads/12.2.260@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c6465eaa1e266b8928d4b801f89bb1135ab95aa8/hovercard" href="https://github.com/v8/v8/commit/c6465eaa1e266b8928d4b801f89bb1135ab95aa8"><tt>c6465ea</tt></a>-refs/heads/main@{#91888}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.2.260]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.260</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.260</guid>
+            <title><![CDATA[Release notes from v8: 12.2.260-pgo: Version 12.2.260]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.260-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.260-pgo</guid>
             <pubDate>Wed, 17 Jan 2024 15:40:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ib533eda8fd71664ab48fa518de520a67bb6c6bd3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5205910" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5205910</a><br>
@@ -1418,17 +1365,6 @@ Release notes: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.2.259-pgo: Version 12.2.259]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.259-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.259-pgo</guid>
-            <pubDate>Wed, 17 Jan 2024 14:40:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ic91304075e51ec22e14d16112b3d09438d28edbe<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5200863" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5200863</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.2.259@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4a64c034197b6f19189354acbd73c534275a94be/hovercard" href="https://github.com/v8/v8/commit/4a64c034197b6f19189354acbd73c534275a94be"><tt>4a64c03</tt></a>-refs/heads/main@{#91886}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: Version 12.2.259]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.2.259</link>
             <guid>https://github.com/v8/v8/releases/tag/12.2.259</guid>
@@ -1440,16 +1376,20 @@ Cr-Commit-Position: refs/heads/12.2.259@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4a64c034197b6f19189354acbd73c534275a94be/hovercard" href="https://github.com/v8/v8/commit/4a64c034197b6f19189354acbd73c534275a94be"><tt>4a64c03</tt></a>-refs/heads/main@{#91886}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-12908]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-12908</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-12908</guid>
-            <pubDate>Wed, 17 Jan 2024 14:38:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: 12.2.259-pgo: Version 12.2.259]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.259-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.259-pgo</guid>
+            <pubDate>Wed, 17 Jan 2024 14:40:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ic91304075e51ec22e14d16112b3d09438d28edbe<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5200863" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5200863</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.2.259@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4a64c034197b6f19189354acbd73c534275a94be/hovercard" href="https://github.com/v8/v8/commit/4a64c034197b6f19189354acbd73c534275a94be"><tt>4a64c03</tt></a>-refs/heads/main@{#91886}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.2.258-pgo: Version 12.2.258]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.258-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.258-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.2.258]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.258</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.258</guid>
             <pubDate>Wed, 17 Jan 2024 13:52:34 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I4e2e9de8bb43dd9ccca1d06f0fb15e03cadf9d5b<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5205411" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5205411</a><br>
@@ -1458,9 +1398,9 @@ Cr-Commit-Position: refs/heads/12.2.258@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9d51880cdc3850e83a303a6425eafb7b5bb8ccc4/hovercard" href="https://github.com/v8/v8/commit/9d51880cdc3850e83a303a6425eafb7b5bb8ccc4"><tt>9d51880</tt></a>-refs/heads/main@{#91885}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.2.258]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.2.258</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.2.258</guid>
+            <title><![CDATA[Release notes from v8: 12.2.258-pgo: Version 12.2.258]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.2.258-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.2.258-pgo</guid>
             <pubDate>Wed, 17 Jan 2024 13:52:34 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I4e2e9de8bb43dd9ccca1d06f0fb15e03cadf9d5b<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5205411" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5205411</a><br>
@@ -1742,6 +1682,32 @@ a9f42610ad55391e15b9b9abfa8cbdbcd88e03497f0169319ccb4a075da5aec9  nvim-win64.msi
 <li>Format <code>tsconfig.json</code> file with <code>jsonc</code> parser <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2082007734" data-permission-text="Title is private" data-url="https://github.com/prettier/prettier/issues/15927" data-hovercard-type="pull_request" data-hovercard-url="/prettier/prettier/pull/15927/hovercard" href="https://github.com/prettier/prettier/pull/15927">#15927</a></li>
 </ul>
 <p>🔗 <a href="https://github.com/prettier/prettier/blob/main/CHANGELOG.md#323">Changelog</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from marimo: 0.1.78]]></title>
+            <link>https://github.com/marimo-team/marimo/releases/tag/0.1.78</link>
+            <guid>https://github.com/marimo-team/marimo/releases/tag/0.1.78</guid>
+            <pubDate>Wed, 17 Jan 2024 03:10:52 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>What's Changed</h2>
+<p>This release adds support for using <code>input()</code> and <code>stdin</code> for reading user input when editing a notebook, as well as a number of bug fixes and improvements.</p>
+<ul>
+<li>docs: add diagrams section by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshayka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshayka">@akshayka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2080911058" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/568" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/568/hovercard" href="https://github.com/marimo-team/marimo/pull/568">#568</a></li>
+<li>fix(deps): update all non-major dependencies by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/renovate/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/renovate">@renovate</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081138810" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/570" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/570/hovercard" href="https://github.com/marimo-team/marimo/pull/570">#570</a></li>
+<li>chore(deps): update all storybook dependencies to ^7.6.8 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/renovate/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/renovate">@renovate</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081138066" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/569" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/569/hovercard" href="https://github.com/marimo-team/marimo/pull/569">#569</a></li>
+<li>chore: skip playwright forks by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2082651139" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/578" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/578/hovercard" href="https://github.com/marimo-team/marimo/pull/578">#578</a></li>
+<li>fix: correctly handle command palette short (fixes on Linux) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2082632447" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/577" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/577/hovercard" href="https://github.com/marimo-team/marimo/pull/577">#577</a></li>
+<li>Update plotting example to use vega_datasets module, replacing obsole altair.load_dataset() by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ideoforms/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ideoforms">@ideoforms</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2082738692" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/579" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/579/hovercard" href="https://github.com/marimo-team/marimo/pull/579">#579</a></li>
+<li>fix: stopPropagation on Ctrl-B when a cell is not focused by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2084522462" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/582" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/582/hovercard" href="https://github.com/marimo-team/marimo/pull/582">#582</a></li>
+<li>improvement: add 'inline=bool' to mo.ui.radio by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2084759530" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/584" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/584/hovercard" href="https://github.com/marimo-team/marimo/pull/584">#584</a></li>
+<li>fix: Add support for recognizing Alt key in shortcuts by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2085232959" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/589" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/589/hovercard" href="https://github.com/marimo-team/marimo/pull/589">#589</a></li>
+<li>feat: support input() and stdin by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshayka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshayka">@akshayka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2085082812" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/587" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/587/hovercard" href="https://github.com/marimo-team/marimo/pull/587">#587</a></li>
+<li>0.1.78 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshayka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshayka">@akshayka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2085302145" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/592" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/592/hovercard" href="https://github.com/marimo-team/marimo/pull/592">#592</a></li>
+</ul>
+<h2>New Contributors</h2>
+<ul>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ideoforms/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ideoforms">@ideoforms</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2082738692" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/579" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/579/hovercard" href="https://github.com/marimo-team/marimo/pull/579">#579</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/marimo-team/marimo/compare/0.1.77...0.1.78"><tt>0.1.77...0.1.78</tt></a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from swc: v1.3.104-nightly-20240117.1]]></title>
