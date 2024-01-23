@@ -4,56 +4,578 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Tue, 23 Jan 2024 00:22:43 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 23 Jan 2024 06:07:26 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/117911: Update on "LazyGraphModule"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117911</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117911</guid>
-            <pubDate>Tue, 23 Jan 2024 00:20:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>I feel it's easier to open a new PR rather than iterating on the previous PR (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1805750991" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/105257" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/105257/hovercard" href="https://github.com/pytorch/pytorch/pull/105257">#105257</a> ) since this is more like a rewrite.</p>
-<p>In this PR, instead of changing GraphModule directly which can easily causes BC issue, I create a LazyGraphModule class as Zachary &amp; Jason suggested in comments from the previous PR.</p>
-<p>The difference between LazyGraphModule and GraphModule is mainly about how re-compile for the graph module happens. In GraphModule the recompilation happens 'eagerly': constructing a GraphModule will cause the recompilation. While in LazyGraphModule, we just mark the module as needing recompilation. The real recompilation only happens when absolutely required (e.g. call forward method, access the code property etc.). In a lot of cases in torch.compile, the real recompilation eventually is not triggered at all. This can save a few seconds of compilation time.</p>
-<p>By default, GraphModule rather than LazyGraphModule is used. <code>use_lazy_graph_module(True)</code> context manager can be used to pick LazyGraphModule instead. This has been applied to the torch.compile stack.</p>
-<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/117619: Update on "[WIP] [2/2] Intel GPU Runtime Upstreaming for Stream"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117619</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117619</guid>
+            <pubDate>Tue, 23 Jan 2024 13:54:25 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/pull/117611" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/117611/hovercard">[1/2] Intel GPU Runtime Upstreaming for Stream</a>, as mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the second PR covers the changes under <code>python frontend</code>.</p>
+<h1>Design</h1>
+<p>Currently, it primarily offers stream-related APIs, including</p>
+<ul>
+<li><code>torch.xpu.StreamContext</code></li>
+<li><code>torch.xpu.current_stream</code></li>
+<li><code>torch.xpu.set_stream</code></li>
+<li><code>torch.xpu.synchronize</code></li>
+<li><code>torch._C._xpu_getCurrentRawStream</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>We will implement functions like <code>torch.xpu.Stream.wait_event</code>, <code>torch.xpu.Stream.wait_stream</code>, and <code>torch.xpu.Stream.record_event</code> in the next PR related with <code>Event</code>.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118041: Fix types.MethodDescriptorType related bug in dynamo]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118041</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118041</guid>
-            <pubDate>Tue, 23 Jan 2024 00:20:12 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/117611: Update on "[WIP] [1/2] Intel GPU Runtime Upstreaming for Stream"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117611</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117611</guid>
+            <pubDate>Tue, 23 Jan 2024 13:54:24 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>As mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the second runtime component we would like to upstream is <code>Stream</code> which contains the device management functions of Intel GPU's runtime. To facilitate the code review, we split the code changes into 2 PRs. This is one of the 2 PRs and covers the changes under <code>c10</code>.</p>
+<h1>Design</h1>
+<p>Intel GPU stream is a wrapper of sycl queue which schedules kernels on a sycl device. In our design, we will maintain a sycl queue pool containing 32 queues per device. And when a queue is requested one of these queues is returned round-robin. The corresponding C++ files related to <code>Device</code> will be placed in <code>c10/xpu</code> folder. We provide the <code>c10::xpu::XPUStream</code> APIs, like</p>
+<ul>
+<li><code>XPUStream getStreamFromPool</code></li>
+<li><code>XPUStream getCurrentXPUStream</code></li>
+<li><code>void setCurrentXPUStream</code></li>
+<li><code>void device_synchronize</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>In our plan, 2 PRs should be submitted to PyTorch for <code>Stream</code>:</p>
+<ol>
+<li>for c10</li>
+<li>for python frontend.</li>
+</ol>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117594]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117594</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117594</guid>
-            <pubDate>Tue, 23 Jan 2024 00:20:09 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/116869: Update on "[4/4] Intel GPU Runtime Upstreaming for Device"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116869</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116869</guid>
+            <pubDate>Tue, 23 Jan 2024 13:54:23 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/pull/116019" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/116019/hovercard">[1/4] Intel GPU Runtime Upstreaming for Device</a>, as mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, this last PR  covers the changes under lazy initialization.</p>
+<h1>Design</h1>
+<p>This PR primarily offers the support of multi-processing via lazy initialization. We lazily initialize our runtime avoiding initializing XPU until the first time it is accessed. In our design, we extend <code>cuda_lazy_init</code> to <code>device_lazy_init</code> which is a device-agnostic API that can support any backend. And change <code>maybe_initialize_cuda</code> to <code>maybe_initialize_device</code> to support lazy initialization for both CUDA and XPU while maintaining scalability.</p>
+<h1>Additional Context</h1>
+<p>We adopt a similar design to CUDA. So we share some code with CUDA.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118040]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118040</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118040</guid>
-            <pubDate>Tue, 23 Jan 2024 00:19:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/116850: Update on "[3/4] Intel GPU Runtime Upstreaming for Device"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116850</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F116850</guid>
+            <pubDate>Tue, 23 Jan 2024 13:54:22 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/pull/116019" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/116019/hovercard">[1/4] Intel GPU Runtime Upstreaming for Device</a>, As mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, this third PR  covers the changes under <code>libtorch_python</code>.</p>
+<h1>Design</h1>
+<p>This PR primarily offers device-related APIs in python frontend, including</p>
+<ul>
+<li><code>torch.xpu.is_available</code></li>
+<li><code>torch.xpu.device_count</code></li>
+<li><code>torch.xpu.current_device</code></li>
+<li><code>torch.xpu.set_device</code></li>
+<li><code>torch.xpu._DeviceGuard</code></li>
+<li><code>torch.xpu.device</code></li>
+<li><code>torch.xpu.device_of</code></li>
+<li><code>torch.xpu.get_device_name</code></li>
+<li><code>torch.xpu.get_device_capability</code></li>
+<li><code>torch.xpu.get_device_properties</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>We will implement the support of lazy initialization in the next PR.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118040]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118040</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118040</guid>
-            <pubDate>Tue, 23 Jan 2024 00:19:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/117970: Update on "SYCL building system"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117970</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117970</guid>
+            <pubDate>Tue, 23 Jan 2024 13:43:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>The first step of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017816752" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114835" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114835/hovercard" href="https://github.com/pytorch/pytorch/issues/114835">#114835</a>. See the RFC for detials.</p>
+<p>Main parts of the PR include,</p>
+<ol>
+<li>Find SYCL compiler tool kit in cmake. (<code>cmake/Module/FindSYCLToolkit.cmake</code>)</li>
+<li>Setup cmake variables for SYCL compilation flags, includes and runtime library. (<code>cmake/public/xpu.cmake</code>, <code>cmake/Dependencies.cmake</code>)</li>
+<li>Implement two cmake custom target building helpers, <code>sycl_add_library</code> and <code>sycl_add_executable</code>. (<code>cmake/Module/FindSYCL.cmake</code>, <code>cmake/Module/FindSYCL/run_sycl.cmake</code>)</li>
+<li>Provide unit test cases to verify SYCL building system, since there is no SYCL kernel added in PyTorch. (<code>test/cpp/sycl/CMakeLists.txt</code>)</li>
+</ol>
+<p>CUDA counterparts:<br>
+<code>cmake/Modules/FindCUDAToolkit.cmake</code> - <code>cmake/Module/FindSYCLToolkit.cmake</code><br>
+<code>cmake/public/cuda.cmake</code> - <code>cmake/public/xpu.cmake</code><br>
+<code>cmake/Modules_CUDA_fix/upstream/FindCUDA.cmake</code> - <code>cmake/Module/FindSYCL.cmake</code><br>
+<code>cmake/Modules_CUDA_fix/upstream/FindCUDA/run_nvcc.cmake</code> - <code>cmake/Module/FindSYCL/run_sycl.cmake</code></p>
+<p>SYCL program building is similar as CUDA and HIP. SYCL program requires custom compilation and additional device object linkage steps. We implement <code>sycl_add_library</code> and <code>sycl_add_excutable</code> to introduce SYCL compiler,</p>
+<ol>
+<li>Introduce SYCL compiler to compile <code>.cpp</code>, in which we have SYCL kernels. As to "host only" <code>.cpp</code>, we use CXX compiler for compilation. So far, we only enable GCC compiler in SYCL separate compilation. Next step we will enable CLANG compiler to align with PyTorch building requirement.</li>
+<li>Introduce SYCL compiler to link device object and produce a host relocatable object which could be linked by host linker in subsequence.</li>
+</ol>
+<p>Signed-off-by: Feng Yuan &lt;feng1.yuanintel.com&gt;</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117194]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117194</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117194</guid>
-            <pubDate>Tue, 23 Jan 2024 00:16:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>source a bat file</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118073: Implement empty-tensor operators for XPU backend]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118073</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118073</guid>
+            <pubDate>Tue, 23 Jan 2024 13:43:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Features: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017816752" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114835" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114835/hovercard" href="https://github.com/pytorch/pytorch/issues/114835">#114835</a></p>
+<ol>
+<li>Enhance building capability for <code>libtorch_xpu.so</code> with <code>sycl_add_library</code>. <code>libtorch_xpu.so</code> is XPU backend implementation of PyTorch ATen tensor library, including<br>
+kernel part in SYCL and host part in C++. Enable separate compilation by distinguishing SYCL and C++ sources and using SYCL and C++ compilers compile them separately.</li>
+<li>Add two Tensor factory ATen operators for XPU backend.</li>
+</ol>
+<p>Signed-off-by: Feng Yuan <a href="mailto:feng1.yuan@intel.com">feng1.yuan@intel.com</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118073: Implement empty-tensor operators for XPU backend]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118073</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118073</guid>
+            <pubDate>Tue, 23 Jan 2024 13:43:53 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Features: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017816752" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114835" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114835/hovercard" href="https://github.com/pytorch/pytorch/issues/114835">#114835</a></p>
+<ol>
+<li>Enhance building capability for <code>libtorch_xpu.so</code> with <code>sycl_add_library</code>. <code>libtorch_xpu.so</code> is XPU backend implementation of PyTorch ATen tensor library, including<br>
+kernel part in SYCL and host part in C++. Enable separate compilation by distinguishing SYCL and C++ sources and using SYCL and C++ compilers compile them separately.</li>
+<li>Add two Tensor factory ATen operators for XPU backend.</li>
+</ol>
+<p>Signed-off-by: Feng Yuan <a href="mailto:feng1.yuan@intel.com">feng1.yuan@intel.com</a></p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Tue, 23 Jan 2024 05:14:46 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-2164+gdc466f9a6
+Build type: RelWithDebInfo
+LuaJIT 2.1.1705947465"><pre class="notranslate"><code>NVIM v0.10.0-dev-2164+gdc466f9a6
+Build type: RelWithDebInfo
+LuaJIT 2.1.1705947465
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
+that work on older glibc versions can find them at<br>
+<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="a387be6f583516c85856063639f1e3d348db72ff3bf3c6be978ab74b8711aa84  nvim-linux64.tar.gz
+1130525dc43c8e6bffcbb29de083c038d1ab0fe5215848b634e346db6d4f3322  nvim.appimage
+5775d0b1eb6aa70bbf0e57754f899de115589e184a52684778c083598eaed6a8  nvim.appimage.zsync
+8ff2449908cc121d7be936c5ec0e206ce26b32b016743f8bf4f2b54ef87ecc76  nvim-macos.tar.gz
+159dea1eb1da64b839f60861adb6144aaa969d7ecfc9ed85d96ca90da576dec9  nvim-win64.zip
+010c983f7b578f945f9c1f9c365a29cc51beaac2b5f00598455255642c08ea1e  nvim-win64.msi"><pre class="notranslate"><code>a387be6f583516c85856063639f1e3d348db72ff3bf3c6be978ab74b8711aa84  nvim-linux64.tar.gz
+1130525dc43c8e6bffcbb29de083c038d1ab0fe5215848b634e346db6d4f3322  nvim.appimage
+5775d0b1eb6aa70bbf0e57754f899de115589e184a52684778c083598eaed6a8  nvim.appimage.zsync
+8ff2449908cc121d7be936c5ec0e206ce26b32b016743f8bf4f2b54ef87ecc76  nvim-macos.tar.gz
+159dea1eb1da64b839f60861adb6144aaa969d7ecfc9ed85d96ca90da576dec9  nvim-win64.zip
+010c983f7b578f945f9c1f9c365a29cc51beaac2b5f00598455255642c08ea1e  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from selenium: selenium-4.17.0]]></title>
+            <link>https://github.com/SeleniumHQ/selenium/releases/tag/selenium-4.17.0</link>
+            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/selenium-4.17.0</guid>
+            <pubDate>Tue, 23 Jan 2024 04:03:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update versions and changelogs for 4.17</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/117098: Update on "Intel GPU oneDNN upstreaming for library compilation"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117098</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117098</guid>
+            <pubDate>Tue, 23 Jan 2024 03:56:04 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>As proposed  in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017990563" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114848" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114848/hovercard" href="https://github.com/pytorch/pytorch/issues/114848">#114848</a> and <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2015639500" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114723" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114723/hovercard" href="https://github.com/pytorch/pytorch/issues/114723">#114723</a>, oneDNN library is an important component for Intel GPU software ecosystem.</p>
+<p>This PR is intended to enable oneDNN compilation for Intel GPU.  It is the first step for we enabling any operators like <code>at::baddmm</code>.<br>
+With this PR, a static library <code>libdnnl.a</code> for GPU would be compiled in directory <code>/build/xpumkldnn_proj-prefix</code>.  It can be further linked to <code>libtorch_xpu.so</code> in future. The compilation would  depend on <code>USE_XPU</code> bool variables and runtime check like SYCL, which is defined in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2046619132" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/116019" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/116019/hovercard" href="https://github.com/pytorch/pytorch/pull/116019">#116019</a> for runtime support. Once the <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2046619132" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/116019" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/116019/hovercard" href="https://github.com/pytorch/pytorch/pull/116019">#116019</a> merged, the compilation should be able to be triggered.</p>
+<p>The modification is independent to oneDNN CPU compilation, hence no modification would be introduced for CPU Cmakefiles(e.g. FindMKLDNN.cmake)</p>
+<p>cc gujinghui PenghuiCheng XiaobingSuper jianyuh jgong5 mingfeima sanchitintel ashokei jingxu10 min-jean-cho yanbing-j Guobing-Chen Xia-Weiwen</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from cube: v0.34.47]]></title>
+            <link>https://github.com/cube-js/cube/releases/tag/v0.34.47</link>
+            <guid>https://github.com/cube-js/cube/releases/tag/v0.34.47</guid>
+            <pubDate>Tue, 23 Jan 2024 03:12:12 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.34.46...v0.34.47">0.34.47</a> (2024-01-23)</h2>
+<h3>Features</h3>
+<ul>
+<li><strong>cubesql:</strong> TO_CHAR - support more formats, correct NULL handling (<a href="https://github.com/cube-js/cube/issues/7671" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/7671/hovercard">#7671</a>) (<a href="https://github.com/cube-js/cube/commit/2d1e2d216c99af68a2d5cf1b2acd2f5e2a623323">2d1e2d2</a>)</li>
+<li><strong>duckdb-driver:</strong> Support advanced configuration for S3 via env variables (<a href="https://github.com/cube-js/cube/issues/7544" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/7544/hovercard">#7544</a>) (<a href="https://github.com/cube-js/cube/commit/4862195d57a8796c3bbd74696eb41df4505e545c">4862195</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118055: [Memory Snapshot] Track context for SEGMENT_FREE and SEGMENT_UNMAP (#…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118055</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118055</guid>
+            <pubDate>Tue, 23 Jan 2024 01:58:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…118055)</p>
+<p>Summary:</p>
+<p>Show the stack when SEGMENT_FREE and SEGMENT_UNMAP occurs. This may be useful for debugging such as when empty_cache() may cause a segment to be freed. If the free context is unavailable, resort to the segment allocation stack.</p>
+<p>Test Plan: CI</p>
+<p>Differential Revision: D52984953</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 2.15.13]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/2.15.13</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/2.15.13</guid>
+            <pubDate>Tue, 23 Jan 2024 01:50:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 2.15.13 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118047: Update on "[C10D] Make Flight Recorder report time_created in ns"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118047</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118047</guid>
+            <pubDate>Tue, 23 Jan 2024 01:46:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Addresses (6) from <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2091480913" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117883" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/117883/hovercard" href="https://github.com/pytorch/pytorch/issues/117883">#117883</a></p>
+<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu fegin XilunWu wanchaol fduwjj wz337 tianyu-l yf225</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.106-nightly-20240123.1]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.106-nightly-20240123.1</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.106-nightly-20240123.1</guid>
+            <pubDate>Tue, 23 Jan 2024 01:36:29 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.32.25]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.32.25</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.32.25</guid>
+            <pubDate>Tue, 23 Jan 2024 01:11:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.32.25 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from PowerShell: v7.5.0-preview.1 Release of PowerShell]]></title>
+            <link>https://github.com/PowerShell/PowerShell/releases/tag/v7.5.0-preview.1</link>
+            <guid>https://github.com/PowerShell/PowerShell/releases/tag/v7.5.0-preview.1</guid>
+            <pubDate>Tue, 23 Jan 2024 00:58:27 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/PowerShell/PowerShell/compare/v7.4.1...v7.5.0-preview.1">7.5.0-preview.1</a> - 2024-01-18</h2>
+<h3>Breaking Changes</h3>
+<ul>
+<li>Fix <code>-OlderThan</code> and <code>-NewerThan</code> parameters for <code>Test-Path</code> when using <code>PathType</code> and date range (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2045808840" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20942" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20942/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20942">#20942</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)
+<ul>
+<li>Previously <code>-OlderThan</code> would be ignored if specified together</li>
+</ul>
+</li>
+<li>Change <code>New-FileCatalog -CatalogVersion</code> default to 2 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1924876890" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20428" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20428/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20428">#20428</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ThomasNieto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ThomasNieto">@ThomasNieto</a>!)</li>
+</ul>
+<h3>General Cmdlet Updates and Fixes</h3>
+<ul>
+<li>Fix completion crash for the SCCM provider (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017386261" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20815" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20815/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20815">#20815</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2040578702" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20919" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20919/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20919">#20919</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2040010721" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20915" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20915/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20915">#20915</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MartinGC94/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MartinGC94">@MartinGC94</a>!)</li>
+<li>Fix regression in <code>Get-Content</code> when <code>-Tail 0</code> and <code>-Wait</code> are used together (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2003234457" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20734" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20734/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20734">#20734</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/CarloToso/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/CarloToso">@CarloToso</a>!)</li>
+<li>Add <code>Aliases</code> to the properties shown up when formatting the help content of the parameter returned by <code>Get-Help</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2064835849" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20994" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20994/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20994">#20994</a>)</li>
+<li>Add implicit localization fallback to <code>Import-LocalizedData</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1791620626" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/19896" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/19896/hovercard" href="https://github.com/PowerShell/PowerShell/pull/19896">#19896</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/chrisdent-de/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/chrisdent-de">@chrisdent-de</a>!)</li>
+<li>Change <code>Test-FileCatalog</code> to use <code>File.OpenRead</code> to better handle the case where the file is being used (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2044592761" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20939" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20939/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20939">#20939</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dxk3355/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dxk3355">@dxk3355</a>!)</li>
+<li>Added <code>-Module</code> completion for <code>Save-Help</code> and <code>Update-Help</code> commands (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1989305456" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20678" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20678/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20678">#20678</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)</li>
+<li>Add argument completer to <code>-Verb</code> for <code>Start-Process</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1920772424" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20415" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20415/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20415">#20415</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)</li>
+<li>Add argument completer to <code>-Scope</code> for <code>*-Variable</code>, <code>*-Alias</code> &amp; <code>*-PSDrive</code> commands (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931670906" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20451" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20451/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20451">#20451</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)</li>
+<li>Add argument completer to <code>-Verb</code> for <code>Get-Verb</code> and <code>Get-Command</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1899397104" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20286" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20286/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20286">#20286</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)</li>
+<li>Fixing incorrect formatting string in <code>CommandSearcher</code> trace logging (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2041945837" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20928" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20928/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20928">#20928</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/powercode/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/powercode">@powercode</a>!)</li>
+<li>Ensure the filename is not null when logging WDAC ETW events (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2038667867" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20910" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20910/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20910">#20910</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jborean93/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jborean93">@jborean93</a>!)</li>
+<li>Fix four regressions introduced by the WDAC logging feature (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2039099429" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20913" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20913/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20913">#20913</a>)</li>
+<li>Leave the input, output, and error handles unset when they are not redirected (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2027191267" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20853" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20853/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20853">#20853</a>)</li>
+<li>Fix <code>Start-Process -PassThru</code> to make sure the <code>ExitCode</code> property is accessible for the returned <code>Process</code> object (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2005429528" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20749" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20749/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20749">#20749</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/CodeCyclone/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/CodeCyclone">@CodeCyclone</a>!)</li>
+<li>Fix <code>Group-Object</code> output using interpolated strings (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2004954481" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20745" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20745/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20745">#20745</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mawosoft/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mawosoft">@mawosoft</a>!)</li>
+<li>Fix rendering of <code>DisplayRoot</code> for network <code>PSDrive</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2013231589" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20793" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20793/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20793">#20793</a>)</li>
+<li>Fix <code>Invoke-WebRequest</code> to report correct size when <code>-Resume</code> is specified (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1881694904" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20207" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20207/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20207">#20207</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LNKLEO/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LNKLEO">@LNKLEO</a>!)</li>
+<li>Add <code>PSAdapter</code> and <code>ConsoleGuiTools</code> to module load telemetry whitelist (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1979915288" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20641" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20641/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20641">#20641</a>)</li>
+<li>Fix Web Cmdlets to allow <code>WinForm</code> apps to work correctly (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1969119904" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20606" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20606/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20606">#20606</a>)</li>
+<li>Block getting help from network locations in restricted remoting sessions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1965998700" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20593" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20593/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20593">#20593</a>)</li>
+<li>Fix <code>Group-Object</code> to use current culture for its output (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1969358706" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20608" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20608/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20608">#20608</a>)</li>
+<li>Add argument completer to <code>-Version</code> for <code>Set-StrictMode</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1955409924" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20554" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20554/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20554">#20554</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)</li>
+<li>Fix <code>Copy-Item</code> progress to only show completed when all files are copied (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1950823312" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20517" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20517/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20517">#20517</a>)</li>
+<li>Fix UNC path completion regression (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1921024736" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20419" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20419/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20419">#20419</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MartinGC94/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MartinGC94">@MartinGC94</a>!)</li>
+<li>Add telemetry to check for specific tags when importing a module (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912457176" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20371" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20371/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20371">#20371</a>)</li>
+<li>Report error if invalid <code>-ExecutionPolicy</code> is passed to <code>pwsh</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1933569963" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20460" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20460/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20460">#20460</a>)</li>
+<li>Add <code>HelpUri</code> to <code>Remove-Service</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1938518731" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20476" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20476/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20476">#20476</a>)</li>
+<li>Fix <code>unixmode</code> to handle <code>setuid</code> and <code>sticky</code> when file is not an executable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912258752" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20366" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20366/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20366">#20366</a>)</li>
+<li>Fix <code>Test-Connection</code> due to .NET 8 changes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912369936" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20369" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20369/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20369">#20369</a>)</li>
+<li>Fix implicit remoting proxy cmdlets to act on common parameters (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912311440" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20367" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20367/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20367">#20367</a>)</li>
+<li>Set experimental features to stable for 7.4 release (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1899063957" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20285" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20285/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20285">#20285</a>)</li>
+<li>Revert changes to continue using <code>BinaryFormatter</code> for <code>Out-GridView</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1902103567" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20300" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20300/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20300">#20300</a>)</li>
+<li>Fix <code>Get-Service</code> non-terminating error message to include category (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1896897195" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20276" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20276/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20276">#20276</a>)</li>
+<li>Prevent <code>Export-CSV</code> from flushing with every input (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1898162716" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20282" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20282/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20282">#20282</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Chris--A/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Chris--A">@Chris--A</a>!)</li>
+<li>Fix a regression in DSC (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1893228750" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20268" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20268/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20268">#20268</a>)</li>
+<li>Include the module version in error messages when module is not found (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1857949750" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20144" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20144/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20144">#20144</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArmaanMcleod/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArmaanMcleod">@ArmaanMcleod</a>!)</li>
+<li>Add <code>-Empty</code> and <code>-InputObject</code> parameters to <code>New-Guid</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1816915187" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20014" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20014/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20014">#20014</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/CarloToso/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/CarloToso">@CarloToso</a>!)</li>
+<li>Remove the comment trigger from feedback provider (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1855767243" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20136" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20136/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20136">#20136</a>)</li>
+<li>Prevent fallback to file completion when tab completing type names (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1838283892" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20084" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20084/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20084">#20084</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MartinGC94/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MartinGC94">@MartinGC94</a>!)</li>
+<li>Add the alias <code>r</code> to the parameter <code>-Recurse</code> for the <code>Get-ChildItem</code> command (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1844030689" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20100" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20100/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20100">#20100</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kilasuit/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kilasuit">@kilasuit</a>!)</li>
+</ul>
+<h3>Code Cleanup</h3>
+<details>
+<summary>
+<p>We thank the following contributors!</p>
+<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eltociear/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eltociear">@eltociear</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ImportTaste/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ImportTaste">@ImportTaste</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ThomasNieto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ThomasNieto">@ThomasNieto</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/0o001/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/0o001">@0o001</a></p>
+</summary>
+<ul>
+<li>Fix typos in the code base (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1859141746" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20147" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20147/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20147">#20147</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1943030227" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20492" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20492/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20492">#20492</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1976491509" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20632" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20632/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20632">#20632</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2068676303" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/21015" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/21015/hovercard" href="https://github.com/PowerShell/PowerShell/pull/21015">#21015</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2022579188" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20838" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20838/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20838">#20838</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eltociear/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eltociear">@eltociear</a>!)</li>
+<li>Add the missing alias <code>LP</code> to <code>-LiteralPath</code> for some cmdlets (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2019140179" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20820" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20820/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20820">#20820</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ImportTaste/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ImportTaste">@ImportTaste</a>!)</li>
+<li>Remove parenthesis for empty attribute parameters (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1838617791" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20087" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20087/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20087">#20087</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ThomasNieto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ThomasNieto">@ThomasNieto</a>!)</li>
+<li>Add space around keyword according to the <code>CodeFactor</code> rule (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1840020588" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20090" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20090/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20090">#20090</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ThomasNieto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ThomasNieto">@ThomasNieto</a>!)</li>
+<li>Remove blank lines as instructed by <code>CodeFactor</code> rules (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1838593480" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20086" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20086/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20086">#20086</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ThomasNieto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ThomasNieto">@ThomasNieto</a>!)</li>
+<li>Remove trailing whitespace (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1838585770" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20085" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20085/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20085">#20085</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ThomasNieto/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ThomasNieto">@ThomasNieto</a>!)</li>
+<li>Fix typo in error message (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1857954741" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20145" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20145/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20145">#20145</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/0o001/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/0o001">@0o001</a>!)</li>
+</ul>
+</details>
+<h3>Tools</h3>
+<ul>
+<li>Make sure feedback link in the bot's comment is clickable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2033742383" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20878" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20878/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20878">#20878</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/floh96/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/floh96">@floh96</a>!)</li>
+<li>Fix bot so anyone who comments will remove the "Resolution-No Activity" label (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2012742969" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20788" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20788/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20788">#20788</a>)</li>
+<li>Fix bot configuration to prevent multiple comments about "no activity" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2007181395" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20758" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20758/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20758">#20758</a>)</li>
+<li>Add bot logic for closing GitHub issues after 6 months of "no activity" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952790073" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20525" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20525/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20525">#20525</a>)</li>
+<li>Refactor bot for easier use and updating (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2015354008" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20805" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20805/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20805">#20805</a>)</li>
+<li>Configure bot to add survey comment for closed issues (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1918423918" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20397" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20397/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20397">#20397</a>)</li>
+</ul>
+<h3>Tests</h3>
+<ul>
+<li>Suppress error output from <code>Set-Location</code> tests (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1945632044" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20499" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20499/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20499">#20499</a>)</li>
+<li>Fix typo in <code>FileCatalog.Tests.ps1</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1909174023" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20329" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20329/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20329">#20329</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eltociear/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eltociear">@eltociear</a>!)</li>
+<li>Continue to improve tests for release automation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1872614956" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20182" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20182/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20182">#20182</a>)</li>
+<li>Skip the test on x86 as <code>InstallDate</code> is not visible on <code>Wow64</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1865818078" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20165" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20165/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20165">#20165</a>)</li>
+<li>Harden some problematic release tests (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1862368411" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20155" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20155/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20155">#20155</a>)</li>
+</ul>
+<h3>Build and Packaging Improvements</h3>
+<details>
+<summary>
+<p>We thank the following contributors!</p>
+<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alerickson/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alerickson">@alerickson</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Zhoneym/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zhoneym">@Zhoneym</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/0o001/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/0o001">@0o001</a></p>
+</summary>
+<ul>
+<li>Bump .NET SDK to 8.0.101 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2085231467" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/21084" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/21084/hovercard" href="https://github.com/PowerShell/PowerShell/pull/21084">#21084</a>)</li>
+<li>Update the cgmanifest (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1838203744" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20083" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20083/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20083">#20083</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1926189270" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20436" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20436/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20436">#20436</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1952226125" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20523" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20523/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20523">#20523</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1959219793" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20560" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20560/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20560">#20560</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1974215006" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20627" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20627/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20627">#20627</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2008206932" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20764" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20764/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20764">#20764</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2037722443" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20906" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20906/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20906">#20906</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043702943" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20933" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20933/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20933">#20933</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2052397776" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20955" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20955/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20955">#20955</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2076612308" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/21047" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/21047/hovercard" href="https://github.com/PowerShell/PowerShell/pull/21047">#21047</a>)</li>
+<li>Update to the latest NOTICES file (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1835031781" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20074" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20074/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20074">#20074</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1865118549" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20161" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20161/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20161">#20161</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1915551617" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20385" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20385/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20385">#20385</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1931798426" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20453" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20453/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20453">#20453</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1961381712" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20576" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20576/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20576">#20576</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1965489178" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20590" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20590/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20590">#20590</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2033842378" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20880" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20880/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20880">#20880</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2037716789" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20905" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20905/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20905">#20905</a>)</li>
+<li>Bump StyleCop.Analyzers from 1.2.0-beta.507 to 1.2.0-beta.556 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2051908136" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20953" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20953/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20953">#20953</a>)</li>
+<li>Bump xUnit to 2.6.6 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081477494" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/21071" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/21071/hovercard" href="https://github.com/PowerShell/PowerShell/pull/21071">#21071</a>)</li>
+<li>Bump JsonSchema.Net to 5.5.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2071821071" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/21027" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/21027/hovercard" href="https://github.com/PowerShell/PowerShell/pull/21027">#21027</a>)</li>
+<li>Fix failures in GitHub action <code>markdown-link-check</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2066098927" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20996" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20996/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20996">#20996</a>)</li>
+<li>Bump xunit.runner.visualstudio to 2.5.6 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2055476453" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20966" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20966/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20966">#20966</a>)</li>
+<li>Bump github/codeql-action from 2 to 3 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2041084819" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20927" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20927/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20927">#20927</a>)</li>
+<li>Bump Markdig.Signed to 0.34.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2041054224" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20926" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20926/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20926">#20926</a>)</li>
+<li>Bump Microsoft.ApplicationInsights from 2.21.0 to 2.22.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2034993983" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20888" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20888/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20888">#20888</a>)</li>
+<li>Bump Microsoft.NET.Test.Sdk to 17.8.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1985008548" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20660" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20660/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20660">#20660</a>)</li>
+<li>Update <code>apiscan.yml</code> to have access to the <code>AzDevOpsArtifacts</code> variable group (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1988576327" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20671" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20671/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20671">#20671</a>)</li>
+<li>Set the <code>ollForwardOnNoCandidateFx</code> in <code>runtimeconfig.json</code> to roll forward only on minor and patch versions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1995836161" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20689" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20689/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20689">#20689</a>)</li>
+<li>Sign the global tool shim executable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2013256044" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20794" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20794/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20794">#20794</a>)</li>
+<li>Bump actions/github-script from 6 to 7 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1992158322" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20682" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20682/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20682">#20682</a>)</li>
+<li>Remove RHEL7 publishing to packages.microsoft.com as it's no longer supported (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2024920138" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20849" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20849/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20849">#20849</a>)</li>
+<li>Bump Microsoft.CodeAnalysis.CSharp to 4.8.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2005773925" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20751" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20751/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20751">#20751</a>)</li>
+<li>Add internal nuget feed to compliance build (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1988356996" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20669" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20669/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20669">#20669</a>)</li>
+<li>Copy azure blob with PowerShell global tool to private blob and move to CDN during release (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1985000696" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20659" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20659/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20659">#20659</a>)</li>
+<li>Fix release build by making the internal SDK parameter optional (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1984729004" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20658" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20658/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20658">#20658</a>)</li>
+<li>Update PSResourceGet version to 1.0.1 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1982424097" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20652" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20652/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20652">#20652</a>)</li>
+<li>Make internal .NET SDK URL as a parameter for release builld (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1982890530" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20655" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20655/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20655">#20655</a>)</li>
+<li>Fix setting of variable to consume internal SDK source (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1980237553" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20644" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20644/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20644">#20644</a>)</li>
+<li>Bump Microsoft.Management.Infrastructure to v3.0.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1980042348" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20642" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20642/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20642">#20642</a>)</li>
+<li>Bump Microsoft.PowerShell.Native to v7.4.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1971499165" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20617" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20617/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20617">#20617</a>)</li>
+<li>Bump Microsoft.Security.Extensions from 1.2.0 to 1.3.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1956529261" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20556" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20556/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20556">#20556</a>)</li>
+<li>Fix package version for .NET nuget packages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1953553846" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20551" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20551/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20551">#20551</a>)</li>
+<li>Add SBOM for release pipeline (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1950992797" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20519" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20519/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20519">#20519</a>)</li>
+<li>Block any preview vPack release (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1891112278" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20243" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20243/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20243">#20243</a>)</li>
+<li>Only registry App Path for release package (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1938787834" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20478" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20478/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20478">#20478</a>)</li>
+<li>Increase timeout when publishing packages to <code>pacakages.microsoft.com</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1935966916" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20470" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20470/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20470">#20470</a>)</li>
+<li>Fix alpine tar package name and do not crossgen alpine fxdependent package (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1933459221" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20459" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20459/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20459">#20459</a>)</li>
+<li>Bump PSReadLine from 2.2.6 to 2.3.4 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1903469851" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20305" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20305/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20305">#20305</a>)</li>
+<li>Remove the <code>ref</code> folder before running compliance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912560149" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20373" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20373/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20373">#20373</a>)</li>
+<li>Updates RIDs used to generate component Inventory (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912397239" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20370" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20370/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20370">#20370</a>)</li>
+<li>Bump XunitXml.TestLogger from 3.1.11 to 3.1.17 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1900311055" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20293" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20293/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20293">#20293</a>)</li>
+<li>Update experimental-feature json files (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1909866730" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20335" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20335/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20335">#20335</a>)</li>
+<li>Use <code>fxdependent-win-desktop</code> runtime for compliance runs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1907578341" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20326" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20326/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20326">#20326</a>)</li>
+<li>Release build: Change the names of the PATs (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1903608202" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20307" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20307/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20307">#20307</a>)</li>
+<li>Add mapping for mariner arm64 stable (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1884833833" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20213" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20213/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20213">#20213</a>)</li>
+<li>Put the calls to <code>Set-AzDoProjectInfo</code> and <code>Set-AzDoAuthToken</code> in the right order (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1903567746" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20306" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20306/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20306">#20306</a>)</li>
+<li>Enable vPack provenance data (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1888060096" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20220" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20220/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20220">#20220</a>)</li>
+<li>Bump actions/checkout from 3 to 4 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1881384146" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20205" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20205/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20205">#20205</a>)</li>
+<li>Start using new <code>packages.microsoft.com</code> cli (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1857253183" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20140" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20140/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20140">#20140</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1857259619" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20141" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20141/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20141">#20141</a>)</li>
+<li>Add mariner arm64 to PMC release (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1870377864" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20176" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20176/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20176">#20176</a>)</li>
+<li>Fix typo <code>donet</code> to <code>dotnet</code> in build scripts and pipelines (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1853351015" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20122" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20122/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20122">#20122</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/0o001/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/0o001">@0o001</a>!)</li>
+<li>Install the pmc cli</li>
+<li>Add skip publish parameter</li>
+<li>Add verbose to clone</li>
+</ul>
+</details>
+<h3>Documentation and Help Content</h3>
+<ul>
+<li>Include information about upgrading in README (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2064785811" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20993" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20993/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20993">#20993</a>)</li>
+<li>Expand "iff" to "if-and-only-if" in XML doc content (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2026558761" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20852" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20852/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20852">#20852</a>)</li>
+<li>Update LTS links in README.md to point to the v7.4 packages (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2022595360" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20839" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20839/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20839">#20839</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kilasuit/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kilasuit">@kilasuit</a>!)</li>
+<li>Update <code>README.md</code> to improve readability (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1955400814" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20553" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20553/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20553">#20553</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/AnkitaSikdar005/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/AnkitaSikdar005">@AnkitaSikdar005</a>!)</li>
+<li>Fix link in <code>docs/community/governance.md</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949839961" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20515" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20515/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20515">#20515</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/suravshresth/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/suravshresth">@suravshresth</a>!)</li>
+<li>Update <code>ADOPTERS.md</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1955456583" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20555" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20555/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20555">#20555</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/AnkitaSikdar005/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/AnkitaSikdar005">@AnkitaSikdar005</a>!)</li>
+<li>Fix a typo in <code>ADOPTERS.md</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1946453425" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20504" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20504/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20504">#20504</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1951236291" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20520" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20520/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20520">#20520</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shruti-sen2004/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shruti-sen2004">@shruti-sen2004</a>!)</li>
+<li>Correct grammatical errors in <code>README.md</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1948104598" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20509" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20509/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20509">#20509</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/alienishi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/alienishi">@alienishi</a>!)</li>
+<li>Add 7.3 changelog URL to Readme (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1936388548" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20473" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20473/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20473">#20473</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Saibamen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Saibamen">@Saibamen</a>!)</li>
+<li>Clarify some comments and documentation (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1933664535" data-permission-text="Title is private" data-url="https://github.com/PowerShell/PowerShell/issues/20462" data-hovercard-type="pull_request" data-hovercard-url="/PowerShell/PowerShell/pull/20462/hovercard" href="https://github.com/PowerShell/PowerShell/pull/20462">#20462</a>) (Thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/darkstar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/darkstar">@darkstar</a>!)</li>
+</ul>
+<h3>SHA256 Hashes of the release artifacts</h3>
+<ul>
+<li>hashes.sha256
+<ul>
+<li>066AA0F677A4B92E4029E7E627D9E224A93FE35B8C00C175DB4E047F4A9013E2</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-linux-arm32.tar.gz
+<ul>
+<li>9F394364CA521342C63B51415B9F19080F8E59DF8E9339A96F71E2E8D90744D2</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-linux-arm64.tar.gz
+<ul>
+<li>F06963FE7914EB1BD44E067E4D5237E5C7ED8580A56C0C1C4439C7173F42B691</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-linux-musl-x64.tar.gz
+<ul>
+<li>A22FCAF538E85197BEB5AC733567EA4BD154120E1DF854AD8C22CC10DA02407C</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-linux-x64-fxdependent.tar.gz
+<ul>
+<li>92F141396C4AE80E016D40A375E4C148BC229C5E0A714A9A3995B9891C3E141A</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-linux-x64-musl-noopt-fxdependent.tar.gz
+<ul>
+<li>D061B73EA35D6F1AD027319CA51DF21FC798C6879EC1187F8163CB8FEE3B93B7</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-linux-x64.tar.gz
+<ul>
+<li>6BFFFC8B3CC026BB4FFBC2A1C603DD5536041C65C5C05D829747209AFBCD9133</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-osx-arm64.pkg
+<ul>
+<li>C24C1A53D0F751ADC98A428D1479190D895B67D09C8B274940AB6F39AA4DC482</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-osx-arm64.tar.gz
+<ul>
+<li>0DA9CBD5977119733E642BAB6985D5A3D6B063C5F0D3AA66A6B8C08A98641D2E</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-osx-x64.pkg
+<ul>
+<li>5D46B6861C732F281DD8AE39479BA3E21BB2BC96FBBC1C0C9241D4EBE877140A</li>
+</ul>
+</li>
+<li>powershell-7.5.0-preview.1-osx-x64.tar.gz
+<ul>
+<li>E00179FA4B9EE55773DB3706E4AF3285141F2C81D6AE33BB5DD4731053FD7EED</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win.msixbundle
+<ul>
+<li>49A9336256848AD269331CA3E6DFD947B21501317B9BB109233FA8E822F6D762</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-arm64.zip
+<ul>
+<li>3788CEECB6EA465D79A4F03BD3F175D09384F5648BEDFA008D950CE86804DB23</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-fxdependent.zip
+<ul>
+<li>D4D602AC78C795A60F8FEACE713557CE373BC3EE398142AF7EFE74E107FACD22</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-fxdependentWinDesktop.zip
+<ul>
+<li>C91850D8F66111947CCE20A8095B79A110F0ACCE09ACB89017BF2F7ED56F64D7</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-x64.msi
+<ul>
+<li>EE6036CF39FF87390699FA37D7A4A2A10C673B09F6116A6D88AEC584BBCBC2FD</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-x64.zip
+<ul>
+<li>BCCFC1FB1EFB50A5FD258E046BDBCF10C79F574F0D4EF074DB07605DCA9973B4</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-x86.msi
+<ul>
+<li>AFD7C808595382CBAE97E41305ACB40F2EC4755ACAA290E264DA311878E84238</li>
+</ul>
+</li>
+<li>PowerShell-7.5.0-preview.1-win-x86.zip
+<ul>
+<li>C015FD1D368E328EF0D78B84B8F08E453F7D1BDA200FE414DFD724C061B87E4B</li>
+</ul>
+</li>
+<li>powershell-preview_7.5.0-preview.1-1.deb_amd64.deb
+<ul>
+<li>5BF4E25E62723D4C203515AA72B6CE8C47AE1D569C4D2C15603B996D92813BBE</li>
+</ul>
+</li>
+<li>powershell-preview-7.5.0_preview.1-1.cm.aarch64.rpm
+<ul>
+<li>A46D13EB717D84F571553105A363E995C998326772E9D00E4F833CD53DBDB42C</li>
+</ul>
+</li>
+<li>powershell-preview-7.5.0_preview.1-1.cm.x86_64.rpm
+<ul>
+<li>F85E9E3A88A38B303CA7A5277C8A91C25A9DEA50441EBBD661BFFFDE1E87CB36</li>
+</ul>
+</li>
+<li>powershell-preview-7.5.0_preview.1-1.rh.x86_64.rpm
+<ul>
+<li>5E698F40C797D7745C3B9675B2CFDB470A613F11A10C52B6011E3F41914BA26E</li>
+</ul>
+</li>
+</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
@@ -69,61 +591,6 @@
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/cc85374c890fc5501298bea5b226c788a7a9859d/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/cc85374c890fc5501298bea5b226c788a7a9859d"><tt>cc85374</tt></a>: [ci] deleting concurrency section until we figure out what we need (titusfortner)</li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/134aa673822cd97c75e53e4b35deac87ae737cf9/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/134aa673822cd97c75e53e4b35deac87ae737cf9"><tt>134aa67</tt></a>: [rb] update unit test to include correct server port (titusfortner)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.3.106-nightly-20240123.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.3.106-nightly-20240123.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.106-nightly-20240123.1</guid>
-            <pubDate>Tue, 23 Jan 2024 00:14:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: Publish 1.3.106-nightly-20240123.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118039: [AOTI] Fix a bug in the torch._export.aot_load API]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118039</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118039</guid>
-            <pubDate>Tue, 23 Jan 2024 00:13:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:<br>
-tree_flatten_spec should use args instead of *args</p>
-<p>clone of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2092797972" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117948" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/117948/hovercard" href="https://github.com/pytorch/pytorch/pull/117948">#117948</a> but with some fbcode specific changes</p>
-<p>Test Plan: CI</p>
-<p>Differential Revision: D52982401</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118039: [AOTI] Fix a bug in the torch._export.aot_load API]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118039</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118039</guid>
-            <pubDate>Tue, 23 Jan 2024 00:13:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:<br>
-tree_flatten_spec should use args instead of *args</p>
-<p>clone of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2092797972" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117948" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/117948/hovercard" href="https://github.com/pytorch/pytorch/pull/117948">#117948</a> but with some fbcode specific changes</p>
-<p>Test Plan: CI</p>
-<p>Differential Revision: D52982401</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/117710: [dynamo] Add size(), get_coordinate() support for DeviceMesh in dynam…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117710</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F117710</guid>
-            <pubDate>Tue, 23 Jan 2024 00:00:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…o (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2087249351" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117710" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/117710/hovercard" href="https://github.com/pytorch/pytorch/pull/117710">#117710</a>)</p>
-<p>Summary:</p>
-<p>This fix is part of: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086742528" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117670" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/117670/hovercard" href="https://github.com/pytorch/pytorch/issues/117670">#117670</a></p>
-<p>bypass-github-pytorch-ci-checks</p>
-<p>Test Plan: Unit tetst and CI</p>
-<p>Reviewed By: yanboliang, wanchaol</p>
-<p>Differential Revision: D52857348</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/117710: [dynamo] Add size(), get_coordinate() support for DeviceMesh in dynam…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117710</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F117710</guid>
-            <pubDate>Tue, 23 Jan 2024 00:00:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…o (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2087249351" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117710" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/117710/hovercard" href="https://github.com/pytorch/pytorch/pull/117710">#117710</a>)</p>
-<p>Summary:</p>
-<p>This fix is part of: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086742528" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/117670" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/117670/hovercard" href="https://github.com/pytorch/pytorch/issues/117670">#117670</a></p>
-<p>bypass-github-pytorch-ci-checks</p>
-<p>Test Plan: Unit tetst and CI</p>
-<p>Reviewed By: yanboliang, wanchaol</p>
-<p>Differential Revision: D52857348</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from ember.js: v5.7.0-beta.1]]></title>
@@ -410,70 +877,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Adependabot+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@dependabot</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Afcollonval+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@fcollonval</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Agithub-actions+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Ajeremy-feng+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@jeremy-feng</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Ajtpio+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3ARjchauhan18+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@Rjchauhan18</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Atgourdel+updated%3A2024-01-03..2024-01-22&amp;type=Issues">@tgourdel</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/session@0.2.3: Publish 0.2.3]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.2.3</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.2.3</guid>
-            <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
-<p>jupyterlite-0.2.3-py3-none-any.whl: b5e7cc43c79f53b3c0a66f24baeef4330418f11dcf7d0ae8427961483cd429ae</p>
-<p>jupyterlite-0.2.3.tar.gz: 20dcbfd9e1f850c96ffa46a5f3f98116e481d0be198fc482491c15d5411fe510</p>
-<p>jupyterlite-application-0.2.3.tgz: ecf40cf99b05ebd4cef626656fc268fe5b05b652fb8b9ab37e2c34d0d578af67</p>
-<p>jupyterlite-application-extension-0.2.3.tgz: 4d2814e4e1f036c3428a622f4327b25e342cc2bd9dbe73ce2758c2d4da00f79a</p>
-<p>jupyterlite-contents-0.2.3.tgz: 24b9a35fc426158a9c288631f12d4ff0d46592f80bbf5f19cf9f9671f2600cf8</p>
-<p>jupyterlite-iframe-extension-0.2.3.tgz: 17b3ea907cc6c6bdbac2967e95e476b9254f1179602bc15b83089261c9107057</p>
-<p>jupyterlite-javascript-kernel-0.2.3.tgz: 7b0c4edd3e48cdc7bde20a959c2addf2c51dd8cfb201053888d843d4513da368</p>
-<p>jupyterlite-javascript-kernel-extension-0.2.3.tgz: a33739a085723806d87b3ced0b6cba6a9b68824215930465a39e1ddbf258c77f</p>
-<p>jupyterlite-kernel-0.2.3.tgz: 543cc744483e83f6b0493ac73161df3c86730ba2f2a788344857a563a4339c93</p>
-<p>jupyterlite-licenses-0.2.3.tgz: 97bf7d333a182ecc4ceda457b26ca6b58b45697c3607d5492ea6a37d89b3abc2</p>
-<p>jupyterlite-localforage-0.2.3.tgz: 0a5b55ace05f9c36c31623865466895cdbd347a03e51340a9cf51f49a6a7ec09</p>
-<p>jupyterlite-notebook-application-extension-0.2.3.tgz: 3293b57f34332dfc9e013bfa525193956b824de836e7de7c2cc3327562c9bccd</p>
-<p>jupyterlite-repl-extension-0.2.3.tgz: 392f6e60198094b2707c0a74527025857c600939a787e799aa623c20c4341efd</p>
-<p>jupyterlite-server-0.2.3.tgz: e9c8a9635061d1efef77f073b8620ff636860b6189de757b7edb4e6aac05f291</p>
-<p>jupyterlite-server-extension-0.2.3.tgz: 9bad2ecde4781fdd7062e9ae99f7494bab56a538fff6eb2ffef8eacdbb6032f9</p>
-<p>jupyterlite-session-0.2.3.tgz: 56d781cf63870ce8302b97c0606e389f34e2da0c432625c0f8a69d1d7718f4dd</p>
-<p>jupyterlite-settings-0.2.3.tgz: 4fb40f622e871ca24c16856c43b902dd1d3a95603c809801b20c946d1c0d54a5</p>
-<p>jupyterlite-translation-0.2.3.tgz: 5f7080ff5464eb72807f42ebbe26674573e5cea53afcbbe9b15c2713f28d9b74</p>
-<p>jupyterlite-types-0.2.3.tgz: fdd8a876259d16fed9183d53e7150cf5b6758144687dc713d651658e65fcaa5e</p>
-<p>jupyterlite-ui-components-0.2.3.tgz: 59ec903b76a6a3e73ded8201bff1ca0e852b71907cc7d8257e0182a507e6e811</p>
-<p>jupyterlite_core-0.2.3-py3-none-any.whl: a439ce73b84a4c24b1fe60f4ec9fe6b477b4466f49e7bc8d5016f272c28aaa94</p>
-<p>jupyterlite_core-0.2.3.tar.gz: e8733074bda54c811997f5baf60a8c39b712768c2f899d2852a61b12b582a9f8</p>
-<p>jupyterlite_javascript_kernel-0.2.3-py3-none-any.whl: ba0f7b4292305ea946906431653f72987c9d44864770e2ff1980f7ddadf235c3</p>
-<p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.2.3: Publish 0.2.3]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.3</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.3</guid>
-            <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
-<p>jupyterlite-0.2.3-py3-none-any.whl: b5e7cc43c79f53b3c0a66f24baeef4330418f11dcf7d0ae8427961483cd429ae</p>
-<p>jupyterlite-0.2.3.tar.gz: 20dcbfd9e1f850c96ffa46a5f3f98116e481d0be198fc482491c15d5411fe510</p>
-<p>jupyterlite-application-0.2.3.tgz: ecf40cf99b05ebd4cef626656fc268fe5b05b652fb8b9ab37e2c34d0d578af67</p>
-<p>jupyterlite-application-extension-0.2.3.tgz: 4d2814e4e1f036c3428a622f4327b25e342cc2bd9dbe73ce2758c2d4da00f79a</p>
-<p>jupyterlite-contents-0.2.3.tgz: 24b9a35fc426158a9c288631f12d4ff0d46592f80bbf5f19cf9f9671f2600cf8</p>
-<p>jupyterlite-iframe-extension-0.2.3.tgz: 17b3ea907cc6c6bdbac2967e95e476b9254f1179602bc15b83089261c9107057</p>
-<p>jupyterlite-javascript-kernel-0.2.3.tgz: 7b0c4edd3e48cdc7bde20a959c2addf2c51dd8cfb201053888d843d4513da368</p>
-<p>jupyterlite-javascript-kernel-extension-0.2.3.tgz: a33739a085723806d87b3ced0b6cba6a9b68824215930465a39e1ddbf258c77f</p>
-<p>jupyterlite-kernel-0.2.3.tgz: 543cc744483e83f6b0493ac73161df3c86730ba2f2a788344857a563a4339c93</p>
-<p>jupyterlite-licenses-0.2.3.tgz: 97bf7d333a182ecc4ceda457b26ca6b58b45697c3607d5492ea6a37d89b3abc2</p>
-<p>jupyterlite-localforage-0.2.3.tgz: 0a5b55ace05f9c36c31623865466895cdbd347a03e51340a9cf51f49a6a7ec09</p>
-<p>jupyterlite-notebook-application-extension-0.2.3.tgz: 3293b57f34332dfc9e013bfa525193956b824de836e7de7c2cc3327562c9bccd</p>
-<p>jupyterlite-repl-extension-0.2.3.tgz: 392f6e60198094b2707c0a74527025857c600939a787e799aa623c20c4341efd</p>
-<p>jupyterlite-server-0.2.3.tgz: e9c8a9635061d1efef77f073b8620ff636860b6189de757b7edb4e6aac05f291</p>
-<p>jupyterlite-server-extension-0.2.3.tgz: 9bad2ecde4781fdd7062e9ae99f7494bab56a538fff6eb2ffef8eacdbb6032f9</p>
-<p>jupyterlite-session-0.2.3.tgz: 56d781cf63870ce8302b97c0606e389f34e2da0c432625c0f8a69d1d7718f4dd</p>
-<p>jupyterlite-settings-0.2.3.tgz: 4fb40f622e871ca24c16856c43b902dd1d3a95603c809801b20c946d1c0d54a5</p>
-<p>jupyterlite-translation-0.2.3.tgz: 5f7080ff5464eb72807f42ebbe26674573e5cea53afcbbe9b15c2713f28d9b74</p>
-<p>jupyterlite-types-0.2.3.tgz: fdd8a876259d16fed9183d53e7150cf5b6758144687dc713d651658e65fcaa5e</p>
-<p>jupyterlite-ui-components-0.2.3.tgz: 59ec903b76a6a3e73ded8201bff1ca0e852b71907cc7d8257e0182a507e6e811</p>
-<p>jupyterlite_core-0.2.3-py3-none-any.whl: a439ce73b84a4c24b1fe60f4ec9fe6b477b4466f49e7bc8d5016f272c28aaa94</p>
-<p>jupyterlite_core-0.2.3.tar.gz: e8733074bda54c811997f5baf60a8c39b712768c2f899d2852a61b12b582a9f8</p>
-<p>jupyterlite_javascript_kernel-0.2.3-py3-none-any.whl: ba0f7b4292305ea946906431653f72987c9d44864770e2ff1980f7ddadf235c3</p>
-<p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.2.3: Publish 0.2.3]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.2.3</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.2.3</guid>
@@ -506,9 +909,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.2.3: Publish 0.2.3]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.2.3</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.2.3</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.2.3: Publish 0.2.3]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.2.3</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.2.3</guid>
             <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
@@ -570,9 +973,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.2.3: Publish 0.2.3]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.2.3</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.2.3</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.2.3: Publish 0.2.3]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.2.3</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.2.3</guid>
             <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
@@ -634,9 +1037,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.2.3: Publish 0.2.3]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.2.3</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.2.3</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.2.3: Publish 0.2.3]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.2.3</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.2.3</guid>
             <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
@@ -666,9 +1069,73 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.2.3: Publish 0.2.3]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.2.3</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.2.3</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.2.3: Publish 0.2.3]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.2.3</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.2.3</guid>
+            <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
+<p>jupyterlite-0.2.3-py3-none-any.whl: b5e7cc43c79f53b3c0a66f24baeef4330418f11dcf7d0ae8427961483cd429ae</p>
+<p>jupyterlite-0.2.3.tar.gz: 20dcbfd9e1f850c96ffa46a5f3f98116e481d0be198fc482491c15d5411fe510</p>
+<p>jupyterlite-application-0.2.3.tgz: ecf40cf99b05ebd4cef626656fc268fe5b05b652fb8b9ab37e2c34d0d578af67</p>
+<p>jupyterlite-application-extension-0.2.3.tgz: 4d2814e4e1f036c3428a622f4327b25e342cc2bd9dbe73ce2758c2d4da00f79a</p>
+<p>jupyterlite-contents-0.2.3.tgz: 24b9a35fc426158a9c288631f12d4ff0d46592f80bbf5f19cf9f9671f2600cf8</p>
+<p>jupyterlite-iframe-extension-0.2.3.tgz: 17b3ea907cc6c6bdbac2967e95e476b9254f1179602bc15b83089261c9107057</p>
+<p>jupyterlite-javascript-kernel-0.2.3.tgz: 7b0c4edd3e48cdc7bde20a959c2addf2c51dd8cfb201053888d843d4513da368</p>
+<p>jupyterlite-javascript-kernel-extension-0.2.3.tgz: a33739a085723806d87b3ced0b6cba6a9b68824215930465a39e1ddbf258c77f</p>
+<p>jupyterlite-kernel-0.2.3.tgz: 543cc744483e83f6b0493ac73161df3c86730ba2f2a788344857a563a4339c93</p>
+<p>jupyterlite-licenses-0.2.3.tgz: 97bf7d333a182ecc4ceda457b26ca6b58b45697c3607d5492ea6a37d89b3abc2</p>
+<p>jupyterlite-localforage-0.2.3.tgz: 0a5b55ace05f9c36c31623865466895cdbd347a03e51340a9cf51f49a6a7ec09</p>
+<p>jupyterlite-notebook-application-extension-0.2.3.tgz: 3293b57f34332dfc9e013bfa525193956b824de836e7de7c2cc3327562c9bccd</p>
+<p>jupyterlite-repl-extension-0.2.3.tgz: 392f6e60198094b2707c0a74527025857c600939a787e799aa623c20c4341efd</p>
+<p>jupyterlite-server-0.2.3.tgz: e9c8a9635061d1efef77f073b8620ff636860b6189de757b7edb4e6aac05f291</p>
+<p>jupyterlite-server-extension-0.2.3.tgz: 9bad2ecde4781fdd7062e9ae99f7494bab56a538fff6eb2ffef8eacdbb6032f9</p>
+<p>jupyterlite-session-0.2.3.tgz: 56d781cf63870ce8302b97c0606e389f34e2da0c432625c0f8a69d1d7718f4dd</p>
+<p>jupyterlite-settings-0.2.3.tgz: 4fb40f622e871ca24c16856c43b902dd1d3a95603c809801b20c946d1c0d54a5</p>
+<p>jupyterlite-translation-0.2.3.tgz: 5f7080ff5464eb72807f42ebbe26674573e5cea53afcbbe9b15c2713f28d9b74</p>
+<p>jupyterlite-types-0.2.3.tgz: fdd8a876259d16fed9183d53e7150cf5b6758144687dc713d651658e65fcaa5e</p>
+<p>jupyterlite-ui-components-0.2.3.tgz: 59ec903b76a6a3e73ded8201bff1ca0e852b71907cc7d8257e0182a507e6e811</p>
+<p>jupyterlite_core-0.2.3-py3-none-any.whl: a439ce73b84a4c24b1fe60f4ec9fe6b477b4466f49e7bc8d5016f272c28aaa94</p>
+<p>jupyterlite_core-0.2.3.tar.gz: e8733074bda54c811997f5baf60a8c39b712768c2f899d2852a61b12b582a9f8</p>
+<p>jupyterlite_javascript_kernel-0.2.3-py3-none-any.whl: ba0f7b4292305ea946906431653f72987c9d44864770e2ff1980f7ddadf235c3</p>
+<p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/session@0.2.3: Publish 0.2.3]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.2.3</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.2.3</guid>
+            <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
+<p>jupyterlite-0.2.3-py3-none-any.whl: b5e7cc43c79f53b3c0a66f24baeef4330418f11dcf7d0ae8427961483cd429ae</p>
+<p>jupyterlite-0.2.3.tar.gz: 20dcbfd9e1f850c96ffa46a5f3f98116e481d0be198fc482491c15d5411fe510</p>
+<p>jupyterlite-application-0.2.3.tgz: ecf40cf99b05ebd4cef626656fc268fe5b05b652fb8b9ab37e2c34d0d578af67</p>
+<p>jupyterlite-application-extension-0.2.3.tgz: 4d2814e4e1f036c3428a622f4327b25e342cc2bd9dbe73ce2758c2d4da00f79a</p>
+<p>jupyterlite-contents-0.2.3.tgz: 24b9a35fc426158a9c288631f12d4ff0d46592f80bbf5f19cf9f9671f2600cf8</p>
+<p>jupyterlite-iframe-extension-0.2.3.tgz: 17b3ea907cc6c6bdbac2967e95e476b9254f1179602bc15b83089261c9107057</p>
+<p>jupyterlite-javascript-kernel-0.2.3.tgz: 7b0c4edd3e48cdc7bde20a959c2addf2c51dd8cfb201053888d843d4513da368</p>
+<p>jupyterlite-javascript-kernel-extension-0.2.3.tgz: a33739a085723806d87b3ced0b6cba6a9b68824215930465a39e1ddbf258c77f</p>
+<p>jupyterlite-kernel-0.2.3.tgz: 543cc744483e83f6b0493ac73161df3c86730ba2f2a788344857a563a4339c93</p>
+<p>jupyterlite-licenses-0.2.3.tgz: 97bf7d333a182ecc4ceda457b26ca6b58b45697c3607d5492ea6a37d89b3abc2</p>
+<p>jupyterlite-localforage-0.2.3.tgz: 0a5b55ace05f9c36c31623865466895cdbd347a03e51340a9cf51f49a6a7ec09</p>
+<p>jupyterlite-notebook-application-extension-0.2.3.tgz: 3293b57f34332dfc9e013bfa525193956b824de836e7de7c2cc3327562c9bccd</p>
+<p>jupyterlite-repl-extension-0.2.3.tgz: 392f6e60198094b2707c0a74527025857c600939a787e799aa623c20c4341efd</p>
+<p>jupyterlite-server-0.2.3.tgz: e9c8a9635061d1efef77f073b8620ff636860b6189de757b7edb4e6aac05f291</p>
+<p>jupyterlite-server-extension-0.2.3.tgz: 9bad2ecde4781fdd7062e9ae99f7494bab56a538fff6eb2ffef8eacdbb6032f9</p>
+<p>jupyterlite-session-0.2.3.tgz: 56d781cf63870ce8302b97c0606e389f34e2da0c432625c0f8a69d1d7718f4dd</p>
+<p>jupyterlite-settings-0.2.3.tgz: 4fb40f622e871ca24c16856c43b902dd1d3a95603c809801b20c946d1c0d54a5</p>
+<p>jupyterlite-translation-0.2.3.tgz: 5f7080ff5464eb72807f42ebbe26674573e5cea53afcbbe9b15c2713f28d9b74</p>
+<p>jupyterlite-types-0.2.3.tgz: fdd8a876259d16fed9183d53e7150cf5b6758144687dc713d651658e65fcaa5e</p>
+<p>jupyterlite-ui-components-0.2.3.tgz: 59ec903b76a6a3e73ded8201bff1ca0e852b71907cc7d8257e0182a507e6e811</p>
+<p>jupyterlite_core-0.2.3-py3-none-any.whl: a439ce73b84a4c24b1fe60f4ec9fe6b477b4466f49e7bc8d5016f272c28aaa94</p>
+<p>jupyterlite_core-0.2.3.tar.gz: e8733074bda54c811997f5baf60a8c39b712768c2f899d2852a61b12b582a9f8</p>
+<p>jupyterlite_javascript_kernel-0.2.3-py3-none-any.whl: ba0f7b4292305ea946906431653f72987c9d44864770e2ff1980f7ddadf235c3</p>
+<p>jupyterlite_javascript_kernel-0.2.3.tar.gz: 61a8a189b59ed697f903279477b06013bce9b2bd3135204129ba13bed2d1a054</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.2.3: Publish 0.2.3]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.3</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.2.3</guid>
             <pubDate>Mon, 22 Jan 2024 19:23:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: ed47bc70c1198d07b9cf0488ce29363aac1b353677e987d60e1480ab3ed2a882</p>
@@ -743,9 +1210,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.4]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.4</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.4</guid>
+            <title><![CDATA[Release notes from v8: 12.3.4-pgo: Version 12.3.4]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.4-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.4-pgo</guid>
             <pubDate>Mon, 22 Jan 2024 18:52:37 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I98473e34840a51fce696cae5e548b62fb72d6f97<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5225821" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5225821</a><br>
@@ -754,9 +1221,9 @@ Cr-Commit-Position: refs/heads/12.3.4@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/75a2f23ea3a2221ca8bff42e8c876f2c0241081b/hovercard" href="https://github.com/v8/v8/commit/75a2f23ea3a2221ca8bff42e8c876f2c0241081b"><tt>75a2f23</tt></a>-refs/heads/main@{#91940}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.4-pgo: Version 12.3.4]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.4-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.4-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.4]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.4</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.4</guid>
             <pubDate>Mon, 22 Jan 2024 18:52:37 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I98473e34840a51fce696cae5e548b62fb72d6f97<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5225821" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5225821</a><br>
@@ -801,9 +1268,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/marimo-team/marimo/compare/0.1.79...0.1.80"><tt>0.1.79...0.1.80</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.3]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.3</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.3</guid>
+            <title><![CDATA[Release notes from v8: 12.3.3-pgo: Version 12.3.3]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.3-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.3-pgo</guid>
             <pubDate>Mon, 22 Jan 2024 17:58:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ic1ab5a20a03032e80a6ede78b21cd979ac4e72fb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5225820" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5225820</a><br>
@@ -812,9 +1279,9 @@ Cr-Commit-Position: refs/heads/12.3.3@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7ec811a0c188d05726c36667f3a6e157677de8bc/hovercard" href="https://github.com/v8/v8/commit/7ec811a0c188d05726c36667f3a6e157677de8bc"><tt>7ec811a</tt></a>-refs/heads/main@{#91939}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.3-pgo: Version 12.3.3]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.3-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.3-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.3]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.3</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.3</guid>
             <pubDate>Mon, 22 Jan 2024 17:58:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ic1ab5a20a03032e80a6ede78b21cd979ac4e72fb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5225820" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5225820</a><br>
@@ -871,9 +1338,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/docker/compose/compare/v2.24.1...v2.24.2"><tt>v2.24.1...v2.24.2</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.2]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.2</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.2</guid>
+            <title><![CDATA[Release notes from v8: 12.3.2-pgo: Version 12.3.2]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.2-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.2-pgo</guid>
             <pubDate>Mon, 22 Jan 2024 15:52:42 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I569d980a4c21eb79762f75cec390df4831f34ab0<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5223704" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5223704</a><br>
@@ -882,9 +1349,9 @@ Cr-Commit-Position: refs/heads/12.3.2@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/da3002f95e3091bfe04ceb4f7befc557c7599b01/hovercard" href="https://github.com/v8/v8/commit/da3002f95e3091bfe04ceb4f7befc557c7599b01"><tt>da3002f</tt></a>-refs/heads/main@{#91938}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.2-pgo: Version 12.3.2]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.2-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.2-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.2]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.2</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.2</guid>
             <pubDate>Mon, 22 Jan 2024 15:52:42 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I569d980a4c21eb79762f75cec390df4831f34ab0<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5223704" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5223704</a><br>
@@ -1242,80 +1709,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>💻 We're looking for DevOps engineers to join Ghost: <a href="https://careers.ghost.org/devops-engineer" rel="nofollow">https://careers.ghost.org/devops-engineer</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Mon, 22 Jan 2024 05:38:19 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-2150+ge68decab0
-Build type: RelWithDebInfo
-LuaJIT 2.1.1703358377"><pre class="notranslate"><code>NVIM v0.10.0-dev-2150+ge68decab0
-Build type: RelWithDebInfo
-LuaJIT 2.1.1703358377
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
-that work on older glibc versions can find them at<br>
-<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/wiki/Installing-Neovim">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="f8cda7d203e5cd10321bea7ee5b5d8b2f2a78f109ffffe02da52b404efc79ff6  nvim-linux64.tar.gz
-5d68a6999a6c1cba78509bebd0bdcaae121187c865422338a39db8b9f422ea93  nvim.appimage
-f21bdd52d589363c6f61764706a0535847f4a1b6b18e301f012d0d8929fc676f  nvim.appimage.zsync
-3bfe0232e56942cb05305ec71c40f30c0bb9812a03f563dbdd3264db34d54b07  nvim-macos.tar.gz
-36076d54a827307047b5edb0d3e2ed125520e416372f46b20355e4ea532caf59  nvim-win64.zip
-32c6f1ff20b9e6638a17d748fcad3c23664bf8bcfdff4b13e4e930ba45eb203a  nvim-win64.msi"><pre class="notranslate"><code>f8cda7d203e5cd10321bea7ee5b5d8b2f2a78f109ffffe02da52b404efc79ff6  nvim-linux64.tar.gz
-5d68a6999a6c1cba78509bebd0bdcaae121187c865422338a39db8b9f422ea93  nvim.appimage
-f21bdd52d589363c6f61764706a0535847f4a1b6b18e301f012d0d8929fc676f  nvim.appimage.zsync
-3bfe0232e56942cb05305ec71c40f30c0bb9812a03f563dbdd3264db34d54b07  nvim-macos.tar.gz
-36076d54a827307047b5edb0d3e2ed125520e416372f46b20355e4ea532caf59  nvim-win64.zip
-32c6f1ff20b9e6638a17d748fcad3c23664bf8bcfdff4b13e4e930ba45eb203a  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from solana: Mainnet - v1.17.17]]></title>
             <link>https://github.com/solana-labs/solana/releases/tag/v1.17.17</link>
             <guid>https://github.com/solana-labs/solana/releases/tag/v1.17.17</guid>
@@ -1547,62 +1940,6 @@ f21bdd52d589363c6f61764706a0535847f4a1b6b18e301f012d0d8929fc676f  nvim.appimage.
 <li><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1857481882" data-permission-text="Title is private" data-url="https://github.com/Unitech/pm2/issues/5660" data-hovercard-type="pull_request" data-hovercard-url="/Unitech/pm2/pull/5660/hovercard" href="https://github.com/Unitech/pm2/pull/5660">#5660</a> Fix matching logic for logs from namespace when lines = 0 <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bawjensen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bawjensen">@bawjensen</a></li>
 <li>fix "vulnerabilities" in axios module</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from vagrant: 2.4.2.dev+000178-d5a28aea]]></title>
-            <link>https://github.com/hashicorp/vagrant/releases/tag/2.4.2.dev%2B000178-d5a28aea</link>
-            <guid>https://github.com/hashicorp/vagrant/releases/tag/2.4.2.dev%2B000178-d5a28aea</guid>
-            <pubDate>Sat, 20 Jan 2024 05:27:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Vagrant nightly release build</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pandas: Pandas 2.2.0]]></title>
-            <link>https://github.com/pandas-dev/pandas/releases/tag/v2.2.0</link>
-            <guid>https://github.com/pandas-dev/pandas/releases/tag/v2.2.0</guid>
-            <pubDate>Sat, 20 Jan 2024 04:31:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>We are pleased to announce the release of pandas 2.2.0.<br>
-This release includes some new features, bug fixes, and performance improvements. We recommend that all users upgrade to this version.</p>
-<p>See the <a href="https://pandas.pydata.org/pandas-docs/version/2.2.0/whatsnew/v2.2.0.html" rel="nofollow">full whatsnew</a> for a list of all the changes.<br>
-Pandas 2.2.0 supports Python 3.9 and higher.</p>
-<p>The release will be available on the defaults and conda-forge channels:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="conda install pandas"><pre class="notranslate"><code>conda install pandas
-</code></pre></div>
-<p>Or via PyPI:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="python3 -m pip install --upgrade pandas"><pre class="notranslate"><code>python3 -m pip install --upgrade pandas
-</code></pre></div>
-<p>Please report any issues with the release on the <a href="https://github.com/pandas-dev/pandas/issues">pandas issue tracker</a>.</p>
-<p>Thanks to all the contributors who made this release possible.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.3.105-nightly-20240120.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.3.105-nightly-20240120.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.105-nightly-20240120.1</guid>
-            <pubDate>Sat, 20 Jan 2024 04:12:30 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from keras: Keras 3.0.3 release]]></title>
-            <link>https://github.com/keras-team/keras/releases/tag/v3.0.3</link>
-            <guid>https://github.com/keras-team/keras/releases/tag/v3.0.3</guid>
-            <pubDate>Sat, 20 Jan 2024 01:45:23 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This is a minor Keras release.</p>
-<h2>What's Changed</h2>
-<ul>
-<li>Add built-in LoRA (low-rank adaptation) API to all relevant layers (<code>Dense</code>, <code>EinsumDense</code>, <code>Embedding</code>).</li>
-<li>Add <code>SwapEMAWeights</code> callback to make it easier to evaluate model metrics using EMA weights during training.</li>
-<li>All <code>DataAdapters</code> now create a native iterator for each backend, improving performance.</li>
-<li>Add built-in prefetching for JAX, improving performance.</li>
-<li>The <code>bfloat16</code> dtype is now allowed in the global <code>set_dtype</code> configuration utility.</li>
-<li>Bug fixes and performance improvements.</li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kiraksi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kiraksi">@kiraksi</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2051907051" data-permission-text="Title is private" data-url="https://github.com/keras-team/keras/issues/18977" data-hovercard-type="pull_request" data-hovercard-url="/keras-team/keras/pull/18977/hovercard" href="https://github.com/keras-team/keras/pull/18977">#18977</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dugujiujian1999/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dugujiujian1999">@dugujiujian1999</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2062074093" data-permission-text="Title is private" data-url="https://github.com/keras-team/keras/issues/19010" data-hovercard-type="pull_request" data-hovercard-url="/keras-team/keras/pull/19010/hovercard" href="https://github.com/keras-team/keras/pull/19010">#19010</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/neo-alex/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/neo-alex">@neo-alex</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2057944177" data-permission-text="Title is private" data-url="https://github.com/keras-team/keras/issues/18997" data-hovercard-type="pull_request" data-hovercard-url="/keras-team/keras/pull/18997/hovercard" href="https://github.com/keras-team/keras/pull/18997">#18997</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anas-rz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anas-rz">@anas-rz</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081075479" data-permission-text="Title is private" data-url="https://github.com/keras-team/keras/issues/19057" data-hovercard-type="pull_request" data-hovercard-url="/keras-team/keras/pull/19057/hovercard" href="https://github.com/keras-team/keras/pull/19057">#19057</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/keras-team/keras/compare/v3.0.2...v3.0.3"><tt>v3.0.2...v3.0.3</tt></a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
