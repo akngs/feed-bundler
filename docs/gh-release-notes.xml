@@ -4,21 +4,404 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 02 Feb 2024 00:20:53 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 02 Feb 2024 06:06:45 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118969: [export] support non-persistent buffers (#118969)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118969</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118969</guid>
+            <pubDate>Fri, 02 Feb 2024 05:21:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2114072697" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/118969" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/118969/hovercard" href="https://github.com/pytorch/pytorch/pull/118969">#118969</a></p>
+<p>X-link: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2114063065" data-permission-text="Title is private" data-url="https://github.com/pytorch/executorch/issues/1817" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/executorch/pull/1817/hovercard" href="https://github.com/pytorch/executorch/pull/1817">pytorch/executorch#1817</a></p>
+<p>Basic support for non-persistent buffers, which are buffers that do not show up in the state dict.</p>
+<p>One weird twist is that most of our other systems (FX, aot_export, dynamo) have completely buggy handling of non-persistent buffers. I tried to go on a wild goose chase to fix them all, but it got to be too much. So I introduced some sad rewrite passes in <code>_export</code> make the final state dict correctly align with the original module's state dict.</p>
+<p>This exposed some bugs/ambiguous handling of parameters/buffers in existing test code. For example, <code>TestSaveLoad.test_save_buffer</code> traced over a module that was not in the root module hierarchy and caused some weird behavior. I think we should error explicitly on use cases like this: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2102626082" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/118410" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/118410/hovercard" href="https://github.com/pytorch/pytorch/issues/118410">#118410</a>. For now I just rewrote the tests or skipped them.</p>
+<p>As a side effect, this diff tightened up quite a few sloppy  behaviors around state dict handling:</p>
+<ul>
+<li>Tensor attributes were getting promoted to be buffers—bad!</li>
+<li>Tracing through a module not in the children of the root module would add its parameters/buffers to the state dict—bad!</li>
+</ul>
+<p>This behavior is unlikely to show up in user code since the model would be totally broken, but did show up in a bunch of tests.</p>
+<p>#buildmore</p>
+<p>Test Plan:<br>
+unit tests<br>
+sandcastle</p>
+<p>Differential Revision: D53340041</p>
+<p>fbshipit-source-id: 0dcba4843608a7bb6017b54289ee88d3da8ab41c</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Fri, 02 Feb 2024 05:14:28 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-2258+g1405e5c8c
+Build type: RelWithDebInfo
+LuaJIT 2.1.1706708390"><pre class="notranslate"><code>NVIM v0.10.0-dev-2258+g1405e5c8c
+Build type: RelWithDebInfo
+LuaJIT 2.1.1706708390
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS</h3>
+<ol>
+<li>Download <strong>nvim-macos.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
+<li>Run <code>./nvim-macos/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
+that work on older glibc versions can find them at<br>
+<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/blob/master/INSTALL.md#install-from-package">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="fcd03d3be2d3ce96820818a7f579e89cb71aa1cd63dbecfce1a1f4be8a8d2539  nvim-linux64.tar.gz
+9eeaa29ecab05f47aa4451a9b956dc94df5275ed2051944ac06c3ffbb0c0a3eb  nvim.appimage
+57c7fa44c82867289bcaf148c251e985bfa9e54836500fa023cabf7578133b82  nvim.appimage.zsync
+85c9a8e7a1043d70eeec12642a32e7467d4b9ba5575168b1cc0cfced8a5effb9  nvim-macos.tar.gz
+6c36e158671fa4e010fc34d7465d207aa7d5ad0bab8630a1dc1a2fc116fc310f  nvim-win64.zip
+f3d43c58e3088989c3d89c78f7c74b55480abbfe81508d0566b86e0e7b0140c7  nvim-win64.msi"><pre class="notranslate"><code>fcd03d3be2d3ce96820818a7f579e89cb71aa1cd63dbecfce1a1f4be8a8d2539  nvim-linux64.tar.gz
+9eeaa29ecab05f47aa4451a9b956dc94df5275ed2051944ac06c3ffbb0c0a3eb  nvim.appimage
+57c7fa44c82867289bcaf148c251e985bfa9e54836500fa023cabf7578133b82  nvim.appimage.zsync
+85c9a8e7a1043d70eeec12642a32e7467d4b9ba5575168b1cc0cfced8a5effb9  nvim-macos.tar.gz
+6c36e158671fa4e010fc34d7465d207aa7d5ad0bab8630a1dc1a2fc116fc310f  nvim-win64.zip
+f3d43c58e3088989c3d89c78f7c74b55480abbfe81508d0566b86e0e7b0140c7  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from code-server: v4.21.0-rc.1]]></title>
+            <link>https://github.com/coder/code-server/releases/tag/v4.21.0-rc.1</link>
+            <guid>https://github.com/coder/code-server/releases/tag/v4.21.0-rc.1</guid>
+            <pubDate>Fri, 02 Feb 2024 05:03:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Code v1.86.0</p>
+<h2>Changed</h2>
+<ul>
+<li>Updated to Code 1.86.0</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118901: Update on "[dynamo] Skip dynamo when inside a functorch context"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118901</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118901</guid>
+            <pubDate>Fri, 02 Feb 2024 05:01:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118947: remove non-PIP space]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118947</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118947</guid>
+            <pubDate>Fri, 02 Feb 2024 02:43:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Co-authored-by: Jeffrey Wan <a href="mailto:soulitzer@gmail.com">soulitzer@gmail.com</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118917: Update on "[dtensor] add op support for nll_loss_forward"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118917</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118917</guid>
+            <pubDate>Fri, 02 Feb 2024 02:31:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This is part of the work to support cross entropy in dtensor.</p>
+<p>This PR doesn't support nll_loss computation with input sharded on the channel dimension yet. In that case, redistribution to Replicate is needed in sharding propagation.</p>
+<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu fegin XilunWu wanchaol fduwjj wz337 wconstab yf225</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from ruff: v0.2.0]]></title>
+            <link>https://github.com/astral-sh/ruff/releases/tag/v0.2.0</link>
+            <guid>https://github.com/astral-sh/ruff/releases/tag/v0.2.0</guid>
+            <pubDate>Fri, 02 Feb 2024 02:20:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Check out the <a href="https://astral.sh/blog/ruff-v0.2.0" rel="nofollow">blog post</a> for a migration guide and overview of the changes!</p>
+<h2>Changes</h2>
+<h3>Breaking changes</h3>
+<ul>
+<li>The <code>NURSERY</code> selector cannot be used anymore</li>
+<li>Legacy selection of nursery rules by exact codes is no longer allowed without preview enabled</li>
+</ul>
+<p>See also, the "Remapped rules" section which may result in disabled rules.</p>
+<h3>Deprecations</h3>
+<p>The following rules are now deprecated:</p>
+<ul>
+<li><a href="https://docs.astral.sh/ruff/rules/missing-type-self/" rel="nofollow"><code>missing-type-self</code></a> (<code>ANN101</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/missing-type-cls/" rel="nofollow"><code>missing-type-cls</code></a> (<code>ANN102</code>)</li>
+</ul>
+<p>The following command line options are now deprecated:</p>
+<ul>
+<li><code>--show-source</code>; use <code>--output-format full</code> instead</li>
+<li><code>--no-show-source</code>; use <code>--output-format concise</code> instead</li>
+<li><code>--output-format text</code>; use <code>full</code> or <code>concise</code> instead</li>
+</ul>
+<p>The following settings have moved and the previous name is deprecated:</p>
+<ul>
+<li><code>ruff.allowed-confusables</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_allowed-confusables" rel="nofollow"><code>ruff.lint.allowed-confusables</code></a></li>
+<li><code>ruff.dummy-variable-rgx</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_dummy-variable-rgx" rel="nofollow"><code>ruff.lint.dummy-variable-rgx</code></a></li>
+<li><code>ruff.explicit-preview-rules</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_explicit-preview-rules" rel="nofollow"><code>ruff.lint.explicit-preview-rules</code></a></li>
+<li><code>ruff.extend-fixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-fixable" rel="nofollow"><code>ruff.lint.extend-fixable</code></a></li>
+<li><code>ruff.extend-ignore</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-ignore" rel="nofollow"><code>ruff.lint.extend-ignore</code></a></li>
+<li><code>ruff.extend-per-file-ignores</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-per-file-ignores" rel="nofollow"><code>ruff.lint.extend-per-file-ignores</code></a></li>
+<li><code>ruff.extend-safe-fixes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-safe-fixes" rel="nofollow"><code>ruff.lint.extend-safe-fixes</code></a></li>
+<li><code>ruff.extend-select</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-select" rel="nofollow"><code>ruff.lint.extend-select</code></a></li>
+<li><code>ruff.extend-unfixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-unfixable" rel="nofollow"><code>ruff.lint.extend-unfixable</code></a></li>
+<li><code>ruff.extend-unsafe-fixes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-unsafe-fixes" rel="nofollow"><code>ruff.lint.extend-unsafe-fixes</code></a></li>
+<li><code>ruff.external</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_external" rel="nofollow"><code>ruff.lint.external</code></a></li>
+<li><code>ruff.fixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_fixable" rel="nofollow"><code>ruff.lint.fixable</code></a></li>
+<li><code>ruff.flake8-annotations</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-annotations" rel="nofollow"><code>ruff.lint.flake8-annotations</code></a></li>
+<li><code>ruff.flake8-bandit</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-bandit" rel="nofollow"><code>ruff.lint.flake8-bandit</code></a></li>
+<li><code>ruff.flake8-bugbear</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-bugbear" rel="nofollow"><code>ruff.lint.flake8-bugbear</code></a></li>
+<li><code>ruff.flake8-builtins</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-builtins" rel="nofollow"><code>ruff.lint.flake8-builtins</code></a></li>
+<li><code>ruff.flake8-comprehensions</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-comprehensions" rel="nofollow"><code>ruff.lint.flake8-comprehensions</code></a></li>
+<li><code>ruff.flake8-copyright</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-copyright" rel="nofollow"><code>ruff.lint.flake8-copyright</code></a></li>
+<li><code>ruff.flake8-errmsg</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-errmsg" rel="nofollow"><code>ruff.lint.flake8-errmsg</code></a></li>
+<li><code>ruff.flake8-gettext</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-gettext" rel="nofollow"><code>ruff.lint.flake8-gettext</code></a></li>
+<li><code>ruff.flake8-implicit-str-concat</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-implicit-str-concat" rel="nofollow"><code>ruff.lint.flake8-implicit-str-concat</code></a></li>
+<li><code>ruff.flake8-import-conventions</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-import-conventions" rel="nofollow"><code>ruff.lint.flake8-import-conventions</code></a></li>
+<li><code>ruff.flake8-pytest-style</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-pytest-style" rel="nofollow"><code>ruff.lint.flake8-pytest-style</code></a></li>
+<li><code>ruff.flake8-quotes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-quotes" rel="nofollow"><code>ruff.lint.flake8-quotes</code></a></li>
+<li><code>ruff.flake8-self</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-self" rel="nofollow"><code>ruff.lint.flake8-self</code></a></li>
+<li><code>ruff.flake8-tidy-imports</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-tidy-imports" rel="nofollow"><code>ruff.lint.flake8-tidy-imports</code></a></li>
+<li><code>ruff.flake8-type-checking</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-type-checking" rel="nofollow"><code>ruff.lint.flake8-type-checking</code></a></li>
+<li><code>ruff.flake8-unused-arguments</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-unused-arguments" rel="nofollow"><code>ruff.lint.flake8-unused-arguments</code></a></li>
+<li><code>ruff.ignore</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_ignore" rel="nofollow"><code>ruff.lint.ignore</code></a></li>
+<li><code>ruff.ignore-init-module-imports</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_ignore-init-module-imports" rel="nofollow"><code>ruff.lint.ignore-init-module-imports</code></a></li>
+<li><code>ruff.isort</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_isort" rel="nofollow"><code>ruff.lint.isort</code></a></li>
+<li><code>ruff.logger-objects</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_logger-objects" rel="nofollow"><code>ruff.lint.logger-objects</code></a></li>
+<li><code>ruff.mccabe</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_mccabe" rel="nofollow"><code>ruff.lint.mccabe</code></a></li>
+<li><code>ruff.pep8-naming</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pep8-naming" rel="nofollow"><code>ruff.lint.pep8-naming</code></a></li>
+<li><code>ruff.per-file-ignores</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_per-file-ignores" rel="nofollow"><code>ruff.lint.per-file-ignores</code></a></li>
+<li><code>ruff.pycodestyle</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pycodestyle" rel="nofollow"><code>ruff.lint.pycodestyle</code></a></li>
+<li><code>ruff.pydocstyle</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pydocstyle" rel="nofollow"><code>ruff.lint.pydocstyle</code></a></li>
+<li><code>ruff.pyflakes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pyflakes" rel="nofollow"><code>ruff.lint.pyflakes</code></a></li>
+<li><code>ruff.pylint</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pylint" rel="nofollow"><code>ruff.lint.pylint</code></a></li>
+<li><code>ruff.pyupgrade</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pyupgrade" rel="nofollow"><code>ruff.lint.pyupgrade</code></a></li>
+<li><code>ruff.select</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_select" rel="nofollow"><code>ruff.lint.select</code></a></li>
+<li><code>ruff.task-tags</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_task-tags" rel="nofollow"><code>ruff.lint.task-tags</code></a></li>
+<li><code>ruff.typing-modules</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_typing-modules" rel="nofollow"><code>ruff.lint.typing-modules</code></a></li>
+<li><code>ruff.unfixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_unfixable" rel="nofollow"><code>ruff.lint.unfixable</code></a></li>
+</ul>
+<h3>Remapped rules</h3>
+<p>The following rules have been remapped to new codes:</p>
+<ul>
+<li><a href="https://docs.astral.sh/ruff/rules/raise-without-from-inside-except/" rel="nofollow"><code>raise-without-from-inside-except</code></a>: <code>TRY200</code> to <code>B904</code></li>
+<li><a href="https://docs.astral.sh/ruff/rules/suspicious-eval-usage/" rel="nofollow"><code>suspicious-eval-usage</code></a>: <code>PGH001</code> to <code>S307</code></li>
+<li><a href="https://docs.astral.sh/ruff/rules/logging-warn/" rel="nofollow"><code>logging-warn</code></a>: <code>PGH002</code> to <code>G010</code></li>
+<li><a href="https://docs.astral.sh/ruff/rules/static-key-dict-comprehension" rel="nofollow"><code>static-key-dict-comprehension</code></a>: <code>RUF011</code> to <code>B035</code></li>
+<li><a href="https://docs.astral.sh/ruff/rules/runtime-string-union" rel="nofollow"><code>runtime-string-union</code></a>: <code>TCH006</code> to <code>TCH010</code></li>
+</ul>
+<h3>Stabilizations</h3>
+<p>The following rules have been stabilized and are no longer in preview:</p>
+<ul>
+<li><a href="https://docs.astral.sh/ruff/rules/trio-timeout-without-await" rel="nofollow"><code>trio-timeout-without-await</code></a> (<code>TRIO100</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/trio-sync-call" rel="nofollow"><code>trio-sync-call</code></a> (<code>TRIO105</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/trio-async-function-with-timeout" rel="nofollow"><code>trio-async-function-with-timeout</code></a> (<code>TRIO109</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/trio-unneeded-sleep" rel="nofollow"><code>trio-unneeded-sleep</code></a> (<code>TRIO110</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/trio-zero-sleep-call" rel="nofollow"><code>trio-zero-sleep-call</code></a> (<code>TRIO115</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-escaped-quote" rel="nofollow"><code>unnecessary-escaped-quote</code></a> (<code>Q004</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/enumerate-for-loop" rel="nofollow"><code>enumerate-for-loop</code></a> (<code>SIM113</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/zip-dict-keys-and-values" rel="nofollow"><code>zip-dict-keys-and-values</code></a> (<code>SIM911</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/timeout-error-alias" rel="nofollow"><code>timeout-error-alias</code></a> (<code>UP041</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/flask-debug-true" rel="nofollow"><code>flask-debug-true</code></a> (<code>S201</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/tarfile-unsafe-members" rel="nofollow"><code>tarfile-unsafe-members</code></a> (<code>S202</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/ssl-insecure-version" rel="nofollow"><code>ssl-insecure-version</code></a> (<code>S502</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/ssl-with-bad-defaults" rel="nofollow"><code>ssl-with-bad-defaults</code></a> (<code>S503</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/ssl-with-no-version" rel="nofollow"><code>ssl-with-no-version</code></a> (<code>S504</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/weak-cryptographic-key" rel="nofollow"><code>weak-cryptographic-key</code></a> (<code>S505</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/ssh-no-host-key-verification" rel="nofollow"><code>ssh-no-host-key-verification</code></a> (<code>S507</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/django-raw-sql" rel="nofollow"><code>django-raw-sql</code></a> (<code>S611</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/mako-templates" rel="nofollow"><code>mako-templates</code></a> (<code>S702</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/generator-return-from-iter-method" rel="nofollow"><code>generator-return-from-iter-method</code></a> (<code>PYI058</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/runtime-string-union" rel="nofollow"><code>runtime-string-union</code></a> (<code>TCH006</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/numpy2-deprecation" rel="nofollow"><code>numpy2-deprecation</code></a> (<code>NPY201</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/quadratic-list-summation" rel="nofollow"><code>quadratic-list-summation</code></a> (<code>RUF017</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/assignment-in-assert" rel="nofollow"><code>assignment-in-assert</code></a> (<code>RUF018</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-key-check" rel="nofollow"><code>unnecessary-key-check</code></a> (<code>RUF019</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/never-union" rel="nofollow"><code>never-union</code></a> (<code>RUF020</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/direct-logger-instantiation" rel="nofollow"><code>direct-logger-instantiation</code></a> (<code>LOG001</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/invalid-get-logger-argument" rel="nofollow"><code>invalid-get-logger-argument</code></a> (<code>LOG002</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/exception-without-exc-info" rel="nofollow"><code>exception-without-exc-info</code></a> (<code>LOG007</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/undocumented-warn" rel="nofollow"><code>undocumented-warn</code></a> (<code>LOG009</code>)</li>
+</ul>
+<p>Fixes for the following rules have been stabilized and are now available without preview:</p>
+<ul>
+<li><a href="https://docs.astral.sh/ruff/rules/triple-single-quotes" rel="nofollow"><code>triple-single-quotes</code></a> (<code>D300</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/non-pep604-annotation" rel="nofollow"><code>non-pep604-annotation</code></a> (<code>UP007</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/dict-get-with-none-default" rel="nofollow"><code>dict-get-with-none-default</code></a> (<code>SIM910</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/in-dict-keys" rel="nofollow"><code>in-dict-keys</code></a> (<code>SIM118</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/collapsible-else-if" rel="nofollow"><code>collapsible-else-if</code></a> (<code>PLR5501</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/if-with-same-arms" rel="nofollow"><code>if-with-same-arms</code></a> (<code>SIM114</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/useless-else-on-loop" rel="nofollow"><code>useless-else-on-loop</code></a> (<code>PLW0120</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-literal-union" rel="nofollow"><code>unnecessary-literal-union</code></a> (<code>PYI030</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-spread" rel="nofollow"><code>unnecessary-spread</code></a> (<code>PIE800</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/error-instead-of-exception" rel="nofollow"><code>error-instead-of-exception</code></a> (<code>TRY400</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/redefined-while-unused" rel="nofollow"><code>redefined-while-unused</code></a> (<code>F811</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/duplicate-value" rel="nofollow"><code>duplicate-value</code></a> (<code>B033</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/multiple-imports-on-one-line" rel="nofollow"><code>multiple-imports-on-one-line</code></a> (<code>E401</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/non-pep585-annotation" rel="nofollow"><code>non-pep585-annotation</code></a> (<code>UP006</code>)</li>
+</ul>
+<p>Fixes for the following rules have been promoted from unsafe to safe:</p>
+<ul>
+<li><a href="https://docs.astral.sh/ruff/rules/unaliased-collections-abc-set-import" rel="nofollow"><code>unaliased-collections-abc-set-import</code></a> (<code>PYI025</code>)</li>
+</ul>
+<p>The following behaviors have been stabilized:</p>
+<ul>
+<li><a href="https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file/" rel="nofollow"><code>module-import-not-at-top-of-file</code></a> (<code>E402</code>) allows <code>sys.path</code> modifications between imports</li>
+<li><a href="https://docs.astral.sh/ruff/rules/reimplemented-container-builtin/" rel="nofollow"><code>reimplemented-container-builtin</code></a> (<code>PIE807</code>) includes lambdas that can be replaced with <code>dict</code></li>
+<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-placeholder/" rel="nofollow"><code>unnecessary-placeholder</code></a> (<code>PIE790</code>) applies to unnecessary ellipses (<code>...</code>)</li>
+<li><a href="https://docs.astral.sh/ruff/rules/if-else-block-instead-of-dict-get/" rel="nofollow"><code>if-else-block-instead-of-dict-get</code></a> (<code>SIM401</code>) applies to <code>if-else</code> expressions</li>
+</ul>
+<h3>Preview features</h3>
+<ul>
+<li>[<code>refurb</code>] Implement <code>metaclass_abcmeta</code> (<code>FURB180</code>) (<a href="https://github.com/astral-sh/ruff/pull/9658" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9658/hovercard">#9658</a>)</li>
+<li>Implement <code>blank_line_after_nested_stub_class</code> preview style (<a href="https://github.com/astral-sh/ruff/pull/9155" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9155/hovercard">#9155</a>)</li>
+<li>The preview rule <a href="https://docs.astral.sh/ruff/rules/and-or-ternary" rel="nofollow"><code>and-or-ternary</code></a> (<code>PLR1706</code>) was removed</li>
+</ul>
+<h3>Bug fixes</h3>
+<ul>
+<li>[<code>flake8-async</code>] Take <code>pathlib.Path</code> into account when analyzing async functions (<a href="https://github.com/astral-sh/ruff/pull/9703" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9703/hovercard">#9703</a>)</li>
+<li>[<code>flake8-return</code>] - fix indentation syntax error (<code>RET505</code>) (<a href="https://github.com/astral-sh/ruff/pull/9705" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9705/hovercard">#9705</a>)</li>
+<li>Detect multi-statement lines in else removal (<a href="https://github.com/astral-sh/ruff/pull/9748" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9748/hovercard">#9748</a>)</li>
+<li><code>RUF022</code>, <code>RUF023</code>: never add two trailing commas to the end of a sequence (<a href="https://github.com/astral-sh/ruff/pull/9698" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9698/hovercard">#9698</a>)</li>
+<li><code>RUF023</code>: Don't sort <code>__match_args__</code>, only <code>__slots__</code> (<a href="https://github.com/astral-sh/ruff/pull/9724" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9724/hovercard">#9724</a>)</li>
+<li>[<code>flake8-simplify</code>] - Fix syntax error in autofix (<code>SIM114</code>) (<a href="https://github.com/astral-sh/ruff/pull/9704" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9704/hovercard">#9704</a>)</li>
+<li>[<code>pylint</code>] Show verbatim constant in <code>magic-value-comparison</code> (<code>PLR2004</code>) (<a href="https://github.com/astral-sh/ruff/pull/9694" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9694/hovercard">#9694</a>)</li>
+<li>Removing trailing whitespace inside multiline strings is unsafe (<a href="https://github.com/astral-sh/ruff/pull/9744" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9744/hovercard">#9744</a>)</li>
+<li>Support <code>IfExp</code> with dual string arms in <code>invalid-envvar-default</code> (<a href="https://github.com/astral-sh/ruff/pull/9734" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9734/hovercard">#9734</a>)</li>
+<li>[<code>pylint</code>] Add <code>__mro_entries__</code> to known dunder methods (<code>PLW3201</code>) (<a href="https://github.com/astral-sh/ruff/pull/9706" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9706/hovercard">#9706</a>)</li>
+</ul>
+<h3>Documentation</h3>
+<ul>
+<li>Removed rules are now retained in the documentation (<a href="https://github.com/astral-sh/ruff/pull/9691" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9691/hovercard">#9691</a>)</li>
+<li>Deprecated rules are now indicated in the documentation (<a href="https://github.com/astral-sh/ruff/pull/9689" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9689/hovercard">#9689</a>)</li>
+</ul>
+<h2>Contributors</h2>
+<ul>
+<li><a href="https://github.com/AlexWaygood">@AlexWaygood</a></li>
+<li><a href="https://github.com/MichaReiser">@MichaReiser</a></li>
+<li><a href="https://github.com/Sai-Suraj-27">@Sai-Suraj-27</a></li>
+<li><a href="https://github.com/alex-700">@alex-700</a></li>
+<li><a href="https://github.com/bswck">@bswck</a></li>
+<li><a href="https://github.com/charliermarsh">@charliermarsh</a></li>
+<li><a href="https://github.com/covracer">@covracer</a></li>
+<li><a href="https://github.com/dhruvmanila">@dhruvmanila</a></li>
+<li><a href="https://github.com/diceroll123">@diceroll123</a></li>
+<li><a href="https://github.com/mikeleppane">@mikeleppane</a></li>
+<li><a href="https://github.com/sanxiyn">@sanxiyn</a></li>
+<li><a href="https://github.com/snowsignal">@snowsignal</a></li>
+<li><a href="https://github.com/zanieb">@zanieb</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: electron v29.0.0-beta.5]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v29.0.0-beta.5</link>
+            <guid>https://github.com/electron/electron/releases/tag/v29.0.0-beta.5</guid>
+            <pubDate>Fri, 02 Feb 2024 02:02:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Note: This is a beta release.  Please file new issues for any bugs you find in it.</p>
+<p>This release is published to npm under the beta tag and can be installed via <code>npm install electron@beta</code>, or <code>npm install electron@29.0.0-beta.5</code>.</p>
+<h1>Release Notes for v29.0.0-beta.5</h1>
+<h2>Fixes</h2>
+<ul>
+<li>Fixed an issue where <code>select-usb-device</code> did not respect the <code>filter</code> option in <code>navigator.usb.requestDevice()</code>. <a href="https://github.com/electron/electron/pull/41197" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41197/hovercard">#41197</a> <span>(Also in <a href="https://github.com/electron/electron/pull/41196" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41196/hovercard">27</a>, <a href="https://github.com/electron/electron/pull/41198" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41198/hovercard">28</a>)</span></li>
+<li>Fixed an issue where the <code>printBackground</code> option in <code>webContents.printToPDF</code> did not work as expected. <a href="https://github.com/electron/electron/pull/41180" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41180/hovercard">#41180</a> <span>(Also in <a href="https://github.com/electron/electron/pull/41179" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41179/hovercard">28</a>)</span></li>
+</ul>
+<h2>Other Changes</h2>
+<ul>
+<li>Updated Chromium to 122.0.6261.18. <a href="https://github.com/electron/electron/pull/41203" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41203/hovercard">#41203</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118946]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118946</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118946</guid>
+            <pubDate>Fri, 02 Feb 2024 01:35:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Relax MKL_INT assumption to int64_t</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118944: [torchelastic][rendezvous] Add option to enable libuv for TCPStore ba…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118944</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118944</guid>
+            <pubDate>Fri, 02 Feb 2024 01:32:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…sed rendezvous backend</p>
+<p>Summary:<br>
+Expose an option to enable libuv in TCPStore based rendezvous backend that will allow better scaling.</p>
+<p>Libuv support has been added recently and allows scaling for more than 2K nodes.</p>
+<p>Test Plan: Unit tests</p>
+<p>Differential Revision: D53335860</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118893: [export] Move _create_graph_module_for_export to torch/export (#118893)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118893</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118893</guid>
+            <pubDate>Fri, 02 Feb 2024 01:01:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p>I have to keep the torch/_export one to not break executorch...</p>
+<p>Test Plan: CI</p>
+<p>Reviewed By: avikchaudhuri</p>
+<p>Differential Revision: D52842750</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118888: Update on "[DCP] Enable filesystem/fsspec auto detection"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118888</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118888</guid>
+            <pubDate>Fri, 02 Feb 2024 01:01:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This API enables the ability to automatically detect whether to use filesystem or fsspec based on the checkpoint_id.</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D53318043/" rel="nofollow">D53318043</a></p>
+<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu XilunWu wanchaol fduwjj wz337 tianyu-l wconstab yf225 LucasLLC</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.45]]></title>
+            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.45</link>
+            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.45</guid>
+            <pubDate>Fri, 02 Feb 2024 00:42:52 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>fix: correctly determine <code>bind:group</code> members (<a href="https://github.com/sveltejs/svelte/pull/10368" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/10368/hovercard">#10368</a>)</p>
+</li>
+<li>
+<p>fix: make inline doc links valid (<a href="https://github.com/sveltejs/svelte/pull/10365" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/10365/hovercard">#10365</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/118936]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118936</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118936</guid>
-            <pubDate>Fri, 02 Feb 2024 00:17:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118936]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118936</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118936</guid>
             <pubDate>Fri, 02 Feb 2024 00:17:33 GMT</pubDate>
             <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
@@ -31,333 +414,6 @@
 <ul>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/57540d17ae4070ebf292a2e341105a836c86f1b6/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/57540d17ae4070ebf292a2e341105a836c86f1b6"><tt>57540d1</tt></a>: Automated Browser Version Update (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2106722538" data-permission-text="Title is private" data-url="https://github.com/SeleniumHQ/selenium/issues/13523" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13523/hovercard" href="https://github.com/SeleniumHQ/selenium/pull/13523">#13523</a>) (Selenium CI Bot) <a href="https://github.com/SeleniumHQ/selenium/pull/13523" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13523/hovercard">#13523</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118813: Update on "Switch capture_pre_autograd impl to functional IR"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118813</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118813</guid>
-            <pubDate>Fri, 02 Feb 2024 00:11:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118776: [export] fix for duplicate constant lifting (#118776)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118776</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118776</guid>
-            <pubDate>Fri, 02 Feb 2024 00:05:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:</p>
-<p>Whenever we access a constant, we emit a <code>get_attr</code> node for it.</p>
-<p>The <code>lift_constants_pass</code> was lifting every <code>get_attr</code> node unconditionally, even if the same target was already lifted. This diff fixes that.</p>
-<p>I also took the liberty of adding some infra to make it easier to unit test passes. GraphBuilder lets you declaratively construct graphs with the right metadata, it's pretty useful for directly inducing the pattern you want to test against.</p>
-<p>Test Plan: added unit test</p>
-<p>Reviewed By: khabinov, angelayi</p>
-<p>Differential Revision: D53278161</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118776: [export] fix for duplicate constant lifting (#118776)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118776</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118776</guid>
-            <pubDate>Fri, 02 Feb 2024 00:05:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:</p>
-<p>Whenever we access a constant, we emit a <code>get_attr</code> node for it.</p>
-<p>The <code>lift_constants_pass</code> was lifting every <code>get_attr</code> node unconditionally, even if the same target was already lifted. This diff fixes that.</p>
-<p>I also took the liberty of adding some infra to make it easier to unit test passes. GraphBuilder lets you declaratively construct graphs with the right metadata, it's pretty useful for directly inducing the pattern you want to test against.</p>
-<p>Test Plan: added unit test</p>
-<p>Reviewed By: khabinov, angelayi</p>
-<p>Differential Revision: D53278161</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118826: Update on "[HigherOrderOp] fix stack trace to report user stack"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118826</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118826</guid>
-            <pubDate>Fri, 02 Feb 2024 00:04:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1936748749" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/111020" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/111020/hovercard" href="https://github.com/pytorch/pytorch/issues/111020">#111020</a></p>
-<p>For the following code:</p>
-<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import torch
-import torch._higher_order_ops.wrap
-
-glob = []
-
-
-def f(x):
-    glob.append(x)
-    return x.clone()
-
-torch.compile(backend='eager', fullgraph=True)
-def g(x):
-    return torch.ops.higher_order.wrap(f, x)
-
-x = torch.randn(3)
-g(x)"><pre><span class="pl-k">import</span> <span class="pl-s1">torch</span>
-<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">_higher_order_ops</span>.<span class="pl-s1">wrap</span>
-
-<span class="pl-s1">glob</span> <span class="pl-c1">=</span> []
-
-
-<span class="pl-k">def</span> <span class="pl-en">f</span>(<span class="pl-s1">x</span>):
-    <span class="pl-s1">glob</span>.<span class="pl-en">append</span>(<span class="pl-s1">x</span>)
-    <span class="pl-k">return</span> <span class="pl-s1">x</span>.<span class="pl-en">clone</span>()
-
-<span class="pl-s1">torch</span>.<span class="pl-en">compile</span>(<span class="pl-s1">backend</span><span class="pl-c1">=</span><span class="pl-s">'eager'</span>, <span class="pl-s1">fullgraph</span><span class="pl-c1">=</span><span class="pl-c1">True</span>)
-<span class="pl-k">def</span> <span class="pl-en">g</span>(<span class="pl-s1">x</span>):
-    <span class="pl-k">return</span> <span class="pl-s1">torch</span>.<span class="pl-s1">ops</span>.<span class="pl-s1">higher_order</span>.<span class="pl-en">wrap</span>(<span class="pl-s1">f</span>, <span class="pl-s1">x</span>)
-
-<span class="pl-s1">x</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-en">randn</span>(<span class="pl-c1">3</span>)
-<span class="pl-en">g</span>(<span class="pl-s1">x</span>)</pre></div>
-<p>The stacktrace now becomes:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="[2024-02-01 15:23:34,691] [0/0] torch._dynamo.variables.higher_order_ops: [WARNING] speculate_subgraph: while introspecting wrap, we were unable to trace function `f` into a single graph. This means that Dynamo was unable to prove safety for this API and will fall back to eager-mode PyTorch, which could lead to a slowdown.
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR] HigherOrderOperator: Mutating a variable not in the current scope (SideEffects)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR] Traceback (most recent call last):
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py&quot;, line 381, in speculate_subgraph
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     output = f.call_function(tx, args, sub_kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py&quot;, line 278, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return super().call_function(tx, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py&quot;, line 86, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return tx.inline_user_function_return(
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 657, in inline_user_function_return
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 2261, in inline_call
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return cls.inline_call_(parent, func, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 2370, in inline_call_
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     tracer.run()
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 787, in run
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     and self.step()
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 750, in step
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     getattr(self, inst.opname)(inst)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 469, in wrapper
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return inner_fn(self, inst)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 1196, in CALL_FUNCTION
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     self.call_function(fn, args, {})
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 651, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     self.push(fn.call_function(self, args, kwargs))
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/misc.py&quot;, line 583, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return self.obj.call_method(tx, self.name, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py&quot;, line 330, in call_method
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return super().call_method(tx, name, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py&quot;, line 241, in call_method
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     tx.output.side_effects.mutation(self)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/side_effects.py&quot;, line 325, in mutation
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     self.check_allowed_side_effect(var)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/side_effects.py&quot;, line 157, in check_allowed_side_effect
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     unimplemented(
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File &quot;/home/yidi/local/pytorch/torch/_dynamo/exc.py&quot;, line 190, in unimplemented
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     raise Unsupported(msg)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR] torch._dynamo.exc.Unsupported: HigherOrderOperator: Mutating a variable not in the current scope (SideEffects)
-Traceback (most recent call last):
-  File &quot;/home/yidi/local/pytorch/test.py&quot;, line 219, in &lt;module&gt;
-    g(x)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/eval_frame.py&quot;, line 453, in _fn
-    return fn(*args, **kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/eval_frame.py&quot;, line 615, in catch_errors
-    return callback(frame, cache_entry, hooks, frame_state)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py&quot;, line 390, in _convert_frame_assert
-    return _compile(
-  File &quot;/home/yidi/local/miniconda3/envs/pytorch-3.10/lib/python3.10/contextlib.py&quot;, line 79, in inner
-    return func(*args, **kwds)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py&quot;, line 650, in _compile
-    guarded_code = compile_inner(code, one_graph, hooks, transform)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/utils.py&quot;, line 248, in time_wrapper
-    r = func(*args, **kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py&quot;, line 531, in compile_inner
-    out_code = transform_code_object(code, transform)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/bytecode_transformation.py&quot;, line 1033, in transform_code_object
-    transformations(instructions, code_options)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py&quot;, line 155, in _fn
-    return fn(*args, **kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py&quot;, line 496, in transform
-    tracer.run()
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 2125, in run
-    super().run()
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 787, in run
-    and self.step()
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 750, in step
-    getattr(self, inst.opname)(inst)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 469, in wrapper
-    return inner_fn(self, inst)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 1196, in CALL_FUNCTION
-    self.call_function(fn, args, {})
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 651, in call_function
-    self.push(fn.call_function(self, args, kwargs))
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py&quot;, line 1227, in call_function
-    p_args, p_kwargs, example_value, body_r, treespec, _ = self.create_wrapped_node(
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py&quot;, line 1190, in create_wrapped_node
-    ) = speculate_subgraph(
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py&quot;, line 453, in speculate_subgraph
-    raise ex
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py&quot;, line 381, in speculate_subgraph
-    output = f.call_function(tx, args, sub_kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py&quot;, line 278, in call_function
-    return super().call_function(tx, args, kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py&quot;, line 86, in call_function
-    return tx.inline_user_function_return(
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 657, in inline_user_function_return
-    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 2261, in inline_call
-    return cls.inline_call_(parent, func, args, kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 2370, in inline_call_
-    tracer.run()
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 787, in run
-    and self.step()
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 750, in step
-    getattr(self, inst.opname)(inst)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 469, in wrapper
-    return inner_fn(self, inst)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 1196, in CALL_FUNCTION
-    self.call_function(fn, args, {})
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py&quot;, line 651, in call_function
-    self.push(fn.call_function(self, args, kwargs))
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/misc.py&quot;, line 583, in call_function
-    return self.obj.call_method(tx, self.name, args, kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py&quot;, line 330, in call_method
-    return super().call_method(tx, name, args, kwargs)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py&quot;, line 241, in call_method
-    tx.output.side_effects.mutation(self)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/side_effects.py&quot;, line 325, in mutation
-    self.check_allowed_side_effect(var)
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/side_effects.py&quot;, line 157, in check_allowed_side_effect
-    unimplemented(
-  File &quot;/home/yidi/local/pytorch/torch/_dynamo/exc.py&quot;, line 190, in unimplemented
-    raise Unsupported(msg)
-torch._dynamo.exc.Unsupported: HigherOrderOperator: Mutating a variable not in the current scope (SideEffects)
-
-from user code:
-   File &quot;/home/yidi/local/pytorch/test.py&quot;, line 216, in g
-    return torch.ops.higher_order.wrap(f, x)
-  File &quot;/home/yidi/local/pytorch/test.py&quot;, line 211, in f
-    glob.append(x)
-
-Set TORCH_LOGS=&quot;+dynamo&quot; and TORCHDYNAMO_VERBOSE=1 for more information
-
-
-You can suppress this exception and fall back to eager by setting:
-    import torch._dynamo"><pre class="notranslate"><code>[2024-02-01 15:23:34,691] [0/0] torch._dynamo.variables.higher_order_ops: [WARNING] speculate_subgraph: while introspecting wrap, we were unable to trace function `f` into a single graph. This means that Dynamo was unable to prove safety for this API and will fall back to eager-mode PyTorch, which could lead to a slowdown.
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR] HigherOrderOperator: Mutating a variable not in the current scope (SideEffects)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR] Traceback (most recent call last):
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py", line 381, in speculate_subgraph
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     output = f.call_function(tx, args, sub_kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py", line 278, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return super().call_function(tx, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py", line 86, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return tx.inline_user_function_return(
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 657, in inline_user_function_return
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 2261, in inline_call
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return cls.inline_call_(parent, func, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 2370, in inline_call_
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     tracer.run()
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 787, in run
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     and self.step()
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 750, in step
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     getattr(self, inst.opname)(inst)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 469, in wrapper
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return inner_fn(self, inst)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 1196, in CALL_FUNCTION
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     self.call_function(fn, args, {})
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 651, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     self.push(fn.call_function(self, args, kwargs))
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/variables/misc.py", line 583, in call_function
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return self.obj.call_method(tx, self.name, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py", line 330, in call_method
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     return super().call_method(tx, name, args, kwargs)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py", line 241, in call_method
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     tx.output.side_effects.mutation(self)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/side_effects.py", line 325, in mutation
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     self.check_allowed_side_effect(var)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/side_effects.py", line 157, in check_allowed_side_effect
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     unimplemented(
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]   File "/home/yidi/local/pytorch/torch/_dynamo/exc.py", line 190, in unimplemented
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR]     raise Unsupported(msg)
-[2024-02-01 15:23:34,692] [0/0] torch._dynamo.variables.higher_order_ops: [ERROR] torch._dynamo.exc.Unsupported: HigherOrderOperator: Mutating a variable not in the current scope (SideEffects)
-Traceback (most recent call last):
-  File "/home/yidi/local/pytorch/test.py", line 219, in &lt;module&gt;
-    g(x)
-  File "/home/yidi/local/pytorch/torch/_dynamo/eval_frame.py", line 453, in _fn
-    return fn(*args, **kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/eval_frame.py", line 615, in catch_errors
-    return callback(frame, cache_entry, hooks, frame_state)
-  File "/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py", line 390, in _convert_frame_assert
-    return _compile(
-  File "/home/yidi/local/miniconda3/envs/pytorch-3.10/lib/python3.10/contextlib.py", line 79, in inner
-    return func(*args, **kwds)
-  File "/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py", line 650, in _compile
-    guarded_code = compile_inner(code, one_graph, hooks, transform)
-  File "/home/yidi/local/pytorch/torch/_dynamo/utils.py", line 248, in time_wrapper
-    r = func(*args, **kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py", line 531, in compile_inner
-    out_code = transform_code_object(code, transform)
-  File "/home/yidi/local/pytorch/torch/_dynamo/bytecode_transformation.py", line 1033, in transform_code_object
-    transformations(instructions, code_options)
-  File "/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py", line 155, in _fn
-    return fn(*args, **kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/convert_frame.py", line 496, in transform
-    tracer.run()
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 2125, in run
-    super().run()
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 787, in run
-    and self.step()
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 750, in step
-    getattr(self, inst.opname)(inst)
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 469, in wrapper
-    return inner_fn(self, inst)
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 1196, in CALL_FUNCTION
-    self.call_function(fn, args, {})
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 651, in call_function
-    self.push(fn.call_function(self, args, kwargs))
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py", line 1227, in call_function
-    p_args, p_kwargs, example_value, body_r, treespec, _ = self.create_wrapped_node(
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py", line 1190, in create_wrapped_node
-    ) = speculate_subgraph(
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py", line 453, in speculate_subgraph
-    raise ex
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/higher_order_ops.py", line 381, in speculate_subgraph
-    output = f.call_function(tx, args, sub_kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py", line 278, in call_function
-    return super().call_function(tx, args, kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/functions.py", line 86, in call_function
-    return tx.inline_user_function_return(
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 657, in inline_user_function_return
-    return InliningInstructionTranslator.inline_call(self, fn, args, kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 2261, in inline_call
-    return cls.inline_call_(parent, func, args, kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 2370, in inline_call_
-    tracer.run()
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 787, in run
-    and self.step()
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 750, in step
-    getattr(self, inst.opname)(inst)
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 469, in wrapper
-    return inner_fn(self, inst)
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 1196, in CALL_FUNCTION
-    self.call_function(fn, args, {})
-  File "/home/yidi/local/pytorch/torch/_dynamo/symbolic_convert.py", line 651, in call_function
-    self.push(fn.call_function(self, args, kwargs))
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/misc.py", line 583, in call_function
-    return self.obj.call_method(tx, self.name, args, kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py", line 330, in call_method
-    return super().call_method(tx, name, args, kwargs)
-  File "/home/yidi/local/pytorch/torch/_dynamo/variables/lists.py", line 241, in call_method
-    tx.output.side_effects.mutation(self)
-  File "/home/yidi/local/pytorch/torch/_dynamo/side_effects.py", line 325, in mutation
-    self.check_allowed_side_effect(var)
-  File "/home/yidi/local/pytorch/torch/_dynamo/side_effects.py", line 157, in check_allowed_side_effect
-    unimplemented(
-  File "/home/yidi/local/pytorch/torch/_dynamo/exc.py", line 190, in unimplemented
-    raise Unsupported(msg)
-torch._dynamo.exc.Unsupported: HigherOrderOperator: Mutating a variable not in the current scope (SideEffects)
-
-from user code:
-   File "/home/yidi/local/pytorch/test.py", line 216, in g
-    return torch.ops.higher_order.wrap(f, x)
-  File "/home/yidi/local/pytorch/test.py", line 211, in f
-    glob.append(x)
-
-Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
-
-
-You can suppress this exception and fall back to eager by setting:
-    import torch._dynamo
-</code></pre></div>
-<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/118826: Update on "[HigherOrderOp] fix stack trace to report user stack"]]></title>
@@ -689,189 +745,6 @@ You can suppress this exception and fall back to eager by setting:
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from ruff: v0.2.0]]></title>
-            <link>https://github.com/astral-sh/ruff/releases/tag/v0.2.0</link>
-            <guid>https://github.com/astral-sh/ruff/releases/tag/v0.2.0</guid>
-            <pubDate>Thu, 01 Feb 2024 23:32:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Check out the <a href="https://astral.sh/blog/ruff-v0.2.0" rel="nofollow">blog post</a> for a migration guide and overview of the changes!</p>
-<h2>Changes</h2>
-<h3>Breaking changes</h3>
-<ul>
-<li>The <code>NURSERY</code> selector cannot be used anymore</li>
-<li>Legacy selection of nursery rules by exact codes is no longer allowed without preview enabled</li>
-</ul>
-<p>See also, the "Remapped rules" section which may result in disabled rules.</p>
-<h3>Deprecations</h3>
-<p>The following rules are now deprecated:</p>
-<ul>
-<li><a href="https://docs.astral.sh/ruff/rules/missing-type-function-argument/" rel="nofollow"><code>missing-type-function-argument</code></a> (<code>ANN001</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/missing-type-args/" rel="nofollow"><code>missing-type-args</code></a> (<code>ANN002</code>)</li>
-</ul>
-<p>The following command line options are now deprecated:</p>
-<ul>
-<li><code>--show-source</code>; use <code>--output-format full</code> instead</li>
-<li><code>--no-show-source</code>; use <code>--output-format concise</code> instead</li>
-<li><code>--output-format text</code>; use <code>full</code> or <code>concise</code> instead</li>
-</ul>
-<p>The following settings have moved and the previous name is deprecated:</p>
-<ul>
-<li><code>ruff.allowed-confusables</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_allowed-confusables" rel="nofollow"><code>ruff.lint.allowed-confusables</code></a></li>
-<li><code>ruff.dummy-variable-rgx</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_dummy-variable-rgx" rel="nofollow"><code>ruff.lint.dummy-variable-rgx</code></a></li>
-<li><code>ruff.explicit-preview-rules</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_explicit-preview-rules" rel="nofollow"><code>ruff.lint.explicit-preview-rules</code></a></li>
-<li><code>ruff.extend-fixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-fixable" rel="nofollow"><code>ruff.lint.extend-fixable</code></a></li>
-<li><code>ruff.extend-ignore</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-ignore" rel="nofollow"><code>ruff.lint.extend-ignore</code></a></li>
-<li><code>ruff.extend-per-file-ignores</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-per-file-ignores" rel="nofollow"><code>ruff.lint.extend-per-file-ignores</code></a></li>
-<li><code>ruff.extend-safe-fixes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-safe-fixes" rel="nofollow"><code>ruff.lint.extend-safe-fixes</code></a></li>
-<li><code>ruff.extend-select</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-select" rel="nofollow"><code>ruff.lint.extend-select</code></a></li>
-<li><code>ruff.extend-unfixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-unfixable" rel="nofollow"><code>ruff.lint.extend-unfixable</code></a></li>
-<li><code>ruff.extend-unsafe-fixes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_extend-unsafe-fixes" rel="nofollow"><code>ruff.lint.extend-unsafe-fixes</code></a></li>
-<li><code>ruff.external</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_external" rel="nofollow"><code>ruff.lint.external</code></a></li>
-<li><code>ruff.fixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_fixable" rel="nofollow"><code>ruff.lint.fixable</code></a></li>
-<li><code>ruff.flake8-annotations</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-annotations" rel="nofollow"><code>ruff.lint.flake8-annotations</code></a></li>
-<li><code>ruff.flake8-bandit</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-bandit" rel="nofollow"><code>ruff.lint.flake8-bandit</code></a></li>
-<li><code>ruff.flake8-bugbear</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-bugbear" rel="nofollow"><code>ruff.lint.flake8-bugbear</code></a></li>
-<li><code>ruff.flake8-builtins</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-builtins" rel="nofollow"><code>ruff.lint.flake8-builtins</code></a></li>
-<li><code>ruff.flake8-comprehensions</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-comprehensions" rel="nofollow"><code>ruff.lint.flake8-comprehensions</code></a></li>
-<li><code>ruff.flake8-copyright</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-copyright" rel="nofollow"><code>ruff.lint.flake8-copyright</code></a></li>
-<li><code>ruff.flake8-errmsg</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-errmsg" rel="nofollow"><code>ruff.lint.flake8-errmsg</code></a></li>
-<li><code>ruff.flake8-gettext</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-gettext" rel="nofollow"><code>ruff.lint.flake8-gettext</code></a></li>
-<li><code>ruff.flake8-implicit-str-concat</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-implicit-str-concat" rel="nofollow"><code>ruff.lint.flake8-implicit-str-concat</code></a></li>
-<li><code>ruff.flake8-import-conventions</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-import-conventions" rel="nofollow"><code>ruff.lint.flake8-import-conventions</code></a></li>
-<li><code>ruff.flake8-pytest-style</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-pytest-style" rel="nofollow"><code>ruff.lint.flake8-pytest-style</code></a></li>
-<li><code>ruff.flake8-quotes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-quotes" rel="nofollow"><code>ruff.lint.flake8-quotes</code></a></li>
-<li><code>ruff.flake8-self</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-self" rel="nofollow"><code>ruff.lint.flake8-self</code></a></li>
-<li><code>ruff.flake8-tidy-imports</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-tidy-imports" rel="nofollow"><code>ruff.lint.flake8-tidy-imports</code></a></li>
-<li><code>ruff.flake8-type-checking</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-type-checking" rel="nofollow"><code>ruff.lint.flake8-type-checking</code></a></li>
-<li><code>ruff.flake8-unused-arguments</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_flake8-unused-arguments" rel="nofollow"><code>ruff.lint.flake8-unused-arguments</code></a></li>
-<li><code>ruff.ignore</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_ignore" rel="nofollow"><code>ruff.lint.ignore</code></a></li>
-<li><code>ruff.ignore-init-module-imports</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_ignore-init-module-imports" rel="nofollow"><code>ruff.lint.ignore-init-module-imports</code></a></li>
-<li><code>ruff.isort</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_isort" rel="nofollow"><code>ruff.lint.isort</code></a></li>
-<li><code>ruff.logger-objects</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_logger-objects" rel="nofollow"><code>ruff.lint.logger-objects</code></a></li>
-<li><code>ruff.mccabe</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_mccabe" rel="nofollow"><code>ruff.lint.mccabe</code></a></li>
-<li><code>ruff.pep8-naming</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pep8-naming" rel="nofollow"><code>ruff.lint.pep8-naming</code></a></li>
-<li><code>ruff.per-file-ignores</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_per-file-ignores" rel="nofollow"><code>ruff.lint.per-file-ignores</code></a></li>
-<li><code>ruff.pycodestyle</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pycodestyle" rel="nofollow"><code>ruff.lint.pycodestyle</code></a></li>
-<li><code>ruff.pydocstyle</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pydocstyle" rel="nofollow"><code>ruff.lint.pydocstyle</code></a></li>
-<li><code>ruff.pyflakes</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pyflakes" rel="nofollow"><code>ruff.lint.pyflakes</code></a></li>
-<li><code>ruff.pylint</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pylint" rel="nofollow"><code>ruff.lint.pylint</code></a></li>
-<li><code>ruff.pyupgrade</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_pyupgrade" rel="nofollow"><code>ruff.lint.pyupgrade</code></a></li>
-<li><code>ruff.select</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_select" rel="nofollow"><code>ruff.lint.select</code></a></li>
-<li><code>ruff.task-tags</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_task-tags" rel="nofollow"><code>ruff.lint.task-tags</code></a></li>
-<li><code>ruff.typing-modules</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_typing-modules" rel="nofollow"><code>ruff.lint.typing-modules</code></a></li>
-<li><code>ruff.unfixable</code> → <a href="https://docs.astral.sh//ruff/settings/#lint_unfixable" rel="nofollow"><code>ruff.lint.unfixable</code></a></li>
-</ul>
-<h3>Remapped rules</h3>
-<p>The following rules have been remapped to new codes:</p>
-<ul>
-<li><a href="https://docs.astral.sh/ruff/rules/raise-without-from-inside-except/" rel="nofollow"><code>raise-without-from-inside-except</code></a>: <code>TRY200</code> to <code>B904</code></li>
-<li><a href="https://docs.astral.sh/ruff/rules/suspicious-eval-usage/" rel="nofollow"><code>suspicious-eval-usage</code></a>: <code>PGH001</code> to <code>S307</code></li>
-<li><a href="https://docs.astral.sh/ruff/rules/logging-warn/" rel="nofollow"><code>logging-warn</code></a>: <code>PGH002</code> to <code>G010</code></li>
-<li><a href="https://docs.astral.sh/ruff/rules/static-key-dict-comprehension" rel="nofollow"><code>static-key-dict-comprehension</code></a>: <code>RUF011</code> to <code>B035</code></li>
-<li><a href="https://docs.astral.sh/ruff/rules/runtime-string-union" rel="nofollow"><code>runtime-string-union</code></a>: <code>TCH006</code> to <code>TCH010</code></li>
-</ul>
-<h3>Stabilizations</h3>
-<p>The following rules have been stabilized and are no longer in preview:</p>
-<ul>
-<li><a href="https://docs.astral.sh/ruff/rules/trio-timeout-without-await" rel="nofollow"><code>trio-timeout-without-await</code></a> (<code>TRIO100</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/trio-sync-call" rel="nofollow"><code>trio-sync-call</code></a> (<code>TRIO105</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/trio-async-function-with-timeout" rel="nofollow"><code>trio-async-function-with-timeout</code></a> (<code>TRIO109</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/trio-unneeded-sleep" rel="nofollow"><code>trio-unneeded-sleep</code></a> (<code>TRIO110</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/trio-zero-sleep-call" rel="nofollow"><code>trio-zero-sleep-call</code></a> (<code>TRIO115</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-escaped-quote" rel="nofollow"><code>unnecessary-escaped-quote</code></a> (<code>Q004</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/enumerate-for-loop" rel="nofollow"><code>enumerate-for-loop</code></a> (<code>SIM113</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/zip-dict-keys-and-values" rel="nofollow"><code>zip-dict-keys-and-values</code></a> (<code>SIM911</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/timeout-error-alias" rel="nofollow"><code>timeout-error-alias</code></a> (<code>UP041</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/flask-debug-true" rel="nofollow"><code>flask-debug-true</code></a> (<code>S201</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/tarfile-unsafe-members" rel="nofollow"><code>tarfile-unsafe-members</code></a> (<code>S202</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/ssl-insecure-version" rel="nofollow"><code>ssl-insecure-version</code></a> (<code>S502</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/ssl-with-bad-defaults" rel="nofollow"><code>ssl-with-bad-defaults</code></a> (<code>S503</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/ssl-with-no-version" rel="nofollow"><code>ssl-with-no-version</code></a> (<code>S504</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/weak-cryptographic-key" rel="nofollow"><code>weak-cryptographic-key</code></a> (<code>S505</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/ssh-no-host-key-verification" rel="nofollow"><code>ssh-no-host-key-verification</code></a> (<code>S507</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/django-raw-sql" rel="nofollow"><code>django-raw-sql</code></a> (<code>S611</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/mako-templates" rel="nofollow"><code>mako-templates</code></a> (<code>S702</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/generator-return-from-iter-method" rel="nofollow"><code>generator-return-from-iter-method</code></a> (<code>PYI058</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/runtime-string-union" rel="nofollow"><code>runtime-string-union</code></a> (<code>TCH006</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/numpy2-deprecation" rel="nofollow"><code>numpy2-deprecation</code></a> (<code>NPY201</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/quadratic-list-summation" rel="nofollow"><code>quadratic-list-summation</code></a> (<code>RUF017</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/assignment-in-assert" rel="nofollow"><code>assignment-in-assert</code></a> (<code>RUF018</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-key-check" rel="nofollow"><code>unnecessary-key-check</code></a> (<code>RUF019</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/never-union" rel="nofollow"><code>never-union</code></a> (<code>RUF020</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/direct-logger-instantiation" rel="nofollow"><code>direct-logger-instantiation</code></a> (<code>LOG001</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/invalid-get-logger-argument" rel="nofollow"><code>invalid-get-logger-argument</code></a> (<code>LOG002</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/exception-without-exc-info" rel="nofollow"><code>exception-without-exc-info</code></a> (<code>LOG007</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/undocumented-warn" rel="nofollow"><code>undocumented-warn</code></a> (<code>LOG009</code>)</li>
-</ul>
-<p>Fixes for the following rules have been stabilized and are now available without preview:</p>
-<ul>
-<li><a href="https://docs.astral.sh/ruff/rules/triple-single-quotes" rel="nofollow"><code>triple-single-quotes</code></a> (<code>D300</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/non-pep604-annotation" rel="nofollow"><code>non-pep604-annotation</code></a> (<code>UP007</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/dict-get-with-none-default" rel="nofollow"><code>dict-get-with-none-default</code></a> (<code>SIM910</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/in-dict-keys" rel="nofollow"><code>in-dict-keys</code></a> (<code>SIM118</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/collapsible-else-if" rel="nofollow"><code>collapsible-else-if</code></a> (<code>PLR5501</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/if-with-same-arms" rel="nofollow"><code>if-with-same-arms</code></a> (<code>SIM114</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/useless-else-on-loop" rel="nofollow"><code>useless-else-on-loop</code></a> (<code>PLW0120</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-literal-union" rel="nofollow"><code>unnecessary-literal-union</code></a> (<code>PYI030</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-spread" rel="nofollow"><code>unnecessary-spread</code></a> (<code>PIE800</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/error-instead-of-exception" rel="nofollow"><code>error-instead-of-exception</code></a> (<code>TRY400</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/redefined-while-unused" rel="nofollow"><code>redefined-while-unused</code></a> (<code>F811</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/duplicate-value" rel="nofollow"><code>duplicate-value</code></a> (<code>B033</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/multiple-imports-on-one-line" rel="nofollow"><code>multiple-imports-on-one-line</code></a> (<code>E401</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/non-pep585-annotation" rel="nofollow"><code>non-pep585-annotation</code></a> (<code>UP006</code>)</li>
-</ul>
-<p>Fixes for the following rules have been promoted from unsafe to safe:</p>
-<ul>
-<li><a href="https://docs.astral.sh/ruff/rules/unaliased-collections-abc-set-import" rel="nofollow"><code>unaliased-collections-abc-set-import</code></a> (<code>PYI025</code>)</li>
-</ul>
-<p>The following behaviors have been stabilized:</p>
-<ul>
-<li><a href="https://docs.astral.sh/ruff/rules/module-import-not-at-top-of-file/" rel="nofollow"><code>module-import-not-at-top-of-file</code></a> (<code>E402</code>) allows <code>sys.path</code> modifications between imports</li>
-<li><a href="https://docs.astral.sh/ruff/rules/reimplemented-container-builtin/" rel="nofollow"><code>reimplemented-container-builtin</code></a> (<code>PIE807</code>) includes lambdas that can be replaced with <code>dict</code></li>
-<li><a href="https://docs.astral.sh/ruff/rules/unnecessary-placeholder/" rel="nofollow"><code>unnecessary-placeholder</code></a> (<code>PIE790</code>) applies to unnecessary ellipses (<code>...</code>)</li>
-<li><a href="https://docs.astral.sh/ruff/rules/if-else-block-instead-of-dict-get/" rel="nofollow"><code>if-else-block-instead-of-dict-get</code></a> (<code>SIM401</code>) applies to <code>if-else</code> expressions</li>
-</ul>
-<h3>Preview features</h3>
-<ul>
-<li>[<code>refurb</code>] Implement <code>metaclass_abcmeta</code> (<code>FURB180</code>) (<a href="https://github.com/astral-sh/ruff/pull/9658" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9658/hovercard">#9658</a>)</li>
-<li>Implement <code>blank_line_after_nested_stub_class</code> preview style (<a href="https://github.com/astral-sh/ruff/pull/9155" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9155/hovercard">#9155</a>)</li>
-<li>The preview rule <a href="https://docs.astral.sh/ruff/rules/and-or-ternary" rel="nofollow"><code>and-or-ternary</code></a> (<code>PLR1706</code>) was removed</li>
-</ul>
-<h3>Bug fixes</h3>
-<ul>
-<li>[<code>flake8-async</code>] Take <code>pathlib.Path</code> into account when analyzing async functions (<a href="https://github.com/astral-sh/ruff/pull/9703" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9703/hovercard">#9703</a>)</li>
-<li>[<code>flake8-return</code>] - fix indentation syntax error (<code>RET505</code>) (<a href="https://github.com/astral-sh/ruff/pull/9705" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9705/hovercard">#9705</a>)</li>
-<li>Detect multi-statement lines in else removal (<a href="https://github.com/astral-sh/ruff/pull/9748" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9748/hovercard">#9748</a>)</li>
-<li><code>RUF022</code>, <code>RUF023</code>: never add two trailing commas to the end of a sequence (<a href="https://github.com/astral-sh/ruff/pull/9698" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9698/hovercard">#9698</a>)</li>
-<li><code>RUF023</code>: Don't sort <code>__match_args__</code>, only <code>__slots__</code> (<a href="https://github.com/astral-sh/ruff/pull/9724" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9724/hovercard">#9724</a>)</li>
-<li>[<code>flake8-simplify</code>] - Fix syntax error in autofix (<code>SIM114</code>) (<a href="https://github.com/astral-sh/ruff/pull/9704" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9704/hovercard">#9704</a>)</li>
-<li>[<code>pylint</code>] Show verbatim constant in <code>magic-value-comparison</code> (<code>PLR2004</code>) (<a href="https://github.com/astral-sh/ruff/pull/9694" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9694/hovercard">#9694</a>)</li>
-<li>Removing trailing whitespace inside multiline strings is unsafe (<a href="https://github.com/astral-sh/ruff/pull/9744" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9744/hovercard">#9744</a>)</li>
-<li>Support <code>IfExp</code> with dual string arms in <code>invalid-envvar-default</code> (<a href="https://github.com/astral-sh/ruff/pull/9734" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9734/hovercard">#9734</a>)</li>
-<li>[<code>pylint</code>] Add <code>__mro_entries__</code> to known dunder methods (<code>PLW3201</code>) (<a href="https://github.com/astral-sh/ruff/pull/9706" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9706/hovercard">#9706</a>)</li>
-</ul>
-<h3>Documentation</h3>
-<ul>
-<li>Removed rules are now retained in the documentation (<a href="https://github.com/astral-sh/ruff/pull/9691" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9691/hovercard">#9691</a>)</li>
-<li>Deprecated rules are now indicated in the documentation (<a href="https://github.com/astral-sh/ruff/pull/9689" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9689/hovercard">#9689</a>)</li>
-</ul>
-<h2>Contributors</h2>
-<ul>
-<li><a href="https://github.com/AlexWaygood">@AlexWaygood</a></li>
-<li><a href="https://github.com/MichaReiser">@MichaReiser</a></li>
-<li><a href="https://github.com/Sai-Suraj-27">@Sai-Suraj-27</a></li>
-<li><a href="https://github.com/alex-700">@alex-700</a></li>
-<li><a href="https://github.com/bswck">@bswck</a></li>
-<li><a href="https://github.com/charliermarsh">@charliermarsh</a></li>
-<li><a href="https://github.com/covracer">@covracer</a></li>
-<li><a href="https://github.com/dhruvmanila">@dhruvmanila</a></li>
-<li><a href="https://github.com/diceroll123">@diceroll123</a></li>
-<li><a href="https://github.com/mikeleppane">@mikeleppane</a></li>
-<li><a href="https://github.com/sanxiyn">@sanxiyn</a></li>
-<li><a href="https://github.com/snowsignal">@snowsignal</a></li>
-<li><a href="https://github.com/zanieb">@zanieb</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from marimo: 0.2.0]]></title>
             <link>https://github.com/marimo-team/marimo/releases/tag/0.2.0</link>
             <guid>https://github.com/marimo-team/marimo/releases/tag/0.2.0</guid>
@@ -966,13 +839,6 @@ You can suppress this exception and fall back to eager by setting:
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from electron: v29.0.0-beta.5]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v29.0.0-beta.5</link>
-            <guid>https://github.com/electron/electron/releases/tag/v29.0.0-beta.5</guid>
-            <pubDate>Thu, 01 Feb 2024 21:28:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v29.0.0-beta.5</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-14304]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-14304</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-14304</guid>
@@ -980,9 +846,9 @@ You can suppress this exception and fall back to eager by setting:
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.99-pgo: Version 12.3.99]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.99-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.99-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.99]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.99</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.99</guid>
             <pubDate>Thu, 01 Feb 2024 20:28:23 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ieabef47ec6b161921d886ce86c1916e0eae62aeb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5259902" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5259902</a><br>
@@ -991,9 +857,9 @@ Cr-Commit-Position: refs/heads/12.3.99@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7bf5e884f69c3200f443c844ef4a5636df20b025/hovercard" href="https://github.com/v8/v8/commit/7bf5e884f69c3200f443c844ef4a5636df20b025"><tt>7bf5e88</tt></a>-refs/heads/main@{#92158}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.99]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.99</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.99</guid>
+            <title><![CDATA[Release notes from v8: 12.3.99-pgo: Version 12.3.99]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.99-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.99-pgo</guid>
             <pubDate>Thu, 01 Feb 2024 20:28:23 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ieabef47ec6b161921d886ce86c1916e0eae62aeb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5259902" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5259902</a><br>
@@ -1086,36 +952,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5258884
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/12.3.97@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c20913215e2db26bdc57d8992b4d6b8ae4299f71/hovercard" href="https://github.com/v8/v8/commit/c20913215e2db26bdc57d8992b4d6b8ae4299f71"><tt>c209132</tt></a>-refs/heads/main@{#92154}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118613: Update on "[2/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</guid>
-            <pubDate>Thu, 01 Feb 2024 17:38:39 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118528: Update on "[1/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</guid>
-            <pubDate>Thu, 01 Feb 2024 17:38:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118523: Update on "Intel GPU Runtime Upstreaming for Guard"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</guid>
-            <pubDate>Thu, 01 Feb 2024 17:38:37 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>According to <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the 5th runtime component we would like to upstream is <code>Guard</code>. We will cover device guard and stream guard in this PR.</p>
-<h1>Design</h1>
-<p>Device guard is used mainly for op dispatcher in PyTorch. Currently, PyTorch already has a device guard abstraction <code>c10::impl::DeviceGuardImplInterface</code>. In our design, we will introduce an <code>XPUGuardImpl</code> class inherits from <code>c10::impl::DeviceGuardImplInterface</code>. Register <code>XPUGuardImpl</code> to PyTorch after we implement the device switch management mechanism in <code>XPUGuardImpl</code>. Besides, we will introduce <code>XPUGuard</code>, <code>OptionalXPUGuard</code>, <code>XPUStreamGuard</code>, and <code>OptionalXPUStreamGuard</code>. They are all following the design of CUDA's counterpart. The corresponding C++ file should be placed in c10/xpu/ folder.</p>
-<h1>Additional Context</h1>
-<p>It is unnecessary to add <code>Guard</code> code to PyTorch frontend.</p>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from webpack: v5.90.1]]></title>
@@ -1594,9 +1430,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.96]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.96</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.96</guid>
+            <title><![CDATA[Release notes from v8: 12.3.96-pgo: Version 12.3.96]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.96-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.96-pgo</guid>
             <pubDate>Thu, 01 Feb 2024 12:10:29 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie2d6eecf6c77f0faf44f7aea2b90e0ec332d23cd<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5254570" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5254570</a><br>
@@ -1605,9 +1441,9 @@ Cr-Commit-Position: refs/heads/12.3.96@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/cc5c4f4679e2f09e5721ed70e167fc56748f1911/hovercard" href="https://github.com/v8/v8/commit/cc5c4f4679e2f09e5721ed70e167fc56748f1911"><tt>cc5c4f4</tt></a>-refs/heads/main@{#92136}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.96-pgo: Version 12.3.96]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.96-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.96-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.96]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.96</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.96</guid>
             <pubDate>Thu, 01 Feb 2024 12:10:29 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie2d6eecf6c77f0faf44f7aea2b90e0ec332d23cd<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5254570" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5254570</a><br>
@@ -1744,80 +1580,6 @@ property (<a class="issue-link js-issue-link" data-error-text="Failed to load ti
 <li>backend: remove <code>atan2</code> overload which had a typo and wasn't useful. Fixes b/320856413.</li>
 <li>utils: remove usages of <code>SpinLock</code>. Fixes b/321101014.</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Thu, 01 Feb 2024 05:14:44 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-2250+g6bba4bece
-Build type: RelWithDebInfo
-LuaJIT 2.1.1706185428"><pre class="notranslate"><code>NVIM v0.10.0-dev-2250+g6bba4bece
-Build type: RelWithDebInfo
-LuaJIT 2.1.1706185428
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS</h3>
-<ol>
-<li>Download <strong>nvim-macos.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos.tar.gz</code></li>
-<li>Run <code>./nvim-macos/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
-that work on older glibc versions can find them at<br>
-<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/blob/master/INSTALL.md#install-from-package">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="8732571a0334d7e9823be86057b78be66929bb0c7b019ea05da98c1cad30f9fb  nvim-linux64.tar.gz
-1a9eba53f090c60d401aa4b2fdae71cac69c63f18b63adeaab2685afdf0ee55c  nvim.appimage
-2580300febdce62e51329929b035bcdff0c8e53332a633cbe4ca8ca4bb7e13db  nvim.appimage.zsync
-e68eb9c2f7c8ea15e053ac31ab81c9976f0772f2cbbd2736e640788d0e06297a  nvim-macos.tar.gz
-4b189cc87aadcd0e0f1a8cd463ccd5a828d8390d029b7c0ce4ecb472fe9eb9d0  nvim-win64.zip
-726027c599efa7a7d223f779e0f5fa86745cc65854319d5661a313698327b9b1  nvim-win64.msi"><pre class="notranslate"><code>8732571a0334d7e9823be86057b78be66929bb0c7b019ea05da98c1cad30f9fb  nvim-linux64.tar.gz
-1a9eba53f090c60d401aa4b2fdae71cac69c63f18b63adeaab2685afdf0ee55c  nvim.appimage
-2580300febdce62e51329929b035bcdff0c8e53332a633cbe4ca8ca4bb7e13db  nvim.appimage.zsync
-e68eb9c2f7c8ea15e053ac31ab81c9976f0772f2cbbd2736e640788d0e06297a  nvim-macos.tar.gz
-4b189cc87aadcd0e0f1a8cd463ccd5a828d8390d029b7c0ce4ecb472fe9eb9d0  nvim-win64.zip
-726027c599efa7a7d223f779e0f5fa86745cc65854319d5661a313698327b9b1  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from storybook: v8.0.0-alpha.17]]></title>
@@ -4732,103 +4494,6 @@ but we previously didn't have a <code>@deprecated</code> tag in the DocBlocks.</
 <p>After <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1185305986" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/100990" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/100990/hovercard" href="https://github.com/flutter/flutter/pull/100990">#100990</a>, we should use <code>initExpensiveAndroidView</code> for Android Hybrid Composition mode instead of <code>initSurfaceAndroidView</code>.</p>
 <p><code>initSurfaceAndroidView</code> attempts to use <code>TLHC</code> when possible. In cases where that is not supported, it falls back to using Hybrid Composition.</p>
 <p><a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2058341001" data-permission-text="Title is private" data-url="https://github.com/flutter/engine/issues/49414" data-hovercard-type="pull_request" data-hovercard-url="/flutter/engine/pull/49414/hovercard" href="https://github.com/flutter/engine/pull/49414">flutter/engine#49414</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from solana: Mainnet - v1.17.18]]></title>
-            <link>https://github.com/solana-labs/solana/releases/tag/v1.17.18</link>
-            <guid>https://github.com/solana-labs/solana/releases/tag/v1.17.18</guid>
-            <pubDate>Tue, 30 Jan 2024 00:54:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This is a stable release suitable for use on Mainnet Beta.</p>
-
-<ul>
-<li>The v1.17 minimum dynamic port range is now 14 so you may need to expand the range specified by <code>--dynamic-port-range</code>
-<ul>
-<li>This is expanded from the v1.16 minimum of 13</li>
-</ul>
-</li>
-<li>Archive formats<code>[bz2, gzip, tar, none]</code> have been deprecated for the <code>--snapshot-archive-format</code> argument (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1922087528" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/33484" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/33484/hovercard" href="https://github.com/solana-labs/solana/pull/33484">#33484</a>)
-<ul>
-<li>Existing snapshots with these formats can still be read, but <code>solana-validator</code> and <code>solana-ledger-tool</code> must be updated to use a different archive format. The recommended value is <code>zstd</code>, which is also the default if the <code>--snapshot-archive-format</code> argument is removed altogether</li>
-</ul>
-</li>
-<li>Added <code>--use-snapshot-archives-at-startup</code> for faster validator restarts</li>
-</ul>
-<h2>Changes</h2>
-<ul>
-<li>v1.17: Cleans up stale accounts hash cache files (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2098751322" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34933" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34933/hovercard" href="https://github.com/solana-labs/solana/pull/34933">#34933</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2099047513" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34937" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34937/hovercard" href="https://github.com/solana-labs/solana/pull/34937">#34937</a>)
-<ul>
-<li>Stale cache files will be completely removed by the time the next full snapshot is taken, if not sooner by the incremental snapshots. It is also safe to delete the entire accounts hash cache directory while the node is stopped.</li>
-</ul>
-</li>
-<li>Allow some minimum number of streams for a staked connection - v1.17 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2095000606" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34894" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34894/hovercard" href="https://github.com/solana-labs/solana/pull/34894">#34894</a>)</li>
-<li>v1.17: Pin spl-token-cli to 3.3.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2097164282" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34920" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34920/hovercard" href="https://github.com/solana-labs/solana/pull/34920">#34920</a>)</li>
-<li>v1.17: bump shlex to 1.3.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2094597363" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34880" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34880/hovercard" href="https://github.com/solana-labs/solana/pull/34880">#34880</a>)</li>
-<li>v1.17: Fix versioned message json deserialization (backport of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086307089" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34808" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34808/hovercard" href="https://github.com/solana-labs/solana/pull/34808">#34808</a>) (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2087358233" data-permission-text="Title is private" data-url="https://github.com/solana-labs/solana/issues/34824" data-hovercard-type="pull_request" data-hovercard-url="/solana-labs/solana/pull/34824/hovercard" href="https://github.com/solana-labs/solana/pull/34824">#34824</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from ruff: v0.1.15]]></title>
-            <link>https://github.com/astral-sh/ruff/releases/tag/v0.1.15</link>
-            <guid>https://github.com/astral-sh/ruff/releases/tag/v0.1.15</guid>
-            <pubDate>Tue, 30 Jan 2024 00:46:41 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Changes</h2>
-<h3>Preview features</h3>
-<ul>
-<li>Error when <code>NURSERY</code> selector is used with <code>--preview</code> (<a href="https://github.com/astral-sh/ruff/pull/9682" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9682/hovercard">#9682</a>)</li>
-<li>Preserve indentation around multiline strings in formatter (<a href="https://github.com/astral-sh/ruff/pull/9637" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9637/hovercard">#9637</a>)</li>
-<li>[<code>flake8-return</code>] Add fixes for all rules (<code>RET505</code>, <code>RET506</code>, <code>RET507</code>, <code>RET508</code>) (<a href="https://github.com/astral-sh/ruff/pull/9595" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9595/hovercard">#9595</a>)</li>
-<li>[<code>flake8-simplify</code>] Add fix for <code>if-with-same-arms</code> (<code>SIM114</code>) (<a href="https://github.com/astral-sh/ruff/pull/9591" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9591/hovercard">#9591</a>)</li>
-<li>[<code>pycodestyle</code>] Add fix for <code>multiple-imports-on-one-line</code> (<code>E401</code>) (<a href="https://github.com/astral-sh/ruff/pull/9518" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9518/hovercard">#9518</a>)</li>
-<li>[<code>pylint</code>] Add fix for <code>collapsible-else-if</code> (<code>PLR5501</code>) (<a href="https://github.com/astral-sh/ruff/pull/9594" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9594/hovercard">#9594</a>)</li>
-<li>[<code>pylint</code>] Add fix for <code>useless-else-on-loop</code> (<code>PLW0120</code>) (<a href="https://github.com/astral-sh/ruff/pull/9590" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9590/hovercard">#9590</a>)</li>
-<li>[<code>pylint</code>] Implement <code>assigning-non-slot</code> (<code>E0237</code>) (<a href="https://github.com/astral-sh/ruff/pull/9623" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9623/hovercard">#9623</a>)</li>
-<li>[<code>pylint</code>] Implement <code>potential-index-error</code> (<code>PLE0643</code>) (<a href="https://github.com/astral-sh/ruff/pull/9545" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9545/hovercard">#9545</a>)</li>
-<li>[<code>pylint</code>] Implement <code>too-many-nested-blocks</code> (<code>PLR1702</code>) (<a href="https://github.com/astral-sh/ruff/pull/9172" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9172/hovercard">#9172</a>)</li>
-<li>[<code>ruff</code>] Add rule to sort <code>__slots__</code> and <code>__match_args__</code> (<a href="https://github.com/astral-sh/ruff/pull/9564" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9564/hovercard">#9564</a>)</li>
-<li>[<code>ruff</code>] Detect unnecessary <code>dict</code> comprehensions for iterables (<code>RUF025</code>) (<a href="https://github.com/astral-sh/ruff/pull/9613" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9613/hovercard">#9613</a>)</li>
-<li>[<code>ruff</code>] Guard against use of <code>default_factory</code> as a keyword argument (<code>RUF026</code>) (<a href="https://github.com/astral-sh/ruff/pull/9651" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9651/hovercard">#9651</a>)</li>
-<li>[<code>ruff</code>] Implement <code>mutable-fromkeys-value</code> (<code>RUF024</code>) (<a href="https://github.com/astral-sh/ruff/pull/9597" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9597/hovercard">#9597</a>)</li>
-</ul>
-<h3>CLI</h3>
-<ul>
-<li>Enable auto-wrapping of <code>--help</code> output (<a href="https://github.com/astral-sh/ruff/pull/9633" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9633/hovercard">#9633</a>)</li>
-</ul>
-<h3>Bug fixes</h3>
-<ul>
-<li>Avoid rendering display-only rules as fixable (<a href="https://github.com/astral-sh/ruff/pull/9649" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9649/hovercard">#9649</a>)</li>
-<li>Detect automagic-like assignments in notebooks (<a href="https://github.com/astral-sh/ruff/pull/9653" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9653/hovercard">#9653</a>)</li>
-<li>Generate custom JSON schema for dynamic setting (<a href="https://github.com/astral-sh/ruff/pull/9632" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9632/hovercard">#9632</a>)</li>
-<li>[<code>flake8-no-pep420</code>] Include global <code>--config</code> when determining namespace packages (<a href="https://github.com/astral-sh/ruff/pull/9603" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9603/hovercard">#9603</a>)</li>
-<li>[<code>flake8-pie</code>] Omit bound tuples passed to <code>.startswith</code> or <code>.endswith</code> (<a href="https://github.com/astral-sh/ruff/pull/9661" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9661/hovercard">#9661</a>)</li>
-<li>[<code>flake8-return</code>] Avoid panic when fixing inlined else blocks (<a href="https://github.com/astral-sh/ruff/pull/9657" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9657/hovercard">#9657</a>)</li>
-<li>[<code>flake8-return</code>] Consider exception suppression in unnecessary assignment (<a href="https://github.com/astral-sh/ruff/pull/9673" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9673/hovercard">#9673</a>)</li>
-<li>[<code>flake8-return</code>] Take <code>NoReturn</code> annotation into account when analyzing implicit returns (<a href="https://github.com/astral-sh/ruff/pull/9636" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9636/hovercard">#9636</a>)</li>
-<li>[<code>flake8-simplify</code>] Support inverted returns in <code>needless-bool</code> (<code>SIM103</code>) (<a href="https://github.com/astral-sh/ruff/pull/9619" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9619/hovercard">#9619</a>)</li>
-<li>[<code>flake8-type-checking</code>] Add Pydantic's <code>BaseConfig</code> to default-copy list (<a href="https://github.com/astral-sh/ruff/pull/9650" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9650/hovercard">#9650</a>)</li>
-<li>[<code>flake8-type-checking</code>] Avoid marking <code>InitVar</code> as a typing-only annotation (<a href="https://github.com/astral-sh/ruff/pull/9688" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9688/hovercard">#9688</a>)</li>
-<li>[<code>pycodestyle</code>] Allow <code>dtype</code> comparisons in <code>type-comparison</code> (<a href="https://github.com/astral-sh/ruff/pull/9676" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9676/hovercard">#9676</a>)</li>
-<li>[<code>pydocstyle</code>] Re-implement <code>last-line-after-section</code> (<code>D413</code>) (<a href="https://github.com/astral-sh/ruff/pull/9654" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9654/hovercard">#9654</a>)</li>
-</ul>
-<h3>Documentation</h3>
-<ul>
-<li>[<code>flake8-pytest-style</code>] Add fix safety documentation for <code>duplicate-parameterize-test-cases</code> (<a href="https://github.com/astral-sh/ruff/pull/9678" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9678/hovercard">#9678</a>)</li>
-<li>[<code>pylint</code>] Document <code>literal-membership</code> fix safety conditions (<a href="https://github.com/astral-sh/ruff/pull/9677" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9677/hovercard">#9677</a>)</li>
-<li>[<code>isort</code>] Fix reference to <code>isort</code> rule code (<a href="https://github.com/astral-sh/ruff/pull/9598" data-hovercard-type="pull_request" data-hovercard-url="/astral-sh/ruff/pull/9598/hovercard">#9598</a>)</li>
-</ul>
-<h2>Contributors</h2>
-<ul>
-<li><a href="https://github.com/AlexWaygood">@AlexWaygood</a></li>
-<li><a href="https://github.com/BurntSushi">@BurntSushi</a></li>
-<li><a href="https://github.com/MichaReiser">@MichaReiser</a></li>
-<li><a href="https://github.com/RobertCraigie">@RobertCraigie</a></li>
-<li><a href="https://github.com/charliermarsh">@charliermarsh</a></li>
-<li><a href="https://github.com/diceroll123">@diceroll123</a></li>
-<li><a href="https://github.com/mikeleppane">@mikeleppane</a></li>
-<li><a href="https://github.com/tjkuson">@tjkuson</a></li>
-<li><a href="https://github.com/trag1c">@trag1c</a></li>
-<li><a href="https://github.com/tsugumi-sys">@tsugumi-sys</a></li>
-<li><a href="https://github.com/zanieb">@zanieb</a></li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
