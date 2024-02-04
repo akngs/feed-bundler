@@ -4,10 +4,321 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 04 Feb 2024 06:06:18 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 04 Feb 2024 12:07:28 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/115620: Update on "use two pass reduction for deterministic reduction order"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F115620</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F115620</guid>
+            <pubDate>Sun, 04 Feb 2024 11:55:25 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>Motivation</h2>
+<p>Address the <a href="https://github.com/pytorch/pytorch/issues/93542#issuecomment-1411294181" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/93542/hovercard">non-deterministic reduction order</a> issue for <code>omp parallel reduction</code>.</p>
+<h2>Latest update on 1.15:</h2>
+<p><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/pytorch/pytorch/commit/55d81901bc83f89df16fcb6ce84c50acc01e41c6/hovercard" href="https://github.com/pytorch/pytorch/commit/55d81901bc83f89df16fcb6ce84c50acc01e41c6"><tt>55d8190</tt></a>.<br>
+Do not reduce to arr in loops. Instead, reduce to a local scaler and write it to arr after local reduction is done. This will allow the compiler to optimize the reduction variable in register instead read/write from memory. If the <code>working set</code> of <code>loop body</code> is quite large, <code>read/write from register/memory</code> will have a large gap.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="vaddss (%xmm0, %xmm11, %xmm11) -&gt; accumulate in register %xmm0
+vaddssl ((%rdx, %rdi, 4), %xmm0, %xmm0) -&gt; accumulate in memory address (%rdx, %rdi, 4)"><pre class="notranslate"><code>vaddss (%xmm0, %xmm11, %xmm11) -&gt; accumulate in register %xmm0
+vaddssl ((%rdx, %rdi, 4), %xmm0, %xmm0) -&gt; accumulate in memory address (%rdx, %rdi, 4)
+</code></pre></div>
+<p>Examples code:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="tmp0_acc_arr[64];
+#pragma omp parallel num_threads(64)
+{
+    auto tid = omp_get_thread_num();
+    #pragma omp for
+    for(...){
+        ....
+        tmp0_acc_arr[tid] = tmp0_acc_arr[tid] + tmp_x;  // access array will always from memory
+    }
+}"><pre class="notranslate"><code>tmp0_acc_arr[64];
+#pragma omp parallel num_threads(64)
+{
+    auto tid = omp_get_thread_num();
+    #pragma omp for
+    for(...){
+        ....
+        tmp0_acc_arr[tid] = tmp0_acc_arr[tid] + tmp_x;  // access array will always from memory
+    }
+}
+</code></pre></div>
+<p>will be changed to</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="tmp0_acc_arr[64];
+#pragma omp parallel num_threads(64)
+{
+    auto tid = omp_get_thread_num();
+    **auto tmp0_acc_local = 0;**
+    #pragma omp for
+    for(...){
+        ....
+        **tmp0_acc_local**  = tmp0_acc_local + tmp_x;
+    }
+    **tmp0_acc_arr[tid] = tmp0_acc_local;**
+}"><pre class="notranslate"><code>tmp0_acc_arr[64];
+#pragma omp parallel num_threads(64)
+{
+    auto tid = omp_get_thread_num();
+    **auto tmp0_acc_local = 0;**
+    #pragma omp for
+    for(...){
+        ....
+        **tmp0_acc_local**  = tmp0_acc_local + tmp_x;
+    }
+    **tmp0_acc_arr[tid] = tmp0_acc_local;**
+}
+</code></pre></div>
+<h2>Descriptions</h2>
+<p>Following aten to use <code>two pass reduction</code> with <code>omp parallel</code> for deterministic reduction order.<br>
+<a href="https://github.com/pytorch/pytorch/blob/9c3ae37fc453505f5e437d1edadefdb278c2c39c/aten/src/ATen/Parallel-inl.h#L39">https://github.com/pytorch/pytorch/blob/9c3ae37fc453505f5e437d1edadefdb278c2c39c/aten/src/ATen/Parallel-inl.h#L39</a><br>
+<a href="https://github.com/pytorch/pytorch/blob/9c3ae37fc453505f5e437d1edadefdb278c2c39c/aten/src/ATen/native/TensorIteratorReduce.cpp#L24">https://github.com/pytorch/pytorch/blob/9c3ae37fc453505f5e437d1edadefdb278c2c39c/aten/src/ATen/native/TensorIteratorReduce.cpp#L24</a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="            float tmp_acc0 = 0;
+            at::vec::Vectorized&lt;float&gt; tmp_acc0_vec = at::vec::Vectorized&lt;float&gt;(0);
+            // init reduction buffer per thread
+            float tmp_acc0_arr[64];
+            at::vec::Vectorized&lt;float&gt; tmp_acc0_vec_arr[64];
+            for (int tid = 0; tid &lt; 64; tid++) 
+            {
+                tmp_acc0_arr[tid] = 0;
+                tmp_acc0_vec_arr[tid] = at::vec::Vectorized&lt;float&gt;(0);
+            }
+            #pragma omp parallel num_threads(64)
+            {
+                int tid = omp_get_thread_num();
+                #pragma omp for
+                for(long x0=static_cast&lt;long&gt;(0L); x0&lt;static_cast&lt;long&gt;(3964928L); x0+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = at::vec::Vectorized&lt;float&gt;::loadu(in_ptr0 + static_cast&lt;long&gt;(x0));
+                    auto tmp1 = at::vec::Vectorized&lt;float&gt;::loadu(in_ptr1 + static_cast&lt;long&gt;(x0));
+                    auto tmp2 = tmp0 - tmp1;
+                    auto tmp3 = tmp2 * tmp2;
+                    // reduce to per thread buffers
+                    tmp_acc0_vec_arr[tid] = tmp_acc0_vec_arr[tid] + tmp3;
+                }
+            }
+            // second pass reduce
+            for (int tid = 0; tid &lt; 64; tid++)
+            {
+                tmp_acc0 = tmp_acc0 + tmp_acc0_arr[tid];
+                tmp_acc0_vec = tmp_acc0_vec + tmp_acc0_vec_arr[tid];
+            }
+            tmp_acc0 = tmp_acc0 + at::vec::vec_reduce_all&lt;float&gt;([](at::vec::Vectorized&lt;float&gt;&amp; x, at::vec::Vectorized&lt;float&gt;&amp; y) { return x + y; }, tmp_acc0_vec);
+            out_ptr0[static_cast&lt;long&gt;(0L)] = static_cast&lt;float&gt;(tmp_acc0);"><pre class="notranslate"><code>            float tmp_acc0 = 0;
+            at::vec::Vectorized&lt;float&gt; tmp_acc0_vec = at::vec::Vectorized&lt;float&gt;(0);
+            // init reduction buffer per thread
+            float tmp_acc0_arr[64];
+            at::vec::Vectorized&lt;float&gt; tmp_acc0_vec_arr[64];
+            for (int tid = 0; tid &lt; 64; tid++) 
+            {
+                tmp_acc0_arr[tid] = 0;
+                tmp_acc0_vec_arr[tid] = at::vec::Vectorized&lt;float&gt;(0);
+            }
+            #pragma omp parallel num_threads(64)
+            {
+                int tid = omp_get_thread_num();
+                #pragma omp for
+                for(long x0=static_cast&lt;long&gt;(0L); x0&lt;static_cast&lt;long&gt;(3964928L); x0+=static_cast&lt;long&gt;(16L))
+                {
+                    auto tmp0 = at::vec::Vectorized&lt;float&gt;::loadu(in_ptr0 + static_cast&lt;long&gt;(x0));
+                    auto tmp1 = at::vec::Vectorized&lt;float&gt;::loadu(in_ptr1 + static_cast&lt;long&gt;(x0));
+                    auto tmp2 = tmp0 - tmp1;
+                    auto tmp3 = tmp2 * tmp2;
+                    // reduce to per thread buffers
+                    tmp_acc0_vec_arr[tid] = tmp_acc0_vec_arr[tid] + tmp3;
+                }
+            }
+            // second pass reduce
+            for (int tid = 0; tid &lt; 64; tid++)
+            {
+                tmp_acc0 = tmp_acc0 + tmp_acc0_arr[tid];
+                tmp_acc0_vec = tmp_acc0_vec + tmp_acc0_vec_arr[tid];
+            }
+            tmp_acc0 = tmp_acc0 + at::vec::vec_reduce_all&lt;float&gt;([](at::vec::Vectorized&lt;float&gt;&amp; x, at::vec::Vectorized&lt;float&gt;&amp; y) { return x + y; }, tmp_acc0_vec);
+            out_ptr0[static_cast&lt;long&gt;(0L)] = static_cast&lt;float&gt;(tmp_acc0);
+</code></pre></div>
+<h2>Test results</h2>
+<p>I test this PR with dynamo benchmark on 32-core ICX system,<br>
+Result (avg speed up):</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>before this PR</th>
+<th>after this PR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>torchbench</td>
+<td>1.303</td>
+<td>1.301</td>
+</tr>
+<tr>
+<td>hugginface</td>
+<td>1.346</td>
+<td>1.343</td>
+</tr>
+<tr>
+<td>timms</td>
+<td>1.971</td>
+<td>1.970</td>
+</tr>
+</tbody>
+</table>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="export LD_PRELOAD=${CONDA_PREFIX:-&quot;$(dirname $(which conda))/../&quot;}/lib/libiomp5.so:${CONDA_PREFIX:-&quot;$(dirname $(which conda))/../&quot;}/lib/libjemalloc.so
+export MALLOC_CONF=&quot;oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:-1,muzzy_decay_ms:-1&quot;
+export KMP_AFFINITY=granularity=fine,compact,1,0
+export KMP_BLOCKTIME=1
+
+multi_threads_test() {
+    CORES=$(lscpu | grep Core | awk '{print $4}')
+    export OMP_NUM_THREADS=$CORES
+    end_core=$(expr $CORES - 1)    
+    numactl -C 0-${end_core} --membind=0 python benchmarks/dynamo/${SUITE}.py --${SCENARIO} --${DT} -dcpu -n50 --no-skip --dashboard --only &quot;${MODEL}&quot; ${Channels_extra} ${BS_extra} ${Shape_extra} ${Mode_extra} ${Wrapper_extra} ${Flag_extra} --timeout 9000 --backend=inductor --output=${LOG_BASE}/${SUITE}.csv
+}
+
+SCENARIO=performance
+DT=float32
+export TORCHINDUCTOR_FREEZING=1
+Flag_extra=&quot;--freezing&quot;
+Mode_extra=&quot;--inference&quot;
+
+for suite in timm_models huggingface torchbench
+do
+  export SUITE=$suite
+  echo $SUITE
+  export LOG_BASE=`date +%m%d%H%M%S`
+  mkdir $LOG_BASE
+  multi_threads_test
+done"><pre class="notranslate"><code>export LD_PRELOAD=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}/lib/libiomp5.so:${CONDA_PREFIX:-"$(dirname $(which conda))/../"}/lib/libjemalloc.so
+export MALLOC_CONF="oversize_threshold:1,background_thread:true,metadata_thp:auto,dirty_decay_ms:-1,muzzy_decay_ms:-1"
+export KMP_AFFINITY=granularity=fine,compact,1,0
+export KMP_BLOCKTIME=1
+
+multi_threads_test() {
+    CORES=$(lscpu | grep Core | awk '{print $4}')
+    export OMP_NUM_THREADS=$CORES
+    end_core=$(expr $CORES - 1)    
+    numactl -C 0-${end_core} --membind=0 python benchmarks/dynamo/${SUITE}.py --${SCENARIO} --${DT} -dcpu -n50 --no-skip --dashboard --only "${MODEL}" ${Channels_extra} ${BS_extra} ${Shape_extra} ${Mode_extra} ${Wrapper_extra} ${Flag_extra} --timeout 9000 --backend=inductor --output=${LOG_BASE}/${SUITE}.csv
+}
+
+SCENARIO=performance
+DT=float32
+export TORCHINDUCTOR_FREEZING=1
+Flag_extra="--freezing"
+Mode_extra="--inference"
+
+for suite in timm_models huggingface torchbench
+do
+  export SUITE=$suite
+  echo $SUITE
+  export LOG_BASE=`date +%m%d%H%M%S`
+  mkdir $LOG_BASE
+  multi_threads_test
+done
+</code></pre></div>
+<p>System info</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="ubuntuip-172-31-18-205:~/hz/pytorch$ lscpu
+Architecture:            x86_64
+  CPU op-mode(s):        32-bit, 64-bit
+  Address sizes:         46 bits physical, 48 bits virtual
+  Byte Order:            Little Endian
+CPU(s):                  64
+  On-line CPU(s) list:   0-63
+Vendor ID:               GenuineIntel
+  Model name:            Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz
+    CPU family:          6
+    Model:               106
+    Thread(s) per core:  2
+    Core(s) per socket:  32
+    Socket(s):           1
+    Stepping:            6
+    BogoMIPS:            5800.00
+    Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic mo
+                         vbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xs
+                         aveopt xsavec xgetbv1 xsaves wbnoinvd ida arat avx512vbmi pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid md_clear flush_l1d arch_capabilities
+Virtualization features: 
+  Hypervisor vendor:     KVM
+  Virtualization type:   full
+Caches (sum of all):     
+  L1d:                   1.5 MiB (32 instances)
+  L1i:                   1 MiB (32 instances)
+  L2:                    40 MiB (32 instances)
+  L3:                    54 MiB (1 instance)
+NUMA:                    
+  NUMA node(s):          1
+  NUMA node0 CPU(s):     0-63
+Vulnerabilities:         
+  Gather data sampling:  Unknown: Dependent on hypervisor status
+  Itlb multihit:         Not affected
+  L1tf:                  Not affected
+  Mds:                   Not affected
+  Meltdown:              Not affected
+  Mmio stale data:       Mitigation; Clear CPU buffers; SMT Host state unknown
+  Retbleed:              Not affected
+  Spec rstack overflow:  Not affected
+  Spec store bypass:     Mitigation; Speculative Store Bypass disabled via prctl
+  Spectre v1:            Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+  Spectre v2:            Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+  Srbds:                 Not affected
+  Tsx async abort:       Not affected"><pre class="notranslate"><code>ubuntuip-172-31-18-205:~/hz/pytorch$ lscpu
+Architecture:            x86_64
+  CPU op-mode(s):        32-bit, 64-bit
+  Address sizes:         46 bits physical, 48 bits virtual
+  Byte Order:            Little Endian
+CPU(s):                  64
+  On-line CPU(s) list:   0-63
+Vendor ID:               GenuineIntel
+  Model name:            Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz
+    CPU family:          6
+    Model:               106
+    Thread(s) per core:  2
+    Core(s) per socket:  32
+    Socket(s):           1
+    Stepping:            6
+    BogoMIPS:            5800.00
+    Flags:               fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq monitor ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic mo
+                         vbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch invpcid_single ssbd ibrs ibpb stibp ibrs_enhanced fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xs
+                         aveopt xsavec xgetbv1 xsaves wbnoinvd ida arat avx512vbmi pku ospke avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg tme avx512_vpopcntdq rdpid md_clear flush_l1d arch_capabilities
+Virtualization features: 
+  Hypervisor vendor:     KVM
+  Virtualization type:   full
+Caches (sum of all):     
+  L1d:                   1.5 MiB (32 instances)
+  L1i:                   1 MiB (32 instances)
+  L2:                    40 MiB (32 instances)
+  L3:                    54 MiB (1 instance)
+NUMA:                    
+  NUMA node(s):          1
+  NUMA node0 CPU(s):     0-63
+Vulnerabilities:         
+  Gather data sampling:  Unknown: Dependent on hypervisor status
+  Itlb multihit:         Not affected
+  L1tf:                  Not affected
+  Mds:                   Not affected
+  Meltdown:              Not affected
+  Mmio stale data:       Mitigation; Clear CPU buffers; SMT Host state unknown
+  Retbleed:              Not affected
+  Spec rstack overflow:  Not affected
+  Spec store bypass:     Mitigation; Speculative Store Bypass disabled via prctl
+  Spectre v1:            Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+  Spectre v2:            Mitigation; Enhanced IBRS, IBPB conditional, RSB filling, PBRSB-eIBRS SW sequence
+  Srbds:                 Not affected
+  Tsx async abort:       Not affected
+</code></pre></div>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from oclif: 4.4.4]]></title>
+            <link>https://github.com/oclif/oclif/releases/tag/4.4.4</link>
+            <guid>https://github.com/oclif/oclif/releases/tag/4.4.4</guid>
+            <pubDate>Sun, 04 Feb 2024 11:20:21 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
+<ul>
+<li><strong>deps:</strong> bump @aws-sdk/client-s3 from 3.496.0 to 3.504.0 (<a href="https://github.com/oclif/oclif/commit/244f5a487054facc630010ed8ca0285a09fe622d">244f5a4</a>)</li>
+</ul>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/xpu/118613: Update on "[2/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</link>
@@ -23,6 +334,58 @@
             <pubDate>Sun, 04 Feb 2024 10:02:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
 <p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/118550: improve CUDACachingAllocator lock contention (#118550)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118550</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118550</guid>
+            <pubDate>Sun, 04 Feb 2024 07:13:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p>NativeCachingAllocator has a global lock which shows lock contention with one process using multiple GPUs. The lock is required to lookup Block from pointer. We can make the lock more fine grain to reduce the lock contention.</p>
+<p>bypass-github-pytorch-ci-checks</p>
+<p>Test Plan: existing unittests, verified on prod models using eight GPUs showing double digits improvements</p>
+<p>Reviewed By: albanD</p>
+<p>Differential Revision: D52493091</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.3.108-nightly-20240204.1]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.3.108-nightly-20240204.1</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.108-nightly-20240204.1</guid>
+            <pubDate>Sun, 04 Feb 2024 07:02:08 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/119109: fix forward test_memory_planning.py (#119109)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F119109</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F119109</guid>
+            <pubDate>Sun, 04 Feb 2024 06:23:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:</p>
+<p>fixes a broken test, also makes it run in fbcode correctly</p>
+<p>Test Plan: test</p>
+<p>Reviewed By: angelayi</p>
+<p>Differential Revision: D53373709</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.3.111]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.111</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.111</guid>
+            <pubDate>Sun, 04 Feb 2024 05:40:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I254dcc921d4712d6cc6fc4bdc67d0d0a5820e658<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5265897" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5265897</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.3.111@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d5d02314f0e951913d7328ee31e41395ea087f2c/hovercard" href="https://github.com/v8/v8/commit/d5d02314f0e951913d7328ee31e41395ea087f2c"><tt>d5d0231</tt></a>-refs/heads/main@{#92180}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.3.111-pgo: Version 12.3.111]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.111-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.111-pgo</guid>
+            <pubDate>Sun, 04 Feb 2024 05:40:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I254dcc921d4712d6cc6fc4bdc67d0d0a5820e658<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5265897" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5265897</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.3.111@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d5d02314f0e951913d7328ee31e41395ea087f2c/hovercard" href="https://github.com/v8/v8/commit/d5d02314f0e951913d7328ee31e41395ea087f2c"><tt>d5d0231</tt></a>-refs/heads/main@{#92180}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from prettier: 3.2.5]]></title>
@@ -146,20 +509,6 @@ Then the <code>to_dtype(float32)</code> after <code>load</code> will hit this ca
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/119137: [Dynamo][autograd.Function] Should graph break on stride accesses in …]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F119137</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F119137</guid>
-            <pubDate>Sun, 04 Feb 2024 02:03:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…backward</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/119137: [Dynamo][autograd.Function] Should graph break on stride accesses in …]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F119137</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F119137</guid>
-            <pubDate>Sun, 04 Feb 2024 02:03:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…backward</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/xpu/117098: Update on "Intel GPU oneDNN upstreaming for library compilation"]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117098</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117098</guid>
@@ -200,23 +549,9 @@ With this PR, a static library <code>libdnnl.a</code> for GPU would be compiled 
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from swc: v1.3.108-nightly-20240204.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.3.108-nightly-20240204.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.3.108-nightly-20240204.1</guid>
-            <pubDate>Sun, 04 Feb 2024 00:42:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: Publish 1.3.108-nightly-20240204.1</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/118936]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118936</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F118936</guid>
-            <pubDate>Sun, 04 Feb 2024 00:20:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/118936]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118936</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F118936</guid>
             <pubDate>Sun, 04 Feb 2024 00:20:14 GMT</pubDate>
             <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
@@ -652,9 +987,9 @@ npm test </pre></div>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.110]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.110</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.110</guid>
+            <title><![CDATA[Release notes from v8: 12.3.110-pgo: Version 12.3.110]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.110-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.110-pgo</guid>
             <pubDate>Sat, 03 Feb 2024 05:52:27 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I2fdf803577165e8caf7bfd56b1d120cc2aa42e81<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262565" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5262565</a><br>
@@ -663,9 +998,9 @@ Cr-Commit-Position: refs/heads/12.3.110@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a046d47b8e3b7f2b2014e9273ce0985dac311429/hovercard" href="https://github.com/v8/v8/commit/a046d47b8e3b7f2b2014e9273ce0985dac311429"><tt>a046d47</tt></a>-refs/heads/main@{#92178}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.110-pgo: Version 12.3.110]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.110-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.110-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.110]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.110</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.110</guid>
             <pubDate>Sat, 03 Feb 2024 05:52:27 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I2fdf803577165e8caf7bfd56b1d120cc2aa42e81<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262565" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5262565</a><br>
@@ -818,17 +1153,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.109]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.109</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.109</guid>
-            <pubDate>Sat, 03 Feb 2024 02:04:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ic583f2e0ef018994a0b9ad5fbb5781d8aba7c9df<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262962" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5262962</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.3.109@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4a613043a788f974e0f9231a9f5942d954c1a38d/hovercard" href="https://github.com/v8/v8/commit/4a613043a788f974e0f9231a9f5942d954c1a38d"><tt>4a61304</tt></a>-refs/heads/main@{#92177}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: 12.3.109-pgo: Version 12.3.109]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.3.109-pgo</link>
             <guid>https://github.com/v8/v8/releases/tag/12.3.109-pgo</guid>
@@ -840,9 +1164,20 @@ Cr-Commit-Position: refs/heads/12.3.109@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4a613043a788f974e0f9231a9f5942d954c1a38d/hovercard" href="https://github.com/v8/v8/commit/4a613043a788f974e0f9231a9f5942d954c1a38d"><tt>4a61304</tt></a>-refs/heads/main@{#92177}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.108]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.108</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.108</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.109]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.109</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.109</guid>
+            <pubDate>Sat, 03 Feb 2024 02:04:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ic583f2e0ef018994a0b9ad5fbb5781d8aba7c9df<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262962" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5262962</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.3.109@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4a613043a788f974e0f9231a9f5942d954c1a38d/hovercard" href="https://github.com/v8/v8/commit/4a613043a788f974e0f9231a9f5942d954c1a38d"><tt>4a61304</tt></a>-refs/heads/main@{#92177}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.3.108-pgo: Version 12.3.108]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.108-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.108-pgo</guid>
             <pubDate>Sat, 03 Feb 2024 01:10:31 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I3b82763975e4688f40931862fbff444d7e7571ce<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262961" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5262961</a><br>
@@ -851,9 +1186,9 @@ Cr-Commit-Position: refs/heads/12.3.108@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0205fee4d4ad68b8ee4569a101bc9898cb0b0832/hovercard" href="https://github.com/v8/v8/commit/0205fee4d4ad68b8ee4569a101bc9898cb0b0832"><tt>0205fee</tt></a>-refs/heads/main@{#92176}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.3.108-pgo: Version 12.3.108]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.108-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.108-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.3.108]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.3.108</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.3.108</guid>
             <pubDate>Sat, 03 Feb 2024 01:10:31 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I3b82763975e4688f40931862fbff444d7e7571ce<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262961" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5262961</a><br>
@@ -1052,28 +1387,6 @@ Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5262957
 Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
 Cr-Commit-Position: refs/heads/12.3.107@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/32252096f67f54374529859d8cc84da5515bd3ed/hovercard" href="https://github.com/v8/v8/commit/32252096f67f54374529859d8cc84da5515bd3ed"><tt>3225209</tt></a>-refs/heads/main@{#92175}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.3.106]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.106</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.106</guid>
-            <pubDate>Fri, 02 Feb 2024 18:10:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib53242650f04826a2e675456352ec573cde0eb35<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5261869" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5261869</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.3.106@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a268680be5db1a3d691be10375446a99afb995a9/hovercard" href="https://github.com/v8/v8/commit/a268680be5db1a3d691be10375446a99afb995a9"><tt>a268680</tt></a>-refs/heads/main@{#92173}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.3.106-pgo: Version 12.3.106]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.3.106-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.3.106-pgo</guid>
-            <pubDate>Fri, 02 Feb 2024 18:10:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib53242650f04826a2e675456352ec573cde0eb35<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5261869" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5261869</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.3.106@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a268680be5db1a3d691be10375446a99afb995a9/hovercard" href="https://github.com/v8/v8/commit/a268680be5db1a3d691be10375446a99afb995a9"><tt>a268680</tt></a>-refs/heads/main@{#92173}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from zed: v0.121.2-pre]]></title>
@@ -2239,75 +2552,6 @@ is aware of the problem.</p>
 <li>Fixed: <code>function-calc-no-unspaced-operator</code> performance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2108074831" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7505" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7505/hovercard" href="https://github.com/stylelint/stylelint/pull/7505">#7505</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ybiquitous/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ybiquitous">@ybiquitous</a>).</li>
 <li>Fixed: <code>validateOptions</code> to report when secondary option object is an empty object or null (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2092037644" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7476" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7476/hovercard" href="https://github.com/stylelint/stylelint/pull/7476">#7476</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ybiquitous/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ybiquitous">@ybiquitous</a>).</li>
 <li>Fixed: <code>report()</code> error message responsibility for a missing node or line number (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2091945206" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7474" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7474/hovercard" href="https://github.com/stylelint/stylelint/pull/7474">#7474</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ybiquitous/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ybiquitous">@ybiquitous</a>).</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from sequelize: v7.0.0-alpha.36]]></title>
-            <link>https://github.com/sequelize/sequelize/releases/tag/v7.0.0-alpha.36</link>
-            <guid>https://github.com/sequelize/sequelize/releases/tag/v7.0.0-alpha.36</guid>
-            <pubDate>Thu, 01 Feb 2024 11:48:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/sequelize/sequelize/compare/v7.0.0-alpha.35...v7.0.0-alpha.36">7.0.0-alpha.36</a> (2024-02-01)</h1>
-<h3>Features</h3>
-<ul>
-<li>add support for generating uuids in SQL (<a href="https://github.com/sequelize/sequelize/issues/16864" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/16864/hovercard">#16864</a>) (<a href="https://github.com/sequelize/sequelize/commit/2df575b9b3ddc113f3cda00caef141d8349f72eb">2df575b</a>)</li>
-<li>migrate bulkDelete, delete &amp; truncate methods to typescript (<a href="https://github.com/sequelize/sequelize/issues/15934" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/15934/hovercard">#15934</a>) (<a href="https://github.com/sequelize/sequelize/commit/693c0fcbae8baf1899e54de15f8c140b0cda0758">693c0fc</a>)</li>
-<li>migrate schema queries to typescript (<a href="https://github.com/sequelize/sequelize/issues/16932" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/16932/hovercard">#16932</a>) (<a href="https://github.com/sequelize/sequelize/commit/12ad4f1ed22b42235e8f8341f50ac74d682967f6">12ad4f1</a>)</li>
-<li>parse URLs using WHATWG URL API instead of legacy URL API (<a href="https://github.com/sequelize/sequelize/issues/16927" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/16927/hovercard">#16927</a>) (<a href="https://github.com/sequelize/sequelize/commit/9cc6ca90199d1e9c30737b46c3d25e55a85b6a38">9cc6ca9</a>)</li>
-<li><strong>types:</strong> support TypeScript 5.3.3 (<a href="https://github.com/sequelize/sequelize/issues/17017" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/17017/hovercard">#17017</a>) (<a href="https://github.com/sequelize/sequelize/commit/20eb84f4bef0cdf17ee9fc7510f9c98e1999b987">20eb84f</a>)</li>
-</ul>
-<h3>Breaking Changes</h3>
-<ul>
-<li>drop support TS 4.9 (<a href="https://github.com/sequelize/sequelize/issues/17023" data-hovercard-type="pull_request" data-hovercard-url="/sequelize/sequelize/pull/17023/hovercard">#17023</a>) (<a href="https://github.com/sequelize/sequelize/commit/85e84cdbe462b01dd2927df765d178cc3ca83207">85e84cd</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from core: 2024.2.0b1]]></title>
-            <link>https://github.com/home-assistant/core/releases/tag/2024.2.0b1</link>
-            <guid>https://github.com/home-assistant/core/releases/tag/2024.2.0b1</guid>
-            <pubDate>Thu, 01 Feb 2024 11:21:15 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>Update rokuecp to 0.19 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ctalkington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ctalkington">@ctalkington</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2107116819" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109100" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109100/hovercard" href="https://github.com/home-assistant/core/pull/109100">#109100</a>)</li>
-<li>Fix time to arrival to timestamp in Tessie (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Bre77/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Bre77">@Bre77</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2108854738" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109172" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109172/hovercard" href="https://github.com/home-assistant/core/pull/109172">#109172</a>)</li>
-<li>Make zwave_js last seen sensor enabled by default (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/raman325/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/raman325">@raman325</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2109536512" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109191" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109191/hovercard" href="https://github.com/home-assistant/core/pull/109191">#109191</a>)</li>
-<li>Pass verify_ssl to created session in Omada (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/joostlek/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/joostlek">@joostlek</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2110136594" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109212" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109212/hovercard" href="https://github.com/home-assistant/core/pull/109212">#109212</a>)</li>
-<li>Bump govee-ble to 0.31.0 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bdraco/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bdraco">@bdraco</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2110754118" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109235" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109235/hovercard" href="https://github.com/home-assistant/core/pull/109235">#109235</a>)</li>
-<li>Remove deprecation warnings for zwave_js climate TURN_ON/TURN_OFF features (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/raman325/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/raman325">@raman325</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2110964842" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109242" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109242/hovercard" href="https://github.com/home-assistant/core/pull/109242">#109242</a>)</li>
-<li>Apply review comments on proximity (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mib1185/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mib1185">@mib1185</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111021269" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109249" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109249/hovercard" href="https://github.com/home-assistant/core/pull/109249">#109249</a>)</li>
-<li>Fix Xiaomi-ble automations for multiple button devices (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Ernst79/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Ernst79">@Ernst79</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111048288" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109251" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109251/hovercard" href="https://github.com/home-assistant/core/pull/109251">#109251</a>)</li>
-<li>Fix ZHA update entity not updating installed version (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/TheJulianJES/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/TheJulianJES">@TheJulianJES</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111232851" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109260" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109260/hovercard" href="https://github.com/home-assistant/core/pull/109260">#109260</a>)</li>
-<li>Restore support for packages being installed from urls with fragments (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bdraco/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bdraco">@bdraco</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111371529" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109267" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109267/hovercard" href="https://github.com/home-assistant/core/pull/109267">#109267</a>)</li>
-<li>Fix app name sorting in apple_tv (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bdraco/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bdraco">@bdraco</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111531486" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109274" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109274/hovercard" href="https://github.com/home-assistant/core/pull/109274">#109274</a>)</li>
-<li>Address late review of Tankerkoenig package move (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jpbede/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jpbede">@jpbede</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111649402" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109277" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109277/hovercard" href="https://github.com/home-assistant/core/pull/109277">#109277</a>)</li>
-<li>Fix dalkin climate warnings (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jbouwh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jbouwh">@jbouwh</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111687921" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109279" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109279/hovercard" href="https://github.com/home-assistant/core/pull/109279">#109279</a>)</li>
-<li>bugfix: name missing in getLogger (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/llluis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/llluis">@llluis</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111747419" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109282" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109282/hovercard" href="https://github.com/home-assistant/core/pull/109282">#109282</a>)</li>
-<li>Fix two icon translations for La Marzocco (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/zweckj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/zweckj">@zweckj</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111751041" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109284" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109284/hovercard" href="https://github.com/home-assistant/core/pull/109284">#109284</a>)</li>
-<li>Remove quality scale platinum from daikin integration (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jbouwh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jbouwh">@jbouwh</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111859623" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109292" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109292/hovercard" href="https://github.com/home-assistant/core/pull/109292">#109292</a>)</li>
-<li>Fix device class repairs issues UOM placeholders in Group (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frenck/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frenck">@frenck</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111880742" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109294" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109294/hovercard" href="https://github.com/home-assistant/core/pull/109294">#109294</a>)</li>
-<li>Bump hass-nabucasa from 0.75.1 to 0.76.0 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ludeeus/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ludeeus">@ludeeus</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111970772" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/109296" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/109296/hovercard" href="https://github.com/home-assistant/core/pull/109296">#109296</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from deno: v1.40.3]]></title>
-            <link>https://github.com/denoland/deno/releases/tag/v1.40.3</link>
-            <guid>https://github.com/denoland/deno/releases/tag/v1.40.3</guid>
-            <pubDate>Thu, 01 Feb 2024 08:19:01 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>1.40.3 / 2024.02.01</h3>
-<ul>
-<li>Revert "refactor(cli): use new sanitizer for resources (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2101427705" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22125" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22125/hovercard" href="https://github.com/denoland/deno/pull/22125">#22125</a>)" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2103709652" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22153" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22153/hovercard" href="https://github.com/denoland/deno/pull/22153">#22153</a>)</li>
-<li>feat(unstable): implement <code>navigator.gpu.getPreferredCanvasFormat()</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2103621546" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22149" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22149/hovercard" href="https://github.com/denoland/deno/pull/22149">#22149</a>)</li>
-<li>fix(ext/node): add <code>aes256</code> algorithm support (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2109189102" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22198" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22198/hovercard" href="https://github.com/denoland/deno/pull/22198">#22198</a>)</li>
-<li>fix(ext/node): limit OpState borrow in op_napi_open (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2103652177" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22151" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22151/hovercard" href="https://github.com/denoland/deno/pull/22151">#22151</a>)</li>
-<li>fix(fs): copyFile NUL path on macOS (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111454979" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22216" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22216/hovercard" href="https://github.com/denoland/deno/pull/22216">#22216</a>)</li>
-<li>fix(install): forward granular --unstable-* flags (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2104384270" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22164" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22164/hovercard" href="https://github.com/denoland/deno/pull/22164">#22164</a>)</li>
-<li>fix(lockfile): only consider package.json beside lockfile in workspace<br>
-property (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2106685113" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22179" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22179/hovercard" href="https://github.com/denoland/deno/pull/22179">#22179</a>)</li>
-<li>fix(lsp): don't normalize urls in cache command params (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2106846265" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22182" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22182/hovercard" href="https://github.com/denoland/deno/pull/22182">#22182</a>)</li>
-<li>fix(node): <code>util.callbackify</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2109375919" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22200" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22200/hovercard" href="https://github.com/denoland/deno/pull/22200">#22200</a>)</li>
-<li>fix(node): add <code>ppid</code> getter for <code>node:process</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2104685043" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22167" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22167/hovercard" href="https://github.com/denoland/deno/pull/22167">#22167</a>)</li>
-<li>fix(publish): add node specifiers (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111226206" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22213" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22213/hovercard" href="https://github.com/denoland/deno/pull/22213">#22213</a>)</li>
-<li>fix(publish): rename --no-fast-check to --no-zap (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2111228469" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22214" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22214/hovercard" href="https://github.com/denoland/deno/pull/22214">#22214</a>)</li>
-<li>fix(runtime): return number from <code>op_ppid</code> instead of bigint (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2104705372" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22169" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22169/hovercard" href="https://github.com/denoland/deno/pull/22169">#22169</a>)</li>
-<li>fix: canary for arm64 macos (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2108224304" data-permission-text="Title is private" data-url="https://github.com/denoland/deno/issues/22187" data-hovercard-type="pull_request" data-hovercard-url="/denoland/deno/pull/22187/hovercard" href="https://github.com/denoland/deno/pull/22187">#22187</a>)</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
