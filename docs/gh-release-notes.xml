@@ -4,10 +4,321 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 21 Feb 2024 06:06:55 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 21 Feb 2024 12:08:17 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118613: Update on "[2/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</guid>
+            <pubDate>Wed, 21 Feb 2024 18:00:07 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/pull/118528" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/118528/hovercard">[1/2] Intel GPU Runtime Upstreaming for Generator</a>, as mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the second PR covers the changes under <code>python frontend</code>.</p>
+<h1>Design</h1>
+<p>Currently, it primarily offers geneartor-related APIs, including</p>
+<ul>
+<li><code>torch.xpu.default_generators</code></li>
+<li><code>torch.xpu.get_rng_state</code></li>
+<li><code>torch.xpu.get_rng_state_all</code></li>
+<li><code>torch.xpu.initial_seed</code></li>
+<li><code>torch.xpu.manual_seed</code></li>
+<li><code>torch.xpu.manual_seed_all</code></li>
+<li><code>torch.xpu.seed</code></li>
+<li><code>torch.xpu.seed_all</code></li>
+<li><code>torch.xpu.set_rng_state</code></li>
+<li><code>torch.xpu.set_rng_state_all</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>The differences with CUDA:<br>
+The generator-related frontend python APIs are 1:1 mapping with CUDA.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118528: Update on "[1/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</guid>
+            <pubDate>Wed, 21 Feb 2024 18:00:06 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>As mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the last runtime component we would like to upstream is <code>Generator</code> which is responsible for the pseudo-random number generation. To facilitate the code review, we split the code changes into 2 PRs. This is one of the 2 PRs and covers the changes under <code>aten</code>.</p>
+<h1>Design</h1>
+<p>Following the previous design, <code>c10::GeneratorImpl</code> is the device-agnostic abstraction of a random number generator. So we will introduce an XPU generator <code>XPUGeneratorImpl</code>, inheriting from <code>c10::GeneratorImpl</code>, to manage random states on an Intel GPU device. Intel GPU runtime <code>Generator</code> adopts the same algorithm as CPU. The corresponding C++ file should be placed in aten/src/ATen/xpu/ folder and is built in <code>libtorch_xpu.so</code>.<br>
+This PR provide the list of APIs:</p>
+<ul>
+<li><code>getDefaultXPUGenerator</code></li>
+<li><code>createXPUGenerator</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>The 2nd PR will cover <code>python frontend</code>.</p>
+<p>The differences with CUDA:<br>
+The generator-related ATen CPP APIs are 1:1 mapping with CUDA.<br>
+The XPUGeneratorImpl's member functions have slight differences with CUDA.<br>
+lack of CUDA-related counterpart APIs listed below:</p>
+<ul>
+<li>capture_prologue</li>
+<li>capture_epilogue</li>
+<li>philox_cuda_state</li>
+<li>reset_rnn_state</li>
+</ul>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118523: Update on "Intel GPU Runtime Upstreaming for Guard"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</guid>
+            <pubDate>Wed, 21 Feb 2024 17:47:21 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the 5th runtime component we would like to upstream is <code>Guard</code>. We will cover device guard and stream guard in this PR.</p>
+<h1>Design</h1>
+<p>Device guard is used mainly for op dispatcher in PyTorch. Currently, PyTorch already has a device guard abstraction <code>c10::impl::DeviceGuardImplInterface</code>. In our design, we will introduce an <code>XPUGuardImpl</code> class inherits from <code>c10::impl::DeviceGuardImplInterface</code>. Register <code>XPUGuardImpl</code> to PyTorch after we implement the device switch management mechanism in <code>XPUGuardImpl</code>. Besides, we will introduce <code>XPUGuard</code>, <code>OptionalXPUGuard</code>, <code>XPUStreamGuard</code>, and <code>OptionalXPUStreamGuard</code>. They are all following the design of CUDA's counterpart. The corresponding C++ file should be placed in c10/xpu/ folder.</p>
+<h1>Additional Context</h1>
+<p>It is unnecessary to add <code>Guard</code> code to PyTorch frontend.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rxdb: 15.9.0]]></title>
+            <link>https://github.com/pubkey/rxdb/releases/tag/15.9.0</link>
+            <guid>https://github.com/pubkey/rxdb/releases/tag/15.9.0</guid>
+            <pubDate>Wed, 21 Feb 2024 11:52:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p align="center">
+            <a href="https://rxdb.info/" rel="nofollow">
+                <img src="https://camo.githubusercontent.com/730cc6178a41adbcf079436b1d5eb785553d3a1b736766baba7a0a3419afd28a/68747470733a2f2f727864622e696e666f2f66696c65732f6c6f676f2f727864625f6a6176617363726970745f64617461626173652e737667" width="380px" alt="JavaScript Database" data-canonical-src="https://rxdb.info/files/logo/rxdb_javascript_database.svg" style="max-width: 100%;">
+            </a>
+        </p>
+<ul>
+<li>ADD <code>awaitWritePersistence</code> option to memory-synced storage.</li>
+</ul>
+<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>
+<h3>Join RxDB:</h3>
+<ul>
+<li>💬 <a href="https://rxdb.info/chat" rel="nofollow">Join the RxDB Chat</a></li>
+<li>⭐ <a href="https://github.com/pubkey/rxdb">Star the RxDB Repo</a></li>
+<li>📰 <a href="https://rxdb.info/newsletter" rel="nofollow">Subscribe to the newsletter</a></li>
+<li>🐦 <a href="https://twitter.com/intent/user?screen_name=rxdbjs" rel="nofollow">Follow at Twitter</a></li>
+<li>🔗 <a href="https://www.linkedin.com/company/rxdb" rel="nofollow">Follow at LinkedIn</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16348]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16348</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16348</guid>
+            <pubDate>Wed, 21 Feb 2024 11:31:12 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v14.1.1-canary.67]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v14.1.1-canary.67</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v14.1.1-canary.67</guid>
+            <pubDate>Wed, 21 Feb 2024 11:11:01 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Fix draft mode invariant: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2137566839" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62121" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62121/hovercard" href="https://github.com/vercel/next.js/pull/62121">#62121</a></li>
+<li>Revert "Update split chunk handling for edge/node": <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2146087855" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62313" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62313/hovercard" href="https://github.com/vercel/next.js/pull/62313">#62313</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Move scss tests into individual directories: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2144321267" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62277" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62277/hovercard" href="https://github.com/vercel/next.js/pull/62277">#62277</a></li>
+<li>Update Turbopack test manifest: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2146177514" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62314" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62314/hovercard" href="https://github.com/vercel/next.js/pull/62314">#62314</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Ethan-Arrowood/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Ethan-Arrowood">@Ethan-Arrowood</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from xstate: @xstate/solid@0.2.0]]></title>
+            <link>https://github.com/statelyai/xstate/releases/tag/%40xstate%2Fsolid%400.2.0</link>
+            <guid>https://github.com/statelyai/xstate/releases/tag/%40xstate%2Fsolid%400.2.0</guid>
+            <pubDate>Wed, 21 Feb 2024 10:53:34 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Minor Changes</h3>
+<ul>
+<li>
+<p><a href="https://github.com/statelyai/xstate/pull/3727" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/3727/hovercard">#3727</a> <a href="https://github.com/statelyai/xstate/commit/5fb3c68"><code>5fb3c68</code></a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - <code>exports</code> field has been added to the <code>package.json</code> manifest. It limits what files can be imported from a package - it's no longer possible to import from files that are not considered to be a part of the public API.</p>
+</li>
+<li>
+<p><a href="https://github.com/statelyai/xstate/pull/4265" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/4265/hovercard">#4265</a> <a href="https://github.com/statelyai/xstate/commit/1153b3f"><code>1153b3f</code></a> Thanks <a href="https://github.com/davidkpiano">@davidkpiano</a>! - FSM-related functions have been removed.</p>
+</li>
+<li>
+<p><a href="https://github.com/statelyai/xstate/pull/4748" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/4748/hovercard">#4748</a> <a href="https://github.com/statelyai/xstate/commit/d73ac8e48af82d4d3bde648206e633eb93193353"><code>d73ac8e48</code></a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - The <code>createService(machine)</code> hook has been removed; use the <code>useActorRef(logic)</code> hook instead.</p>
+</li>
+<li>
+<p><a href="https://github.com/statelyai/xstate/pull/4748" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/4748/hovercard">#4748</a> <a href="https://github.com/statelyai/xstate/commit/d73ac8e48af82d4d3bde648206e633eb93193353"><code>d73ac8e48</code></a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - The <code>fromActorRef(actorRef)</code> has been added. You can use it to get an accessor for reactive snapshot of any existing <code>actorRef</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/statelyai/xstate/pull/4748" data-hovercard-type="pull_request" data-hovercard-url="/statelyai/xstate/pull/4748/hovercard">#4748</a> <a href="https://github.com/statelyai/xstate/commit/d73ac8e48af82d4d3bde648206e633eb93193353"><code>d73ac8e48</code></a> Thanks <a href="https://github.com/Andarist">@Andarist</a>! - The <code>useActor</code> hook accepts an actor <code>logic</code> now and not an existing <code>actorRef</code>. It's used to creating a new instance of an actor and it works just like <code>useMachine</code> used to work (<code>useMachine</code> is now just an alias of <code>useActor</code>).</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.30]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.30</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.30</guid>
+            <pubDate>Wed, 21 Feb 2024 10:53:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I3ecc57b2b2226690b08aa7c49d30ef0266cd52a6<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309387" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309387</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.30@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2357a3d680a4d03d92eac82a4e28d7cc66b891ec/hovercard" href="https://github.com/v8/v8/commit/2357a3d680a4d03d92eac82a4e28d7cc66b891ec"><tt>2357a3d</tt></a>-refs/heads/main@{#92441}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.30-pgo: Version 12.4.30]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.30-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.30-pgo</guid>
+            <pubDate>Wed, 21 Feb 2024 10:53:03 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I3ecc57b2b2226690b08aa7c49d30ef0266cd52a6<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309387" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309387</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.30@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2357a3d680a4d03d92eac82a4e28d7cc66b891ec/hovercard" href="https://github.com/v8/v8/commit/2357a3d680a4d03d92eac82a4e28d7cc66b891ec"><tt>2357a3d</tt></a>-refs/heads/main@{#92441}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16338]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16338</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16338</guid>
+            <pubDate>Wed, 21 Feb 2024 10:29:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16336]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16336</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16336</guid>
+            <pubDate>Wed, 21 Feb 2024 10:17:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.29]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.29</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.29</guid>
+            <pubDate>Wed, 21 Feb 2024 10:10:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I65200dc61dd1da2b9dd3f1936ebac87006a424a7<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311260" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311260</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.29@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/023502f43e62e2271130dded86ffe510b1253ea9/hovercard" href="https://github.com/v8/v8/commit/023502f43e62e2271130dded86ffe510b1253ea9"><tt>023502f</tt></a>-refs/heads/main@{#92440}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.29-pgo: Version 12.4.29]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.29-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.29-pgo</guid>
+            <pubDate>Wed, 21 Feb 2024 10:10:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I65200dc61dd1da2b9dd3f1936ebac87006a424a7<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311260" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311260</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.29@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/023502f43e62e2271130dded86ffe510b1253ea9/hovercard" href="https://github.com/v8/v8/commit/023502f43e62e2271130dded86ffe510b1253ea9"><tt>023502f</tt></a>-refs/heads/main@{#92440}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.28]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.28</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.28</guid>
+            <pubDate>Wed, 21 Feb 2024 08:52:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I533bd214c8dda9335d92a4c5c33c11741bc60943<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311259" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311259</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.28@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/1cf87372c372bc3f326e2f6940e3b228051bd00d/hovercard" href="https://github.com/v8/v8/commit/1cf87372c372bc3f326e2f6940e3b228051bd00d"><tt>1cf8737</tt></a>-refs/heads/main@{#92439}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.28-pgo: Version 12.4.28]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.28-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.28-pgo</guid>
+            <pubDate>Wed, 21 Feb 2024 08:52:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I533bd214c8dda9335d92a4c5c33c11741bc60943<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311259" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311259</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.28@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/1cf87372c372bc3f326e2f6940e3b228051bd00d/hovercard" href="https://github.com/v8/v8/commit/1cf87372c372bc3f326e2f6940e3b228051bd00d"><tt>1cf8737</tt></a>-refs/heads/main@{#92439}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16325]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16325</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16325</guid>
+            <pubDate>Wed, 21 Feb 2024 08:50:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120287: Update on "[Inductor] Fix bug around out of order constexprs in induc…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120287</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120287</guid>
+            <pubDate>Wed, 21 Feb 2024 08:28:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…tor"</p>
+<p>Inductor signature/config generation code assumes that all constexprs come as last arguments of the function. This is not always true for user defined kernels.</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler amjames</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16316]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16316</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16316</guid>
+            <pubDate>Wed, 21 Feb 2024 07:50:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/117098: Update on "Intel GPU oneDNN upstreaming for library compilation"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117098</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F117098</guid>
+            <pubDate>Wed, 21 Feb 2024 07:37:09 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>As proposed  in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017990563" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114848" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114848/hovercard" href="https://github.com/pytorch/pytorch/issues/114848">#114848</a> and <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2015639500" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/114723" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114723/hovercard" href="https://github.com/pytorch/pytorch/issues/114723">#114723</a>, oneDNN library is an important component for Intel GPU software ecosystem.</p>
+<p>This PR is intended to enable oneDNN compilation for Intel GPU.  It is the first step for we enabling any operators like <code>at::baddmm</code>.<br>
+With this PR, a static library <code>libdnnl.a</code> for GPU would be compiled in directory <code>/build/xpumkldnn_proj-prefix</code>.  It can be further linked to <code>libtorch_xpu.so</code> in future. The compilation would  depend on <code>USE_XPU</code> bool variables and runtime check like SYCL, which is defined in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2046619132" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/116019" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/116019/hovercard" href="https://github.com/pytorch/pytorch/pull/116019">#116019</a> for runtime support. Once the <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2046619132" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/116019" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/116019/hovercard" href="https://github.com/pytorch/pytorch/pull/116019">#116019</a> merged, the compilation should be able to be triggered.</p>
+<p>The modification is independent to oneDNN CPU compilation, hence no modification would be introduced for CPU Cmakefiles(e.g. FindMKLDNN.cmake)</p>
+<p>cc gujinghui PenghuiCheng XiaobingSuper jianyuh jgong5 mingfeima sanchitintel ashokei jingxu10 min-jean-cho yanbing-j Guobing-Chen Xia-Weiwen</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120297: [dtensor] simplify outputs wrapping handling]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120297</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120297</guid>
+            <pubDate>Wed, 21 Feb 2024 07:37:05 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR simplifies the outputs wrapping handling in op dispatch, to make<br>
+it simpler and easier to understand.</p>
+<p>It also enables a new case, where if the output DTensorSpec for the res is<br>
+None, and the res is a scalar tensor, we will just return the scalar<br>
+tensor instead of wrapping it with a DTensor.</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v14.1.1-canary.66]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v14.1.1-canary.66</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v14.1.1-canary.66</guid>
+            <pubDate>Wed, 21 Feb 2024 06:19:56 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Fix perf spans: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2145546014" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62306" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62306/hovercard" href="https://github.com/vercel/next.js/pull/62306">#62306</a></li>
+<li>fix(next-core): properly normalize app route for _: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2145579079" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62307" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62307/hovercard" href="https://github.com/vercel/next.js/pull/62307">#62307</a></li>
+<li>fix(next-font): update capsize css so fallbacks are updated with the …: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2145618432" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62309" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62309/hovercard" href="https://github.com/vercel/next.js/pull/62309">#62309</a></li>
+</ul>
+<h3>Documentation Changes</h3>
+<ul>
+<li>docs: add an explanation about prefetch on hover to the link.mdx: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2139868539" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/62182" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/62182/hovercard" href="https://github.com/vercel/next.js/pull/62182">#62182</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/javivelasco/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/javivelasco">@javivelasco</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kwonoj/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kwonoj">@kwonoj</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/suu3/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/suu3">@suu3</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/samcx/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/samcx">@samcx</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.27-pgo: Version 12.4.27]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.27-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.27-pgo</guid>
+            <pubDate>Wed, 21 Feb 2024 05:59:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I8ae4fbc1d24cd6ca2269dc5aa14e7ae6bf866b57<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311197" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311197</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.27@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d17ddd4c5fe7538428611f6228aff5b9196fbfc8/hovercard" href="https://github.com/v8/v8/commit/d17ddd4c5fe7538428611f6228aff5b9196fbfc8"><tt>d17ddd4</tt></a>-refs/heads/main@{#92438}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.27]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.27</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.27</guid>
+            <pubDate>Wed, 21 Feb 2024 05:59:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I8ae4fbc1d24cd6ca2269dc5aa14e7ae6bf866b57<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311197" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311197</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.27@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d17ddd4c5fe7538428611f6228aff5b9196fbfc8/hovercard" href="https://github.com/v8/v8/commit/d17ddd4c5fe7538428611f6228aff5b9196fbfc8"><tt>d17ddd4</tt></a>-refs/heads/main@{#92438}</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from zed: nightly: Fix crash when closing last zed window (#8102)]]></title>
             <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
@@ -94,13 +405,6 @@ bb756f73e6be368f91ecfe28717780dda74619b45145aa9ce225ccd3b441fe51  nvim-win64.zip
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120287: [Inductor] Fix bug around out of order constexprs in inductor]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120287</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120287</guid>
-            <pubDate>Wed, 21 Feb 2024 04:44:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from scala: v2.12.19]]></title>
             <link>https://github.com/scala/scala/releases/tag/v2.12.19</link>
             <guid>https://github.com/scala/scala/releases/tag/v2.12.19</guid>
@@ -108,9 +412,9 @@ bb756f73e6be368f91ecfe28717780dda74619b45145aa9ce225ccd3b441fe51  nvim-win64.zip
             <content:encoded><![CDATA[<p>Scala 2.12.19</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.26]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.26</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.26</guid>
+            <title><![CDATA[Release notes from v8: 12.4.26-pgo: Version 12.4.26]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.26-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.26-pgo</guid>
             <pubDate>Wed, 21 Feb 2024 03:58:31 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I8846017c033447c6aa2e26342e968ed5b4e8e212<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311195" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311195</a><br>
@@ -119,9 +423,9 @@ Cr-Commit-Position: refs/heads/12.4.26@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c08629b2fdd20ad796b868b21810b98a32c9fc86/hovercard" href="https://github.com/v8/v8/commit/c08629b2fdd20ad796b868b21810b98a32c9fc86"><tt>c08629b</tt></a>-refs/heads/main@{#92437}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.4.26-pgo: Version 12.4.26]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.26-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.26-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.4.26]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.26</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.26</guid>
             <pubDate>Wed, 21 Feb 2024 03:58:31 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I8846017c033447c6aa2e26342e968ed5b4e8e212<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5311195" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5311195</a><br>
@@ -158,20 +462,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120281: [do not review] test_pynode_destruction_deadlock 1]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120281</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120281</guid>
-            <pubDate>Wed, 21 Feb 2024 03:43:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120279: Test for fatal signal in test_pynode_destruction_deadlock]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120279</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120279</guid>
-            <pubDate>Wed, 21 Feb 2024 03:12:53 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from mongo: r7.0.7-rc0]]></title>
             <link>https://github.com/mongodb/mongo/releases/tag/r7.0.7-rc0</link>
             <guid>https://github.com/mongodb/mongo/releases/tag/r7.0.7-rc0</guid>
@@ -196,20 +486,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>7.2.1</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120264]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120264</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120264</guid>
-            <pubDate>Wed, 21 Feb 2024 00:19:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120135]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120135</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120135</guid>
-            <pubDate>Wed, 21 Feb 2024 00:19:15 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update audio commit hash</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
             <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
             <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
@@ -220,22 +496,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/989b0ca679960a3a6f5cd15f3227eac9ff50fe81/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/989b0ca679960a3a6f5cd15f3227eac9ff50fe81"><tt>989b0ca</tt></a>: [build] Bumping versions for Nightly (Diego Molina)</li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/f99f01a049dc0bb8e8ec4114a27d9c089d490d22/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/f99f01a049dc0bb8e8ec4114a27d9c089d490d22"><tt>f99f01a</tt></a>: Update mirror info (Tue Feb 20 12:06:06 UTC 2024) (Selenium CI Bot)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120263: Fix bug with block pointer multi dim args (#120263)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120263</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120263</guid>
-            <pubDate>Wed, 21 Feb 2024 00:11:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:</p>
-<p>Now we can parse statements like</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="%22 = tt.make_tensor_ptr %20, [%21, %c128_i64], [%c2048_i64, %c1_i64], [%1, %c0_i32]"><pre class="notranslate"><code>%22 = tt.make_tensor_ptr %20, [%21, %c128_i64], [%c2048_i64, %c1_i64], [%1, %c0_i32]
-</code></pre></div>
-<p>Test Plan:<br>
-Added new test</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test mode/opt //hammer/ops/tests/inductor:ragged_hstu_test"><pre class="notranslate"><code>buck2 test mode/opt //hammer/ops/tests/inductor:ragged_hstu_test
-</code></pre></div>
-<p>now passes again with optimizations</p>
-<p>Differential Revision: D53975130</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v14.1.1-canary.65]]></title>
@@ -350,28 +610,6 @@ Added new test</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.4.25-pgo: Version 12.4.25]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.25-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.25-pgo</guid>
-            <pubDate>Tue, 20 Feb 2024 20:46:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Iba0a90b6867124df839cf261c883e8e65068f67a<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309410" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309410</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.25@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5cba930221993e4b558f8cdb79e4a693d93695c4/hovercard" href="https://github.com/v8/v8/commit/5cba930221993e4b558f8cdb79e4a693d93695c4"><tt>5cba930</tt></a>-refs/heads/main@{#92436}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.25]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.25</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.25</guid>
-            <pubDate>Tue, 20 Feb 2024 20:46:41 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Iba0a90b6867124df839cf261c883e8e65068f67a<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309410" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309410</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.25@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5cba930221993e4b558f8cdb79e4a693d93695c4/hovercard" href="https://github.com/v8/v8/commit/5cba930221993e4b558f8cdb79e4a693d93695c4"><tt>5cba930</tt></a>-refs/heads/main@{#92436}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from mongo: r5.0.25]]></title>
             <link>https://github.com/mongodb/mongo/releases/tag/r5.0.25</link>
             <guid>https://github.com/mongodb/mongo/releases/tag/r5.0.25</guid>
@@ -384,28 +622,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16282</guid>
             <pubDate>Tue, 20 Feb 2024 20:18:05 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.4.24-pgo: Version 12.4.24]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.24-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.24-pgo</guid>
-            <pubDate>Tue, 20 Feb 2024 20:10:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2643f9a7dcee32e8e194fcb0abe04fa5b156dee4<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309726" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309726</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.24@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0375d51d6341fc3141e25d4baa5faea19b2eb4c8/hovercard" href="https://github.com/v8/v8/commit/0375d51d6341fc3141e25d4baa5faea19b2eb4c8"><tt>0375d51</tt></a>-refs/heads/main@{#92435}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.24]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.24</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.24</guid>
-            <pubDate>Tue, 20 Feb 2024 20:10:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2643f9a7dcee32e8e194fcb0abe04fa5b156dee4<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309726" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309726</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.24@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0375d51d6341fc3141e25d4baa5faea19b2eb4c8/hovercard" href="https://github.com/v8/v8/commit/0375d51d6341fc3141e25d4baa5faea19b2eb4c8"><tt>0375d51</tt></a>-refs/heads/main@{#92435}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16281]]></title>
@@ -433,35 +649,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.23]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.23</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.23</guid>
-            <pubDate>Tue, 20 Feb 2024 19:46:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ifb50f3915a282af22c844531110e538afdbfdd3f<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309724" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309724</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.23@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/98c4099fcdd133e1cd6d62535f2b5e2007c48c2c/hovercard" href="https://github.com/v8/v8/commit/98c4099fcdd133e1cd6d62535f2b5e2007c48c2c"><tt>98c4099</tt></a>-refs/heads/main@{#92433}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.4.23-pgo: Version 12.4.23]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.23-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.23-pgo</guid>
-            <pubDate>Tue, 20 Feb 2024 19:46:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ifb50f3915a282af22c844531110e538afdbfdd3f<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309724" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309724</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.23@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/98c4099fcdd133e1cd6d62535f2b5e2007c48c2c/hovercard" href="https://github.com/v8/v8/commit/98c4099fcdd133e1cd6d62535f2b5e2007c48c2c"><tt>98c4099</tt></a>-refs/heads/main@{#92433}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16268]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16268</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16268</guid>
-            <pubDate>Tue, 20 Feb 2024 19:07:40 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 1.32.46]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/1.32.46</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/1.32.46</guid>
@@ -469,33 +656,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>Tagging 1.32.46 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16267]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16267</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16267</guid>
-            <pubDate>Tue, 20 Feb 2024 19:03:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.4.22-pgo: Version 12.4.22]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.22-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.22-pgo</guid>
-            <pubDate>Tue, 20 Feb 2024 18:58:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2387c9f0bd6bf4b706321de42b92231650e39f4e<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309723" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309723</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.22@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/92c58b615fa173405fb1d0a414673808302c80ea/hovercard" href="https://github.com/v8/v8/commit/92c58b615fa173405fb1d0a414673808302c80ea"><tt>92c58b6</tt></a>-refs/heads/main@{#92432}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.22]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.22</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.22</guid>
-            <pubDate>Tue, 20 Feb 2024 18:58:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2387c9f0bd6bf4b706321de42b92231650e39f4e<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5309723" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5309723</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.22@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/92c58b615fa173405fb1d0a414673808302c80ea/hovercard" href="https://github.com/v8/v8/commit/92c58b615fa173405fb1d0a414673808302c80ea"><tt>92c58b6</tt></a>-refs/heads/main@{#92432}</p>]]></content:encoded>
+            <title><![CDATA[Release notes from gatsby: gatsby@5.14.0-next.4]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.14.0-next.4</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.14.0-next.4</guid>
+            <pubDate>Tue, 20 Feb 2024 18:45:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby@5.14.0-next.4</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-source-wordpress@7.14.0-next.4]]></title>
@@ -503,13 +668,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.14.0-next.4</guid>
             <pubDate>Tue, 20 Feb 2024 18:45:55 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby-source-wordpress@7.14.0-next.4</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from gatsby: gatsby@5.14.0-next.4]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.14.0-next.4</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.14.0-next.4</guid>
-            <pubDate>Tue, 20 Feb 2024 18:45:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby@5.14.0-next.4</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby-adapter-netlify@1.2.0-next.3]]></title>
@@ -665,13 +823,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16261]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16261</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16261</guid>
-            <pubDate>Tue, 20 Feb 2024 18:12:51 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.62]]></title>
             <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.62</link>
             <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.62</guid>
@@ -688,13 +839,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>fix: correct context applied to batch_inspect (<a href="https://github.com/sveltejs/svelte/pull/10569" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/10569/hovercard">#10569</a>)</p>
 </li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16260]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16260</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16260</guid>
-            <pubDate>Tue, 20 Feb 2024 17:48:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from ember.js: v5.7.0-beta.2]]></title>
@@ -829,13 +973,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <h2>Notices</h2>
 <h3>End of Support for 26.x.y</h3>
 <p>Electron 26.x.y has reached end-of-support as per the project's <a href="https://www.electronjs.org/docs/latest/tutorial/electron-timelines#version-support-policy" rel="nofollow">support policy</a>. Developers and applications are encouraged to upgrade to a newer version of Electron.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16252]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16252</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16252</guid>
-            <pubDate>Tue, 20 Feb 2024 17:05:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from zed: collab-production: Follower simplification (#8026)]]></title>
@@ -2117,16 +2254,6 @@ generator client {
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
 <li>breaking: remove <code>createRoot</code>, adjust <code>mount</code>/<code>hydrate</code> APIs, introduce <code>unmount</code> (<a href="https://github.com/sveltejs/svelte/pull/10516" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/10516/hovercard">#10516</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from oclif: 4.4.15]]></title>
-            <link>https://github.com/oclif/oclif/releases/tag/4.4.15</link>
-            <guid>https://github.com/oclif/oclif/releases/tag/4.4.15</guid>
-            <pubDate>Sun, 18 Feb 2024 11:20:16 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
-<ul>
-<li><strong>deps:</strong> bump semver and @types/semver (<a href="https://github.com/oclif/oclif/commit/98b48e0aab99f334da9645133dbd76cf918420c6">98b48e0</a>)</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
