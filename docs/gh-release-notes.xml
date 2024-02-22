@@ -4,10 +4,653 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Thu, 22 Feb 2024 06:07:00 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 22 Feb 2024 12:07:57 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118613: Update on "[2/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</guid>
+            <pubDate>Thu, 22 Feb 2024 18:54:35 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/pull/118528" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/118528/hovercard">[1/2] Intel GPU Runtime Upstreaming for Generator</a>, as mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the second PR covers the changes under <code>python frontend</code>.</p>
+<h1>Design</h1>
+<p>Currently, it primarily offers geneartor-related APIs, including</p>
+<ul>
+<li><code>torch.xpu.default_generators</code></li>
+<li><code>torch.xpu.get_rng_state</code></li>
+<li><code>torch.xpu.get_rng_state_all</code></li>
+<li><code>torch.xpu.initial_seed</code></li>
+<li><code>torch.xpu.manual_seed</code></li>
+<li><code>torch.xpu.manual_seed_all</code></li>
+<li><code>torch.xpu.seed</code></li>
+<li><code>torch.xpu.seed_all</code></li>
+<li><code>torch.xpu.set_rng_state</code></li>
+<li><code>torch.xpu.set_rng_state_all</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>The differences with CUDA:<br>
+The generator-related frontend python APIs are 1:1 mapping with CUDA.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118528: Update on "[1/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</guid>
+            <pubDate>Thu, 22 Feb 2024 18:54:34 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>As mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the last runtime component we would like to upstream is <code>Generator</code> which is responsible for the pseudo-random number generation. To facilitate the code review, we split the code changes into 2 PRs. This is one of the 2 PRs and covers the changes under <code>aten</code>.</p>
+<h1>Design</h1>
+<p>Following the previous design, <code>c10::GeneratorImpl</code> is the device-agnostic abstraction of a random number generator. So we will introduce an XPU generator <code>XPUGeneratorImpl</code>, inheriting from <code>c10::GeneratorImpl</code>, to manage random states on an Intel GPU device. Intel GPU runtime <code>Generator</code> adopts the same algorithm as CPU. The corresponding C++ file should be placed in aten/src/ATen/xpu/ folder and is built in <code>libtorch_xpu.so</code>.<br>
+This PR provide the list of APIs:</p>
+<ul>
+<li><code>getDefaultXPUGenerator</code></li>
+<li><code>createXPUGenerator</code></li>
+</ul>
+<h1>Additional Context</h1>
+<p>The 2nd PR will cover <code>python frontend</code>.</p>
+<p>The differences with CUDA:<br>
+The generator-related ATen CPP APIs are 1:1 mapping with CUDA.<br>
+The XPUGeneratorImpl's member functions have slight differences with CUDA.<br>
+lack of CUDA-related counterpart APIs listed below:</p>
+<ul>
+<li>capture_prologue</li>
+<li>capture_epilogue</li>
+<li>philox_cuda_state</li>
+<li>reset_rnn_state</li>
+</ul>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118523: Update on "Intel GPU Runtime Upstreaming for Guard"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</guid>
+            <pubDate>Thu, 22 Feb 2024 18:54:33 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>According to <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the 5th runtime component we would like to upstream is <code>Guard</code>. We will cover device guard and stream guard in this PR.</p>
+<h1>Design</h1>
+<p>Device guard is used mainly for op dispatcher in PyTorch. Currently, PyTorch already has a device guard abstraction <code>c10::impl::DeviceGuardImplInterface</code>. In our design, we will introduce an <code>XPUGuardImpl</code> class inherits from <code>c10::impl::DeviceGuardImplInterface</code>. Register <code>XPUGuardImpl</code> to PyTorch after we implement the device switch management mechanism in <code>XPUGuardImpl</code>. Besides, we will introduce <code>XPUGuard</code>, <code>OptionalXPUGuard</code>, <code>XPUStreamGuard</code>, and <code>OptionalXPUStreamGuard</code>. They are all following the design of CUDA's counterpart. The corresponding C++ file should be placed in c10/xpu/ folder.</p>
+<h1>Additional Context</h1>
+<p>It is unnecessary to add <code>Guard</code> code to PyTorch frontend.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/xpu/120315: Update on "fix xpu build failure"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F120315</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F120315</guid>
+            <pubDate>Thu, 22 Feb 2024 18:14:16 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>fix build failure introduced by <a href="https://github.com/pytorch/pytorch/pull/120133" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120133/hovercard">[DeviceIndex][6/N] Use DeviceIndex in more places</a>, parameter <code>total</code> is undefined in line 100. see <a href="https://github.com/pytorch/pytorch/pull/120133/files#diff-00eb8a6f5dfbc341ee9ab9aff0e3dbece8ad73483d4f41a005b1f453cb78221cR91-L102">https://github.com/pytorch/pytorch/pull/120133/files#diff-00eb8a6f5dfbc341ee9ab9aff0e3dbece8ad73483d4f41a005b1f453cb78221cR91-L102</a><br>
+<a href="https://github.com/pytorch/pytorch/pull/120133" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120133/hovercard">PR120133</a> forgot to add the label <code>ciflow/xpu</code>, so the XPU CI flow was not triggered.</p>
+<h1>Solution</h1>
+<p>refer to <a href="https://stackoverflow.com/questions/7587782" rel="nofollow">Why is std::cout not printing the correct value for my int8_t number?</a> , static cast int8_t to int16_t and the condition <code>device &gt;= 0 &amp;&amp; device &lt; total</code> is enough.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120315: Update on "fix xpu build failure"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120315</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120315</guid>
+            <pubDate>Thu, 22 Feb 2024 18:14:16 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>Motivation</h1>
+<p>fix build failure introduced by <a href="https://github.com/pytorch/pytorch/pull/120133" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120133/hovercard">[DeviceIndex][6/N] Use DeviceIndex in more places</a>, parameter <code>total</code> is undefined in line 100. see <a href="https://github.com/pytorch/pytorch/pull/120133/files#diff-00eb8a6f5dfbc341ee9ab9aff0e3dbece8ad73483d4f41a005b1f453cb78221cR91-L102">https://github.com/pytorch/pytorch/pull/120133/files#diff-00eb8a6f5dfbc341ee9ab9aff0e3dbece8ad73483d4f41a005b1f453cb78221cR91-L102</a><br>
+<a href="https://github.com/pytorch/pytorch/pull/120133" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120133/hovercard">PR120133</a> forgot to add the label <code>ciflow/xpu</code>, so the XPU CI flow was not triggered.</p>
+<h1>Solution</h1>
+<p>refer to <a href="https://stackoverflow.com/questions/7587782" rel="nofollow">Why is std::cout not printing the correct value for my int8_t number?</a> , static cast int8_t to int16_t and the condition <code>device &gt;= 0 &amp;&amp; device &lt; total</code> is enough.</p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.54]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.54</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.54</guid>
+            <pubDate>Thu, 22 Feb 2024 11:34:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ic001a91beeccb964020edef11d28912f2637e781<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317489" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317489</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.54@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/dd8d0b44d5d5b4bc3912026bf78f25ed3cafda1a/hovercard" href="https://github.com/v8/v8/commit/dd8d0b44d5d5b4bc3912026bf78f25ed3cafda1a"><tt>dd8d0b4</tt></a>-refs/heads/main@{#92471}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.54-pgo: Version 12.4.54]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.54-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.54-pgo</guid>
+            <pubDate>Thu, 22 Feb 2024 11:34:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ic001a91beeccb964020edef11d28912f2637e781<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317489" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317489</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.54@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/dd8d0b44d5d5b4bc3912026bf78f25ed3cafda1a/hovercard" href="https://github.com/v8/v8/commit/dd8d0b44d5d5b4bc3912026bf78f25ed3cafda1a"><tt>dd8d0b4</tt></a>-refs/heads/main@{#92471}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from spring-boot: v3.1.9]]></title>
+            <link>https://github.com/spring-projects/spring-boot/releases/tag/v3.1.9</link>
+            <guid>https://github.com/spring-projects/spring-boot/releases/tag/v3.1.9</guid>
+            <pubDate>Thu, 22 Feb 2024 11:03:12 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Release v3.1.9</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120301]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120301</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120301</guid>
+            <pubDate>Thu, 22 Feb 2024 10:42:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Try fixing Bazel builds</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.53-pgo: Version 12.4.53]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.53-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.53-pgo</guid>
+            <pubDate>Thu, 22 Feb 2024 10:40:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6b393080a91b386e1d3cd8cc7d30d556bdaf39cb<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317409" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317409</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.53@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ca1b752554f3426afbc7d8b48f9260c2a433266d/hovercard" href="https://github.com/v8/v8/commit/ca1b752554f3426afbc7d8b48f9260c2a433266d"><tt>ca1b752</tt></a>-refs/heads/main@{#92470}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.53]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.53</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.53</guid>
+            <pubDate>Thu, 22 Feb 2024 10:40:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6b393080a91b386e1d3cd8cc7d30d556bdaf39cb<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317409" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317409</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.53@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ca1b752554f3426afbc7d8b48f9260c2a433266d/hovercard" href="https://github.com/v8/v8/commit/ca1b752554f3426afbc7d8b48f9260c2a433266d"><tt>ca1b752</tt></a>-refs/heads/main@{#92470}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from prometheus: 2.50.0 / 2024-02-22]]></title>
+            <link>https://github.com/prometheus/prometheus/releases/tag/v2.50.0</link>
+            <guid>https://github.com/prometheus/prometheus/releases/tag/v2.50.0</guid>
+            <pubDate>Thu, 22 Feb 2024 10:30:55 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>[CHANGE] Remote Write: Error <code>storage.ErrTooOldSample</code> is now generating HTTP error 400 instead of HTTP error 500. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056559278" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13335" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13335/hovercard" href="https://github.com/prometheus/prometheus/pull/13335">#13335</a></li>
+<li>[FEATURE] Remote Write: Drop old inmemory samples. Activated using the config entry <code>sample_age_limit</code>. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949165309" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13002" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13002/hovercard" href="https://github.com/prometheus/prometheus/pull/13002">#13002</a></li>
+<li>[FEATURE] <strong>Experimental</strong>: Add support for ingesting zeros as created timestamps. (enabled under the feature-flag <code>created-timestamp-zero-ingestion</code>). <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1860145344" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/12733" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/12733/hovercard" href="https://github.com/prometheus/prometheus/pull/12733">#12733</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2036562081" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13279" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13279/hovercard" href="https://github.com/prometheus/prometheus/pull/13279">#13279</a></li>
+<li>[FEATURE] Promtool: Add <code>analyze</code> histograms command. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1696573742" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/12331" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/12331/hovercard" href="https://github.com/prometheus/prometheus/pull/12331">#12331</a></li>
+<li>[FEATURE] TSDB/compaction: Add a way to enable overlapping compaction. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2037204648" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13282" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13282/hovercard" href="https://github.com/prometheus/prometheus/pull/13282">#13282</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2078275149" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13393" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13393/hovercard" href="https://github.com/prometheus/prometheus/pull/13393">#13393</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081835711" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13398" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13398/hovercard" href="https://github.com/prometheus/prometheus/pull/13398">#13398</a></li>
+<li>[FEATURE] Add automatic memory limit handling. Activated using the feature flag. <code>auto-gomemlimit</code> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2080455185" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13395" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13395/hovercard" href="https://github.com/prometheus/prometheus/pull/13395">#13395</a></li>
+<li>[ENHANCEMENT] Promtool: allow specifying multiple matchers in <code>promtool tsdb dump</code>. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043579037" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13296" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13296/hovercard" href="https://github.com/prometheus/prometheus/pull/13296">#13296</a></li>
+<li>[ENHANCEMENT] PromQL: Restore more efficient version of <code>NewPossibleNonCounterInfo</code> annotation. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1957888216" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13022" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13022/hovercard" href="https://github.com/prometheus/prometheus/pull/13022">#13022</a></li>
+<li>[ENHANCEMENT] Kuma SD: Extend configuration to allow users to specify client ID. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2035960914" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13278" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13278/hovercard" href="https://github.com/prometheus/prometheus/pull/13278">#13278</a></li>
+<li>[ENHANCEMENT] PromQL: Use natural sort in <code>sort_by_label</code> and <code>sort_by_label_desc</code>. This is <strong>experimental</strong>. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2084550820" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13411/hovercard" href="https://github.com/prometheus/prometheus/pull/13411">#13411</a></li>
+<li>[ENHANCEMENT] Native Histograms: support <code>native_histogram_min_bucket_factor</code> in scrape_config. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017922678" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13222" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13222/hovercard" href="https://github.com/prometheus/prometheus/pull/13222">#13222</a></li>
+<li>[ENHANCEMENT] Native Histograms: Issue warning if histogramRate is applied to the wrong kind of histogram. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2078268088" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13392" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13392/hovercard" href="https://github.com/prometheus/prometheus/pull/13392">#13392</a></li>
+<li>[ENHANCEMENT] TSDB: Make transaction isolation data structures smaller. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1955549239" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13015" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13015/hovercard" href="https://github.com/prometheus/prometheus/pull/13015">#13015</a></li>
+<li>[ENHANCEMENT] TSDB/postings: Optimize merge using Loser Tree. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1905599346" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/12878" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/12878/hovercard" href="https://github.com/prometheus/prometheus/pull/12878">#12878</a></li>
+<li>[ENHANCEMENT] TSDB: Simplify internal series delete function. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2031012041" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13261" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13261/hovercard" href="https://github.com/prometheus/prometheus/pull/13261">#13261</a></li>
+<li>[ENHANCEMENT] Agent: Performance improvement by making the global hash lookup table smaller. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2031025638" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13262" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13262/hovercard" href="https://github.com/prometheus/prometheus/pull/13262">#13262</a></li>
+<li>[ENHANCEMENT] PromQL: faster execution of metric functions, e.g. abs(), rate() <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2096713288" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13446" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13446/hovercard" href="https://github.com/prometheus/prometheus/pull/13446">#13446</a></li>
+<li>[ENHANCEMENT] TSDB: Optimize label values with matchers by taking shortcuts. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2088541465" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13426" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13426/hovercard" href="https://github.com/prometheus/prometheus/pull/13426">#13426</a></li>
+<li>[ENHANCEMENT] Kubernetes SD: Check preconditions earlier and avoid unnecessary checks or iterations in kube_sd. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2083675473" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13408" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13408/hovercard" href="https://github.com/prometheus/prometheus/pull/13408">#13408</a></li>
+<li>[ENHANCEMENT] Promtool: Improve visibility for <code>promtool test rules</code> with JSON colored formatting. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2060255149" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13342" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13342/hovercard" href="https://github.com/prometheus/prometheus/pull/13342">#13342</a></li>
+<li>[ENHANCEMENT] Consoles: Exclude iowait and steal from CPU Utilisation. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1036003026" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/9593" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/9593/hovercard" href="https://github.com/prometheus/prometheus/pull/9593">#9593</a></li>
+<li>[ENHANCEMENT] Various improvements and optimizations on Native Histograms. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2032285635" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13267" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13267/hovercard" href="https://github.com/prometheus/prometheus/pull/13267">#13267</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2016702470" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13215" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13215/hovercard" href="https://github.com/prometheus/prometheus/pull/13215">#13215</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2034992303" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13276" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13276/hovercard" href="https://github.com/prometheus/prometheus/pull/13276">#13276</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2041429849" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13289" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13289/hovercard" href="https://github.com/prometheus/prometheus/pull/13289">#13289</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2059198025" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13340" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13340/hovercard" href="https://github.com/prometheus/prometheus/pull/13340">#13340</a></li>
+<li>[BUGFIX] Scraping: Fix quality value in HTTP Accept header. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2049289369" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13313" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13313/hovercard" href="https://github.com/prometheus/prometheus/pull/13313">#13313</a></li>
+<li>[BUGFIX] UI: Fix usage of the function <code>time()</code> that was crashing. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2064532937" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13371" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13371/hovercard" href="https://github.com/prometheus/prometheus/pull/13371">#13371</a></li>
+<li>[BUGFIX] Azure SD: Fix SD crashing when it finds a VM scale set. <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2133587447" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13578" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13578/hovercard" href="https://github.com/prometheus/prometheus/pull/13578">#13578</a></li>
+</ul>
+<details>
+  <summary> Commits </summary>
+<ul>
+<li>Enable reusing memory when converting between histogram types by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fpetkovski/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fpetkovski">@fpetkovski</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2016702470" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13215" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13215/hovercard" href="https://github.com/prometheus/prometheus/pull/13215">#13215</a></li>
+<li>Append Created Timestamps by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArthurSens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArthurSens">@ArthurSens</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1860145344" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/12733" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/12733/hovercard" href="https://github.com/prometheus/prometheus/pull/12733">#12733</a></li>
+<li>tsdb: use Go standard errors by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mmorel-35/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mmorel-35">@mmorel-35</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1998337437" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13155" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13155/hovercard" href="https://github.com/prometheus/prometheus/pull/13155">#13155</a></li>
+<li>Sync golangci-lint version by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/SuperQ/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/SuperQ">@SuperQ</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2032356512" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13269" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13269/hovercard" href="https://github.com/prometheus/prometheus/pull/13269">#13269</a></li>
+<li>tsdb: remove unused option by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GiedriusS/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GiedriusS">@GiedriusS</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2037204648" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13282" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13282/hovercard" href="https://github.com/prometheus/prometheus/pull/13282">#13282</a></li>
+<li>Tweak line wrappings in docs/storage.md by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/windsonsea/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/windsonsea">@windsonsea</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1449755364" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11583" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11583/hovercard" href="https://github.com/prometheus/prometheus/pull/11583">#11583</a></li>
+<li><code>chunks.Reader</code>: Fix typo in <code>ChunkOrIterable</code> doc string by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/aknuds1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/aknuds1">@aknuds1</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2014726186" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13205" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13205/hovercard" href="https://github.com/prometheus/prometheus/pull/13205">#13205</a></li>
+<li>Allow non-default registry to be used for metrics of SD components by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ptodev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ptodev">@ptodev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1958035323" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13023" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13023/hovercard" href="https://github.com/prometheus/prometheus/pull/13023">#13023</a></li>
+<li>postings: use Loser Tree for merge by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1905599346" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/12878" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/12878/hovercard" href="https://github.com/prometheus/prometheus/pull/12878">#12878</a></li>
+<li>Get VM Scale Set NIC by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/daniel-resdiary/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/daniel-resdiary">@daniel-resdiary</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2038159986" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13283" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13283/hovercard" href="https://github.com/prometheus/prometheus/pull/13283">#13283</a></li>
+<li>Reuse float histogram objects by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fpetkovski/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fpetkovski">@fpetkovski</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2034992303" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13276" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13276/hovercard" href="https://github.com/prometheus/prometheus/pull/13276">#13276</a></li>
+<li>Document feature flag 'created-timestamp-zero-ingestion' by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ArthurSens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ArthurSens">@ArthurSens</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2036562081" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13279" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13279/hovercard" href="https://github.com/prometheus/prometheus/pull/13279">#13279</a></li>
+<li>kuma_sd: Extend Kuma SD configuration to allow users to specify ClientId by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Automaat/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Automaat">@Automaat</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2035960914" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13278" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13278/hovercard" href="https://github.com/prometheus/prometheus/pull/13278">#13278</a></li>
+<li>scripts: Add minimal permissions to script golangci-lint.yml by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/diogoteles08/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/diogoteles08">@diogoteles08</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2040363524" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13288" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13288/hovercard" href="https://github.com/prometheus/prometheus/pull/13288">#13288</a></li>
+<li>build(deps): bump github.com/Azure/azure-sdk-for-go/sdk/resourcemanager by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mmorel-35/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mmorel-35">@mmorel-35</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043408679" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13294" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13294/hovercard" href="https://github.com/prometheus/prometheus/pull/13294">#13294</a></li>
+<li>Dedup code handling getting network interface by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/daniel-resdiary/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/daniel-resdiary">@daniel-resdiary</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2039813509" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13285" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13285/hovercard" href="https://github.com/prometheus/prometheus/pull/13285">#13285</a></li>
+<li>scrape: consistent function names for metadata by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2006943145" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13177" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13177/hovercard" href="https://github.com/prometheus/prometheus/pull/13177">#13177</a></li>
+<li>relabel: improve logic for target labels by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2046877543" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13308" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13308/hovercard" href="https://github.com/prometheus/prometheus/pull/13308">#13308</a></li>
+<li>Move metric type definitions to common/model by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2006739852" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13176" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13176/hovercard" href="https://github.com/prometheus/prometheus/pull/13176">#13176</a></li>
+<li>scrape: simplify TargetsActive function by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2002874797" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13167" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13167/hovercard" href="https://github.com/prometheus/prometheus/pull/13167">#13167</a></li>
+<li>bug: Fix quality value in accept header by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kalpadiptyaroy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kalpadiptyaroy">@kalpadiptyaroy</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2049289369" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13313" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13313/hovercard" href="https://github.com/prometheus/prometheus/pull/13313">#13313</a></li>
+<li>Fix reusing float histograms by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fpetkovski/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fpetkovski">@fpetkovski</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2041429849" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13289" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13289/hovercard" href="https://github.com/prometheus/prometheus/pull/13289">#13289</a></li>
+<li>Adding small test update for temp dir using t.TempDir by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/zedGGs/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/zedGGs">@zedGGs</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043015645" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13293" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13293/hovercard" href="https://github.com/prometheus/prometheus/pull/13293">#13293</a></li>
+<li>Revert "Adding small test update for temp dir using t.TempDir (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043015645" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13293" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13293/hovercard" href="https://github.com/prometheus/prometheus/pull/13293">#13293</a>)" by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2060832069" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13344" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13344/hovercard" href="https://github.com/prometheus/prometheus/pull/13344">#13344</a></li>
+<li>agent: make the global hash lookup table smaller by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2031025638" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13262" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13262/hovercard" href="https://github.com/prometheus/prometheus/pull/13262">#13262</a></li>
+<li>build(deps): bump github.com/prometheus/client_golang from 1.17.0 to 1.18.0 in /documentation/examples/remote_storage by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061822085" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13354" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13354/hovercard" href="https://github.com/prometheus/prometheus/pull/13354">#13354</a></li>
+<li>Bump client_golang to v1.18.0 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tpaschalis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tpaschalis">@tpaschalis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2065376429" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13373" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13373/hovercard" href="https://github.com/prometheus/prometheus/pull/13373">#13373</a></li>
+<li>remote: consider storage.ErrTooOldSample as non-retryable by returning 400 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nmdanny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nmdanny">@nmdanny</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056559278" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13335" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13335/hovercard" href="https://github.com/prometheus/prometheus/pull/13335">#13335</a></li>
+<li>Drop old inmemory samples by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/marctc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/marctc">@marctc</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1949165309" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13002" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13002/hovercard" href="https://github.com/prometheus/prometheus/pull/13002">#13002</a></li>
+<li>ui: fix handling of scalar and string in isHeatmapData by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kevinmingtarja/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kevinmingtarja">@kevinmingtarja</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2064532937" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13371" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13371/hovercard" href="https://github.com/prometheus/prometheus/pull/13371">#13371</a></li>
+<li>tsdb/{index,compact}: allow using custom postings encoding format by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GiedriusS/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GiedriusS">@GiedriusS</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2023658118" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13242" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13242/hovercard" href="https://github.com/prometheus/prometheus/pull/13242">#13242</a></li>
+<li>build(deps): bump actions/setup-go from 3.5.0 to 5.0.0 in /scripts by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061838902" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13362" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13362/hovercard" href="https://github.com/prometheus/prometheus/pull/13362">#13362</a></li>
+<li>build(deps): bump github/codeql-action from 2.22.8 to 3.22.12 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061830318" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13358" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13358/hovercard" href="https://github.com/prometheus/prometheus/pull/13358">#13358</a></li>
+<li>put <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> has a release shepherd for the next release by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2070694018" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13383" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13383/hovercard" href="https://github.com/prometheus/prometheus/pull/13383">#13383</a></li>
+<li>protobuf: add unit parser by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/vesari/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/vesari">@vesari</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2045215191" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13299" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13299/hovercard" href="https://github.com/prometheus/prometheus/pull/13299">#13299</a></li>
+<li>Add analyze histograms command to promtool by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/zenador/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/zenador">@zenador</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1696573742" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/12331" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/12331/hovercard" href="https://github.com/prometheus/prometheus/pull/12331">#12331</a></li>
+<li>tsdb: add enable overlapping compaction by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GiedriusS/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GiedriusS">@GiedriusS</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2078275149" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13393" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13393/hovercard" href="https://github.com/prometheus/prometheus/pull/13393">#13393</a></li>
+<li>tsdb/compact: fix passing merge func by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GiedriusS/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GiedriusS">@GiedriusS</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2076213431" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13391" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13391/hovercard" href="https://github.com/prometheus/prometheus/pull/13391">#13391</a></li>
+<li>allow setting multiple matchers to "promtool tsdb dump" by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/machine424/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/machine424">@machine424</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043579037" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13296" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13296/hovercard" href="https://github.com/prometheus/prometheus/pull/13296">#13296</a></li>
+<li>Merge 2.49.0 release to main by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bwplotka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bwplotka">@bwplotka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081847614" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13399" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13399/hovercard" href="https://github.com/prometheus/prometheus/pull/13399">#13399</a></li>
+<li>tsdb/main: wire "EnableOverlappingCompaction" to tsdb.Options by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GiedriusS/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GiedriusS">@GiedriusS</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2081835711" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13398" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13398/hovercard" href="https://github.com/prometheus/prometheus/pull/13398">#13398</a></li>
+<li>Restore more efficient version of NewPossibleNonCounterInfo annotation by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/zenador/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/zenador">@zenador</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1957888216" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13022" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13022/hovercard" href="https://github.com/prometheus/prometheus/pull/13022">#13022</a></li>
+<li>fix slice copy in 1.20 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tylitianrui/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tylitianrui">@tylitianrui</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2075335540" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13389" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13389/hovercard" href="https://github.com/prometheus/prometheus/pull/13389">#13389</a></li>
+<li>Query Basics: link to rate by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tredondo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tredondo">@tredondo</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1193555188" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/10538" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/10538/hovercard" href="https://github.com/prometheus/prometheus/pull/10538">#10538</a></li>
+<li>Examples: link to <code>rate</code> for new users by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tredondo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tredondo">@tredondo</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1193213115" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/10535" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/10535/hovercard" href="https://github.com/prometheus/prometheus/pull/10535">#10535</a></li>
+<li>add cluster variable to Overview dashboard by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/the-it/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/the-it">@the-it</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2008512830" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13180" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13180/hovercard" href="https://github.com/prometheus/prometheus/pull/13180">#13180</a></li>
+<li>Fix regressions introduced by <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2023658118" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13242" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13242/hovercard" href="https://github.com/prometheus/prometheus/pull/13242">#13242</a> by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pracucci/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pracucci">@pracucci</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2083655008" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13407" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13407/hovercard" href="https://github.com/prometheus/prometheus/pull/13407">#13407</a></li>
+<li>promql: use natural sort in sort_by_label and sort_by_label_desc by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bobrik/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bobrik">@bobrik</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2084550820" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13411/hovercard" href="https://github.com/prometheus/prometheus/pull/13411">#13411</a></li>
+<li>Native Histograms: support <code>native_histogram_min_bucket_factor</code> in scrape_config by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fatsheep9146/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fatsheep9146">@fatsheep9146</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2017922678" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13222" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13222/hovercard" href="https://github.com/prometheus/prometheus/pull/13222">#13222</a></li>
+<li>Add warnings for histogramRate applied with isCounter not matching counter/gauge histogram by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/zenador/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/zenador">@zenador</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2078268088" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13392" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13392/hovercard" href="https://github.com/prometheus/prometheus/pull/13392">#13392</a></li>
+<li>remove  obsolete build tag by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tylitianrui/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tylitianrui">@tylitianrui</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086360012" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13416" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13416/hovercard" href="https://github.com/prometheus/prometheus/pull/13416">#13416</a></li>
+<li>scripts: sort file list in embed directive by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jan--f/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jan--f">@jan--f</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2062259515" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13363" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13363/hovercard" href="https://github.com/prometheus/prometheus/pull/13363">#13363</a></li>
+<li>build(deps): bump github.com/prometheus/prometheus from 0.48.0 to 0.48.1 in /documentation/examples/remote_storage by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061822048" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13353" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13353/hovercard" href="https://github.com/prometheus/prometheus/pull/13353">#13353</a></li>
+<li>build(deps): bump github.com/influxdata/influxdb from 1.11.2 to 1.11.4 in /documentation/examples/remote_storage by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061821980" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13352" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13352/hovercard" href="https://github.com/prometheus/prometheus/pull/13352">#13352</a></li>
+<li>Upgrade some golang dependencies for resty 2.11 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iblancasa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iblancasa">@iblancasa</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086464729" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13417" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13417/hovercard" href="https://github.com/prometheus/prometheus/pull/13417">#13417</a></li>
+<li>TestLabelValuesWithMatchers: Add test case by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/aknuds1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/aknuds1">@aknuds1</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086035014" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13415" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13415/hovercard" href="https://github.com/prometheus/prometheus/pull/13415">#13415</a></li>
+<li>build(deps): bump github.com/hetznercloud/hcloud-go/v2 from 2.4.0 to 2.6.0 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2088038199" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13422" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13422/hovercard" href="https://github.com/prometheus/prometheus/pull/13422">#13422</a></li>
+<li>chore(kubernetes): check preconditions earlier and avoid unnecessary checks or iterations by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/machine424/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/machine424">@machine424</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2083675473" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13408" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13408/hovercard" href="https://github.com/prometheus/prometheus/pull/13408">#13408</a></li>
+<li>build(deps): bump actions/setup-node from 3.8.1 to 4.0.1 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061830259" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13356" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13356/hovercard" href="https://github.com/prometheus/prometheus/pull/13356">#13356</a></li>
+<li>otlp: Minor cosmetic fixes to the update script by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gouthamve/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gouthamve">@gouthamve</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2003333149" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13169" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13169/hovercard" href="https://github.com/prometheus/prometheus/pull/13169">#13169</a></li>
+<li>promql: simplify Native Histogram arithmetics by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/linasm/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/linasm">@linasm</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2032285635" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13267" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13267/hovercard" href="https://github.com/prometheus/prometheus/pull/13267">#13267</a></li>
+<li>fix(discovery tests): allow requireUpdate util to timeout in discovery/file… by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/machine424/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/machine424">@machine424</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2069278330" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13380" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13380/hovercard" href="https://github.com/prometheus/prometheus/pull/13380">#13380</a></li>
+<li>scrape_test.go: Increase scrape interval in TestScrapeLoopCache to re… by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/machine424/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/machine424">@machine424</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056725073" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13336" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13336/hovercard" href="https://github.com/prometheus/prometheus/pull/13336">#13336</a></li>
+<li>Enhanced visibility for <code>promtool test rules</code> with JSON colored formatting by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rewanthtammana/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rewanthtammana">@rewanthtammana</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2060255149" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13342" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13342/hovercard" href="https://github.com/prometheus/prometheus/pull/13342">#13342</a></li>
+<li>Remove csmarchbanks from remote write owners by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/csmarchbanks/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/csmarchbanks">@csmarchbanks</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2090847675" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13432" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13432/hovercard" href="https://github.com/prometheus/prometheus/pull/13432">#13432</a></li>
+<li>storage: skip merging when no remote storage configured by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2088790053" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13427" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13427/hovercard" href="https://github.com/prometheus/prometheus/pull/13427">#13427</a></li>
+<li>Add more context cancellation check at evaluation time by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yeya24/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yeya24">@yeya24</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2092810032" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13437" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13437/hovercard" href="https://github.com/prometheus/prometheus/pull/13437">#13437</a></li>
+<li>Optimize label values with matchers by taking shortcuts by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/colega/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/colega">@colega</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2088541465" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13426" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13426/hovercard" href="https://github.com/prometheus/prometheus/pull/13426">#13426</a></li>
+<li>consoles: exclude iowait and steal from CPU Utilisation by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/julianwiedmann/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/julianwiedmann">@julianwiedmann</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1036003026" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/9593" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/9593/hovercard" href="https://github.com/prometheus/prometheus/pull/9593">#9593</a></li>
+<li>Add automatic memory limit handling by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/SuperQ/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/SuperQ">@SuperQ</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2080455185" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13395" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13395/hovercard" href="https://github.com/prometheus/prometheus/pull/13395">#13395</a></li>
+<li>Update OSSF badge link by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mmorel-35/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mmorel-35">@mmorel-35</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2091224901" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13433" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13433/hovercard" href="https://github.com/prometheus/prometheus/pull/13433">#13433</a></li>
+<li>SD Managers taking over responsibility for registration of debug metrics by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ptodev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ptodev">@ptodev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2065734670" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13375" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13375/hovercard" href="https://github.com/prometheus/prometheus/pull/13375">#13375</a></li>
+<li>Optimize histogram iterators by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fpetkovski/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fpetkovski">@fpetkovski</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2059198025" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13340" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13340/hovercard" href="https://github.com/prometheus/prometheus/pull/13340">#13340</a></li>
+<li>doc: Mark <code>mad_over_time</code> as experimental by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/beorn7/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/beorn7">@beorn7</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2093809390" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13440" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13440/hovercard" href="https://github.com/prometheus/prometheus/pull/13440">#13440</a></li>
+<li>TestHeadLabelValuesWithMatchers: Add test case by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/aknuds1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/aknuds1">@aknuds1</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086024150" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13414" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13414/hovercard" href="https://github.com/prometheus/prometheus/pull/13414">#13414</a></li>
+<li>update all go dependencies by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2093393218" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13438" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13438/hovercard" href="https://github.com/prometheus/prometheus/pull/13438">#13438</a></li>
+<li>build(deps): bump the k8s-io group with 2 updates by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2098574432" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13454" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13454/hovercard" href="https://github.com/prometheus/prometheus/pull/13454">#13454</a></li>
+<li>build(deps): bump the go-opentelemetry-io group with 1 update by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2098574399" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13453" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13453/hovercard" href="https://github.com/prometheus/prometheus/pull/13453">#13453</a></li>
+<li>build(deps): bump actions/upload-artifact from 3.1.3 to 4.0.0 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061830247" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13355" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13355/hovercard" href="https://github.com/prometheus/prometheus/pull/13355">#13355</a></li>
+<li>build(deps): bump bufbuild/buf-push-action from 342fc4cdcf29115a01cf12a2c6dd6aac68dc51e1 to a654ff18effe4641ebea4a4ce242c49800728459 by <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2061830288" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13357" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13357/hovercard" href="https://github.com/prometheus/prometheus/pull/13357">#13357</a></li>
+<li>tsdb: make transaction isolation data structures smaller by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1955549239" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13015" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13015/hovercard" href="https://github.com/prometheus/prometheus/pull/13015">#13015</a></li>
+<li>Labels: Add DropMetricName function, used in PromQL by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2096713288" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13446" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13446/hovercard" href="https://github.com/prometheus/prometheus/pull/13446">#13446</a></li>
+<li>tsdb: simplify internal series delete function by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bboreham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bboreham">@bboreham</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2031012041" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13261" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13261/hovercard" href="https://github.com/prometheus/prometheus/pull/13261">#13261</a></li>
+<li>Merging back release v2.49.1 to main by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2100297221" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13463" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13463/hovercard" href="https://github.com/prometheus/prometheus/pull/13463">#13463</a></li>
+<li>Rollback k8s.io requirements by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/SuperQ/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/SuperQ">@SuperQ</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2100120820" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13462" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13462/hovercard" href="https://github.com/prometheus/prometheus/pull/13462">#13462</a></li>
+<li>scrape: Prometheus server support exemplar in native histogram by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fatsheep9146/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fatsheep9146">@fatsheep9146</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2097499717" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13449" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13449/hovercard" href="https://github.com/prometheus/prometheus/pull/13449">#13449</a></li>
+<li>ui: fix for deep linking in stacked graphs by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Loori-R/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Loori-R">@Loori-R</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2099982253" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13460" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13460/hovercard" href="https://github.com/prometheus/prometheus/pull/13460">#13460</a></li>
+<li>otlptranslator/update-copy.sh: Fix sed command lines by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/aknuds1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/aknuds1">@aknuds1</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2100343940" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13464" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13464/hovercard" href="https://github.com/prometheus/prometheus/pull/13464">#13464</a></li>
+<li>Change metric label for Puppet SD from 'http' to 'puppetdb' by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ptodev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ptodev">@ptodev</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2096836900" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13447" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13447/hovercard" href="https://github.com/prometheus/prometheus/pull/13447">#13447</a></li>
+<li>Fix last_over_time for native histograms by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/fpetkovski/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/fpetkovski">@fpetkovski</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2102268838" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13474" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13474/hovercard" href="https://github.com/prometheus/prometheus/pull/13474">#13474</a></li>
+<li>Cut v2.50.0-rc.0 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2100398251" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13465" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13465/hovercard" href="https://github.com/prometheus/prometheus/pull/13465">#13465</a></li>
+<li>Azure SD: check for nil before accessing and dereferencing  by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/darshanime/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/darshanime">@darshanime</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2133587447" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13578" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13578/hovercard" href="https://github.com/prometheus/prometheus/pull/13578">#13578</a></li>
+<li>Cut v2.50.0-rc.1 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2142084049" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13602" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13602/hovercard" href="https://github.com/prometheus/prometheus/pull/13602">#13602</a></li>
+<li>Cut v2.50.0 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Nexucis/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Nexucis">@Nexucis</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2143997755" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13612" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13612/hovercard" href="https://github.com/prometheus/prometheus/pull/13612">#13612</a></li>
+</ul>
+</details>
+<h2>New Contributors</h2>
+<ul>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/windsonsea/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/windsonsea">@windsonsea</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1449755364" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/11583" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/11583/hovercard" href="https://github.com/prometheus/prometheus/pull/11583">#11583</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/daniel-resdiary/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/daniel-resdiary">@daniel-resdiary</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2038159986" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13283" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13283/hovercard" href="https://github.com/prometheus/prometheus/pull/13283">#13283</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Automaat/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Automaat">@Automaat</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2035960914" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13278" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13278/hovercard" href="https://github.com/prometheus/prometheus/pull/13278">#13278</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/diogoteles08/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/diogoteles08">@diogoteles08</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2040363524" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13288" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13288/hovercard" href="https://github.com/prometheus/prometheus/pull/13288">#13288</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kalpadiptyaroy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kalpadiptyaroy">@kalpadiptyaroy</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2049289369" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13313" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13313/hovercard" href="https://github.com/prometheus/prometheus/pull/13313">#13313</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/zedGGs/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/zedGGs">@zedGGs</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2043015645" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13293" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13293/hovercard" href="https://github.com/prometheus/prometheus/pull/13293">#13293</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nmdanny/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nmdanny">@nmdanny</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2056559278" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13335" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13335/hovercard" href="https://github.com/prometheus/prometheus/pull/13335">#13335</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kevinmingtarja/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kevinmingtarja">@kevinmingtarja</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2064532937" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13371" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13371/hovercard" href="https://github.com/prometheus/prometheus/pull/13371">#13371</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/the-it/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/the-it">@the-it</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2008512830" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13180" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13180/hovercard" href="https://github.com/prometheus/prometheus/pull/13180">#13180</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bobrik/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bobrik">@bobrik</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2084550820" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13411" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13411/hovercard" href="https://github.com/prometheus/prometheus/pull/13411">#13411</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iblancasa/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iblancasa">@iblancasa</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2086464729" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13417" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13417/hovercard" href="https://github.com/prometheus/prometheus/pull/13417">#13417</a></li>
+<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rewanthtammana/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rewanthtammana">@rewanthtammana</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2060255149" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/13342" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/13342/hovercard" href="https://github.com/prometheus/prometheus/pull/13342">#13342</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/prometheus/prometheus/compare/v2.49.1...v2.50.0"><tt>v2.49.1...v2.50.0</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120384: Update on "Add resnet50/mobilenet_v2_quantized_qat in into determinis…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120384</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120384</guid>
+            <pubDate>Thu, 22 Feb 2024 10:12:32 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…tic_algorithms exclusive list"</p>
+<p>After PR: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2148330354" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/120384" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120384/hovercard" href="https://github.com/pytorch/pytorch/pull/120384">#120384</a>, 2 <code>Torchbench</code> testcases: <code>resnet50_quantized_qat</code> and <code>mobilenet_v2_quantized_qat</code> can pass the performance testing but failed with accuracy test. The failure msg is:  <code>mobilenet_v2_quantized_qat, RuntimeError: quantized_resize_cpu_ does not have a deterministic implementation but you set 'torch.use_deterministic_algorithms(True)'. </code></p>
+<ul>
+<li><code>torch.use_deterministic_algorithms(True)</code> only setting for accuracy test. <a href="https://github.com/pytorch/pytorch/blob/fff9d98e58cda4ad67fef6d0739f684ca7d4bbec/benchmarks/dynamo/common.py#L3480">https://github.com/pytorch/pytorch/blob/fff9d98e58cda4ad67fef6d0739f684ca7d4bbec/benchmarks/dynamo/common.py#L3480</a></li>
+<li>However, <code>quantized_resize_cpu_</code> only support <code>nondeterministic_algorithms</code> because the resized output memory may be uninitialized. <a href="https://github.com/pytorch/pytorch/blob/fff9d98e58cda4ad67fef6d0739f684ca7d4bbec/aten/src/ATen/native/quantized/cpu/TensorOperators.cpp#L85-L87">https://github.com/pytorch/pytorch/blob/fff9d98e58cda4ad67fef6d0739f684ca7d4bbec/aten/src/ATen/native/quantized/cpu/TensorOperators.cpp#L85-L87</a></li>
+</ul>
+<p>Add these 2 models into the deterministic_algorithms exclusive model list in this PR.</p>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 aakhundov kadeng</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.52]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.52</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.52</guid>
+            <pubDate>Thu, 22 Feb 2024 09:52:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6bb2ea72a0a5ec8c460572f15974f14b987e4fe2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317209" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317209</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.52@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/f8aaedc642edbd441baa2dc5983edfd9a137e6f1/hovercard" href="https://github.com/v8/v8/commit/f8aaedc642edbd441baa2dc5983edfd9a137e6f1"><tt>f8aaedc</tt></a>-refs/heads/main@{#92469}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.52-pgo: Version 12.4.52]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.52-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.52-pgo</guid>
+            <pubDate>Thu, 22 Feb 2024 09:52:35 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6bb2ea72a0a5ec8c460572f15974f14b987e4fe2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317209" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317209</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.52@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/f8aaedc642edbd441baa2dc5983edfd9a137e6f1/hovercard" href="https://github.com/v8/v8/commit/f8aaedc642edbd441baa2dc5983edfd9a137e6f1"><tt>f8aaedc</tt></a>-refs/heads/main@{#92469}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from prometheus: v0.50.0]]></title>
+            <link>https://github.com/prometheus/prometheus/releases/tag/v0.50.0</link>
+            <guid>https://github.com/prometheus/prometheus/releases/tag/v0.50.0</guid>
+            <pubDate>Thu, 22 Feb 2024 09:36:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v0.50.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120311: Update on "Use opmath for sinc on CPU"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120311</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120311</guid>
+            <pubDate>Thu, 22 Feb 2024 09:29:12 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This aligns the implementation with CUDA and <code>torch.compile</code></p>
+<p>Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2097589558" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/118176" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/118176/hovercard" href="https://github.com/pytorch/pytorch/issues/118176">#118176</a> <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="760806038" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/49133" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/49133/hovercard" href="https://github.com/pytorch/pytorch/issues/49133">#49133</a></p>
+<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16514]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16514</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16514</guid>
+            <pubDate>Thu, 22 Feb 2024 09:25:24 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16512]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16512</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16512</guid>
+            <pubDate>Thu, 22 Feb 2024 09:10:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.51-pgo: Version 12.4.51]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.51-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.51-pgo</guid>
+            <pubDate>Thu, 22 Feb 2024 08:34:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I2c5d552d70ccae228db3f558a5c2b3692853e47a<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317010" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317010</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.51@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c0a1d2215c05da8fff1dd5aeaa3b9325dd205099/hovercard" href="https://github.com/v8/v8/commit/c0a1d2215c05da8fff1dd5aeaa3b9325dd205099"><tt>c0a1d22</tt></a>-refs/heads/main@{#92468}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.51]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.51</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.51</guid>
+            <pubDate>Thu, 22 Feb 2024 08:34:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I2c5d552d70ccae228db3f558a5c2b3692853e47a<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5317010" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5317010</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.51@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/c0a1d2215c05da8fff1dd5aeaa3b9325dd205099/hovercard" href="https://github.com/v8/v8/commit/c0a1d2215c05da8fff1dd5aeaa3b9325dd205099"><tt>c0a1d22</tt></a>-refs/heads/main@{#92468}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from WasmEdge: WasmEdge 0.13.5]]></title>
+            <link>https://github.com/WasmEdge/WasmEdge/releases/tag/0.13.5</link>
+            <guid>https://github.com/WasmEdge/WasmEdge/releases/tag/0.13.5</guid>
+            <pubDate>Thu, 22 Feb 2024 08:27:10 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>0.13.5 (2023-11-03)</h3>
+<p>Features:</p>
+<ul>
+<li>[Component] share loading entry for component and module (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1926189063" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2945" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2945/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2945">#2945</a>)
+<ul>
+<li>Initial support for the component model proposal.</li>
+<li>This PR allows WasmEdge to recognize the component and module format.</li>
+</ul>
+</li>
+<li>[WASI-NN] ggml backend:
+<ul>
+<li>Provide options for enabling OpenBLAS, Metal, and cuBLAS.</li>
+<li>Bump llama.cpp to b1383</li>
+<li>Build thirdparty/ggml only when the ggml backend is enabled.</li>
+<li>Enable the ggml plugin on the macOS platform.</li>
+<li>Introduce <code>AUTO</code> detection. Wasm application will no longer need to specify the hardware spec (e.g., CPU or GPU). It will auto-detect by the runtime.</li>
+<li>Unified the preload options with case-insensitive matching</li>
+<li>Introduce <code>metadata</code> for setting the ggml options.
+<ul>
+<li>The following options are supported:
+<ul>
+<li><code>enable-log</code>: <code>true</code> to enable logging. (default: <code>false</code>)</li>
+<li><code>stream-stdout</code>: <code>true</code> to print the inferred tokens in the streaming mode to standard output. (default: <code>false</code>)</li>
+<li><code>ctx-size</code>: Set the context size the same as the <code>--ctx-size</code> parameter in llama.cpp. (default: <code>512</code>)</li>
+<li><code>n-predict</code>: Set the number of tokens to predict, the same as the <code>--n-predict</code> parameter in llama.cpp. (default: <code>512</code>)</li>
+<li><code>n-gpu-layers</code>: Set the number of layers to store in VRAM, the same as the <code>--n-gpu-layers</code> parameter in llama.cpp. (default: <code>0</code>)</li>
+<li><code>reverse-prompt</code>: Set the token pattern at which you want to halt the generation. Similar to the <code>--reverse-prompt</code> parameter in llama.cpp. (default: <code>""</code>)</li>
+<li><code>batch-size</code>: Set the number of batch sizes for prompt processing, the same as the <code>--batch-size</code> parameter in llama.cpp. (default: <code>512</code>)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Notice: Because of the limitation of the WASI-NN proposal, there is no way to set the metadata during the loading process. The current workaround will re-load the model when <code>n_gpu_layers</code> is set to a non-zero value.</li>
+<li>Installer: Support WASI-NN ggml plugin on both macOS Intel model (CPU only) and macOS Apple Silicon model. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1913817202" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2882" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2882/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2882">#2882</a>)</li>
+</ul>
+</li>
+<li>[Java Bindings] provide platform-specific jni and jar for Java bindings (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1963472806" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2980" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2980/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2980">#2980</a>)</li>
+<li>[C API]:
+<ul>
+<li>Provide getData API for FunctionInstance (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1923279664" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2937" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2937/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2937">#2937</a>)</li>
+<li>Add the API to set WASI-NN preloads. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1902582077" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2827" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2827/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2827">#2827</a>)</li>
+</ul>
+</li>
+<li>[Plugin]:
+<ul>
+<li>[zlib]:
+<ul>
+<li>initial support of the zlib plugin (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1740917529" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2562" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2562/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2562">#2562</a>)</li>
+<li>With a simple building guide and basic working examples</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>[MSVC] Support MSVC for building WasmEdge</li>
+<li>[AOT] Support LLVM 17</li>
+</ul>
+<p>Fixed issues:</p>
+<ul>
+<li>[Installer]: Double quote the strings to prevent splitting in env file (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1968710790" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2994" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2994/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2994">#2994</a>)</li>
+<li>[AOT]:
+<ul>
+<li>Validate AOT section header fields</li>
+<li>Add invariant attribute for memory and global pointer</li>
+</ul>
+</li>
+<li>[C API]:
+<ul>
+<li>Fix the wrong logic of getting types from exports.</li>
+</ul>
+</li>
+<li>[Example] Fix get-string with the latest C++ internal getSpan API. Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1919062029" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2887" data-hovercard-type="issue" data-hovercard-url="/WasmEdge/WasmEdge/issues/2887/hovercard" href="https://github.com/WasmEdge/WasmEdge/issues/2887">#2887</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1920602340" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2929" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2929/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2929">#2929</a>)</li>
+<li>[CI] install llvm@16 to fix macOS build (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1912571430" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2878" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2878/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2878">#2878</a>)</li>
+</ul>
+<p>Misc:</p>
+<ul>
+<li>[Example] Update wit-bindgen version from 0.7.0 to 0.11.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1879465847" data-permission-text="Title is private" data-url="https://github.com/WasmEdge/WasmEdge/issues/2770" data-hovercard-type="pull_request" data-hovercard-url="/WasmEdge/WasmEdge/pull/2770/hovercard" href="https://github.com/WasmEdge/WasmEdge/pull/2770">#2770</a>)</li>
+</ul>
+<p>Thank all the contributors who made this release possible!</p>
+<p>dm4, hydai, Lîm Tsú-thuàn, Meenu Yadav, michael1017, proohit, Saikat Dey, Shen-Ta Hsieh, Shreyas Atre, Wang Jikai, Wck-iipi, YiYing He</p>
+<p>If you want to build from source, please use WasmEdge-0.13.5-src.tar.gz instead of the zip or tarball provided by GitHub directly.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120378: Update on "[DCP][state_dict] Implement pin_memory copy for _offload_s…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120378</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120378</guid>
+            <pubDate>Thu, 22 Feb 2024 08:14:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…tate_dict_to_cpu"</p>
+<p><strong>Summary</strong><br>
+This PR extend <code>_offload_state_dict_to_cpu</code> to accept a <code>cpu_offload_state_dict</code> argument. If <code>cpu_offload_state_dict</code> is not None, <code>_offload_state_dict_to_cpu</code> will use <code>copy_</code> to copy the GPU data to the CPU tensors. This allows users to pass a pin_memory <code>cpu_offload_state_dict</code>, which a micro-benchmark show the performance improvement.</p>
+<p>This PR also adds <code>_create_pin_state_dict</code> to allow users to easily create a pin_memory cpu state_dict.</p>
+<p><strong>Performance improvement</strong><br>
+A micro-benchmark with 150 tensors state_dict, each tensor is 15MB, shows ~ 8X performance improvement, from 1.6 seconds to 0.21 seconds. The micro-benchmark was run on a A100 GPU.</p>
+<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D54045845/" rel="nofollow">D54045845</a></p>
+<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu XilunWu wanchaol fduwjj wz337 tianyu-l wconstab yf225 LucasLLC</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from puppeteer: browsers: v2.1.0]]></title>
+            <link>https://github.com/puppeteer/puppeteer/releases/tag/browsers-v2.1.0</link>
+            <guid>https://github.com/puppeteer/puppeteer/releases/tag/browsers-v2.1.0</guid>
+            <pubDate>Thu, 22 Feb 2024 08:09:15 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/browsers-v2.0.1...browsers-v2.1.0">2.1.0</a> (2024-02-21)</h2>
+<h3>Features</h3>
+<ul>
+<li>allow comparing browser versions (<a href="https://github.com/puppeteer/puppeteer/issues/11954" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11954/hovercard">#11954</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/bf71b34fca73ed14eeb23616682799ff545fc371">bf71b34</a>)</li>
+<li>support local aliases when launching a browser (<a href="https://github.com/puppeteer/puppeteer/issues/11947" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11947/hovercard">#11947</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/561e4cd6ee79b19ac43f2c2fceaa1fce51052c02">561e4cd</a>)</li>
+</ul>
+<h3>Bug Fixes</h3>
+<ul>
+<li>check if executable exists (<a href="https://github.com/puppeteer/puppeteer/issues/11946" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11946/hovercard">#11946</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/e95a308c33021a80c9eb27a4ac02c607af60ff99">e95a308</a>)</li>
+<li>implement a fallback to download URLs provided by dashboard (<a href="https://github.com/puppeteer/puppeteer/issues/11951" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11951/hovercard">#11951</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/73c1f9bbf3c862decded533401e3bd26a18f8194">73c1f9b</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from puppeteer: puppeteer-core: v22.2.0]]></title>
+            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v22.2.0</link>
+            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v22.2.0</guid>
+            <pubDate>Thu, 22 Feb 2024 08:09:14 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-core-v22.1.0...puppeteer-core-v22.2.0">22.2.0</a> (2024-02-21)</h2>
+<h3>Features</h3>
+<ul>
+<li>roll to Chrome 122.0.6261.57 (r1250580) (<a href="https://github.com/puppeteer/puppeteer/issues/11958" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11958/hovercard">#11958</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/70ad3b244826ca102737e93cd2316e451ea310e8">70ad3b2</a>)</li>
+</ul>
+<h3>Bug Fixes</h3>
+<ul>
+<li>deprecate isIncognito (<a href="https://github.com/puppeteer/puppeteer/issues/11962" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11962/hovercard">#11962</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/ceab7a9042fe5fc3f71875e75327bb370f1c43a5">ceab7a9</a>)</li>
+<li>roll to Chrome 121.0.6167.184 (r1233107) (<a href="https://github.com/puppeteer/puppeteer/issues/11948" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11948/hovercard">#11948</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/03ef7a62c23f2339e4d508d9abfe0894bd790cdd">03ef7a6</a>)</li>
+<li>update touchscreen tests (<a href="https://github.com/puppeteer/puppeteer/issues/11960" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11960/hovercard">#11960</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/013bd0b12d3a69f9d62fffe7911a327ad26d33d8">013bd0b</a>)</li>
+</ul>
+<h3>Dependencies</h3>
+<ul>
+<li>The following workspace dependencies were updated
+<ul>
+<li>dependencies
+<ul>
+<li>@puppeteer/browsers bumped from 2.0.1 to 2.1.0</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from puppeteer: puppeteer: v22.2.0]]></title>
+            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v22.2.0</link>
+            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v22.2.0</guid>
+            <pubDate>Thu, 22 Feb 2024 08:09:13 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-v22.1.0...puppeteer-v22.2.0">22.2.0</a> (2024-02-21)</h2>
+<h3>Features</h3>
+<ul>
+<li>support local aliases when launching a browser (<a href="https://github.com/puppeteer/puppeteer/issues/11947" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/11947/hovercard">#11947</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/561e4cd6ee79b19ac43f2c2fceaa1fce51052c02">561e4cd</a>)</li>
+</ul>
+<h3>Dependencies</h3>
+<ul>
+<li>The following workspace dependencies were updated
+<ul>
+<li>dependencies
+<ul>
+<li>puppeteer-core bumped from 22.1.0 to 22.2.0</li>
+<li>@puppeteer/browsers bumped from 2.0.1 to 2.1.0</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16507]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16507</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16507</guid>
+            <pubDate>Thu, 22 Feb 2024 07:36:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from zed: nightly: Add action to open release notes locally (#8173)]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
+            <pubDate>Thu, 22 Feb 2024 07:20:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fixes: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2098794676" data-permission-text="Title is private" data-url="https://github.com/zed-industries/zed/issues/5019" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/5019/hovercard" href="https://github.com/zed-industries/zed/issues/5019">#5019</a></p>
+<p>zed.dev PR: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2148271661" data-permission-text="Title is private" data-url="https://github.com/zed-industries/zed.dev/issues/562" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed.dev/pull/562/hovercard" href="https://github.com/zed-industries/zed.dev/pull/562">zed-industries/zed.dev#562</a></p>
+<p>I've been wanting to be able to open release notes in Zed for awhile,<br>
+but was blocked on having a rendered Markdown view. Now that that is<br>
+mostly there, I think we can add this. I have not removed the <code>auto update: view release notes</code> action, since the Markdown render view<br>
+doesn't support displaying media yet. I've opted to just add a new<br>
+action: <code>auto update: view release notes locally</code>. I'd imagine that in<br>
+the future, once the rendered view supports media, we could remove <code>view release notes</code> and <code>view release notes locally</code> could replace it.<br>
+Clicking the toast that normally is presented on update<br>
+(<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2126189649" data-permission-text="Title is private" data-url="https://github.com/zed-industries/zed/issues/7597" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7597/hovercard" href="https://github.com/zed-industries/zed/issues/7597">#7597</a>) would show the notes<br>
+locally.</p>
+<p>The action works for stable and preview as expected; for dev and<br>
+nightly, it just pulls the latest stable, for testing purposes.</p>
+<p>I changed the way the markdown rendered view works by allowing a tab<br>
+description to be passed in.</p>
+<p>For files that have a name, it will use <code>Preview &lt;name&gt;</code>:</p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/19867440/306883108-a0ef34e5-bd6d-4b0c-a684-9b09d350aec4.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDY4ODMxMDgtYTBlZjM0ZTUtYmQ2ZC00YjBjLWE2ODQtOWIwOWQzNTBhZWM0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY2MmFkMTAyNTFiNzMxMmUxZTkzM2Q5ODYwZjk1YTI2ODcxNmQzNmY2OGQwMTA4OTc4ZTJiMjYwNTZlNWMzMTgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.jNTRu6ENzAD6sbL_p-KW0EuM7fj36lztCq-GrEaDC0Q"><img width="1496" alt="SCR-20240222-byyz" src="https://private-user-images.githubusercontent.com/19867440/306883108-a0ef34e5-bd6d-4b0c-a684-9b09d350aec4.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDY4ODMxMDgtYTBlZjM0ZTUtYmQ2ZC00YjBjLWE2ODQtOWIwOWQzNTBhZWM0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY2MmFkMTAyNTFiNzMxMmUxZTkzM2Q5ODYwZjk1YTI2ODcxNmQzNmY2OGQwMTA4OTc4ZTJiMjYwNTZlNWMzMTgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.jNTRu6ENzAD6sbL_p-KW0EuM7fj36lztCq-GrEaDC0Q" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p>For untitled files, it defaults back to <code>Markdown preview</code>:</p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/19867440/306882447-2ba3f336-6198-4dce-8867-cf0e45f2c646.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDY4ODI0NDctMmJhM2YzMzYtNjE5OC00ZGNlLTg4NjctY2YwZTQ1ZjJjNjQ2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTc2MDA4OWNkZjY1NGJkNmZiYmZkY2NkYmQwNzI0MGQyZTYyZjYyNzllNjU0YWYzODczNTcyYThjMzE5YjZlM2EmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.ZLIIspP22CMjH0SuH3quRa1YSKXy0WYmsi7oOeVZZTw"><img width="1496" alt="SCR-20240222-byip" src="https://private-user-images.githubusercontent.com/19867440/306882447-2ba3f336-6198-4dce-8867-cf0e45f2c646.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDY4ODI0NDctMmJhM2YzMzYtNjE5OC00ZGNlLTg4NjctY2YwZTQ1ZjJjNjQ2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTc2MDA4OWNkZjY1NGJkNmZiYmZkY2NkYmQwNzI0MGQyZTYyZjYyNzllNjU0YWYzODczNTcyYThjMzE5YjZlM2EmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.ZLIIspP22CMjH0SuH3quRa1YSKXy0WYmsi7oOeVZZTw" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p>Release Notes:</p>
+<ul>
+<li>Added a <code>zed: view release notes locally</code> action<br>
+(<a href="https://github.com/zed-industries/zed/issues/5019" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/5019/hovercard">#5019</a>).</li>
+</ul>
+<details open="" class="details-reset border rounded-2">
+  <summary class="px-3 py-2">
+    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-device-camera-video">
+    <path d="M16 3.75v8.5a.75.75 0 0 1-1.136.643L11 10.575v.675A1.75 1.75 0 0 1 9.25 13h-7.5A1.75 1.75 0 0 1 0 11.25v-6.5C0 3.784.784 3 1.75 3h7.5c.966 0 1.75.784 1.75 1.75v.675l3.864-2.318A.75.75 0 0 1 16 3.75Zm-6.5 1a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25v6.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-6.5ZM11 8.825l3.5 2.1v-5.85l-3.5 2.1Z"></path>
+</svg>
+    <span aria-label="Video description Screen.Recording.2024-02-22.at.1.36.52.AM.mov" class="m-1">Screen.Recording.2024-02-22.at.1.36.52.AM.mov</span>
+    <span class="dropdown-caret"></span>
+  </summary>
+
+  <video src="https://private-user-images.githubusercontent.com/19867440/306892135-af324f9c-e7a4-4434-adff-7fe0f8ccc7ff.mov?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDY4OTIxMzUtYWYzMjRmOWMtZTdhNC00NDM0LWFkZmYtN2ZlMGY4Y2NjN2ZmLm1vdj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTZlMzQwYmNhZTZlOWY2NDk2NmVlMzMzYzEyOWRlYWU3YjBmMTc0YTlkNDgyYzk2YjM5OWZlMDA4ZjlhNTA5YzgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.Tbu1Sd2QyTDJ4gSS7dibg-JD36lCmSVPiGtuq0Sicr0" data-canonical-src="https://private-user-images.githubusercontent.com/19867440/306892135-af324f9c-e7a4-4434-adff-7fe0f8ccc7ff.mov?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDY4OTIxMzUtYWYzMjRmOWMtZTdhNC00NDM0LWFkZmYtN2ZlMGY4Y2NjN2ZmLm1vdj9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTZlMzQwYmNhZTZlOWY2NDk2NmVlMzMzYzEyOWRlYWU3YjBmMTc0YTlkNDgyYzk2YjM5OWZlMDA4ZjlhNTA5YzgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.Tbu1Sd2QyTDJ4gSS7dibg-JD36lCmSVPiGtuq0Sicr0" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px">
+
+  </video>
+</details>
+]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.4.3-nightly-20240222.2]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.4.3-nightly-20240222.2</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.4.3-nightly-20240222.2</guid>
+            <pubDate>Thu, 22 Feb 2024 06:10:17 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.4.50-pgo: Version 12.4.50]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.50-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.50-pgo</guid>
+            <pubDate>Thu, 22 Feb 2024 05:52:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I37ba7cda50419ae053e2a6e80ecc57236228309f<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5316065" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5316065</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.50@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d970d6a80bc38513b884b71e46cf37972516173f/hovercard" href="https://github.com/v8/v8/commit/d970d6a80bc38513b884b71e46cf37972516173f"><tt>d970d6a</tt></a>-refs/heads/main@{#92467}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.4.50]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.4.50</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.4.50</guid>
+            <pubDate>Thu, 22 Feb 2024 05:52:31 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I37ba7cda50419ae053e2a6e80ecc57236228309f<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5316065" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5316065</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.4.50@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d970d6a80bc38513b884b71e46cf37972516173f/hovercard" href="https://github.com/v8/v8/commit/d970d6a80bc38513b884b71e46cf37972516173f"><tt>d970d6a</tt></a>-refs/heads/main@{#92467}</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -83,33 +726,6 @@ b6891a8c3b400f2eda0d6f7b4317e520665b603bdd60e1e491b478b59df56300  nvim-win64.zip
 </code></pre></div>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120378: Update on "[DCP][state_dict] Implement pin_memory copy for _offload_s…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120378</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120378</guid>
-            <pubDate>Thu, 22 Feb 2024 05:12:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…tate_dict_to_cpu"</p>
-<p><strong>Summary</strong><br>
-This PR extend <code>_offload_state_dict_to_cpu</code> to accept a <code>cpu_offload_state_dict</code> argument. If <code>cpu_offload_state_dict</code> is not None, <code>_offload_state_dict_to_cpu</code> will use <code>copy_</code> to copy the GPU data to the CPU tensors. This allows users to pass a pin_memory <code>cpu_offload_state_dict</code>, which a micro-benchmark show the performance improvement.</p>
-<p>This PR also adds <code>_create_pin_state_dict</code> to allow users to easily create a pin_memory cpu state_dict.</p>
-<p><strong>Performance improvement</strong><br>
-A micro-benchmark with 150 tensors state_dict, each tensor is 15MB, shows ~ 8X performance improvement, from 1.6 seconds to 0.21 seconds. The micro-benchmark was run on a A100 GPU.</p>
-<p>Differential Revision: <a href="https://our.internmc.facebook.com/intern/diff/D54045845/" rel="nofollow">D54045845</a></p>
-<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu XilunWu wanchaol fduwjj wz337 tianyu-l wconstab yf225 LucasLLC</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120298: Update on "[dtensor] implement scaled dot product attention (flash-at…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120298</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120298</guid>
-            <pubDate>Thu, 22 Feb 2024 05:10:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…tention)"</p>
-<p>as titled, this PR implements the sdpa flash attention op in DTensor</p>
-<p>Adding flash attention first but efficient attention and other attention<br>
-ops should be similar</p>
-<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu fegin XilunWu fduwjj wz337 tianyu-l wconstab yf225</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kit: @sveltejs/package@2.2.7]]></title>
             <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fpackage%402.2.7</link>
             <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fpackage%402.2.7</guid>
@@ -149,13 +765,6 @@ ops should be similar</p>
 <ul>
 <li>chore: bump typescript-eslint to v7 (<a href="https://github.com/sveltejs/kit/pull/11845" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/11845/hovercard">#11845</a>)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.4.3-nightly-20240222.2]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.4.3-nightly-20240222.2</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.4.3-nightly-20240222.2</guid>
-            <pubDate>Thu, 22 Feb 2024 04:47:12 GMT</pubDate>
-            <content:encoded><![CDATA[<p>chore: Publish 1.4.3-nightly-20240222.2</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from marimo: 0.2.7]]></title>
@@ -338,28 +947,6 @@ await micropip.install(&quot;package name&quot;)"><pre><span class="pl-k">import
 </table>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.4.49-pgo: Version 12.4.49]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.49-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.49-pgo</guid>
-            <pubDate>Thu, 22 Feb 2024 01:46:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie3735c5a32523915103f4062c8737aabdf30bfdf<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5314097" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5314097</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.49@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/321530cb3532455775a6a45f93d571aebaaca4ce/hovercard" href="https://github.com/v8/v8/commit/321530cb3532455775a6a45f93d571aebaaca4ce"><tt>321530c</tt></a>-refs/heads/main@{#92466}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.49]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.49</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.49</guid>
-            <pubDate>Thu, 22 Feb 2024 01:46:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie3735c5a32523915103f4062c8737aabdf30bfdf<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5314097" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5314097</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.49@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/321530cb3532455775a6a45f93d571aebaaca4ce/hovercard" href="https://github.com/v8/v8/commit/321530cb3532455775a6a45f93d571aebaaca4ce"><tt>321530c</tt></a>-refs/heads/main@{#92466}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from mongo: r7.2.2-rc0]]></title>
             <link>https://github.com/mongodb/mongo/releases/tag/r7.2.2-rc0</link>
             <guid>https://github.com/mongodb/mongo/releases/tag/r7.2.2-rc0</guid>
@@ -374,115 +961,11 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118613: Update on "[2/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118613</guid>
-            <pubDate>Thu, 22 Feb 2024 01:35:25 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>According to <a href="https://github.com/pytorch/pytorch/pull/118528" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/118528/hovercard">[1/2] Intel GPU Runtime Upstreaming for Generator</a>, as mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the second PR covers the changes under <code>python frontend</code>.</p>
-<h1>Design</h1>
-<p>Currently, it primarily offers geneartor-related APIs, including</p>
-<ul>
-<li><code>torch.xpu.default_generators</code></li>
-<li><code>torch.xpu.get_rng_state</code></li>
-<li><code>torch.xpu.get_rng_state_all</code></li>
-<li><code>torch.xpu.initial_seed</code></li>
-<li><code>torch.xpu.manual_seed</code></li>
-<li><code>torch.xpu.manual_seed_all</code></li>
-<li><code>torch.xpu.seed</code></li>
-<li><code>torch.xpu.seed_all</code></li>
-<li><code>torch.xpu.set_rng_state</code></li>
-<li><code>torch.xpu.set_rng_state_all</code></li>
-</ul>
-<h1>Additional Context</h1>
-<p>The differences with CUDA:<br>
-The generator-related frontend python APIs are 1:1 mapping with CUDA.</p>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118528: Update on "[1/2] Intel GPU Runtime Upstreaming for Generator"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118528</guid>
-            <pubDate>Thu, 22 Feb 2024 01:35:24 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>As mentioned in <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the last runtime component we would like to upstream is <code>Generator</code> which is responsible for the pseudo-random number generation. To facilitate the code review, we split the code changes into 2 PRs. This is one of the 2 PRs and covers the changes under <code>aten</code>.</p>
-<h1>Design</h1>
-<p>Following the previous design, <code>c10::GeneratorImpl</code> is the device-agnostic abstraction of a random number generator. So we will introduce an XPU generator <code>XPUGeneratorImpl</code>, inheriting from <code>c10::GeneratorImpl</code>, to manage random states on an Intel GPU device. Intel GPU runtime <code>Generator</code> adopts the same algorithm as CPU. The corresponding C++ file should be placed in aten/src/ATen/xpu/ folder and is built in <code>libtorch_xpu.so</code>.<br>
-This PR provide the list of APIs:</p>
-<ul>
-<li><code>getDefaultXPUGenerator</code></li>
-<li><code>createXPUGenerator</code></li>
-</ul>
-<h1>Additional Context</h1>
-<p>The 2nd PR will cover <code>python frontend</code>.</p>
-<p>The differences with CUDA:<br>
-The generator-related ATen CPP APIs are 1:1 mapping with CUDA.<br>
-The XPUGeneratorImpl's member functions have slight differences with CUDA.<br>
-lack of CUDA-related counterpart APIs listed below:</p>
-<ul>
-<li>capture_prologue</li>
-<li>capture_epilogue</li>
-<li>philox_cuda_state</li>
-<li>reset_rnn_state</li>
-</ul>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/120371]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120371</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120371</guid>
             <pubDate>Thu, 22 Feb 2024 01:03:38 GMT</pubDate>
             <content:encoded><![CDATA[<p>[Dynamo] Fix dynamo trace rules</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/118523: Update on "Intel GPU Runtime Upstreaming for Guard"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F118523</guid>
-            <pubDate>Thu, 22 Feb 2024 00:44:09 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>According to <a href="https://github.com/pytorch/pytorch/issues/114842" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/114842/hovercard">[RFC] Intel GPU Runtime Upstreaming</a>, the 5th runtime component we would like to upstream is <code>Guard</code>. We will cover device guard and stream guard in this PR.</p>
-<h1>Design</h1>
-<p>Device guard is used mainly for op dispatcher in PyTorch. Currently, PyTorch already has a device guard abstraction <code>c10::impl::DeviceGuardImplInterface</code>. In our design, we will introduce an <code>XPUGuardImpl</code> class inherits from <code>c10::impl::DeviceGuardImplInterface</code>. Register <code>XPUGuardImpl</code> to PyTorch after we implement the device switch management mechanism in <code>XPUGuardImpl</code>. Besides, we will introduce <code>XPUGuard</code>, <code>OptionalXPUGuard</code>, <code>XPUStreamGuard</code>, and <code>OptionalXPUStreamGuard</code>. They are all following the design of CUDA's counterpart. The corresponding C++ file should be placed in c10/xpu/ folder.</p>
-<h1>Additional Context</h1>
-<p>It is unnecessary to add <code>Guard</code> code to PyTorch frontend.</p>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/xpu/120315: Update on "fix xpu build failure"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F120315</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Fxpu%2F120315</guid>
-            <pubDate>Thu, 22 Feb 2024 00:44:08 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>fix build failure introduced by <a href="https://github.com/pytorch/pytorch/pull/120133" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120133/hovercard">[DeviceIndex][6/N] Use DeviceIndex in more places</a>, parameter <code>total</code> is undefined in line 100. see <a href="https://github.com/pytorch/pytorch/pull/120133/files#diff-00eb8a6f5dfbc341ee9ab9aff0e3dbece8ad73483d4f41a005b1f453cb78221cR91-L102">https://github.com/pytorch/pytorch/pull/120133/files#diff-00eb8a6f5dfbc341ee9ab9aff0e3dbece8ad73483d4f41a005b1f453cb78221cR91-L102</a><br>
-<a href="https://github.com/pytorch/pytorch/pull/120133" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/120133/hovercard">PR120133</a> forgot to add the label <code>ciflow/xpu</code>, so the XPU CI flow was not triggered.</p>
-<h1>Solution</h1>
-<p>refer to <a href="https://stackoverflow.com/questions/7587782" rel="nofollow">Why is std::cout not printing the correct value for my int8_t number?</a> , static cast int8_t to int16_t and the condition <code>device &gt;= 0 &amp;&amp; device &lt; total</code> is enough.</p>
-<p>cc jgong5 mingfeima XiaobingSuper sanchitintel ashokei jingxu10</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120369: [amd] fix unused variable device_flags]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120369</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120369</guid>
-            <pubDate>Thu, 22 Feb 2024 00:23:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:<br>
-get build error due to D53986297 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2137116523" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119996" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119996/hovercard" href="https://github.com/pytorch/pytorch/pull/119996">#119996</a>)</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="caffe2/c10/cuda/__fb_c10_hipify_gen__/out/c10/hip/HIPStream.cpp:40:23: error: unused variable 'device_flags' [-Werror,-Wunused-variable]
-static c10::once_flag device_flags[C10_COMPILE_TIME_MAX_GPUS];"><pre class="notranslate"><code>caffe2/c10/cuda/__fb_c10_hipify_gen__/out/c10/hip/HIPStream.cpp:40:23: error: unused variable 'device_flags' [-Werror,-Wunused-variable]
-static c10::once_flag device_flags[C10_COMPILE_TIME_MAX_GPUS];
-</code></pre></div>
-<p>Reviewed By: jianyuh, xw285cornell</p>
-<p>Differential Revision: D54027737</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120264]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120264</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120264</guid>
-            <pubDate>Thu, 22 Feb 2024 00:17:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
@@ -493,35 +976,6 @@ static c10::once_flag device_flags[C10_COMPILE_TIME_MAX_GPUS];
 <ul>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/78029c4597c6cea5a25f569f8fe8185b8cd4fa11/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/78029c4597c6cea5a25f569f8fe8185b8cd4fa11"><tt>78029c4</tt></a>: Update mirror info (Wed Feb 21 00:15:11 UTC 2024) (Selenium CI Bot)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/120261]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120261</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F120261</guid>
-            <pubDate>Thu, 22 Feb 2024 00:06:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Address comments</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.48]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.48</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.48</guid>
-            <pubDate>Wed, 21 Feb 2024 23:52:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Iafb218f947bb803690471f267e57f177761c7915<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5316056" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5316056</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.48@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/f8bb47371f7ff84c2d1020787bd8d0ddaa6d0ebd/hovercard" href="https://github.com/v8/v8/commit/f8bb47371f7ff84c2d1020787bd8d0ddaa6d0ebd"><tt>f8bb473</tt></a>-refs/heads/main@{#92465}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.4.48-pgo: Version 12.4.48]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.48-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.48-pgo</guid>
-            <pubDate>Wed, 21 Feb 2024 23:52:42 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Iafb218f947bb803690471f267e57f177761c7915<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5316056" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5316056</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.48@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/f8bb47371f7ff84c2d1020787bd8d0ddaa6d0ebd/hovercard" href="https://github.com/v8/v8/commit/f8bb47371f7ff84c2d1020787bd8d0ddaa6d0ebd"><tt>f8bb473</tt></a>-refs/heads/main@{#92465}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from next.js: v14.1.1-canary.69]]></title>
@@ -740,50 +1194,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.4.47-pgo: Version 12.4.47]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.47-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.47-pgo</guid>
-            <pubDate>Wed, 21 Feb 2024 21:17:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I30e5d94e999efeedfb59a35b961dc5767ea84611<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5313855" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5313855</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.47@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ee7f22e00ef8932c7f7c6e318c817c1ae4857913/hovercard" href="https://github.com/v8/v8/commit/ee7f22e00ef8932c7f7c6e318c817c1ae4857913"><tt>ee7f22e</tt></a>-refs/heads/main@{#92464}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.47]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.47</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.47</guid>
-            <pubDate>Wed, 21 Feb 2024 21:17:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I30e5d94e999efeedfb59a35b961dc5767ea84611<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5313855" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5313855</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.47@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ee7f22e00ef8932c7f7c6e318c817c1ae4857913/hovercard" href="https://github.com/v8/v8/commit/ee7f22e00ef8932c7f7c6e318c817c1ae4857913"><tt>ee7f22e</tt></a>-refs/heads/main@{#92464}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.46]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.46</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.46</guid>
-            <pubDate>Wed, 21 Feb 2024 20:46:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I71d8089847f1c38aca7a6c9d614f7401cbf1ac25<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5314093" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5314093</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.46@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4ccb925fe5be0a18e99c6dd70ff9b5e44a59a27e/hovercard" href="https://github.com/v8/v8/commit/4ccb925fe5be0a18e99c6dd70ff9b5e44a59a27e"><tt>4ccb925</tt></a>-refs/heads/main@{#92463}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.4.46-pgo: Version 12.4.46]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.46-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.46-pgo</guid>
-            <pubDate>Wed, 21 Feb 2024 20:46:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I71d8089847f1c38aca7a6c9d614f7401cbf1ac25<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5314093" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5314093</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.46@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4ccb925fe5be0a18e99c6dd70ff9b5e44a59a27e/hovercard" href="https://github.com/v8/v8/commit/4ccb925fe5be0a18e99c6dd70ff9b5e44a59a27e"><tt>4ccb925</tt></a>-refs/heads/main@{#92463}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from helm: Helm v3.14.2]]></title>
             <link>https://github.com/helm/helm/releases/tag/v3.14.2</link>
             <guid>https://github.com/helm/helm/releases/tag/v3.14.2</guid>
@@ -812,28 +1222,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>3.14.3 will contain only bug fixes and be released on March 13, 2024.</li>
 <li>3.15.0 is the next feature release and will be on May 08, 2024.</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.4.45]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.45</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.45</guid>
-            <pubDate>Wed, 21 Feb 2024 20:34:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ieb53b51820a3de31150a6b8345b0e6801c3b52a4<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5313854" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5313854</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.45@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7317b73749493c4fd2757c5b2a7eb8c62e5e773e/hovercard" href="https://github.com/v8/v8/commit/7317b73749493c4fd2757c5b2a7eb8c62e5e773e"><tt>7317b73</tt></a>-refs/heads/main@{#92462}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.4.45-pgo: Version 12.4.45]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.4.45-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.4.45-pgo</guid>
-            <pubDate>Wed, 21 Feb 2024 20:34:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ieb53b51820a3de31150a6b8345b0e6801c3b52a4<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5313854" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5313854</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.4.45@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7317b73749493c4fd2757c5b2a7eb8c62e5e773e/hovercard" href="https://github.com/v8/v8/commit/7317b73749493c4fd2757c5b2a7eb8c62e5e773e"><tt>7317b73</tt></a>-refs/heads/main@{#92462}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16458]]></title>
@@ -887,7 +1275,7 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Added Dockerfile language support (<a href="https://github.com/zed-industries/zed/issues/5311" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/5311/hovercard">#5311</a>).</li>
 <li>Added Ruby method visibility in outline view (<a href="https://github.com/zed-industries/zed/issues/7849" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7849/hovercard">#7849</a>).</li>
 </ul>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/7274458/305657103-a2b0db84-1971-45c0-a5a2-68de651e342b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii83Mjc0NDU4LzMwNTY1NzEwMy1hMmIwZGI4NC0xOTcxLTQ1YzAtYTVhMi02OGRlNjUxZTM0MmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NjU2ZWViMDY5ZjQ5YjY5NDgzODMwMjA4NjA0ZWY5MDQ5N2I1NjBkZWNkN2FiOTkxNzY0ZDkzM2ExN2Q4MGNiYyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.6qnBE-TNU27uI6L40BL0do3qGfSkqGgLdUFdkKThdmE"><img src="https://private-user-images.githubusercontent.com/7274458/305657103-a2b0db84-1971-45c0-a5a2-68de651e342b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii83Mjc0NDU4LzMwNTY1NzEwMy1hMmIwZGI4NC0xOTcxLTQ1YzAtYTVhMi02OGRlNjUxZTM0MmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NjU2ZWViMDY5ZjQ5YjY5NDgzODMwMjA4NjA0ZWY5MDQ5N2I1NjBkZWNkN2FiOTkxNzY0ZDkzM2ExN2Q4MGNiYyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.6qnBE-TNU27uI6L40BL0do3qGfSkqGgLdUFdkKThdmE" alt="Added Ruby method visibility in outline view" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/7274458/305657103-a2b0db84-1971-45c0-a5a2-68de651e342b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii83Mjc0NDU4LzMwNTY1NzEwMy1hMmIwZGI4NC0xOTcxLTQ1YzAtYTVhMi02OGRlNjUxZTM0MmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MWQ1ZTc2OGEwYWRlYzBmODQ1NzA2NjAxZjM3NjRhMTE5NjIxN2I2NjE3Y2EzNzFlMDFmMzIxZjFjMDhjYzk5OSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.th9dp6vb7st0PzksFzDmzJxqFbocGeNAfS2xsBlRE_k"><img src="https://private-user-images.githubusercontent.com/7274458/305657103-a2b0db84-1971-45c0-a5a2-68de651e342b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii83Mjc0NDU4LzMwNTY1NzEwMy1hMmIwZGI4NC0xOTcxLTQ1YzAtYTVhMi02OGRlNjUxZTM0MmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MWQ1ZTc2OGEwYWRlYzBmODQ1NzA2NjAxZjM3NjRhMTE5NjIxN2I2NjE3Y2EzNzFlMDFmMzIxZjFjMDhjYzk5OSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.th9dp6vb7st0PzksFzDmzJxqFbocGeNAfS2xsBlRE_k" alt="Added Ruby method visibility in outline view" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <ul>
 <li>Added prettier support for Vue, Markdown, and PHP.</li>
 <li>Added Lua file icon.</li>
@@ -896,7 +1284,7 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Improved automatic indentation in Gleam code files (<a href="https://github.com/zed-industries/zed/issues/7295" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7295/hovercard">#7295</a>).</li>
 <li>Improved syntax highlighting of identifiers in Ruby.</li>
 </ul>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1185253/305092727-2ce0e0c9-8689-4ff8-9f40-2ea5f6ccc2f6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xMTg1MjUzLzMwNTA5MjcyNy0yY2UwZTBjOS04Njg5LTRmZjgtOWY0MC0yZWE1ZjZjY2MyZjYucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZGU5MTU2MmJkMThjN2EzNjY5YTVhNmUzNzc4YjEzZTg5ODgwODNkMTdlYTUwY2VjMmY5MDI3ZWRhYWQyMTA3MyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.3_DpVg0yX5hN2KufiIhI9W4yIpAEwz6mwta_LyU_CVU"><img src="https://private-user-images.githubusercontent.com/1185253/305092727-2ce0e0c9-8689-4ff8-9f40-2ea5f6ccc2f6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xMTg1MjUzLzMwNTA5MjcyNy0yY2UwZTBjOS04Njg5LTRmZjgtOWY0MC0yZWE1ZjZjY2MyZjYucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZGU5MTU2MmJkMThjN2EzNjY5YTVhNmUzNzc4YjEzZTg5ODgwODNkMTdlYTUwY2VjMmY5MDI3ZWRhYWQyMTA3MyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.3_DpVg0yX5hN2KufiIhI9W4yIpAEwz6mwta_LyU_CVU" alt="Improved syntax highlighting of identifiers in Ruby" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1185253/305092727-2ce0e0c9-8689-4ff8-9f40-2ea5f6ccc2f6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xMTg1MjUzLzMwNTA5MjcyNy0yY2UwZTBjOS04Njg5LTRmZjgtOWY0MC0yZWE1ZjZjY2MyZjYucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YWQyOTc4NDQ3MGRlYWEzZjU0MjY2MDA3YzRhYzQ4NTg4NWVlYjQ2NzQ5ZGQ0Mzk0NDdmZmM1MTU1YWVmMjY3ZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.S9BTxSVj49lmr5c7meruT5HkYBnecqwrojHRlmtVtLQ"><img src="https://private-user-images.githubusercontent.com/1185253/305092727-2ce0e0c9-8689-4ff8-9f40-2ea5f6ccc2f6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xMTg1MjUzLzMwNTA5MjcyNy0yY2UwZTBjOS04Njg5LTRmZjgtOWY0MC0yZWE1ZjZjY2MyZjYucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YWQyOTc4NDQ3MGRlYWEzZjU0MjY2MDA3YzRhYzQ4NTg4NWVlYjQ2NzQ5ZGQ0Mzk0NDdmZmM1MTU1YWVmMjY3ZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.S9BTxSVj49lmr5c7meruT5HkYBnecqwrojHRlmtVtLQ" alt="Improved syntax highlighting of identifiers in Ruby" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <ul>
 <li>Improved Nu syntax highlighting.</li>
 </ul>
@@ -931,7 +1319,7 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Added <code>gx</code> to Vim mode to open the URL under the cursor.</li>
 <li>Added commands to toggle panels <code>:E[xplore]</code>, <code>:C[ollab]</code>, <code>:Ch[at]</code>, <code>:N[otification]</code>, <code>:A[I]</code>, <code>:te[rm]</code> (or <code>:T[erm]</code>).</li>
 </ul>
-<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/zed-industries/zed/assets/1185253/6a19490d-b61d-40b7-93e8-4819599f6977"><img src="https://private-user-images.githubusercontent.com/1185253/305698233-6a19490d-b61d-40b7-93e8-4819599f6977.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xMTg1MjUzLzMwNTY5ODIzMy02YTE5NDkwZC1iNjFkLTQwYjctOTNlOC00ODE5NTk5ZjY5NzcubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZmYwNmNkNmRlZmE4MzE2MzM5NTgxMGYzZmI1MDY2ZmVhY2ZlYTU3ZTI1ZjM2YzZjYmExNzU3ZmJjZmRjMzhjYiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.BV5hQiNY9lcd5cra7Tq22T3iwzYtnaI2ibfjng6SXUc" alt="Added gx to Vim mode to open the URL under the cursor" content-type-secured-asset="video/mp4" style="max-width: 100%;" data-canonical-src="https://private-user-images.githubusercontent.com/1185253/305698233-6a19490d-b61d-40b7-93e8-4819599f6977.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xMTg1MjUzLzMwNTY5ODIzMy02YTE5NDkwZC1iNjFkLTQwYjctOTNlOC00ODE5NTk5ZjY5NzcubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZmYwNmNkNmRlZmE4MzE2MzM5NTgxMGYzZmI1MDY2ZmVhY2ZlYTU3ZTI1ZjM2YzZjYmExNzU3ZmJjZmRjMzhjYiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.BV5hQiNY9lcd5cra7Tq22T3iwzYtnaI2ibfjng6SXUc"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/zed-industries/zed/assets/1185253/6a19490d-b61d-40b7-93e8-4819599f6977"><img src="https://private-user-images.githubusercontent.com/1185253/305698233-6a19490d-b61d-40b7-93e8-4819599f6977.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xMTg1MjUzLzMwNTY5ODIzMy02YTE5NDkwZC1iNjFkLTQwYjctOTNlOC00ODE5NTk5ZjY5NzcubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDYzYzE2NDYxZjRkMjJkYzliYzU3ZTNiNmE2MDIwZDdjNGI2YzE2OGYzODAzMTg5OGRiNjQ0ZWIwNjBkODA3NyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.oPep1V1plsR3kk59P7-SIZr4zAhwkpdowIJulCjJyUw" alt="Added gx to Vim mode to open the URL under the cursor" content-type-secured-asset="video/mp4" style="max-width: 100%;" data-canonical-src="https://private-user-images.githubusercontent.com/1185253/305698233-6a19490d-b61d-40b7-93e8-4819599f6977.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xMTg1MjUzLzMwNTY5ODIzMy02YTE5NDkwZC1iNjFkLTQwYjctOTNlOC00ODE5NTk5ZjY5NzcubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDYzYzE2NDYxZjRkMjJkYzliYzU3ZTNiNmE2MDIwZDdjNGI2YzE2OGYzODAzMTg5OGRiNjQ0ZWIwNjBkODA3NyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.oPep1V1plsR3kk59P7-SIZr4zAhwkpdowIJulCjJyUw"></a></p>
 <ul>
 <li>Implemented <code>ge</code> and <code>gE</code> commands for going to the previous word end.</li>
 </ul>
@@ -964,7 +1352,7 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <li>Fixed a panic that could occur when themes did not contain enough player colors (<a href="https://github.com/zed-industries/zed/issues/7733" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7733/hovercard">#7733</a>).</li>
 <li>Fixed case-only renaming of files in the project panel (<a href="https://github.com/zed-industries/zed/issues/5211" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/5211/hovercard">#5211</a>).</li>
 </ul>
-<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/zed-industries/zed/assets/1185253/57d5063f-09d9-47b1-a2df-3d7edefca97d"><img src="https://private-user-images.githubusercontent.com/1185253/305111667-57d5063f-09d9-47b1-a2df-3d7edefca97d.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xMTg1MjUzLzMwNTExMTY2Ny01N2Q1MDYzZi0wOWQ5LTQ3YjEtYTJkZi0zZDdlZGVmY2E5N2QubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDcwMWQ2YjhjN2IwMzIwMzE5MDkzN2Y0MmI3YjVlZjk2MmFhOTlmMWE4ZmE4NmY1OTE1ZGZhMGVhZGQyYzRhNCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.4k2LO81_4SUkdQPXMXIBHkEivQ2Dmg2E7Mjml4h0RWk" alt="Fixed case-only renaming of files in the project panel" content-type-secured-asset="video/mp4" style="max-width: 100%;" data-canonical-src="https://private-user-images.githubusercontent.com/1185253/305111667-57d5063f-09d9-47b1-a2df-3d7edefca97d.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xMTg1MjUzLzMwNTExMTY2Ny01N2Q1MDYzZi0wOWQ5LTQ3YjEtYTJkZi0zZDdlZGVmY2E5N2QubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMDYwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDcwMWQ2YjhjN2IwMzIwMzE5MDkzN2Y0MmI3YjVlZjk2MmFhOTlmMWE4ZmE4NmY1OTE1ZGZhMGVhZGQyYzRhNCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.4k2LO81_4SUkdQPXMXIBHkEivQ2Dmg2E7Mjml4h0RWk"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/zed-industries/zed/assets/1185253/57d5063f-09d9-47b1-a2df-3d7edefca97d"><img src="https://private-user-images.githubusercontent.com/1185253/305111667-57d5063f-09d9-47b1-a2df-3d7edefca97d.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xMTg1MjUzLzMwNTExMTY2Ny01N2Q1MDYzZi0wOWQ5LTQ3YjEtYTJkZi0zZDdlZGVmY2E5N2QubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDZmYTIzOWRmMzU4M2MzZTUwODFkNGRjZTY5MTZjYjM5OGQ4NWU0NWY3ZmM1YzNlMjg1Y2I3ZjQ4NWEyMDNiNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.qz4mjeTtC7CmwgvhBQjPDkomm1Wn72KIeNDOcUqknzg" alt="Fixed case-only renaming of files in the project panel" content-type-secured-asset="video/mp4" style="max-width: 100%;" data-canonical-src="https://private-user-images.githubusercontent.com/1185253/305111667-57d5063f-09d9-47b1-a2df-3d7edefca97d.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xMTg1MjUzLzMwNTExMTY2Ny01N2Q1MDYzZi0wOWQ5LTQ3YjEtYTJkZi0zZDdlZGVmY2E5N2QubXA0P1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDIyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDAyMjJUMTIwNzU2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDZmYTIzOWRmMzU4M2MzZTUwODFkNGRjZTY5MTZjYjM5OGQ4NWU0NWY3ZmM1YzNlMjg1Y2I3ZjQ4NWEyMDNiNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.qz4mjeTtC7CmwgvhBQjPDkomm1Wn72KIeNDOcUqknzg"></a></p>
 <ul>
 <li>Fixed time formatting in the chat panel to be locale based.</li>
 <li>Fixed display of long links in lists not fully visible in markdown preview.</li>
@@ -1262,7 +1650,7 @@ in order to allow caching by default in some CDNs as CloudFlare</p>
             <content:encoded><![CDATA[<h2>Enhancements</h2>
 <p>🎉🎉🎉 We're excited to announce that we have launched initial support for a Zed extension registry! To view and install available extensions, use the <code>zed: extensions</code> command found in the command palette. Extensions currently support language syntax highlighting and themes, and we're actively working to add language server support. Once language server support is implemented, we plan to transition some less popular languages out of Zed and into separate packages.</p>
 <p>For information on how to build an extension, check the README.md <a href="https://github.com/zed-industries/extensions/blob/main/AUTHORING_EXTENSIONS.md">here</a>.</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/19867440/304856891-6ef78e68-167a-4655-b1d8-5da06e396a34.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xOTg2NzQ0MC8zMDQ4NTY4OTEtNmVmNzhlNjgtMTY3YS00NjU1LWIxZDgtNWRhMDZlMzk2YTM0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDA2MDcwMFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzMDhjMDZmNTM5N2MwMGNmMzJkYmY2MmVmNWNlOGM0YWI0YjU2MzMxNDNkOWNjNDAxNjM2OTAzMjAzZDE2OTgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.G_4gANYShWZofyPyHnDSnBzTzhLl8_aJUl5Skjdur6w"><img src="https://private-user-images.githubusercontent.com/19867440/304856891-6ef78e68-167a-4655-b1d8-5da06e396a34.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg1ODIzMjAsIm5iZiI6MTcwODU4MjAyMCwicGF0aCI6Ii8xOTg2NzQ0MC8zMDQ4NTY4OTEtNmVmNzhlNjgtMTY3YS00NjU1LWIxZDgtNWRhMDZlMzk2YTM0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDA2MDcwMFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzMDhjMDZmNTM5N2MwMGNmMzJkYmY2MmVmNWNlOGM0YWI0YjU2MzMxNDNkOWNjNDAxNjM2OTAzMjAzZDE2OTgmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.G_4gANYShWZofyPyHnDSnBzTzhLl8_aJUl5Skjdur6w" alt="Screenshot of Zed extension registry" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/19867440/304856891-6ef78e68-167a-4655-b1d8-5da06e396a34.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDQ4NTY4OTEtNmVmNzhlNjgtMTY3YS00NjU1LWIxZDgtNWRhMDZlMzk2YTM0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWU4NjU3MTJkNjJjN2Q1NTdjMDllNTcxMGU3ZDRmMzQ3NzkzOWQ1MzhhZTJjMGM1OTQyYTNlOWZmOThmYTJhNGYmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.iDDuwu62q2MqcUV5AZAI3mpsnd3h37QojkcUhblSDQ4"><img src="https://private-user-images.githubusercontent.com/19867440/304856891-6ef78e68-167a-4655-b1d8-5da06e396a34.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MDg2MDM5NzYsIm5iZiI6MTcwODYwMzY3NiwicGF0aCI6Ii8xOTg2NzQ0MC8zMDQ4NTY4OTEtNmVmNzhlNjgtMTY3YS00NjU1LWIxZDgtNWRhMDZlMzk2YTM0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDAyMjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwMjIyVDEyMDc1NlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWU4NjU3MTJkNjJjN2Q1NTdjMDllNTcxMGU3ZDRmMzQ3NzkzOWQ1MzhhZTJjMGM1OTQyYTNlOWZmOThmYTJhNGYmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.iDDuwu62q2MqcUV5AZAI3mpsnd3h37QojkcUhblSDQ4" alt="Screenshot of Zed extension registry" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <h3>Languages</h3>
 <ul>
 <li>Added Prisma language support (<a href="https://github.com/zed-industries/zed/issues/4832" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/4832/hovercard">#4832</a>).</li>
@@ -1329,17 +1717,6 @@ in order to allow caching by default in some CDNs as CloudFlare</p>
 <li>0.2.6 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshayka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshayka">@akshayka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2147416596" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/812" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/812/hovercard" href="https://github.com/marimo-team/marimo/pull/812">#812</a></li>
 </ul>
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/marimo-team/marimo/compare/0.2.5...0.2.6"><tt>0.2.5...0.2.6</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: nightly: Format docs with Prettier (#8134)]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
-            <pubDate>Wed, 21 Feb 2024 18:21:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR formats the docs with Prettier.</p>
-<p>Release Notes:</p>
-<ul>
-<li>N/A</li>
-</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from react-native: 0.74.0-rc0]]></title>
@@ -1532,27 +1909,6 @@ in order to allow caching by default in some CDNs as CloudFlare</p>
             <guid>https://github.com/electron/electron/releases/tag/v30.0.0-nightly.20240221</guid>
             <pubDate>Wed, 21 Feb 2024 13:01:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>v30.0.0-nightly.20240221</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16364]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16364</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16364</guid>
-            <pubDate>Wed, 21 Feb 2024 12:41:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16363]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16363</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16363</guid>
-            <pubDate>Wed, 21 Feb 2024 12:33:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.0-dev-16359]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16359</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.0-dev-16359</guid>
-            <pubDate>Wed, 21 Feb 2024 12:12:02 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from rxdb: 15.9.0]]></title>
@@ -1850,13 +2206,6 @@ Set up a flutter project and configure at least one flavor for it. In VSCode, cr
             <content:encoded><![CDATA[<p>Tagging 1.32.46 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-adapter-netlify@1.2.0-next.3]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.2.0-next.3</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.2.0-next.3</guid>
-            <pubDate>Tue, 20 Feb 2024 18:45:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-adapter-netlify@1.2.0-next.3</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby-source-wordpress@7.14.0-next.4]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.14.0-next.4</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-source-wordpress%407.14.0-next.4</guid>
@@ -1869,6 +2218,13 @@ Set up a flutter project and configure at least one flavor for it. In VSCode, cr
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.14.0-next.4</guid>
             <pubDate>Tue, 20 Feb 2024 18:45:55 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby@5.14.0-next.4</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-adapter-netlify@1.2.0-next.3]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.2.0-next.3</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.2.0-next.3</guid>
+            <pubDate>Tue, 20 Feb 2024 18:45:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-adapter-netlify@1.2.0-next.3</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pixijs: v8.0.0-rc.10]]></title>
