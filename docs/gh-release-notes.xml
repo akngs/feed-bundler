@@ -4,10 +4,297 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 30 Mar 2024 06:06:33 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 30 Mar 2024 12:07:20 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279768: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279768</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279768</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279787: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279787</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279787</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279783: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279783</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279783</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279782: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279782</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279782</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279781: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279781</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279781</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279762: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279762</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279762</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8489279754: [Inductor] Fix AFOC QPS Regression. (#122944)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279754</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8489279754</guid>
+            <pubDate>Sat, 30 Mar 2024 07:34:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary: Recently, we observed ~8% qps regression for AFOC model. After dig into the problem, I found it was introduced by D55272024, where the split node normalization was skipped or call_method split node, while our pattern detection based on the assumption that all split node has been normalized to call_funciton node. More context: <a href="https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit" rel="nofollow">https://docs.google.com/document/d/19h-fu2BqdUXMaSqbd7c0-Qe00ic7quUN-emJqH_1-SA/edit</a></p>
+<p>Test Plan:</p>
+<h1>unit test</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:split_cat_fx_passes
+</code></pre></div>
+<p>Buck UI: <a href="https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96" rel="nofollow">https://www.internalfb.com/buck2/0792d406-3d64-4b9c-95cc-15fb0cc76a96</a><br>
+Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/11258999096315690" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/11258999096315690</a><br>
+Network: Up: 113KiB  Down: 535KiB  (reSessionID-6132c09b-2ce7-4e89-b61d-d6c6142630cc)<br>
+Jobs completed: 26. Time elapsed: 1:25.6s.<br>
+Cache hits: 0%. Commands: 2 (cached: 0, remote: 0, local: 2)<br>
+Tests finished: Pass 10. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion"><pre class="notranslate"><code>buck2 test @mode/dev-nosan //caffe2/test/inductor:group_batch_fusion
+</code></pre></div>
+<p>Test UI: <a href="https://www.internalfb.com/intern/testinfra/testrun/13792273886410433" rel="nofollow">https://www.internalfb.com/intern/testinfra/testrun/13792273886410433</a><br>
+Network: Up: 1.3MiB  Down: 960KiB  (reSessionID-0bea8575-f163-4c5d-b201-69e05806af98)<br>
+Jobs completed: 68. Time elapsed: 2:47.2s.<br>
+Cache hits: 0%. Commands: 13 (cached: 0, remote: 1, local: 12)<br>
+Tests finished: Pass 9. Fail 0. Fatal 0. Skip 0. Build failure 0</p>
+<h1>local reproduce</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type &quot;afoc&quot; --flow_id 545665840"><pre class="notranslate"><code>buck2 run @mode/opt //scripts/jackiexu0313/pt2:local_model_with_pt2 -- --test_mode batch-split --model_type "afoc" --flow_id 545665840
+</code></pre></div>
+<p>Now the merge_splits_pass is conducted.</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}"><pre class="notranslate"><code>'inductor': Counter({'pattern_matcher_nodes': 1614, 'pattern_matcher_count': 1566, 'normalization_pass': 645, 'remove_split_with_size_one_pass': 629, 'batch_aten_mul': 13, 'scmerge_split_sections_removed': 11, 'scmerge_cat_removed': 5, 'scmerge_cat_added': 4, 'merge_splits_pass': 3, 'merge_getitem_cat_pass': 2, 'scmerge_split_removed': 2, 'batch_linear_post_grad': 2, 'batch_aten_sub': 2, 'batch_layernorm': 1, 'scmerge_split_added': 1})}
+</code></pre></div>
+<h1>e2e</h1>
+<p>baseline:<br>
+f545633808</p>
+<p>before_fix:<br>
+f545665840</p>
+<p>After_fix:<br>
+f546227494</p>
+<p>proposal:</p>
+<p>Differential Revision: D55513494</p>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2214687527" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/122944" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/122944/hovercard" href="https://github.com/pytorch/pytorch/pull/122944">#122944</a><br>
+Approved by: <a href="https://github.com/jackiexu1992">https://github.com/jackiexu1992</a></p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -113,18 +400,6 @@ c776e726db8546c9d8c73f0019949f10173d422003fc704296a67e310252ac47  nvim.appimage.
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040802: export XPUStream to doc (#121398)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040802</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040802</guid>
-            <pubDate>Sat, 30 Mar 2024 00:36:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>We would like to export XPUStream to public <a href="https://pytorch.org/cppdocs/api/library_root.html" rel="nofollow">doc</a>. The detailed documentation can help users understand and utilize XPU more effectively.</p>
-<h1>Additional Context</h1>
-<p>A detailed XPUStream API and usage should be documented to public doc, like cuda's <a href="https://github.com/pytorch/pytorch/blob/main/docs/cpp/source/notes/tensor_cuda_stream.rst">doc</a>.</p>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2173351802" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121398" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121398/hovercard" href="https://github.com/pytorch/pytorch/pull/121398">#121398</a><br>
-Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui</a>, <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/albanD">https://github.com/albanD</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040787: export XPUStream to doc (#121398)]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040787</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040787</guid>
@@ -149,9 +424,9 @@ Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui
 Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui</a>, <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/albanD">https://github.com/albanD</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040782: export XPUStream to doc (#121398)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040782</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040782</guid>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040802: export XPUStream to doc (#121398)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040802</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040802</guid>
             <pubDate>Sat, 30 Mar 2024 00:36:26 GMT</pubDate>
             <content:encoded><![CDATA[<h1>Motivation</h1>
 <p>We would like to export XPUStream to public <a href="https://pytorch.org/cppdocs/api/library_root.html" rel="nofollow">doc</a>. The detailed documentation can help users understand and utilize XPU more effectively.</p>
@@ -159,102 +434,6 @@ Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui
 <p>A detailed XPUStream API and usage should be documented to public doc, like cuda's <a href="https://github.com/pytorch/pytorch/blob/main/docs/cpp/source/notes/tensor_cuda_stream.rst">doc</a>.</p>
 <p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2173351802" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121398" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121398/hovercard" href="https://github.com/pytorch/pytorch/pull/121398">#121398</a><br>
 Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui</a>, <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/albanD">https://github.com/albanD</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040781: export XPUStream to doc (#121398)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040781</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040781</guid>
-            <pubDate>Sat, 30 Mar 2024 00:36:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>We would like to export XPUStream to public <a href="https://pytorch.org/cppdocs/api/library_root.html" rel="nofollow">doc</a>. The detailed documentation can help users understand and utilize XPU more effectively.</p>
-<h1>Additional Context</h1>
-<p>A detailed XPUStream API and usage should be documented to public doc, like cuda's <a href="https://github.com/pytorch/pytorch/blob/main/docs/cpp/source/notes/tensor_cuda_stream.rst">doc</a>.</p>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2173351802" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121398" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121398/hovercard" href="https://github.com/pytorch/pytorch/pull/121398">#121398</a><br>
-Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui</a>, <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/albanD">https://github.com/albanD</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040780: export XPUStream to doc (#121398)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040780</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040780</guid>
-            <pubDate>Sat, 30 Mar 2024 00:36:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>We would like to export XPUStream to public <a href="https://pytorch.org/cppdocs/api/library_root.html" rel="nofollow">doc</a>. The detailed documentation can help users understand and utilize XPU more effectively.</p>
-<h1>Additional Context</h1>
-<p>A detailed XPUStream API and usage should be documented to public doc, like cuda's <a href="https://github.com/pytorch/pytorch/blob/main/docs/cpp/source/notes/tensor_cuda_stream.rst">doc</a>.</p>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2173351802" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121398" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121398/hovercard" href="https://github.com/pytorch/pytorch/pull/121398">#121398</a><br>
-Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui</a>, <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/albanD">https://github.com/albanD</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8487040779: export XPUStream to doc (#121398)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040779</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8487040779</guid>
-            <pubDate>Sat, 30 Mar 2024 00:36:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>We would like to export XPUStream to public <a href="https://pytorch.org/cppdocs/api/library_root.html" rel="nofollow">doc</a>. The detailed documentation can help users understand and utilize XPU more effectively.</p>
-<h1>Additional Context</h1>
-<p>A detailed XPUStream API and usage should be documented to public doc, like cuda's <a href="https://github.com/pytorch/pytorch/blob/main/docs/cpp/source/notes/tensor_cuda_stream.rst">doc</a>.</p>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2173351802" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121398" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121398/hovercard" href="https://github.com/pytorch/pytorch/pull/121398">#121398</a><br>
-Approved by: <a href="https://github.com/gujinghui">https://github.com/gujinghui</a>, <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/albanD">https://github.com/albanD</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8486965678: Add attributes to xpu device prop (#121898)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8486965678</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8486965678</guid>
-            <pubDate>Sat, 30 Mar 2024 00:25:39 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>Add some attributes to <code>XPUDeviceProp</code> and expose them via <code>torch.xpu.get_device_properties</code> and <code>torch.xpu.get_device_capability</code>. They can be used in <code>torch.compile</code>  or directly passed to triton to generate more optimized code based on device properties.</p>
-<h1>Additional Context</h1>
-<p>expose the following attributes to <code>torch.xpu.get_device_properties</code>：</p>
-<ul>
-<li><code>has_fp16</code> (newly added)</li>
-<li><code>has_fp64</code> (newly added)</li>
-<li><code>has_atomic64</code> (newly added)</li>
-<li><code>driver_version</code></li>
-<li><code>vendor</code></li>
-<li><code>version</code></li>
-</ul>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2185997206" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121898" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121898/hovercard" href="https://github.com/pytorch/pytorch/pull/121898">#121898</a><br>
-Approved by: <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/malfet">https://github.com/malfet</a>, <a href="https://github.com/albanD">https://github.com/albanD</a>, <a href="https://github.com/atalman">https://github.com/atalman</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8486965697: Add attributes to xpu device prop (#121898)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8486965697</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8486965697</guid>
-            <pubDate>Sat, 30 Mar 2024 00:25:39 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>Add some attributes to <code>XPUDeviceProp</code> and expose them via <code>torch.xpu.get_device_properties</code> and <code>torch.xpu.get_device_capability</code>. They can be used in <code>torch.compile</code>  or directly passed to triton to generate more optimized code based on device properties.</p>
-<h1>Additional Context</h1>
-<p>expose the following attributes to <code>torch.xpu.get_device_properties</code>：</p>
-<ul>
-<li><code>has_fp16</code> (newly added)</li>
-<li><code>has_fp64</code> (newly added)</li>
-<li><code>has_atomic64</code> (newly added)</li>
-<li><code>driver_version</code></li>
-<li><code>vendor</code></li>
-<li><code>version</code></li>
-</ul>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2185997206" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121898" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121898/hovercard" href="https://github.com/pytorch/pytorch/pull/121898">#121898</a><br>
-Approved by: <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/malfet">https://github.com/malfet</a>, <a href="https://github.com/albanD">https://github.com/albanD</a>, <a href="https://github.com/atalman">https://github.com/atalman</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8486965677: Add attributes to xpu device prop (#121898)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8486965677</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8486965677</guid>
-            <pubDate>Sat, 30 Mar 2024 00:25:39 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Motivation</h1>
-<p>Add some attributes to <code>XPUDeviceProp</code> and expose them via <code>torch.xpu.get_device_properties</code> and <code>torch.xpu.get_device_capability</code>. They can be used in <code>torch.compile</code>  or directly passed to triton to generate more optimized code based on device properties.</p>
-<h1>Additional Context</h1>
-<p>expose the following attributes to <code>torch.xpu.get_device_properties</code>：</p>
-<ul>
-<li><code>has_fp16</code> (newly added)</li>
-<li><code>has_fp64</code> (newly added)</li>
-<li><code>has_atomic64</code> (newly added)</li>
-<li><code>driver_version</code></li>
-<li><code>vendor</code></li>
-<li><code>version</code></li>
-</ul>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2185997206" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/121898" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/121898/hovercard" href="https://github.com/pytorch/pytorch/pull/121898">#121898</a><br>
-Approved by: <a href="https://github.com/jgong5">https://github.com/jgong5</a>, <a href="https://github.com/EikanWang">https://github.com/EikanWang</a>, <a href="https://github.com/malfet">https://github.com/malfet</a>, <a href="https://github.com/albanD">https://github.com/albanD</a>, <a href="https://github.com/atalman">https://github.com/atalman</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
@@ -1076,6 +1255,13 @@ doesn't make use of it.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from monaco-editor: v0.48.0-dev-20240330]]></title>
+            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.48.0-dev-20240330</link>
+            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.48.0-dev-20240330</guid>
+            <pubDate>Fri, 29 Mar 2024 18:59:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>chore: CG ignore VS Code extensions for nightly (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2215861920" data-permission-text="Title is private" data-url="https://github.com/microsoft/monaco-editor/issues/4451" data-hovercard-type="pull_request" data-hovercard-url="/microsoft/monaco-editor/pull/4451/hovercard" href="https://github.com/microsoft/monaco-editor/pull/4451">#4451</a>)</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from sequelize: v6.37.2]]></title>
             <link>https://github.com/sequelize/sequelize/releases/tag/v6.37.2</link>
             <guid>https://github.com/sequelize/sequelize/releases/tag/v6.37.2</guid>
@@ -1428,9 +1614,30 @@ but hadn't yet carried it over when we built the new extension builder.</p>
 <p><a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Agithub-actions+updated%3A2024-03-14..2024-03-29&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ajtpio+updated%3A2024-03-14..2024-03-29&amp;type=Issues">@jtpio</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0-alpha.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0-alpha.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0-alpha.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0-alpha.0</guid>
+            <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
+<p>jupyter-notebook-application-extension-7.2.0-alpha.0.tgz: 20a154505049e1d5a56b16a5c1c0c60c3e23570c485549d7a7b8f00b663f5050</p>
+<p>jupyter-notebook-console-extension-7.2.0-alpha.0.tgz: 8a812b09caa5d1388cad50ce33e016296e7e11667962a43e3a97b6583ad73070</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0-alpha.0.tgz: e181e27eb81460b16ece14eb6dcd3a99f6731e0ba16bb41ceec15b3f78fad278</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0-alpha.0.tgz: 7618e61005228ec8efeee5c9b27ca331f55da91572462af371904d2b03b8c8b2</p>
+<p>jupyter-notebook-help-extension-7.2.0-alpha.0.tgz: b414fd862b2e440c0231637ef09baf6e6e68037f0e9b71c7ca80297af02f81e7</p>
+<p>jupyter-notebook-lab-extension-7.2.0-alpha.0.tgz: 0cf2f9fcfc20e6a8ced4f3a6c2ad404a1ce040cc5ea2277cfb424ec2152eae71</p>
+<p>jupyter-notebook-notebook-extension-7.2.0-alpha.0.tgz: 62ec6f2c61e80d40513e459065f02fc1da1c3fc7c78fc9ec8ed5db3e54f9ff7d</p>
+<p>jupyter-notebook-terminal-extension-7.2.0-alpha.0.tgz: 4cf7235d9dcc758aa348221490d18e303bd2cd446a812bae68cdb2652acbf39c</p>
+<p>jupyter-notebook-tree-7.2.0-alpha.0.tgz: b1fa3d74ef7fb28b20992cb3eeda56584cb95c8f3619d3350cac6171cf827fbc</p>
+<p>jupyter-notebook-tree-extension-7.2.0-alpha.0.tgz: 47892d2822f873552867e39d85a40c8b9913aa12d9a1d7be54a4fb124821070a</p>
+<p>jupyter-notebook-ui-components-7.2.0-alpha.0.tgz: e3bbd84bb6f7af75bd13db6fa32ec4a262f6fe2e0a433049bf846e30523c62ac</p>
+<p>notebook-7.2.0a0-py3-none-any.whl: cad31add63440f5bc0cc31a8a9ab2e547f5308a019a221f9e85209d2cebadcca</p>
+<p>notebook-7.2.0a0.tar.gz: 8014b8da1372a8f7db421f26e00191aa050b64764679d2b393f80589c42d13fc</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/docmanager-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0-alpha.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0-alpha.0</guid>
             <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
@@ -1512,51 +1719,30 @@ but hadn't yet carried it over when we built the new extension builder.</p>
 <p>notebook-7.2.0a0.tar.gz: 8014b8da1372a8f7db421f26e00191aa050b64764679d2b393f80589c42d13fc</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/ui-components@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0-alpha.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0-alpha.0</guid>
+            <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
+<p>jupyter-notebook-application-extension-7.2.0-alpha.0.tgz: 20a154505049e1d5a56b16a5c1c0c60c3e23570c485549d7a7b8f00b663f5050</p>
+<p>jupyter-notebook-console-extension-7.2.0-alpha.0.tgz: 8a812b09caa5d1388cad50ce33e016296e7e11667962a43e3a97b6583ad73070</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0-alpha.0.tgz: e181e27eb81460b16ece14eb6dcd3a99f6731e0ba16bb41ceec15b3f78fad278</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0-alpha.0.tgz: 7618e61005228ec8efeee5c9b27ca331f55da91572462af371904d2b03b8c8b2</p>
+<p>jupyter-notebook-help-extension-7.2.0-alpha.0.tgz: b414fd862b2e440c0231637ef09baf6e6e68037f0e9b71c7ca80297af02f81e7</p>
+<p>jupyter-notebook-lab-extension-7.2.0-alpha.0.tgz: 0cf2f9fcfc20e6a8ced4f3a6c2ad404a1ce040cc5ea2277cfb424ec2152eae71</p>
+<p>jupyter-notebook-notebook-extension-7.2.0-alpha.0.tgz: 62ec6f2c61e80d40513e459065f02fc1da1c3fc7c78fc9ec8ed5db3e54f9ff7d</p>
+<p>jupyter-notebook-terminal-extension-7.2.0-alpha.0.tgz: 4cf7235d9dcc758aa348221490d18e303bd2cd446a812bae68cdb2652acbf39c</p>
+<p>jupyter-notebook-tree-7.2.0-alpha.0.tgz: b1fa3d74ef7fb28b20992cb3eeda56584cb95c8f3619d3350cac6171cf827fbc</p>
+<p>jupyter-notebook-tree-extension-7.2.0-alpha.0.tgz: 47892d2822f873552867e39d85a40c8b9913aa12d9a1d7be54a4fb124821070a</p>
+<p>jupyter-notebook-ui-components-7.2.0-alpha.0.tgz: e3bbd84bb6f7af75bd13db6fa32ec4a262f6fe2e0a433049bf846e30523c62ac</p>
+<p>notebook-7.2.0a0-py3-none-any.whl: cad31add63440f5bc0cc31a8a9ab2e547f5308a019a221f9e85209d2cebadcca</p>
+<p>notebook-7.2.0a0.tar.gz: 8014b8da1372a8f7db421f26e00191aa050b64764679d2b393f80589c42d13fc</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0-alpha.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0-alpha.0</guid>
-            <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
-<p>jupyter-notebook-application-extension-7.2.0-alpha.0.tgz: 20a154505049e1d5a56b16a5c1c0c60c3e23570c485549d7a7b8f00b663f5050</p>
-<p>jupyter-notebook-console-extension-7.2.0-alpha.0.tgz: 8a812b09caa5d1388cad50ce33e016296e7e11667962a43e3a97b6583ad73070</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0-alpha.0.tgz: e181e27eb81460b16ece14eb6dcd3a99f6731e0ba16bb41ceec15b3f78fad278</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0-alpha.0.tgz: 7618e61005228ec8efeee5c9b27ca331f55da91572462af371904d2b03b8c8b2</p>
-<p>jupyter-notebook-help-extension-7.2.0-alpha.0.tgz: b414fd862b2e440c0231637ef09baf6e6e68037f0e9b71c7ca80297af02f81e7</p>
-<p>jupyter-notebook-lab-extension-7.2.0-alpha.0.tgz: 0cf2f9fcfc20e6a8ced4f3a6c2ad404a1ce040cc5ea2277cfb424ec2152eae71</p>
-<p>jupyter-notebook-notebook-extension-7.2.0-alpha.0.tgz: 62ec6f2c61e80d40513e459065f02fc1da1c3fc7c78fc9ec8ed5db3e54f9ff7d</p>
-<p>jupyter-notebook-terminal-extension-7.2.0-alpha.0.tgz: 4cf7235d9dcc758aa348221490d18e303bd2cd446a812bae68cdb2652acbf39c</p>
-<p>jupyter-notebook-tree-7.2.0-alpha.0.tgz: b1fa3d74ef7fb28b20992cb3eeda56584cb95c8f3619d3350cac6171cf827fbc</p>
-<p>jupyter-notebook-tree-extension-7.2.0-alpha.0.tgz: 47892d2822f873552867e39d85a40c8b9913aa12d9a1d7be54a4fb124821070a</p>
-<p>jupyter-notebook-ui-components-7.2.0-alpha.0.tgz: e3bbd84bb6f7af75bd13db6fa32ec4a262f6fe2e0a433049bf846e30523c62ac</p>
-<p>notebook-7.2.0a0-py3-none-any.whl: cad31add63440f5bc0cc31a8a9ab2e547f5308a019a221f9e85209d2cebadcca</p>
-<p>notebook-7.2.0a0.tar.gz: 8014b8da1372a8f7db421f26e00191aa050b64764679d2b393f80589c42d13fc</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/docmanager-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0-alpha.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0-alpha.0</guid>
-            <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
-<p>jupyter-notebook-application-extension-7.2.0-alpha.0.tgz: 20a154505049e1d5a56b16a5c1c0c60c3e23570c485549d7a7b8f00b663f5050</p>
-<p>jupyter-notebook-console-extension-7.2.0-alpha.0.tgz: 8a812b09caa5d1388cad50ce33e016296e7e11667962a43e3a97b6583ad73070</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0-alpha.0.tgz: e181e27eb81460b16ece14eb6dcd3a99f6731e0ba16bb41ceec15b3f78fad278</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0-alpha.0.tgz: 7618e61005228ec8efeee5c9b27ca331f55da91572462af371904d2b03b8c8b2</p>
-<p>jupyter-notebook-help-extension-7.2.0-alpha.0.tgz: b414fd862b2e440c0231637ef09baf6e6e68037f0e9b71c7ca80297af02f81e7</p>
-<p>jupyter-notebook-lab-extension-7.2.0-alpha.0.tgz: 0cf2f9fcfc20e6a8ced4f3a6c2ad404a1ce040cc5ea2277cfb424ec2152eae71</p>
-<p>jupyter-notebook-notebook-extension-7.2.0-alpha.0.tgz: 62ec6f2c61e80d40513e459065f02fc1da1c3fc7c78fc9ec8ed5db3e54f9ff7d</p>
-<p>jupyter-notebook-terminal-extension-7.2.0-alpha.0.tgz: 4cf7235d9dcc758aa348221490d18e303bd2cd446a812bae68cdb2652acbf39c</p>
-<p>jupyter-notebook-tree-7.2.0-alpha.0.tgz: b1fa3d74ef7fb28b20992cb3eeda56584cb95c8f3619d3350cac6171cf827fbc</p>
-<p>jupyter-notebook-tree-extension-7.2.0-alpha.0.tgz: 47892d2822f873552867e39d85a40c8b9913aa12d9a1d7be54a4fb124821070a</p>
-<p>jupyter-notebook-ui-components-7.2.0-alpha.0.tgz: e3bbd84bb6f7af75bd13db6fa32ec4a262f6fe2e0a433049bf846e30523c62ac</p>
-<p>notebook-7.2.0a0-py3-none-any.whl: cad31add63440f5bc0cc31a8a9ab2e547f5308a019a221f9e85209d2cebadcca</p>
-<p>notebook-7.2.0a0.tar.gz: 8014b8da1372a8f7db421f26e00191aa050b64764679d2b393f80589c42d13fc</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0-alpha.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0-alpha.0</guid>
             <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
@@ -1596,9 +1782,9 @@ but hadn't yet carried it over when we built the new extension builder.</p>
 <p>notebook-7.2.0a0.tar.gz: 8014b8da1372a8f7db421f26e00191aa050b64764679d2b393f80589c42d13fc</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/ui-components@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0-alpha.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0-alpha.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0-alpha.0: Publish 7.2.0a0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0-alpha.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0-alpha.0</guid>
             <pubDate>Fri, 29 Mar 2024 16:24:55 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0-alpha.0.tgz: 14a47fa603d1bc156132828abc6d015b46a4d008687d5ef8a583d8b84a9c4261</p>
@@ -2347,9 +2533,9 @@ Cr-Commit-Position: refs/heads/12.5.129@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4de5fbb0611926d88cdd6f7b637fb659bdcc8bb8/hovercard" href="https://github.com/v8/v8/commit/4de5fbb0611926d88cdd6f7b637fb659bdcc8bb8"><tt>4de5fbb</tt></a>-refs/heads/main@{#93095}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.5.128-pgo: Version 12.5.128]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.128-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.128-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.5.128]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.128</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.128</guid>
             <pubDate>Fri, 29 Mar 2024 02:16:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ied20d28db33b8493042fa62b0ba32c5c547f2fe6<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5406752" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5406752</a><br>
@@ -2358,9 +2544,9 @@ Cr-Commit-Position: refs/heads/12.5.128@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ba08b4db8f400e0bcd8c06a4ebaa586097538d48/hovercard" href="https://github.com/v8/v8/commit/ba08b4db8f400e0bcd8c06a4ebaa586097538d48"><tt>ba08b4d</tt></a>-refs/heads/main@{#93094}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.128]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.128</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.128</guid>
+            <title><![CDATA[Release notes from v8: 12.5.128-pgo: Version 12.5.128]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.128-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.128-pgo</guid>
             <pubDate>Fri, 29 Mar 2024 02:16:48 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ied20d28db33b8493042fa62b0ba32c5c547f2fe6<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5406752" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5406752</a><br>
@@ -2704,9 +2890,9 @@ independently.</p>
             <content:encoded><![CDATA[<p>Tagging 1.32.73 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.126]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.126</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.126</guid>
+            <title><![CDATA[Release notes from v8: 12.5.126-pgo: Version 12.5.126]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.126-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.126-pgo</guid>
             <pubDate>Thu, 28 Mar 2024 18:11:01 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ic4fc5cf3982e5f68eb11b951dd06f8e5de979214<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5405418" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5405418</a><br>
@@ -2715,9 +2901,9 @@ Cr-Commit-Position: refs/heads/12.5.126@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/aeb1d7557503a8192105c84a17709d2df5ccf864/hovercard" href="https://github.com/v8/v8/commit/aeb1d7557503a8192105c84a17709d2df5ccf864"><tt>aeb1d75</tt></a>-refs/heads/main@{#93092}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.5.126-pgo: Version 12.5.126]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.126-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.126-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.5.126]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.126</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.126</guid>
             <pubDate>Thu, 28 Mar 2024 18:11:01 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ic4fc5cf3982e5f68eb11b951dd06f8e5de979214<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5405418" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5405418</a><br>
@@ -2782,9 +2968,9 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.125]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.125</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.125</guid>
+            <title><![CDATA[Release notes from v8: 12.5.125-pgo: Version 12.5.125]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.125-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.125-pgo</guid>
             <pubDate>Thu, 28 Mar 2024 17:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia8b208ce929b1a526e3e61c1ced6aacdaad25686<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5405415" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5405415</a><br>
@@ -2793,9 +2979,9 @@ Cr-Commit-Position: refs/heads/12.5.125@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7f35a50a2fcfbf71032af03442f5b8f4094060e2/hovercard" href="https://github.com/v8/v8/commit/7f35a50a2fcfbf71032af03442f5b8f4094060e2"><tt>7f35a50</tt></a>-refs/heads/main@{#93091}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.5.125-pgo: Version 12.5.125]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.125-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.125-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.5.125]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.125</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.125</guid>
             <pubDate>Thu, 28 Mar 2024 17:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ia8b208ce929b1a526e3e61c1ced6aacdaad25686<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5405415" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5405415</a><br>
@@ -4222,33 +4408,6 @@ if __name__ == &quot;__main__&quot;:
             <guid>https://github.com/electron/electron/releases/tag/v31.0.0-nightly.20240327</guid>
             <pubDate>Wed, 27 Mar 2024 13:01:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>v31.0.0-nightly.20240327</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kubernetes: Kubernetes v1.30.0-rc.0]]></title>
-            <link>https://github.com/kubernetes/kubernetes/releases/tag/v1.30.0-rc.0</link>
-            <guid>https://github.com/kubernetes/kubernetes/releases/tag/v1.30.0-rc.0</guid>
-            <pubDate>Wed, 27 Mar 2024 09:49:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>See <a href="https://groups.google.com/forum/#!forum/kubernetes-announce" rel="nofollow">kubernetes-announce@</a>. Additional binary downloads are linked in the <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.30.md">CHANGELOG</a>.</p>
-<p>See <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.30.md">the CHANGELOG</a> for more details.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from curl: 8.7.1]]></title>
-            <link>https://github.com/curl/curl/releases/tag/curl-8_7_1</link>
-            <guid>https://github.com/curl/curl/releases/tag/curl-8_7_1</guid>
-            <pubDate>Wed, 27 Mar 2024 09:37:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p><a href="https://curl.se/changes.html#8_7_1" rel="nofollow">changelog</a><br>
-<a href="https://daniel.haxx.se/blog/2024/03/27/curl-8-7-0/" rel="nofollow">blog post</a></p>
-<p>(the changes in 8.7.1 are the same as 8.7.0, the difference is that a broken file in the tarballs was fixed)</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/177011/317162262-433bced3-0864-4d4f-bdf7-5ea6443742df.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTE3NzkwNzQsIm5iZiI6MTcxMTc3ODc3NCwicGF0aCI6Ii8xNzcwMTEvMzE3MTYyMjYyLTQzM2JjZWQzLTA4NjQtNGQ0Zi1iZGY3LTVlYTY0NDM3NDJkZi5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwMzMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDMzMFQwNjA2MTRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0xMmMxZWNjYjUwZDZkYjQ3MWFjMTNkM2JiZDYwZDM5NmJlYTc5NzIzYzM5ZWY0MDlhNWRjMGI0MGJjOTE5NTdmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.xQIabmXF0Ko81mNOTnQ5XC8yjq90AjmpYKZg_8bxZGM"><img src="https://private-user-images.githubusercontent.com/177011/317162262-433bced3-0864-4d4f-bdf7-5ea6443742df.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTE3NzkwNzQsIm5iZiI6MTcxMTc3ODc3NCwicGF0aCI6Ii8xNzcwMTEvMzE3MTYyMjYyLTQzM2JjZWQzLTA4NjQtNGQ0Zi1iZGY3LTVlYTY0NDM3NDJkZi5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwMzMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDMzMFQwNjA2MTRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0xMmMxZWNjYjUwZDZkYjQ3MWFjMTNkM2JiZDYwZDM5NmJlYTc5NzIzYzM5ZWY0MDlhNWRjMGI0MGJjOTE5NTdmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.xQIabmXF0Ko81mNOTnQ5XC8yjq90AjmpYKZg_8bxZGM" alt="curl-8 7 0-1080" content-type-secured-asset="image/jpeg" style="max-width: 100%;"></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from curl: 8.7.0]]></title>
-            <link>https://github.com/curl/curl/releases/tag/curl-8_7_0</link>
-            <guid>https://github.com/curl/curl/releases/tag/curl-8_7_0</guid>
-            <pubDate>Wed, 27 Mar 2024 07:02:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p><a href="https://curl.se/changes.html#8_7_0" rel="nofollow">changelog</a><br>
-<a href="https://daniel.haxx.se/blog/2024/03/27/curl-8-7-0/" rel="nofollow">blog post</a><br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/177011/317162262-433bced3-0864-4d4f-bdf7-5ea6443742df.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTE3NzkwNzQsIm5iZiI6MTcxMTc3ODc3NCwicGF0aCI6Ii8xNzcwMTEvMzE3MTYyMjYyLTQzM2JjZWQzLTA4NjQtNGQ0Zi1iZGY3LTVlYTY0NDM3NDJkZi5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwMzMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDMzMFQwNjA2MTRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0xMmMxZWNjYjUwZDZkYjQ3MWFjMTNkM2JiZDYwZDM5NmJlYTc5NzIzYzM5ZWY0MDlhNWRjMGI0MGJjOTE5NTdmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.xQIabmXF0Ko81mNOTnQ5XC8yjq90AjmpYKZg_8bxZGM"><img src="https://private-user-images.githubusercontent.com/177011/317162262-433bced3-0864-4d4f-bdf7-5ea6443742df.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTE3NzkwNzQsIm5iZiI6MTcxMTc3ODc3NCwicGF0aCI6Ii8xNzcwMTEvMzE3MTYyMjYyLTQzM2JjZWQzLTA4NjQtNGQ0Zi1iZGY3LTVlYTY0NDM3NDJkZi5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjQwMzMwJTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI0MDMzMFQwNjA2MTRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0xMmMxZWNjYjUwZDZkYjQ3MWFjMTNkM2JiZDYwZDM5NmJlYTc5NzIzYzM5ZWY0MDlhNWRjMGI0MGJjOTE5NTdmJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCZhY3Rvcl9pZD0wJmtleV9pZD0wJnJlcG9faWQ9MCJ9.xQIabmXF0Ko81mNOTnQ5XC8yjq90AjmpYKZg_8bxZGM" alt="curl-8 7 0-1080" content-type-secured-asset="image/jpeg" style="max-width: 100%;"></a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
