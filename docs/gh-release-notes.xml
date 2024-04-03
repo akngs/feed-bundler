@@ -4,138 +4,148 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 03 Apr 2024 06:06:55 GMT</lastBuildDate>
+        <lastBuildDate>Wed, 03 Apr 2024 12:08:42 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914196: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914196</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914196</guid>
-            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Take 2</h3>
-<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
-<ul>
-<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
-<li>Ensure the optimization is compatible with cuda graph.</li>
-</ul>
-<h3>Summary</h3>
-<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
-<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
-<ul>
-<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
-<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
-</ul>
-<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
-<h3>Benchmark (WIP)</h3>
-<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
-<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
-<p><strong>Baseline</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s
-</code></pre></div>
-<p><strong>This PR</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s
-</code></pre></div>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
-Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: Version 12.5.143]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.143</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.143</guid>
+            <pubDate>Wed, 03 Apr 2024 11:28:54 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I288f45e61c5f55e61b970430aab912ea995c0d03<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5419156" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5419156</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.5.143@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/5ee743a2fd30233a2a900119cd05e0d16fba2de0/hovercard" href="https://github.com/v8/v8/commit/5ee743a2fd30233a2a900119cd05e0d16fba2de0"><tt>5ee743a</tt></a>-refs/heads/main@{#93133}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914185: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914185</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914185</guid>
-            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Take 2</h3>
-<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
-<ul>
-<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
-<li>Ensure the optimization is compatible with cuda graph.</li>
-</ul>
-<h3>Summary</h3>
-<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
-<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
-<ul>
-<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
-<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
-</ul>
-<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
-<h3>Benchmark (WIP)</h3>
-<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
-<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
-<p><strong>Baseline</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s
-</code></pre></div>
-<p><strong>This PR</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s
-</code></pre></div>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
-Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-487]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-487</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-487</guid>
+            <pubDate>Wed, 03 Apr 2024 11:19:49 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914186: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914186</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914186</guid>
-            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Take 2</h3>
-<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
-<ul>
-<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
-<li>Ensure the optimization is compatible with cuda graph.</li>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-486]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-486</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-486</guid>
+            <pubDate>Wed, 03 Apr 2024 11:06:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-481]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-481</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-481</guid>
+            <pubDate>Wed, 03 Apr 2024 10:52:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.5.142]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.142</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.142</guid>
+            <pubDate>Wed, 03 Apr 2024 10:46:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I35ded95eab52fc5027cecb1269ee874dcb5a78b3<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5419155" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5419155</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.5.142@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/978c9e889f45fc2c9383872ba176050a6e78ef03/hovercard" href="https://github.com/v8/v8/commit/978c9e889f45fc2c9383872ba176050a6e78ef03"><tt>978c9e8</tt></a>-refs/heads/main@{#93131}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.5.142-pgo: Version 12.5.142]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.142-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.142-pgo</guid>
+            <pubDate>Wed, 03 Apr 2024 10:46:55 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I35ded95eab52fc5027cecb1269ee874dcb5a78b3<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5419155" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5419155</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.5.142@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/978c9e889f45fc2c9383872ba176050a6e78ef03/hovercard" href="https://github.com/v8/v8/commit/978c9e889f45fc2c9383872ba176050a6e78ef03"><tt>978c9e8</tt></a>-refs/heads/main@{#93131}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-473]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-473</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-473</guid>
+            <pubDate>Wed, 03 Apr 2024 10:29:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-472]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-472</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-472</guid>
+            <pubDate>Wed, 03 Apr 2024 10:22:08 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from Ghost: 5.81.1]]></title>
+            <link>https://github.com/TryGhost/Ghost/releases/tag/v5.81.1</link>
+            <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.81.1</guid>
+            <pubDate>Wed, 03 Apr 2024 10:08:13 GMT</pubDate>
+            <content:encoded><![CDATA[<ul>
+<li>🐛 Fixed adding recommendations with long excerpts (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2213401620" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/19949" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/19949/hovercard" href="https://github.com/TryGhost/Ghost/pull/19949">#19949</a>) - Sag</li>
+<li>🐛 Fixed keeping existing attribution in recommendations (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2213007150" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/19945" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/19945/hovercard" href="https://github.com/TryGhost/Ghost/pull/19945">#19945</a>) - Sag</li>
+<li>🐛  Fixed validation for offer percentage amount (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2208550205" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/19927" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/19927/hovercard" href="https://github.com/TryGhost/Ghost/pull/19927">#19927</a>) - Princi</li>
 </ul>
-<h3>Summary</h3>
-<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
-<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
-<ul>
-<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
-<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
-</ul>
-<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
-<h3>Benchmark (WIP)</h3>
-<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
-<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
-<p><strong>Baseline</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s
-</code></pre></div>
-<p><strong>This PR</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s
-</code></pre></div>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
-Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+<hr>
+<p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.81.0...v5.81.1"><tt>v5.81.0...v5.81.1</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-464]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-464</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-464</guid>
+            <pubDate>Wed, 03 Apr 2024 09:33:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.5.141]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.141</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.141</guid>
+            <pubDate>Wed, 03 Apr 2024 09:11:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ia24d77a14ee9ecb6afa2e89aeb89fbe192f4faa2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5419153" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5419153</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.5.141@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/6b43b4c898a90a687ac807cd30096b563f1064d0/hovercard" href="https://github.com/v8/v8/commit/6b43b4c898a90a687ac807cd30096b563f1064d0"><tt>6b43b4c</tt></a>-refs/heads/main@{#93127}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.5.141-pgo: Version 12.5.141]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.141-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.141-pgo</guid>
+            <pubDate>Wed, 03 Apr 2024 09:11:09 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ia24d77a14ee9ecb6afa2e89aeb89fbe192f4faa2<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5419153" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5419153</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.5.141@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/6b43b4c898a90a687ac807cd30096b563f1064d0/hovercard" href="https://github.com/v8/v8/commit/6b43b4c898a90a687ac807cd30096b563f1064d0"><tt>6b43b4c</tt></a>-refs/heads/main@{#93127}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-459]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-459</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-459</guid>
+            <pubDate>Wed, 03 Apr 2024 08:49:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-453]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-453</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-453</guid>
+            <pubDate>Wed, 03 Apr 2024 08:26:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-448]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-448</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-448</guid>
+            <pubDate>Wed, 03 Apr 2024 07:59:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from theia: Eclipse Theia v1.48.2]]></title>
+            <link>https://github.com/eclipse-theia/theia/releases/tag/v1.48.2</link>
+            <guid>https://github.com/eclipse-theia/theia/releases/tag/v1.48.2</guid>
+            <pubDate>Wed, 03 Apr 2024 07:41:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Based on  <a href="https://github.com/eclipse-theia/theia/releases/tag/v1.48.0">https://github.com/eclipse-theia/theia/releases/tag/v1.48.0</a>.<br>
+The release fixes the following regressions: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/eclipse-theia/theia/commit/86bac3e4c153344c1c6d2a9463d05f123dfe454b/hovercard" href="https://github.com/eclipse-theia/theia/commit/86bac3e4c153344c1c6d2a9463d05f123dfe454b"><tt>86bac3e</tt></a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914188: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
@@ -161,7 +171,7 @@ Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a hre
 <p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
 <p><strong>Baseline</strong></p>
 <p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
 device ms: 1.111, cpu ms: 7.151
 memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
@@ -170,93 +180,7 @@ memory bandwidth: 1169.825 GB/s
 </code></pre></div>
 <p><strong>This PR</strong></p>
 <p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s
-</code></pre></div>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
-Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914183: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914183</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914183</guid>
-            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Take 2</h3>
-<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
-<ul>
-<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
-<li>Ensure the optimization is compatible with cuda graph.</li>
-</ul>
-<h3>Summary</h3>
-<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
-<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
-<ul>
-<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
-<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
-</ul>
-<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
-<h3>Benchmark (WIP)</h3>
-<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
-<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
-<p><strong>Baseline</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s
-</code></pre></div>
-<p><strong>This PR</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
-device ms: 0.892, cpu ms: 0.810
-memory bandwidth: 1456.744 GB/s
-</code></pre></div>
-<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
-Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914215: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914215</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914215</guid>
-            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Take 2</h3>
-<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
-<ul>
-<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
-<li>Ensure the optimization is compatible with cuda graph.</li>
-</ul>
-<h3>Summary</h3>
-<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
-<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
-<ul>
-<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
-<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
-</ul>
-<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
-<h3>Benchmark (WIP)</h3>
-<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
-<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
-<p><strong>Baseline</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
-device ms: 1.111, cpu ms: 7.151
-memory bandwidth: 1169.825 GB/s
-</code></pre></div>
-<p><strong>This PR</strong></p>
-<p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
 device ms: 0.892, cpu ms: 0.810
 memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
@@ -290,7 +214,7 @@ Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a hre
 <p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
 <p><strong>Baseline</strong></p>
 <p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZDYxZWVlMWIyNTI3YTViNDM3ZDFmNDcyYjUxYzMxYTQ2MmI4ZWRkMTg1ZTViZDA3MmRjNTA4NWMwM2VjNmMzNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.ryqbvIGUd_NwVwPnl9SspKGTivfRM1BRMFwZjv4FNSQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
 device ms: 1.111, cpu ms: 7.151
 memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
@@ -299,7 +223,222 @@ memory bandwidth: 1169.825 GB/s
 </code></pre></div>
 <p><strong>This PR</strong></p>
 <p>A single iteration in trace:<br>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMDYwNjQ5WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MDQwNTJkYjczMWYyNDVhMzU3ZWZkNmQyZWNhNjZmZDVhNjdmNTRhNDQwNjgxODFiMDMzNGNmODYzM2QyYjVkMSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.cBWgRP_MQ5qyrEuCKMTUpXjE7DBL_sABIDSAygbGq-k" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s
+</code></pre></div>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
+Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914215: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914215</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914215</guid>
+            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Take 2</h3>
+<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
+<ul>
+<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
+<li>Ensure the optimization is compatible with cuda graph.</li>
+</ul>
+<h3>Summary</h3>
+<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
+<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
+<ul>
+<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
+<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
+</ul>
+<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
+<h3>Benchmark (WIP)</h3>
+<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
+<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
+<p><strong>Baseline</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s
+</code></pre></div>
+<p><strong>This PR</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s
+</code></pre></div>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
+Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914186: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914186</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914186</guid>
+            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Take 2</h3>
+<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
+<ul>
+<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
+<li>Ensure the optimization is compatible with cuda graph.</li>
+</ul>
+<h3>Summary</h3>
+<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
+<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
+<ul>
+<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
+<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
+</ul>
+<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
+<h3>Benchmark (WIP)</h3>
+<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
+<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
+<p><strong>Baseline</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s
+</code></pre></div>
+<p><strong>This PR</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s
+</code></pre></div>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
+Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914196: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914196</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914196</guid>
+            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Take 2</h3>
+<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
+<ul>
+<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
+<li>Ensure the optimization is compatible with cuda graph.</li>
+</ul>
+<h3>Summary</h3>
+<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
+<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
+<ul>
+<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
+<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
+</ul>
+<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
+<h3>Benchmark (WIP)</h3>
+<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
+<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
+<p><strong>Baseline</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s
+</code></pre></div>
+<p><strong>This PR</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s
+</code></pre></div>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
+Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914185: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914185</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914185</guid>
+            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Take 2</h3>
+<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
+<ul>
+<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
+<li>Ensure the optimization is compatible with cuda graph.</li>
+</ul>
+<h3>Summary</h3>
+<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
+<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
+<ul>
+<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
+<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
+</ul>
+<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
+<h3>Benchmark (WIP)</h3>
+<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
+<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
+<p><strong>Baseline</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s
+</code></pre></div>
+<p><strong>This PR</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
+device ms: 0.892, cpu ms: 0.810
+memory bandwidth: 1456.744 GB/s
+</code></pre></div>
+<p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2131980339" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119764" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119764/hovercard" href="https://github.com/pytorch/pytorch/pull/119764">#119764</a><br>
+Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a href="https://github.com/eellison">https://github.com/eellison</a>, <a href="https://github.com/crcrpar">https://github.com/crcrpar</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: rerunGithubInfraFailure/8533914183: Optimize multi_tensor_apply (take 2) (#119764)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914183</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533914183</guid>
+            <pubDate>Wed, 03 Apr 2024 05:54:49 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Take 2</h3>
+<p>The first take (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>) landed but was reverted because it broke cuda graph for <code>multi_tensor_apply</code>. This PR is a reland of <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2117397393" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119153" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119153/hovercard" href="https://github.com/pytorch/pytorch/pull/119153">#119153</a>:</p>
+<ul>
+<li>Incorporate <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2128886580" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/119652" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/119652/hovercard" href="https://github.com/pytorch/pytorch/pull/119652">#119652</a> so that the optimization can be applied (1) without increasing binary size (2) to all 3 MTA variants without much code duplication.</li>
+<li>Ensure the optimization is compatible with cuda graph.</li>
+</ul>
+<h3>Summary</h3>
+<p>Due to the dynamic nature of the workload, the kernel arguments aren't guaranteed to fit in the static 4kb kernel argument memory. Previously with the apex implementation, we overcame this limitation by dividing a multi_tensor_apply workload into multiple kernel launches. However, this led to low sustained occupancy, affecting the performance of memory bound ops.</p>
+<p>Based on the observation that the kernel argument memory limitation doesn't correlate well with available SM resources, we adopt a different approach:</p>
+<ul>
+<li>When the kernel arguments fit into the static kernel argument memory, we use this memory to transfer the arguments.</li>
+<li>Conversely, when the kernel arguments don't fit into the static kernel argument memory, instead of sacrificing sustained occupancy, we use a page-locked cudaMemcpyAsync to transfer the arguments, then perform the entire workload in a single kernel.</li>
+</ul>
+<p>This PR only covers <code>multi_tensor_apply</code> for tensors. The change can be easily applied to <code>multi_tensor_apply</code> for tensors + scalars and <code>multi_tensor_apply_for_fused_optimizer</code>.</p>
+<h3>Benchmark (WIP)</h3>
+<p>The only benchmark I've conducted so far on <code>_foreach_copy_</code> on a set of sizes that resembles internal workload. I need to benchmarks on more problem sizes. The speedup should vary among problem sizes. <strong>However, I believe this PR should not be slower than the previous impl on any problem sizes.</strong></p>
+<p>The benchmark can be reproduced with <a href="https://gist.github.com/yifuwang/178c1f4bf951c5794ea79c04d90e44fa">this script</a>.</p>
+<p><strong>Baseline</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU"><img width="831" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145047-5c8d72d0-0628-4989-88a8-c756f6bc1319.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA0Ny01YzhkNzJkMC0wNjI4LTQ5ODktODhhOC1jNzU2ZjZiYzEzMTkucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzM4M2ZlMTI0MTBkYTA2OTU3YTc1ZDM4YTAxZjNiYmFiYzllYjhlNDI1ZDQ0MDQ3YTA1NjVlZmMwOTA2MTU4ZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.FuF1vFU3lzdje4BGqMy539LyY4S6f131Z3llzzS44XU" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_5a59145f-567b-472f-8eef-c61c388d45b4.json
+device ms: 1.111, cpu ms: 7.151
+memory bandwidth: 1169.825 GB/s
+</code></pre></div>
+<p><strong>This PR</strong></p>
+<p>A single iteration in trace:<br>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg"><img width="967" alt="image" src="https://private-user-images.githubusercontent.com/4156752/302145076-a023e183-8166-48f7-b7c0-c8ba32653d2b.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii80MTU2NzUyLzMwMjE0NTA3Ni1hMDIzZTE4My04MTY2LTQ4ZjctYjdjMC1jOGJhMzI2NTNkMmIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDQwMyUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA0MDNUMTIwODM2WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9OGM1NDYzNjUxMDI4NjY2NjlmOGM5MjY3Njc5ODE5YzgwMGZkNWEwNTZhZjU0ZjI2ZWExZTY1YzU1MWZhMzM4YSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.Gq1Q0h03GhBmXJwABqL-sVoa35jThDutjIiI1kNvvDg" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
 device ms: 0.892, cpu ms: 0.810
 memory bandwidth: 1456.744 GB/s"><pre class="notranslate"><code>https://interncache-all.fbcdn.net/manifold/perfetto-artifacts/tree/ui/index.html#!/?url=https://interncache-all.fbcdn.net/manifold/perfetto_internal_traces/tree/shared_trace/yifu_da060725-62a8-466e-b570-2ad67ff0e29d.json
@@ -315,7 +454,7 @@ Approved by: <a href="https://github.com/eqy">https://github.com/eqy</a>, <a hre
             <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533748914</guid>
             <pubDate>Wed, 03 Apr 2024 05:32:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>For LayoutLM model, reduces C++ guard overhead by 1.48x. These are the numbers</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDA2MDY0OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFmOWFjMjI5OTY1NWFhNjU3ZDM1YjBkNmI4ODE1NWYwNjRiMTM1ODU5MjJhMjRmMTdkMTMyOGQ1Y2YwYTZmY2YmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.aYqt-zLCj-PvfJhOTBhjR1ZqJ_CUveRIqSyT8h9Scis"><img src="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDA2MDY0OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFmOWFjMjI5OTY1NWFhNjU3ZDM1YjBkNmI4ODE1NWYwNjRiMTM1ODU5MjJhMjRmMTdkMTMyOGQ1Y2YwYTZmY2YmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.aYqt-zLCj-PvfJhOTBhjR1ZqJ_CUveRIqSyT8h9Scis" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDEyMDgzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzOGQwMDRiNTU5ZTQ0MWU0MmJkZmNjNGM2ODhjOGQ3NzIxYjg2OWQ0NDc3OGZlODJlMDdiNGQ2MDVjZmJmYTMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.m3XOrAALmnFrbAsq9g8ElxmUR8Pl901VAXCPQnw73_Y"><img src="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDEyMDgzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzOGQwMDRiNTU5ZTQ0MWU0MmJkZmNjNGM2ODhjOGQ3NzIxYjg2OWQ0NDc3OGZlODJlMDdiNGQ2MDVjZmJmYTMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.m3XOrAALmnFrbAsq9g8ElxmUR8Pl901VAXCPQnw73_Y" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2221642246" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/123226" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/123226/hovercard" href="https://github.com/pytorch/pytorch/pull/123226">#123226</a><br>
 Approved by: <a href="https://github.com/jansel">https://github.com/jansel</a></p>]]></content:encoded>
         </item>
@@ -325,7 +464,7 @@ Approved by: <a href="https://github.com/jansel">https://github.com/jansel</a></
             <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533748910</guid>
             <pubDate>Wed, 03 Apr 2024 05:32:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>For LayoutLM model, reduces C++ guard overhead by 1.48x. These are the numbers</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDA2MDY0OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFmOWFjMjI5OTY1NWFhNjU3ZDM1YjBkNmI4ODE1NWYwNjRiMTM1ODU5MjJhMjRmMTdkMTMyOGQ1Y2YwYTZmY2YmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.aYqt-zLCj-PvfJhOTBhjR1ZqJ_CUveRIqSyT8h9Scis"><img src="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDA2MDY0OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFmOWFjMjI5OTY1NWFhNjU3ZDM1YjBkNmI4ODE1NWYwNjRiMTM1ODU5MjJhMjRmMTdkMTMyOGQ1Y2YwYTZmY2YmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.aYqt-zLCj-PvfJhOTBhjR1ZqJ_CUveRIqSyT8h9Scis" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDEyMDgzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzOGQwMDRiNTU5ZTQ0MWU0MmJkZmNjNGM2ODhjOGQ3NzIxYjg2OWQ0NDc3OGZlODJlMDdiNGQ2MDVjZmJmYTMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.m3XOrAALmnFrbAsq9g8ElxmUR8Pl901VAXCPQnw73_Y"><img src="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDEyMDgzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzOGQwMDRiNTU5ZTQ0MWU0MmJkZmNjNGM2ODhjOGQ3NzIxYjg2OWQ0NDc3OGZlODJlMDdiNGQ2MDVjZmJmYTMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.m3XOrAALmnFrbAsq9g8ElxmUR8Pl901VAXCPQnw73_Y" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2221642246" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/123226" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/123226/hovercard" href="https://github.com/pytorch/pytorch/pull/123226">#123226</a><br>
 Approved by: <a href="https://github.com/jansel">https://github.com/jansel</a></p>]]></content:encoded>
         </item>
@@ -335,7 +474,7 @@ Approved by: <a href="https://github.com/jansel">https://github.com/jansel</a></
             <guid>https://github.com/pytorch/pytorch/releases/tag/rerunGithubInfraFailure%2F8533748894</guid>
             <pubDate>Wed, 03 Apr 2024 05:32:13 GMT</pubDate>
             <content:encoded><![CDATA[<p>For LayoutLM model, reduces C++ guard overhead by 1.48x. These are the numbers</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDA2MDY0OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFmOWFjMjI5OTY1NWFhNjU3ZDM1YjBkNmI4ODE1NWYwNjRiMTM1ODU5MjJhMjRmMTdkMTMyOGQ1Y2YwYTZmY2YmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.aYqt-zLCj-PvfJhOTBhjR1ZqJ_CUveRIqSyT8h9Scis"><img src="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxMjQ3MDksIm5iZiI6MTcxMjEyNDQwOSwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDA2MDY0OVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWFmOWFjMjI5OTY1NWFhNjU3ZDM1YjBkNmI4ODE1NWYwNjRiMTM1ODU5MjJhMjRmMTdkMTMyOGQ1Y2YwYTZmY2YmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.aYqt-zLCj-PvfJhOTBhjR1ZqJ_CUveRIqSyT8h9Scis" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDEyMDgzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzOGQwMDRiNTU5ZTQ0MWU0MmJkZmNjNGM2ODhjOGQ3NzIxYjg2OWQ0NDc3OGZlODJlMDdiNGQ2MDVjZmJmYTMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.m3XOrAALmnFrbAsq9g8ElxmUR8Pl901VAXCPQnw73_Y"><img src="https://private-user-images.githubusercontent.com/13822661/318990737-25cfc35b-b67d-4903-8403-71fa931dacdd.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTIxNDY0MTYsIm5iZiI6MTcxMjE0NjExNiwicGF0aCI6Ii8xMzgyMjY2MS8zMTg5OTA3MzctMjVjZmMzNWItYjY3ZC00OTAzLTg0MDMtNzFmYTkzMWRhY2RkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA0MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwNDAzVDEyMDgzNlomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTEzOGQwMDRiNTU5ZTQ0MWU0MmJkZmNjNGM2ODhjOGQ3NzIxYjg2OWQ0NDc3OGZlODJlMDdiNGQ2MDVjZmJmYTMmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.m3XOrAALmnFrbAsq9g8ElxmUR8Pl901VAXCPQnw73_Y" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <p>Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2221642246" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/123226" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/123226/hovercard" href="https://github.com/pytorch/pytorch/pull/123226">#123226</a><br>
 Approved by: <a href="https://github.com/jansel">https://github.com/jansel</a></p>]]></content:encoded>
         </item>
@@ -478,9 +617,9 @@ body. Now, incrementors no longer have access to such variables.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.5.140-pgo: Version 12.5.140]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.140-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.140-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.5.140]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.140</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.140</guid>
             <pubDate>Tue, 02 Apr 2024 23:46:39 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I2e0bec08e4b004f8c23ee4a2ed8601850da9851a<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5417214" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5417214</a><br>
@@ -489,9 +628,9 @@ Cr-Commit-Position: refs/heads/12.5.140@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/dce58c60b1fdb266ab334c19fd16289ab58a0010/hovercard" href="https://github.com/v8/v8/commit/dce58c60b1fdb266ab334c19fd16289ab58a0010"><tt>dce58c6</tt></a>-refs/heads/main@{#93125}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.140]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.140</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.140</guid>
+            <title><![CDATA[Release notes from v8: 12.5.140-pgo: Version 12.5.140]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.140-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.140-pgo</guid>
             <pubDate>Tue, 02 Apr 2024 23:46:39 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I2e0bec08e4b004f8c23ee4a2ed8601850da9851a<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5417214" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5417214</a><br>
@@ -687,13 +826,6 @@ They must also be re-created.</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-430]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-430</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-430</guid>
-            <pubDate>Tue, 02 Apr 2024 19:43:58 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from filament: v1.51.2]]></title>
             <link>https://github.com/google/filament/releases/tag/v1.51.2</link>
             <guid>https://github.com/google/filament/releases/tag/v1.51.2</guid>
@@ -703,9 +835,9 @@ They must also be re-created.</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.139]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.139</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.139</guid>
+            <title><![CDATA[Release notes from v8: 12.5.139-pgo: Version 12.5.139]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.139-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.139-pgo</guid>
             <pubDate>Tue, 02 Apr 2024 18:41:10 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I8171e258b6c6c006f0321672b9327b5905c97cd3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412599" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412599</a><br>
@@ -714,9 +846,9 @@ Cr-Commit-Position: refs/heads/12.5.139@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/4621a73ae3971b025a14f1981b30084c65053104/hovercard" href="https://github.com/v8/v8/commit/4621a73ae3971b025a14f1981b30084c65053104"><tt>4621a73</tt></a>-refs/heads/main@{#93124}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.5.139-pgo: Version 12.5.139]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.139-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.139-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.5.139]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.5.139</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.5.139</guid>
             <pubDate>Tue, 02 Apr 2024 18:41:10 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I8171e258b6c6c006f0321672b9327b5905c97cd3<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412599" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412599</a><br>
@@ -779,46 +911,6 @@ Cr-Commit-Position: refs/heads/12.5.138@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ad6df30db51306f16b8590c9e59e4f238b134642/hovercard" href="https://github.com/v8/v8/commit/ad6df30db51306f16b8590c9e59e4f238b134642"><tt>ad6df30</tt></a>-refs/heads/main@{#93121}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.5.138-pgo: Version 12.5.138]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.138-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.138-pgo</guid>
-            <pubDate>Tue, 02 Apr 2024 17:58:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie652b9614655b0d2224e95a8bfb0a51a2bd7d51f<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412597" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412597</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.5.138@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ad6df30db51306f16b8590c9e59e4f238b134642/hovercard" href="https://github.com/v8/v8/commit/ad6df30db51306f16b8590c9e59e4f238b134642"><tt>ad6df30</tt></a>-refs/heads/main@{#93121}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.5.137-pgo: Version 12.5.137]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.137-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.137-pgo</guid>
-            <pubDate>Tue, 02 Apr 2024 17:10:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Iba68fc8c5a8859ff063b8255638da5bdcd239b0c<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412596" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412596</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.5.137@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/da5dd9b5f48dd0b3d0b3e984759002a21ce36937/hovercard" href="https://github.com/v8/v8/commit/da5dd9b5f48dd0b3d0b3e984759002a21ce36937"><tt>da5dd9b</tt></a>-refs/heads/main@{#93120}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.137]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.137</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.137</guid>
-            <pubDate>Tue, 02 Apr 2024 17:10:43 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Iba68fc8c5a8859ff063b8255638da5bdcd239b0c<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412596" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412596</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.5.137@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/da5dd9b5f48dd0b3d0b3e984759002a21ce36937/hovercard" href="https://github.com/v8/v8/commit/da5dd9b5f48dd0b3d0b3e984759002a21ce36937"><tt>da5dd9b</tt></a>-refs/heads/main@{#93120}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-404]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-404</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-404</guid>
-            <pubDate>Tue, 02 Apr 2024 16:15:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pixijs: v8.0.5]]></title>
             <link>https://github.com/pixijs/pixijs/releases/tag/v8.0.5</link>
             <guid>https://github.com/pixijs/pixijs/releases/tag/v8.0.5</guid>
@@ -853,42 +945,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/codedpalette/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/codedpalette">@codedpalette</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2216531926" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/10394" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/10394/hovercard" href="https://github.com/pixijs/pixijs/pull/10394">#10394</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.5.136-pgo: Version 12.5.136]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.136-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.136-pgo</guid>
-            <pubDate>Tue, 02 Apr 2024 16:10:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I786c1a25c20b3c8c6a69477e5caf050eb510386d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412837" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412837</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.5.136@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7dcfe63d8f4ebd83eab75c28d07f1ca87064c4eb/hovercard" href="https://github.com/v8/v8/commit/7dcfe63d8f4ebd83eab75c28d07f1ca87064c4eb"><tt>7dcfe63</tt></a>-refs/heads/main@{#93118}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.5.136]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.5.136</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.5.136</guid>
-            <pubDate>Tue, 02 Apr 2024 16:10:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I786c1a25c20b3c8c6a69477e5caf050eb510386d<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5412837" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5412837</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.5.136@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7dcfe63d8f4ebd83eab75c28d07f1ca87064c4eb/hovercard" href="https://github.com/v8/v8/commit/7dcfe63d8f4ebd83eab75c28d07f1ca87064c4eb"><tt>7dcfe63</tt></a>-refs/heads/main@{#93118}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-402]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-402</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-402</guid>
-            <pubDate>Tue, 02 Apr 2024 16:05:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-395]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-395</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-395</guid>
-            <pubDate>Tue, 02 Apr 2024 15:36:10 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from core: 2024.4.0b6]]></title>
@@ -951,13 +1007,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <p>For the release notes please see the git repository:</p>
 <p><a href="https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-26.1.md">https://github.com/bitcoin/bitcoin/blob/master/doc/release-notes/release-notes-26.1.md</a></p>
 <p>Do not use the links provided by GitHub, rather use the above download links, they are guaranteed to be generated deterministically and signed.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-379]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-379</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-379</guid>
-            <pubDate>Tue, 02 Apr 2024 14:11:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from prisma: 5.12.0]]></title>
@@ -1064,27 +1113,6 @@ export default {
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yubrot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yubrot">@yubrot</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/skyzh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/skyzh">@skyzh</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anuraaga/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anuraaga">@anuraaga</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/onichandame/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/onichandame">@onichandame</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/LucianBuzzo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/LucianBuzzo">@LucianBuzzo</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/RobertCraigie/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/RobertCraigie">@RobertCraigie</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/arthurfiorette/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/arthurfiorette">@arthurfiorette</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/elithrar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/elithrar">@elithrar</a> for helping!</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-374]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-374</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-374</guid>
-            <pubDate>Tue, 02 Apr 2024 13:49:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-372]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-372</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-372</guid>
-            <pubDate>Tue, 02 Apr 2024 13:32:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-364]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-364</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-364</guid>
-            <pubDate>Tue, 02 Apr 2024 13:13:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from electron: v31.0.0-nightly.20240402]]></title>
             <link>https://github.com/electron/electron/releases/tag/v31.0.0-nightly.20240402</link>
             <guid>https://github.com/electron/electron/releases/tag/v31.0.0-nightly.20240402</guid>
@@ -1100,13 +1128,6 @@ export default {
 <ul>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/haskell/cabal/commit/af5d60613547a1c442842302f712735e315d3c48/hovercard" href="https://github.com/haskell/cabal/commit/af5d60613547a1c442842302f712735e315d3c48"><tt>af5d606</tt></a>: CI changelogs: switch to XDG, fix cache key (Andreas Abel) <a href="https://github.com/haskell/cabal/pull/9849" data-hovercard-type="pull_request" data-hovercard-url="/haskell/cabal/pull/9849/hovercard">#9849</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-357]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-357</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-357</guid>
-            <pubDate>Tue, 02 Apr 2024 12:37:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from react-native: 0.74.0-rc.6]]></title>
@@ -1629,18 +1650,6 @@ will return extension versions based on the provided constraints.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from Ghost: 5.81.1]]></title>
-            <link>https://github.com/TryGhost/Ghost/releases/tag/v5.81.1</link>
-            <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.81.1</guid>
-            <pubDate>Mon, 01 Apr 2024 07:05:48 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>🐛 Fixed adding recommendations with long excerpts (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2213401620" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/19949" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/19949/hovercard" href="https://github.com/TryGhost/Ghost/pull/19949">#19949</a>) - Sag</li>
-<li>🐛 Fixed keeping existing attribution in recommendations (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2213007150" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/19945" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/19945/hovercard" href="https://github.com/TryGhost/Ghost/pull/19945">#19945</a>) - Sag</li>
-</ul>
-<hr>
-<p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.81.0...v5.81.1"><tt>v5.81.0...v5.81.1</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from micro: Release v4.4.0]]></title>
             <link>https://github.com/micro/micro/releases/tag/v4.4.0</link>
             <guid>https://github.com/micro/micro/releases/tag/v4.4.0</guid>
@@ -1733,130 +1742,6 @@ is aware of the problem.</p>
 <ul>
 <li><strong>Cache:</strong> handle the value read from the db correctly according to its type (<a href="https://github.com/LuanRT/YouTube.js/issues/620" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/620/hovercard">#620</a>) (<a href="https://github.com/LuanRT/YouTube.js/commit/317065988007c860bf6173b0ac3c3d685ed81d20">3170659</a>)</li>
 <li><strong>PlayerEndpoint:</strong> Workaround for "The following content is not available on this app" (Android) (<a href="https://github.com/LuanRT/YouTube.js/issues/624" data-hovercard-type="pull_request" data-hovercard-url="/LuanRT/YouTube.js/pull/624/hovercard">#624</a>) (<a href="https://github.com/LuanRT/YouTube.js/commit/d589365ea27f540ff36e33a65362c932cd28c274">d589365</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from oclif: 4.7.5]]></title>
-            <link>https://github.com/oclif/oclif/releases/tag/4.7.5</link>
-            <guid>https://github.com/oclif/oclif/releases/tag/4.7.5</guid>
-            <pubDate>Sun, 31 Mar 2024 11:20:37 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
-<ul>
-<li><strong>deps:</strong> bump @oclif/core from 3.25.2 to 3.26.0 (<a href="https://github.com/oclif/oclif/commit/ccb78086e92f1c41aa142206f58e32821c358a7b">ccb7808</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swr: v2.2.6-beta.1]]></title>
-            <link>https://github.com/vercel/swr/releases/tag/v2.2.6-beta.1</link>
-            <guid>https://github.com/vercel/swr/releases/tag/v2.2.6-beta.1</guid>
-            <pubDate>Sun, 31 Mar 2024 11:07:53 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>build: fix beta release job by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2139563288" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2895" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2895/hovercard" href="https://github.com/vercel/swr/pull/2895">#2895</a></li>
-<li>chore: Improve test coverage by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shuding/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shuding">@shuding</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2152898134" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2903" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2903/hovercard" href="https://github.com/vercel/swr/pull/2903">#2903</a></li>
-<li>chore: simplify test coverage strategy by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2177418387" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2909" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2909/hovercard" href="https://github.com/vercel/swr/pull/2909">#2909</a></li>
-<li>build: simplify react-server export and update bundler by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2140610854" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2897" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2897/hovercard" href="https://github.com/vercel/swr/pull/2897">#2897</a></li>
-<li>examples: add RSC streaming pre-render with promise fallback example by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/promer94/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/promer94">@promer94</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2165133470" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2905" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2905/hovercard" href="https://github.com/vercel/swr/pull/2905">#2905</a></li>
-<li>Drop client-only by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2177956391" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2910" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2910/hovercard" href="https://github.com/vercel/swr/pull/2910">#2910</a></li>
-<li>Mark package as side-effect free by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/htunnicliff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/htunnicliff">@htunnicliff</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2157394894" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2904" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2904/hovercard" href="https://github.com/vercel/swr/pull/2904">#2904</a></li>
-<li>Drop exports module field by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2177961890" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2911" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2911/hovercard" href="https://github.com/vercel/swr/pull/2911">#2911</a></li>
-<li>fix: Replace the deprecated 'window' with 'globalThis' for Deno by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/saul-atomrigs/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/saul-atomrigs">@saul-atomrigs</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2192037173" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2915" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2915/hovercard" href="https://github.com/vercel/swr/pull/2915">#2915</a></li>
-<li>chore: update pkg script watch by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unliar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unliar">@unliar</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2201733127" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2920" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2920/hovercard" href="https://github.com/vercel/swr/pull/2920">#2920</a></li>
-<li>test: remove console.error times check by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/promer94/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/promer94">@promer94</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2201523646" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2918" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2918/hovercard" href="https://github.com/vercel/swr/pull/2918">#2918</a></li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/htunnicliff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/htunnicliff">@htunnicliff</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2157394894" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2904" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2904/hovercard" href="https://github.com/vercel/swr/pull/2904">#2904</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/saul-atomrigs/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/saul-atomrigs">@saul-atomrigs</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2192037173" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2915" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2915/hovercard" href="https://github.com/vercel/swr/pull/2915">#2915</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unliar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unliar">@unliar</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2201733127" data-permission-text="Title is private" data-url="https://github.com/vercel/swr/issues/2920" data-hovercard-type="pull_request" data-hovercard-url="/vercel/swr/pull/2920/hovercard" href="https://github.com/vercel/swr/pull/2920">#2920</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/vercel/swr/compare/v2.2.6-beta.0...v2.2.6-beta.1"><tt>v2.2.6-beta.0...v2.2.6-beta.1</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from ant-design: 5.16.0]]></title>
-            <link>https://github.com/ant-design/ant-design/releases/tag/5.16.0</link>
-            <guid>https://github.com/ant-design/ant-design/releases/tag/5.16.0</guid>
-            <pubDate>Sun, 31 Mar 2024 08:38:29 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>🔥 New component Input.OTP support. <a href="https://github.com/ant-design/ant-design/pull/48076" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48076/hovercard">#48076</a></li>
-<li>🆕 Tag support <code>aria-*</code> in closable. <a href="https://github.com/ant-design/ant-design/pull/47678" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47678/hovercard">#47678</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
-<li>🆕 Table add <code>rowHoverable</code> to control hover effect. <a href="https://github.com/ant-design/ant-design/pull/48112" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48112/hovercard">#48112</a> <a href="https://github.com/madocto">@madocto</a></li>
-<li>🆕 Typography support async copy. <a href="https://github.com/ant-design/ant-design/pull/48123" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48123/hovercard">#48123</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-<li>🆕 Progress support <code>steps</code> with <code>circle</code>. <a href="https://github.com/ant-design/ant-design/pull/47940" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47940/hovercard">#47940</a> <a href="https://github.com/yykoypj">@yykoypj</a></li>
-<li>🆕 Table support <code>onScroll</code> event for table body scroll. <a href="https://github.com/ant-design/ant-design/pull/47986" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47986/hovercard">#47986</a></li>
-<li>🆕 Typography ellipsis supports expand and collapse. <a href="https://github.com/ant-design/ant-design/pull/47264" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47264/hovercard">#47264</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-<li>🆕 ConfigProvider support configuring FloatButton.Group <code>closeIcon</code>. <a href="https://github.com/ant-design/ant-design/pull/47953" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47953/hovercard">#47953</a> <a href="https://github.com/li-jia-nan">@li-jia-nan</a></li>
-<li>🆕 Table support <code>sorterTooltipTarget</code> prop for sorters. <a href="https://github.com/ant-design/ant-design/pull/47409" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47409/hovercard">#47409</a> <a href="https://github.com/Ke1sy">@Ke1sy</a></li>
-<li>🆕 Cascader support <code>optionRender</code>. <a href="https://github.com/ant-design/ant-design/pull/47727" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47727/hovercard">#47727</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-<li>🆕 Notification support <code>aria-*</code> in <code>closable</code>. <a href="https://github.com/ant-design/ant-design/pull/47710" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47710/hovercard">#47710</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
-<li>⌨️ Popover can be closed by ESC when trigger is <code>focus</code> or <code>click</code>. <a href="https://github.com/ant-design/ant-design/pull/47928" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47928/hovercard">#47928</a> <a href="https://github.com/CooperHash">@CooperHash</a></li>
-<li>🐞 Fix Button that vertically center icons when icon-only. <a href="https://github.com/ant-design/ant-design/pull/48178" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48178/hovercard">#48178</a> <a href="https://github.com/momesana">@momesana</a></li>
-<li>🐞 Fix Modal.confirm content is not centered when icon is null. <a href="https://github.com/ant-design/ant-design/pull/48173" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48173/hovercard">#48173</a></li>
-<li>Form <a href="https://github.com/ant-design/ant-design/pull/48163" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48163/hovercard">#48163</a> <a href="https://github.com/madocto">@madocto</a>
-<ul>
-<li>🐞 1. Fix Form <code>getValueProps</code> shouldn't work when FormItem's <code>name</code> doesn't exist .</li>
-<li>🐞 2. Fix Form's <code>setFieldsValue</code> should tread same as <code>setFields</code>.</li>
-</ul>
-</li>
-<li>🐞 Fixe Table that internationalization of table columns fails when searching. <a href="https://github.com/ant-design/ant-design/pull/48126" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48126/hovercard">#48126</a> <a href="https://github.com/LingJinT">@LingJinT</a></li>
-<li>🐞 Fix Upload that <code>onChange</code> should be triggered when <code>fileList.length</code> is larger than <code>maxCount</code>. <a href="https://github.com/ant-design/ant-design/pull/47747" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47747/hovercard">#47747</a> <a href="https://github.com/Zhou-Bill">@Zhou-Bill</a></li>
-<li>🐞 Fix Carousel several <a href="https://github.com/ant-design/react-slick/pull/110" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/react-slick/pull/110/hovercard">bugs</a> by upgrading react-slick changes and renewing TS type. <a href="https://github.com/ant-design/ant-design/pull/48093" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48093/hovercard">#48093</a></li>
-<li>🐞 Fix ColorPicker that displayed cleared color not change after <code>value</code> changed. <a href="https://github.com/ant-design/ant-design/pull/47816" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47816/hovercard">#47816</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
-<li>🐞 Make Badge consistent with Tag that applay <code>colorInfo</code> token in processing. <a href="https://github.com/ant-design/ant-design/pull/47695" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47695/hovercard">#47695</a> <a href="https://github.com/pfdgithub">@pfdgithub</a></li>
-<li>🌐 Add missing form translations in is_IS. <a href="https://github.com/ant-design/ant-design/pull/48104" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48104/hovercard">#48104</a> <a href="https://github.com/LonelySnowman">@LonelySnowman</a></li>
-<li>🌐 Add Uzbek(latn) locale. <a href="https://github.com/ant-design/ant-design/pull/47899" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47899/hovercard">#47899</a></li>
-<li>TypeScript
-<ul>
-<li>🤖 Improve Transfer's <code>key</code> type, change <code>key: string</code> to <code>key: React.Key</code>. <a href="https://github.com/ant-design/ant-design/pull/47879" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47879/hovercard">#47879</a> <a href="https://github.com/madocto">@madocto</a></li>
-<li>🤖 Table support for generic pairs dataIndex props verification . <a href="https://github.com/crazyair">@crazyair</a></li>
-</ul>
-</li>
-</ul>
-<hr>
-<ul>
-<li>🔥 新增 Input.OTP 组件。<a href="https://github.com/ant-design/ant-design/pull/48076" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48076/hovercard">#48076</a></li>
-<li>🆕 Tag 组件支持在 <code>closable</code> 中配置 aria 属性。<a href="https://github.com/ant-design/ant-design/pull/47678" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47678/hovercard">#47678</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
-<li>🆕 Table 增加 <code>rowHoverable</code> 开启或关闭 hover 效果。<a href="https://github.com/ant-design/ant-design/pull/48112" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48112/hovercard">#48112</a> <a href="https://github.com/madocto">@madocto</a></li>
-<li>🆕 Typography 组件支持异步复制。<a href="https://github.com/ant-design/ant-design/pull/48123" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48123/hovercard">#48123</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-<li>🆕 Progress 组件 <code>circle</code> 模式下支持 <code>steps</code>。<a href="https://github.com/ant-design/ant-design/pull/47940" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47940/hovercard">#47940</a> <a href="https://github.com/yykoypj">@yykoypj</a></li>
-<li>🆕 Table 支持 <code>onScroll</code> 事件用于监听表单内容滚动。<a href="https://github.com/ant-design/ant-design/pull/47986" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47986/hovercard">#47986</a></li>
-<li>🆕 Typography 省略支持展开和收起。<a href="https://github.com/ant-design/ant-design/pull/47264" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47264/hovercard">#47264</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-<li>🆕 ConfigProvider 支持配置 FloatButton.Group 的 <code>closeIcon</code> 属性。<a href="https://github.com/ant-design/ant-design/pull/47953" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47953/hovercard">#47953</a> <a href="https://github.com/li-jia-nan">@li-jia-nan</a></li>
-<li>🆕 Table 支持配置排序的 <code>sorterTooltipTarget</code> 属性.<a href="https://github.com/ant-design/ant-design/pull/47409" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47409/hovercard">#47409</a> <a href="https://github.com/Ke1sy">@Ke1sy</a></li>
-<li>🆕 Cascader 支持 <code>optionRender</code>。<a href="https://github.com/ant-design/ant-design/pull/47727" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47727/hovercard">#47727</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-<li>🆕 Notification 组件支持在 <code>closable</code> 中配置 aria-*。<a href="https://github.com/ant-design/ant-design/pull/47710" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47710/hovercard">#47710</a> <a href="https://github.com/kiner-tang">@kiner-tang</a></li>
-<li>⌨️ Popover 当 <code>trigger</code> 是 <code>focus</code> 或 <code>click</code> 时能被 ESC 按键所关闭。<a href="https://github.com/ant-design/ant-design/pull/47928" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47928/hovercard">#47928</a> <a href="https://github.com/CooperHash">@CooperHash</a></li>
-<li>🐞 修复 Button 图标位置居中问题。<a href="https://github.com/ant-design/ant-design/pull/48178" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48178/hovercard">#48178</a> <a href="https://github.com/momesana">@momesana</a></li>
-<li>🐞 修复 Modal.confirm 无图标时内容不居中的问题。<a href="https://github.com/ant-design/ant-design/pull/48173" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48173/hovercard">#48173</a></li>
-<li>Form <a href="https://github.com/ant-design/ant-design/pull/48163" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48163/hovercard">#48163</a> <a href="https://github.com/madocto">@madocto</a>
-<ul>
-<li>🐞 1. 修复 Form 当 FormItem 的 <code>name</code> 不存在时，<code>getValueProps</code> 不应该执行。</li>
-<li>🐞 2. 修复 Form 的 <code>setFieldsValue</code> 和 <code>setFields</code> 的行为应该相同。</li>
-</ul>
-</li>
-<li>🐞 修复 Table 表格列在搜索情况下，国际化失效的问题。<a href="https://github.com/ant-design/ant-design/pull/48126" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48126/hovercard">#48126</a> <a href="https://github.com/LingJinT">@LingJinT</a></li>
-<li>🐞 修复 Upload 当文件数量超出限制时，删除不起作用，无法触发 <code>onChange</code> 的问题。<a href="https://github.com/ant-design/ant-design/pull/47747" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47747/hovercard">#47747</a> <a href="https://github.com/Zhou-Bill">@Zhou-Bill</a></li>
-<li>🐞 Carousel 组件同步上游 react-slick 改动，修复一系列<a href="https://github.com/ant-design/react-slick/pull/110" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/react-slick/pull/110/hovercard">问题</a>，并更新到最新 TS 定义。<a href="https://github.com/ant-design/ant-design/pull/48093" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48093/hovercard">#48093</a></li>
-<li>🐞 修复 ColorPicker 展示的清除颜色在受控 <code>value</code> 变化后不会改变的问题。<a href="https://github.com/ant-design/ant-design/pull/47816" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47816/hovercard">#47816</a> <a href="https://github.com/MadCcc">@MadCcc</a></li>
-<li>🐞 Badge 与 Tag 组件保持一致，processing 状态使用 <code>colorInfo</code> token 。<a href="https://github.com/ant-design/ant-design/pull/47695" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47695/hovercard">#47695</a> <a href="https://github.com/pfdgithub">@pfdgithub</a></li>
-<li>🌐 添加冰岛语缺失的 From 翻译。<a href="https://github.com/ant-design/ant-design/pull/48104" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48104/hovercard">#48104</a> <a href="https://github.com/LonelySnowman">@LonelySnowman</a></li>
-<li>🌐 添加乌兹别克语(拉丁字母) 国际化。<a href="https://github.com/ant-design/ant-design/pull/47899" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47899/hovercard">#47899</a></li>
-<li>TypeScript
-<ul>
-<li>🤖 改进 Transfer 的<code>key</code> 类型，将 <code>key: string</code> 改为<code>key: React.Key</code>。<a href="https://github.com/ant-design/ant-design/pull/47879" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/47879/hovercard">#47879</a> <a href="https://github.com/madocto">@madocto</a></li>
-<li>🤖 Table 支持泛型对 dataIndex 属性校验。<a href="https://github.com/ant-design/ant-design/pull/48190" data-hovercard-type="pull_request" data-hovercard-url="/ant-design/ant-design/pull/48190/hovercard">#48190</a> <a href="https://github.com/crazyair">@crazyair</a></li>
-</ul>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from oclif: 4.7.4]]></title>
-            <link>https://github.com/oclif/oclif/releases/tag/4.7.4</link>
-            <guid>https://github.com/oclif/oclif/releases/tag/4.7.4</guid>
-            <pubDate>Sun, 31 Mar 2024 08:24:22 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
-<ul>
-<li><strong>deps:</strong> bump @inquirer/select from 2.0.0 to 2.2.1 (<a href="https://github.com/oclif/oclif/commit/80e96117aec9a95fecc419b6fa5c1d8cd09717b6">80e9611</a>)</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
