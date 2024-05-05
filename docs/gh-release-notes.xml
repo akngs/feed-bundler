@@ -4,10 +4,232 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 05 May 2024 00:23:55 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 05 May 2024 06:06:24 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/125543: [export] handle root swapping in derived dims suggested fixes]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125543</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125543</guid>
+            <pubDate>Sun, 05 May 2024 05:35:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+The current suggested fixes for derived dims can lead to root dims/derived dims being swapped, e.g. <code>dy - 1, dy</code> -&gt; <code>dx, dx + 1</code>. This leads to problematic suggested fixes that look like <code>dy - 1 = Dim("dy - 1")</code> since we don't have access to the original variable name.</p>
+<p>This PR only adds a suggested fix for the root dim, and removes all other derived suggestions.</p>
+<p>For example, with the export test case test_derived_dim_out_of_order_simplified:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="_dimz = torch.export.Dim(&quot;_dimz&quot;, min=6, max=8)
+dimy = _dimz - 1
+dimx = dimy - 1
+dimz = torch.export.Dim(&quot;dimz&quot;, min=6, max=8)  # doesn't work, should be = _dimz
+
+class Foo(torch.nn.Module):
+    def forward(self, x, y, z):
+        return x + y[1:] + z[2:]
+
+foo = Foo()
+u, v, w = torch.randn(5), torch.randn(6), torch.randn(7)
+export(
+    foo,
+    (u, v, w),
+    dynamic_shapes=({0: dimx}, {0: dimy}, {0: dimz}),
+)"><pre class="notranslate"><code>_dimz = torch.export.Dim("_dimz", min=6, max=8)
+dimy = _dimz - 1
+dimx = dimy - 1
+dimz = torch.export.Dim("dimz", min=6, max=8)  # doesn't work, should be = _dimz
+
+class Foo(torch.nn.Module):
+    def forward(self, x, y, z):
+        return x + y[1:] + z[2:]
+
+foo = Foo()
+u, v, w = torch.randn(5), torch.randn(6), torch.randn(7)
+export(
+    foo,
+    (u, v, w),
+    dynamic_shapes=({0: dimx}, {0: dimy}, {0: dimz}),
+)
+</code></pre></div>
+<p>Before:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="Suggested fixes:
+  _dimz = Dim('_dimz', min=3, max=9223372036854775807)  # 2 &lt;= _dimz - 1 &lt;= 9223372036854775806
+  _dimz - 2 = Dim('_dimz - 2', min=4, max=6)
+  _dimz = Dim('_dimz', min=2, max=9223372036854775806)  # 2 &lt;= _dimz &lt;= 9223372036854775806
+  _dimz - 1 = _dimz - 1
+  dimz = _dimz"><pre class="notranslate"><code>Suggested fixes:
+  _dimz = Dim('_dimz', min=3, max=9223372036854775807)  # 2 &lt;= _dimz - 1 &lt;= 9223372036854775806
+  _dimz - 2 = Dim('_dimz - 2', min=4, max=6)
+  _dimz = Dim('_dimz', min=2, max=9223372036854775806)  # 2 &lt;= _dimz &lt;= 9223372036854775806
+  _dimz - 1 = _dimz - 1
+  dimz = _dimz
+</code></pre></div>
+<p>New suggested fixes:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="Suggested fixes:
+  dimz = _dimz"><pre class="notranslate"><code>Suggested fixes:
+  dimz = _dimz
+</code></pre></div>
+<p>Note: This assumes the specified derived relations between dims are correct. This should be valid because: 1) if the relation is plain wrong (e.g. (dx, dx - 1) provided with inputs (6, 4)), this gets caught in beforehand in produce_guards. 2) if the relation is correct but does not match the emitted guard, for example:</p>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="def forward(self, x, y):
+    return x.reshape([-1]) + y  # guard: s0 * 2 = s1
+dx = Dim(&quot;dx&quot;)
+export(
+    model,
+    (torch.randn(6, 2), torch.randn(12)),
+    dynamic_shapes={&quot;x&quot;: (dx, 2), &quot;y&quot;: (dx + 6, )}
+)"><pre class="notranslate"><code>def forward(self, x, y):
+    return x.reshape([-1]) + y  # guard: s0 * 2 = s1
+dx = Dim("dx")
+export(
+    model,
+    (torch.randn(6, 2), torch.randn(12)),
+    dynamic_shapes={"x": (dx, 2), "y": (dx + 6, )}
+)
+</code></pre></div>
+<p>This produces two linear equations, leading to specialization since a) produce_guards is able to solve for a concrete value, and b) the export constraint solver will anyways force specializations due to range constraints.</p>
+<p>Test Plan: export test cases</p>
+<p>Differential Revision: D56974543</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Sun, 05 May 2024 05:13:06 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-3080+gefb44e0ca
+Build type: RelWithDebInfo
+LuaJIT 2.1.1713484068"><pre class="notranslate"><code>NVIM v0.10.0-dev-3080+gefb44e0ca
+Build type: RelWithDebInfo
+LuaJIT 2.1.1713484068
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS (x86_64)</h3>
+<ol>
+<li>Download <strong>nvim-macos-x86_64.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos-x86_64.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos-x86_64.tar.gz</code></li>
+<li>Run <code>./nvim-macos-x86_64/bin/nvim</code></li>
+</ol>
+<h3>macOS (arm64)</h3>
+<ol>
+<li>Download <strong>nvim-macos-arm64.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos-arm64.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos-arm64.tar.gz</code></li>
+<li>Run <code>./nvim-macos-arm64/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
+that work on older glibc versions can find them at<br>
+<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/blob/master/INSTALL.md#install-from-package">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="796f8a97b6bba2ab710c549e6daa404ae37147acd0a2040e726c33fcf2ec6742  nvim-linux64.tar.gz
+9b4fcc666a045996a73ff964a7d18f88cee0b8b155e14f968c3f267e704e3a05  nvim.appimage
+280958f55e4fe26f53dd22608ee26f7451d61efa4cbc826565748c66eccd6e8c  nvim.appimage.zsync
+48d479c9efe46b9272389da8a60296cc3d878166b99c78644618244232503376  nvim-macos-x86_64.tar.gz
+1cf1b3f9d431411951e9018b12bfba76ab21b3e37d25db0ce1c0f16fa4327b51  nvim-macos-arm64.tar.gz
+67f8df4b7a0966a5fe7a7fce0f0230476348d2a9470222983716a5c32e6bad0a  nvim-win64.zip
+973b05e48d4dfec1df2e8439629ff15a80209d58c5a04465524886c510df8602  nvim-win64.msi"><pre class="notranslate"><code>796f8a97b6bba2ab710c549e6daa404ae37147acd0a2040e726c33fcf2ec6742  nvim-linux64.tar.gz
+9b4fcc666a045996a73ff964a7d18f88cee0b8b155e14f968c3f267e704e3a05  nvim.appimage
+280958f55e4fe26f53dd22608ee26f7451d61efa4cbc826565748c66eccd6e8c  nvim.appimage.zsync
+48d479c9efe46b9272389da8a60296cc3d878166b99c78644618244232503376  nvim-macos-x86_64.tar.gz
+1cf1b3f9d431411951e9018b12bfba76ab21b3e37d25db0ce1c0f16fa4327b51  nvim-macos-arm64.tar.gz
+67f8df4b7a0966a5fe7a7fce0f0230476348d2a9470222983716a5c32e6bad0a  nvim-win64.zip
+973b05e48d4dfec1df2e8439629ff15a80209d58c5a04465524886c510df8602  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from oclif: 4.10.2]]></title>
+            <link>https://github.com/oclif/oclif/releases/tag/4.10.2</link>
+            <guid>https://github.com/oclif/oclif/releases/tag/4.10.2</guid>
+            <pubDate>Sun, 05 May 2024 02:26:58 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
+<ul>
+<li><strong>deps:</strong> bump @oclif/core from 3.26.4 to 3.26.5 (<a href="https://github.com/oclif/oclif/commit/7b3e97701880e2026ad5e4d5576da0d1ea82966f">7b3e977</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/124992: Update on "Remove Inductor IRs for legacy functional collectives"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F124992</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F124992</guid>
+            <pubDate>Sun, 05 May 2024 01:16:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR completely removes the Inductor IR for legacy functional collectives:</p>
+<ul>
+<li>Removed the <code>CollectiveKernel</code> hiearchy and <code>Wait</code>, as well as the corresponding lowerings. These IRs are target (i.e. Python) specific and don't model node dependencies propoerly (e.g. they rely on <code>never_reuse_buffers</code> for correct behavior). They've been superceded by <code>ir._CollectiveKernel</code>.</li>
+<li>Removed <code>InPlaceHint</code> and the scheduler logic for handling it. <code>InPlaceHint</code> is a codegen-time buffer reuse mechanism controlled by the IR's codegen. It's a bit hacky and overlaps with the default buffer reuse mechanism. Removing it since it is only used by legacy functional collectives.</li>
+<li>Removed <code>OutputBuffer</code> and <code>MultiOutputNoSizeAssert</code> which are designed for and only used by legacy functional collectives.</li>
+</ul>
+<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu fegin XilunWu wanchaol fduwjj wz337 tianyu-l wconstab yf225 chauhang d4l3k voznesenskym EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy chenyang78 kadeng muchulee8 ColinPeppler amjames desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/124992: Update on "Remove Inductor IRs for legacy functional collectives"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124992</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124992</guid>
+            <pubDate>Sun, 05 May 2024 01:16:36 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR completely removes the Inductor IR for legacy functional collectives:</p>
+<ul>
+<li>Removed the <code>CollectiveKernel</code> hiearchy and <code>Wait</code>, as well as the corresponding lowerings. These IRs are target (i.e. Python) specific and don't model node dependencies propoerly (e.g. they rely on <code>never_reuse_buffers</code> for correct behavior). They've been superceded by <code>ir._CollectiveKernel</code>.</li>
+<li>Removed <code>InPlaceHint</code> and the scheduler logic for handling it. <code>InPlaceHint</code> is a codegen-time buffer reuse mechanism controlled by the IR's codegen. It's a bit hacky and overlaps with the default buffer reuse mechanism. Removing it since it is only used by legacy functional collectives.</li>
+<li>Removed <code>OutputBuffer</code> and <code>MultiOutputNoSizeAssert</code> which are designed for and only used by legacy functional collectives.</li>
+</ul>
+<p>cc mrshenli pritamdamania87 zhaojuanmao satgera rohan-varma gqchen aazzolini osalpekar jiayisuse H-Huang kwen2501 awgu penguinwu fegin XilunWu wanchaol fduwjj wz337 tianyu-l wconstab yf225 chauhang d4l3k voznesenskym EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy chenyang78 kadeng muchulee8 ColinPeppler amjames desertfire</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.24-820]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.24-820</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.24-820</guid>
+            <pubDate>Sun, 05 May 2024 01:05:04 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-2974]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-2974</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-2974</guid>
+            <pubDate>Sun, 05 May 2024 01:04:42 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/125414]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125414</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125414</guid>
+            <pubDate>Sun, 05 May 2024 00:43:48 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[export] Add metadata for nodes insert_deferred_runtime_asserts</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/inductor/125542]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125542</link>
@@ -30,16 +252,16 @@
             <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/123043]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/123043]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F123043</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F123043</guid>
             <pubDate>Sun, 05 May 2024 00:19:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/123043]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F123043</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F123043</guid>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/123043]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</guid>
             <pubDate>Sun, 05 May 2024 00:19:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
@@ -124,13 +346,6 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125470: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125470</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125470</guid>
-            <pubDate>Sat, 04 May 2024 18:20:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from vscode: April 2024]]></title>
             <link>https://github.com/microsoft/vscode/releases/tag/1.89.0</link>
             <guid>https://github.com/microsoft/vscode/releases/tag/1.89.0</guid>
@@ -174,13 +389,6 @@
 <li>Emily Xiong <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xiongemi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xiongemi">@xiongemi</a></li>
 <li>James Henry <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JamesHenry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JamesHenry">@JamesHenry</a></li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125468: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125468</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125468</guid>
-            <pubDate>Sat, 04 May 2024 10:48:11 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from rust: Rust 1.78.0]]></title>
@@ -392,103 +600,6 @@
             <content:encoded><![CDATA[<p>Nightly release, generated on: 2024-05-04 05:24:49 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/a4c9cb6d2856521f6d878c229f156b347cfd880f/hovercard" href="https://github.com/kovidgoyal/kitty/commit/a4c9cb6d2856521f6d878c229f156b347cfd880f"><tt>a4c9cb6</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Sat, 04 May 2024 05:11:42 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.10.0-dev-3078+g3a8265266
-Build type: RelWithDebInfo
-LuaJIT 2.1.1713484068"><pre class="notranslate"><code>NVIM v0.10.0-dev-3078+g3a8265266
-Build type: RelWithDebInfo
-LuaJIT 2.1.1713484068
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS (x86_64)</h3>
-<ol>
-<li>Download <strong>nvim-macos-x86_64.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos-x86_64.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos-x86_64.tar.gz</code></li>
-<li>Run <code>./nvim-macos-x86_64/bin/nvim</code></li>
-</ol>
-<h3>macOS (arm64)</h3>
-<ol>
-<li>Download <strong>nvim-macos-arm64.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos-arm64.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos-arm64.tar.gz</code></li>
-<li>Run <code>./nvim-macos-arm64/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
-that work on older glibc versions can find them at<br>
-<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/blob/master/INSTALL.md#install-from-package">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="8e0b01489e4e96401cb7ee381568cce9d973809d846ed406bcbba486d81f4b4c  nvim-linux64.tar.gz
-526c4ca22406cc5f61380117abb2c7f2d24e475ba44c9ec109ecb99075fac032  nvim.appimage
-78c39788debe8257f4b38db6502eb868b5f4d655da7c47257483d540940541aa  nvim.appimage.zsync
-c4496a2befffd41e1eec355dae43e3c0a1d6651014a4f8e6f2c93ee879debf9d  nvim-macos-x86_64.tar.gz
-b8e1f7e83b60802ff93fa585d6a893bd71663bbb5b1a8d6e0e5b789279dda8ae  nvim-macos-arm64.tar.gz
-8a67fd9b83945c50322fb23eb2e3d05570b58483251d897b49a34cf0d7be3fa8  nvim-win64.zip
-58beba60472bc7e644a0534e275c908d1e270cec7b14a4d0691e1eb023a3d206  nvim-win64.msi"><pre class="notranslate"><code>8e0b01489e4e96401cb7ee381568cce9d973809d846ed406bcbba486d81f4b4c  nvim-linux64.tar.gz
-526c4ca22406cc5f61380117abb2c7f2d24e475ba44c9ec109ecb99075fac032  nvim.appimage
-78c39788debe8257f4b38db6502eb868b5f4d655da7c47257483d540940541aa  nvim.appimage.zsync
-c4496a2befffd41e1eec355dae43e3c0a1d6651014a4f8e6f2c93ee879debf9d  nvim-macos-x86_64.tar.gz
-b8e1f7e83b60802ff93fa585d6a893bd71663bbb5b1a8d6e0e5b789279dda8ae  nvim-macos-arm64.tar.gz
-8a67fd9b83945c50322fb23eb2e3d05570b58483251d897b49a34cf0d7be3fa8  nvim-win64.zip
-58beba60472bc7e644a0534e275c908d1e270cec7b14a4d0691e1eb023a3d206  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125406: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125406</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125406</guid>
-            <pubDate>Sat, 04 May 2024 05:11:12 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125527: ForeachFuncInfo docstring update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125527</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125527</guid>
-            <pubDate>Sat, 04 May 2024 02:50:13 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Signed-off-by: Masaki Kozuki <a href="mailto:mkozuki@nvidia.com">mkozuki@nvidia.com</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from kotlin: build-1.9.24-819]]></title>
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.24-819</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.24-819</guid>
@@ -627,9 +738,9 @@ For pre-releases, please refer to <a href="https://github.com/vuejs/core/blob/mi
 <h3>Highlights</h3>
 <p><strong>Improved DAG viewer.</strong> The built-in dependency graph viewer is now much more useful: view your cells in a top-down topological order. Click on an edge to see the variables that flow on it, or double click a cell to automatically bring it into focus.</p>
 <p>This viewer can help you understand which cells when run when a given cell runs.</p>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/327881497-33bfdd43-3620-44d4-91d4-c6a0aa487314.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4Njg5MjQsIm5iZiI6MTcxNDg2ODYyNCwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTQ5Ny0zM2JmZGQ0My0zNjIwLTQ0ZDQtOTFkNC1jNmEwYWE0ODczMTQucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDAyMzQ0WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDFiNjk1ZTZlYmIxMjA2YzFmMjM2YmY1ZTY3OTRlYzEyNWMyY2UxMzY5Yzk0ZWJjNTYzNjg1YzZhMDU0YzNkYSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.WrkPWV1LHwRk6pqDcVGUDHyBPlWalgN_vSbI86ea_ro"><img width="995" alt="image" src="https://private-user-images.githubusercontent.com/1994308/327881497-33bfdd43-3620-44d4-91d4-c6a0aa487314.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4Njg5MjQsIm5iZiI6MTcxNDg2ODYyNCwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTQ5Ny0zM2JmZGQ0My0zNjIwLTQ0ZDQtOTFkNC1jNmEwYWE0ODczMTQucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDAyMzQ0WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDFiNjk1ZTZlYmIxMjA2YzFmMjM2YmY1ZTY3OTRlYzEyNWMyY2UxMzY5Yzk0ZWJjNTYzNjg1YzZhMDU0YzNkYSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.WrkPWV1LHwRk6pqDcVGUDHyBPlWalgN_vSbI86ea_ro" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/327881497-33bfdd43-3620-44d4-91d4-c6a0aa487314.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4ODk0NzIsIm5iZiI6MTcxNDg4OTE3MiwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTQ5Ny0zM2JmZGQ0My0zNjIwLTQ0ZDQtOTFkNC1jNmEwYWE0ODczMTQucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDYwNjEyWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YTFmNjZlOTZmMmI3YTYyZDAwZjQ0MzFjZjBkZTM1ZWU4OGI1Y2QwMjhiOTBlMDNlYmM4NTVjN2E3YTM5YTNhYiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.MfyaaGtrnQXSOgSL9kVl-lNDed4mChCQb91yiE3ffLg"><img width="995" alt="image" src="https://private-user-images.githubusercontent.com/1994308/327881497-33bfdd43-3620-44d4-91d4-c6a0aa487314.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4ODk0NzIsIm5iZiI6MTcxNDg4OTE3MiwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTQ5Ny0zM2JmZGQ0My0zNjIwLTQ0ZDQtOTFkNC1jNmEwYWE0ODczMTQucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDYwNjEyWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YTFmNjZlOTZmMmI3YTYyZDAwZjQ0MzFjZjBkZTM1ZWU4OGI1Y2QwMjhiOTBlMDNlYmM4NTVjN2E3YTM5YTNhYiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.MfyaaGtrnQXSOgSL9kVl-lNDed4mChCQb91yiE3ffLg" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
 <p><strong>Hardware utilization meters.</strong> The editor footer shows total RAM and CPU usage on your machine.</p>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/327881702-198131f6-9638-4374-80ea-7352275e02fc.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4Njg5MjQsIm5iZiI6MTcxNDg2ODYyNCwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTcwMi0xOTgxMzFmNi05NjM4LTQzNzQtODBlYS03MzUyMjc1ZTAyZmMucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDAyMzQ0WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzllNGEwMWJkNWEzMTk0MzY2YTI1ZjEzZDU1NTY2NmJlMjkwYmE4ZTAwZWVlYjc3NzM5Mjk2ZWI3NGU2ZDUyNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.nlf_0UsVxmguqxBKTMOSILadK7MdR0epZ-5oWm1Q7MY"><img width="282" alt="image" src="https://private-user-images.githubusercontent.com/1994308/327881702-198131f6-9638-4374-80ea-7352275e02fc.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4Njg5MjQsIm5iZiI6MTcxNDg2ODYyNCwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTcwMi0xOTgxMzFmNi05NjM4LTQzNzQtODBlYS03MzUyMjc1ZTAyZmMucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDAyMzQ0WiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9MzllNGEwMWJkNWEzMTk0MzY2YTI1ZjEzZDU1NTY2NmJlMjkwYmE4ZTAwZWVlYjc3NzM5Mjk2ZWI3NGU2ZDUyNiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.nlf_0UsVxmguqxBKTMOSILadK7MdR0epZ-5oWm1Q7MY" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/327881702-198131f6-9638-4374-80ea-7352275e02fc.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4ODk0NzIsIm5iZiI6MTcxNDg4OTE3MiwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTcwMi0xOTgxMzFmNi05NjM4LTQzNzQtODBlYS03MzUyMjc1ZTAyZmMucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDYwNjEyWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDQwZWFmN2ZmZmMwNWQzMmJjYTM2YjM1NTRiYTc2YTJiNzNjZWQzNTlkNzIxZDAzNTg0YWIwYjkyMTA1YWM1OSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.8Nzs9WIZgq_0AcGpBL8HoQm9P7d69_KYDxH9f5XtcdQ"><img width="282" alt="image" src="https://private-user-images.githubusercontent.com/1994308/327881702-198131f6-9638-4374-80ea-7352275e02fc.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MTQ4ODk0NzIsIm5iZiI6MTcxNDg4OTE3MiwicGF0aCI6Ii8xOTk0MzA4LzMyNzg4MTcwMi0xOTgxMzFmNi05NjM4LTQzNzQtODBlYS03MzUyMjc1ZTAyZmMucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDUwNSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA1MDVUMDYwNjEyWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDQwZWFmN2ZmZmMwNWQzMmJjYTM2YjM1NTRiYTc2YTJiNzNjZWQzNTlkNzIxZDAzNTg0YWIwYjkyMTA1YWM1OSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.8Nzs9WIZgq_0AcGpBL8HoQm9P7d69_KYDxH9f5XtcdQ" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
 <p><strong>Use <code>mo.status.progress_bar</code> as a context manager</strong>:</p>
 <div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="with mo.status.progress_bar(total=10) as bar:
     for i in range(10):
@@ -660,17 +771,6 @@ For pre-releases, please refer to <a href="https://github.com/vuejs/core/blob/mi
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/marimo-team/marimo/compare/0.4.10...0.4.11"><tt>0.4.10...0.4.11</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.6.155]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.6.155</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.6.155</guid>
-            <pubDate>Fri, 03 May 2024 20:59:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ib118b31e6f636dd34e04faf1aa641bf4e62f358a<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5512773" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5512773</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.6.155@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2cdf87faa621e76711cdb4af86517d1930085201/hovercard" href="https://github.com/v8/v8/commit/2cdf87faa621e76711cdb4af86517d1930085201"><tt>2cdf87f</tt></a>-refs/heads/main@{#93711}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: 12.6.155-pgo: Version 12.6.155]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.6.155-pgo</link>
             <guid>https://github.com/v8/v8/releases/tag/12.6.155-pgo</guid>
@@ -682,9 +782,20 @@ Cr-Commit-Position: refs/heads/12.6.155@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2cdf87faa621e76711cdb4af86517d1930085201/hovercard" href="https://github.com/v8/v8/commit/2cdf87faa621e76711cdb4af86517d1930085201"><tt>2cdf87f</tt></a>-refs/heads/main@{#93711}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from zed: nightly: Setup docs deployments with mdBook (#11369)]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
+            <title><![CDATA[Release notes from v8: Version 12.6.155]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.6.155</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.6.155</guid>
+            <pubDate>Fri, 03 May 2024 20:59:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ib118b31e6f636dd34e04faf1aa641bf4e62f358a<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5512773" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5512773</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.6.155@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2cdf87faa621e76711cdb4af86517d1930085201/hovercard" href="https://github.com/v8/v8/commit/2cdf87faa621e76711cdb4af86517d1930085201"><tt>2cdf87f</tt></a>-refs/heads/main@{#93711}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from zed: collab-production: Setup docs deployments with mdBook (#11369)]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/collab-production</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/collab-production</guid>
             <pubDate>Fri, 03 May 2024 19:52:15 GMT</pubDate>
             <content:encoded><![CDATA[<p>This PR sets up deployments for the docs using mdBook.</p>
 <p>Right now the new docs are hosted at<br>
@@ -702,9 +813,9 @@ docs deployment.</p>
 <p>Co-authored-by: Conrad Irwin <a href="mailto:conrad.irwin@gmail.com">conrad.irwin@gmail.com</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from zed: collab-production: Setup docs deployments with mdBook (#11369)]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/collab-production</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/collab-production</guid>
+            <title><![CDATA[Release notes from zed: nightly: Setup docs deployments with mdBook (#11369)]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
             <pubDate>Fri, 03 May 2024 19:52:15 GMT</pubDate>
             <content:encoded><![CDATA[<p>This PR sets up deployments for the docs using mdBook.</p>
 <p>Right now the new docs are hosted at<br>
@@ -1077,13 +1188,6 @@ Co-authored-by: Max Brunsfeld <a href="mailto:maxbrunsfeld@gmail.com">maxbrunsfe
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-2933]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-2933</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-2933</guid>
-            <pubDate>Fri, 03 May 2024 11:50:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.123]]></title>
             <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.123</link>
             <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.123</guid>
@@ -1108,13 +1212,6 @@ Release notes: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/
             <pubDate>Fri, 03 May 2024 10:30:10 GMT</pubDate>
             <content:encoded><![CDATA[<p>Downloads: <a href="https://elastic.co/downloads/elasticsearch" rel="nofollow">https://elastic.co/downloads/elasticsearch</a><br>
 Release notes: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/7.17/release-notes-7.17.21.html" rel="nofollow">https://www.elastic.co/guide/en/elasticsearch/reference/7.17/release-notes-7.17.21.html</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-2923]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-2923</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-2923</guid>
-            <pubDate>Fri, 03 May 2024 09:35:40 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from monaco-editor: v0.49.0-dev-20240503]]></title>
@@ -1158,17 +1255,6 @@ Cr-Commit-Position: refs/heads/12.6.154@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/bd0343c5bc19b85ddc4337335c0af11fd6f60992/hovercard" href="https://github.com/v8/v8/commit/bd0343c5bc19b85ddc4337335c0af11fd6f60992"><tt>bd0343c</tt></a>-refs/heads/main@{#93693}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.6.153]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.6.153</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.6.153</guid>
-            <pubDate>Fri, 03 May 2024 04:05:15 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I98d492028776953e70a82165719f76870ef19198<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5514005" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5514005</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.6.153@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8fcd2fb68c101e2743f37be1433b3e8864a33458/hovercard" href="https://github.com/v8/v8/commit/8fcd2fb68c101e2743f37be1433b3e8864a33458"><tt>8fcd2fb</tt></a>-refs/heads/main@{#93692}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: 12.6.153-pgo: Version 12.6.153]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.6.153-pgo</link>
             <guid>https://github.com/v8/v8/releases/tag/12.6.153-pgo</guid>
@@ -1180,9 +1266,20 @@ Cr-Commit-Position: refs/heads/12.6.153@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8fcd2fb68c101e2743f37be1433b3e8864a33458/hovercard" href="https://github.com/v8/v8/commit/8fcd2fb68c101e2743f37be1433b3e8864a33458"><tt>8fcd2fb</tt></a>-refs/heads/main@{#93692}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.6.152-pgo: Version 12.6.152]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.6.152-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.6.152-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.6.153]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.6.153</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.6.153</guid>
+            <pubDate>Fri, 03 May 2024 04:05:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I98d492028776953e70a82165719f76870ef19198<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5514005" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5514005</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.6.153@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8fcd2fb68c101e2743f37be1433b3e8864a33458/hovercard" href="https://github.com/v8/v8/commit/8fcd2fb68c101e2743f37be1433b3e8864a33458"><tt>8fcd2fb</tt></a>-refs/heads/main@{#93692}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.6.152]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.6.152</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.6.152</guid>
             <pubDate>Fri, 03 May 2024 03:41:20 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I18f890fae795a740818ccdb726f5991d46b7675f<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5512226" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5512226</a><br>
@@ -1191,9 +1288,9 @@ Cr-Commit-Position: refs/heads/12.6.152@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/0b15df12ac8e09a9cb205771a1d71354400b5e33/hovercard" href="https://github.com/v8/v8/commit/0b15df12ac8e09a9cb205771a1d71354400b5e33"><tt>0b15df1</tt></a>-refs/heads/main@{#93691}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.6.152]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.6.152</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.6.152</guid>
+            <title><![CDATA[Release notes from v8: 12.6.152-pgo: Version 12.6.152]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.6.152-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.6.152-pgo</guid>
             <pubDate>Fri, 03 May 2024 03:41:20 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I18f890fae795a740818ccdb726f5991d46b7675f<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5512226" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5512226</a><br>
@@ -1809,16 +1906,16 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <content:encoded><![CDATA[<p>0.79.0 release</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from mysql-server: mysql-cluster-8.0.37]]></title>
-            <link>https://github.com/mysql/mysql-server/releases/tag/mysql-cluster-8.0.37</link>
-            <guid>https://github.com/mysql/mysql-server/releases/tag/mysql-cluster-8.0.37</guid>
+            <title><![CDATA[Release notes from mysql-server: mysql-8.0.37]]></title>
+            <link>https://github.com/mysql/mysql-server/releases/tag/mysql-8.0.37</link>
+            <guid>https://github.com/mysql/mysql-server/releases/tag/mysql-8.0.37</guid>
             <pubDate>Thu, 02 May 2024 12:03:28 GMT</pubDate>
             <content:encoded><![CDATA[<p>Null-merge missing history from 8.0.36</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from mysql-server: mysql-8.0.37]]></title>
-            <link>https://github.com/mysql/mysql-server/releases/tag/mysql-8.0.37</link>
-            <guid>https://github.com/mysql/mysql-server/releases/tag/mysql-8.0.37</guid>
+            <title><![CDATA[Release notes from mysql-server: mysql-cluster-8.0.37]]></title>
+            <link>https://github.com/mysql/mysql-server/releases/tag/mysql-cluster-8.0.37</link>
+            <guid>https://github.com/mysql/mysql-server/releases/tag/mysql-cluster-8.0.37</guid>
             <pubDate>Thu, 02 May 2024 12:03:28 GMT</pubDate>
             <content:encoded><![CDATA[<p>Null-merge missing history from 8.0.36</p>]]></content:encoded>
         </item>
@@ -1879,95 +1976,6 @@ The release fixes the following issue:</p>
 <li>Fixed: <code>shorthand-property-no-redundant-values</code> false negatives for functions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2265965491" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7657" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7657/hovercard" href="https://github.com/stylelint/stylelint/pull/7657">#7657</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ybiquitous/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ybiquitous">@ybiquitous</a>).</li>
 <li>Fixed: <code>value-no-vendor-prefix</code> false negatives/positives (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2264464676" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7654" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7654/hovercard" href="https://github.com/stylelint/stylelint/pull/7654">#7654</a> &amp; <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2266645141" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7658" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7658/hovercard" href="https://github.com/stylelint/stylelint/pull/7658">#7658</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Mouvedia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Mouvedia">@Mouvedia</a>).</li>
 <li>Fixed: <code>CosmiconfigResult</code> type error (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2267220443" data-permission-text="Title is private" data-url="https://github.com/stylelint/stylelint/issues/7661" data-hovercard-type="pull_request" data-hovercard-url="/stylelint/stylelint/pull/7661/hovercard" href="https://github.com/stylelint/stylelint/pull/7661">#7661</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ybiquitous/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ybiquitous">@ybiquitous</a>).</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: v0.134.1-pre]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/v0.134.1-pre</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/v0.134.1-pre</guid>
-            <pubDate>Thu, 02 May 2024 03:26:07 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>Fixed a UI beachball when gathering process information (<a href="https://github.com/zed-industries/zed/pull/11285" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/11285/hovercard">#11285</a>)</li>
-<li>Fixed slowness with hundreds of buffers open doing git blame. (<a href="https://github.com/zed-industries/zed/pull/11277" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/11277/hovercard">#11277</a>)</li>
-<li>Reduced main thread hangs under very high system load (<a href="https://github.com/zed-industries/zed/pull/11278" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/11278/hovercard">#11278</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from flutter: 3.22.0-21.0.pre: Reverts "Implement computeDryBaseline for `RenderWrap` (#146260)" (#1…]]></title>
-            <link>https://github.com/flutter/flutter/releases/tag/3.22.0-21.0.pre</link>
-            <guid>https://github.com/flutter/flutter/releases/tag/3.22.0-21.0.pre</guid>
-            <pubDate>Thu, 02 May 2024 02:26:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…47692)</p>
-<p>Reverts: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2224679269" data-permission-text="Title is private" data-url="https://github.com/flutter/flutter/issues/146260" data-hovercard-type="pull_request" data-hovercard-url="/flutter/flutter/pull/146260/hovercard" href="https://github.com/flutter/flutter/pull/146260">#146260</a><br>
-Initiated by: chingjun<br>
-Reason for reverting: Broke internal tests. See b/338308016<br>
-Original PR Author: LongCatIsLooong</p>
-<p>Reviewed By: {goderbauer}</p>
-<p>This change reverts the following previous change:</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from nx: 19.0.0-beta.9]]></title>
-            <link>https://github.com/nrwl/nx/releases/tag/19.0.0-beta.9</link>
-            <guid>https://github.com/nrwl/nx/releases/tag/19.0.0-beta.9</guid>
-            <pubDate>Thu, 02 May 2024 01:57:39 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>19.0.0-beta.9 (2024-05-02)</h2>
-<h3>🚀 Features</h3>
-<ul>
-<li><strong>core:</strong> validate that outputs is an array of strings (<a href="https://github.com/nrwl/nx/pull/22371" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/22371/hovercard">#22371</a>)</li>
-<li><strong>core:</strong> cleanup for v19 (<a href="https://github.com/nrwl/nx/pull/22993" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/22993/hovercard">#22993</a>)</li>
-<li><strong>graph:</strong> show partial project graph &amp; errors in graph app (<a href="https://github.com/nrwl/nx/pull/22838" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/22838/hovercard">#22838</a>)</li>
-<li><strong>graph:</strong> enable watch mode by default (<a href="https://github.com/nrwl/nx/pull/23092" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23092/hovercard">#23092</a>)</li>
-<li><strong>graph:</strong> show tooltips that were previously hidden due to upublished docs (<a href="https://github.com/nrwl/nx/pull/23099" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23099/hovercard">#23099</a>)</li>
-<li><strong>nx-dev:</strong> add ui-enterprise library (<a href="https://github.com/nrwl/nx/pull/23086" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23086/hovercard">#23086</a>)</li>
-<li><strong>testing:</strong> add convert-to-inferred migration generator for cypress (<a href="https://github.com/nrwl/nx/pull/22884" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/22884/hovercard">#22884</a>)</li>
-</ul>
-<h3>🩹 Fixes</h3>
-<ul>
-<li><strong>core:</strong> do not forward --updatePackageScripts flag to init generators that are not from nx core plugins (<a href="https://github.com/nrwl/nx/pull/23064" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23064/hovercard">#23064</a>)</li>
-<li><strong>core:</strong> local plugins should be able to use {projectRoot} in options block (<a href="https://github.com/nrwl/nx/pull/23068" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23068/hovercard">#23068</a>)</li>
-<li><strong>core:</strong> add import for <code>performance</code> to increase compatibility (<a href="https://github.com/nrwl/nx/pull/23109" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23109/hovercard">#23109</a>)</li>
-<li><strong>core:</strong> align padding for output with failed tasks (<a href="https://github.com/nrwl/nx/pull/23119" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23119/hovercard">#23119</a>)</li>
-<li><strong>gradle:</strong> fix gradlew exec path for root project (<a href="https://github.com/nrwl/nx/pull/23094" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23094/hovercard">#23094</a>)</li>
-<li><strong>graph:</strong> use class sticky for sticky header (<a href="https://github.com/nrwl/nx/pull/23082" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23082/hovercard">#23082</a>)</li>
-<li><strong>js:</strong> copy assets handler should handle ignore globs on windows (<a href="https://github.com/nrwl/nx/pull/23065" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23065/hovercard">#23065</a>)</li>
-<li><strong>nx-dev:</strong> header styles fix (<a href="https://github.com/nrwl/nx/pull/23122" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23122/hovercard">#23122</a>)</li>
-<li><strong>repo:</strong> set version of pnpm for docker publishes (<a href="https://github.com/nrwl/nx/pull/23129" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23129/hovercard">#23129</a>)</li>
-</ul>
-<h3>❤️  Thank You</h3>
-<ul>
-<li>Benjamin Cabanes <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bcabanes/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bcabanes">@bcabanes</a></li>
-<li>Chabbey François</li>
-<li>Colum Ferry <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Coly010/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Coly010">@Coly010</a></li>
-<li>Craigory Coppola <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/AgentEnder/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/AgentEnder">@AgentEnder</a></li>
-<li>Denis Bendrikov</li>
-<li>Emily Xiong <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xiongemi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xiongemi">@xiongemi</a></li>
-<li>Isaac Mann <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/isaacplmann/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/isaacplmann">@isaacplmann</a></li>
-<li>Jack Hsu <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jaysoo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jaysoo">@jaysoo</a></li>
-<li>Jason Jean <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/FrozenPandaz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/FrozenPandaz">@FrozenPandaz</a></li>
-<li>Leosvel Pérez Espinosa <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/leosvelperez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/leosvelperez">@leosvelperez</a></li>
-<li>MaxKless <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MaxKless/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MaxKless">@MaxKless</a></li>
-<li>Michal Jez <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/MJez29/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/MJez29">@MJez29</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v30.0.2]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v30.0.2</link>
-            <guid>https://github.com/electron/electron/releases/tag/v30.0.2</guid>
-            <pubDate>Thu, 02 May 2024 01:18:57 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Release Notes for v30.0.2</h1>
-<h2>Fixes</h2>
-<ul>
-<li>Electron doesn't paint on offscreen-render mode after gpu process crashed. <a href="https://github.com/electron/electron/pull/41925" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41925/hovercard">#41925</a> <span>(Also in <a href="https://github.com/electron/electron/pull/41923" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41923/hovercard">29</a>, <a href="https://github.com/electron/electron/pull/41924" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41924/hovercard">31</a>)</span></li>
-<li>Fixed data corruption when protocol.handle() processed incoming data asynchronously. <a href="https://github.com/electron/electron/pull/41933" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41933/hovercard">#41933</a> <span>(Also in <a href="https://github.com/electron/electron/pull/41932" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41932/hovercard">31</a>)</span></li>
-<li>Fixed nativeImage.createThumbnailFromPath and shell.openExternal not resolving when called in the renderer process. <a href="https://github.com/electron/electron/pull/41909" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41909/hovercard">#41909</a> <span>(Also in <a href="https://github.com/electron/electron/pull/41908" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41908/hovercard">31</a>)</span></li>
-</ul>
-<h2>Other Changes</h2>
-<ul>
-<li>Updated Chromium to 124.0.6367.91. <a href="https://github.com/electron/electron/pull/41976" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41976/hovercard">#41976</a></li>
-</ul>
-<h2>Documentation</h2>
-<ul>
-<li>Documentation changes: <a href="https://github.com/electron/electron/pull/41883" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/41883/hovercard">#41883</a></li>
 </ul>]]></content:encoded>
         </item>
     </channel>
