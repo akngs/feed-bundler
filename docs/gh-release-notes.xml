@@ -4,10 +4,150 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 18 May 2024 12:08:36 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 18 May 2024 18:07:15 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/124014]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124014</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124014</guid>
+            <pubDate>Sat, 18 May 2024 17:29:30 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[BE]: Update NCCL submodule to 2.21.5</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126622: Update on "[inductor] Fix edge case in JIT vs. AOT fusion after final…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126622</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126622</guid>
+            <pubDate>Sat, 18 May 2024 16:27:27 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…izing MultiTemplateBuffer"</p>
+<h1>Context</h1>
+<p>Here's a peripheral scenario causing the JIT-pass and AOT-pass to pick different fusions.</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="# JIT -- buf3 is a MultiTemplateBuffer
+V.graph.buffers = [buf0, buf1, buf2, buf3, buf4]
+                                ^          ^
+# JIT pass calls finalize_multi_template_buffers()
+V.graph.buffers = [buf0, buf1, buf2, buf4, *buf3*]
+
+# AOT, note proximity_score(buf2, buf4) is &quot;better&quot; for fusion than JIT
+V.graph.buffers = [buf0, buf1, buf2, buf4, *buf3*]
+                                ^    ^"><pre><span class="pl-c"># JIT -- buf3 is a MultiTemplateBuffer</span>
+<span class="pl-v">V</span>.<span class="pl-s1">graph</span>.<span class="pl-s1">buffers</span> <span class="pl-c1">=</span> [<span class="pl-s1">buf0</span>, <span class="pl-s1">buf1</span>, <span class="pl-s1">buf2</span>, <span class="pl-s1">buf3</span>, <span class="pl-s1">buf4</span>]
+                                <span class="pl-c1">^</span>          <span class="pl-c1">^</span>
+<span class="pl-c"># JIT pass calls finalize_multi_template_buffers()</span>
+<span class="pl-v">V</span>.<span class="pl-s1">graph</span>.<span class="pl-s1">buffers</span> <span class="pl-c1">=</span> [<span class="pl-s1">buf0</span>, <span class="pl-s1">buf1</span>, <span class="pl-s1">buf2</span>, <span class="pl-s1">buf4</span>, <span class="pl-c1">*</span><span class="pl-s1">buf3</span><span class="pl-c1">*</span>]
+
+<span class="pl-c"># AOT, note proximity_score(buf2, buf4) is "better" for fusion than JIT</span>
+<span class="pl-v">V</span>.<span class="pl-s1">graph</span>.<span class="pl-s1">buffers</span> <span class="pl-c1">=</span> [<span class="pl-s1">buf0</span>, <span class="pl-s1">buf1</span>, <span class="pl-s1">buf2</span>, <span class="pl-s1">buf4</span>, <span class="pl-c1">*</span><span class="pl-s1">buf3</span><span class="pl-c1">*</span><span class="pl-s1"></span>]
+                                <span class="pl-c1">^</span>    <span class="pl-c1">^</span></pre></div>
+<p>It happens like this:</p>
+<ul>
+<li>JIT starts with the original set nodes using V.graph.buffers</li>
+<li>In JIT, finalize_multi_template_buffers() is called which can change the order of the buffers.</li>
+<li>This makes the order of buffers/scheduler nodes different.</li>
+<li>Now, each node's min/max-order is different than before.</li>
+<li>As a result, the proximity between two nodes is different. <a href="https://github.com/pytorch/pytorch/blob/ad67553c5c1672d65b810acd7a6a01e11695098b/torch/_inductor/scheduler.py#L2316-L2335">https://github.com/pytorch/pytorch/blob/ad67553c5c1672d65b810acd7a6a01e11695098b/torch/_inductor/scheduler.py#L2316-L2335</a></li>
+</ul>
+<h1>Error</h1>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="$ TORCH_LOGS=&quot;+fusion&quot; python test/inductor/test_max_autotune.py -k test_jit_fusion_matches_aot_fusion
+======================================================================
+FAIL: test_jit_fusion_matches_aot_fusion (__main__.TestMaxAutotune)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  ...
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/graph.py&quot;, line 1718, in compile_to_fn
+    code, linemap = self.codegen_with_cpp_wrapper()
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/graph.py&quot;, line 1618, in codegen_with_cpp_wrapper
+    return self.codegen()
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/graph.py&quot;, line 1636, in codegen
+    self.scheduler.codegen()
+  File &quot;/data/users/colinpeppler/pytorch/torch/_dynamo/utils.py&quot;, line 210, in time_wrapper
+    r = func(*args, **kwargs)
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/scheduler.py&quot;, line 2602, in codegen
+    self.get_backend(device).codegen_node(node)  # type: ignore[possibly-undefined]
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cuda_combined_scheduling.py&quot;, line 66, in codegen_node
+    return self._triton_scheduling.codegen_node(node)
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py&quot;, line 3377, in codegen_node
+    return self.codegen_node_schedule(node_schedule, buf_accesses, numel, rnumel)
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py&quot;, line 3602, in codegen_node_schedule
+    final_kernel.call_kernel(final_kernel.kernel_name)
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py&quot;, line 3055, in call_kernel
+    grid = wrapper.generate_default_grid(name, grid)
+  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cpp_wrapper_cuda.py&quot;, line 174, in generate_default_grid
+    params is not None
+AssertionError: cuda kernel parameters for triton_poi_fused_add_0 should already exist at this moment, only found dict_keys(['Placeholder.DESCRIPTIVE_NAME', 'triton_poi_fused_add_mul_0', 'triton_poi_fused_pow_1'])"><pre class="notranslate"><code>$ TORCH_LOGS="+fusion" python test/inductor/test_max_autotune.py -k test_jit_fusion_matches_aot_fusion
+======================================================================
+FAIL: test_jit_fusion_matches_aot_fusion (__main__.TestMaxAutotune)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  ...
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/graph.py", line 1718, in compile_to_fn
+    code, linemap = self.codegen_with_cpp_wrapper()
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/graph.py", line 1618, in codegen_with_cpp_wrapper
+    return self.codegen()
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/graph.py", line 1636, in codegen
+    self.scheduler.codegen()
+  File "/data/users/colinpeppler/pytorch/torch/_dynamo/utils.py", line 210, in time_wrapper
+    r = func(*args, **kwargs)
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/scheduler.py", line 2602, in codegen
+    self.get_backend(device).codegen_node(node)  # type: ignore[possibly-undefined]
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cuda_combined_scheduling.py", line 66, in codegen_node
+    return self._triton_scheduling.codegen_node(node)
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py", line 3377, in codegen_node
+    return self.codegen_node_schedule(node_schedule, buf_accesses, numel, rnumel)
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py", line 3602, in codegen_node_schedule
+    final_kernel.call_kernel(final_kernel.kernel_name)
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py", line 3055, in call_kernel
+    grid = wrapper.generate_default_grid(name, grid)
+  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cpp_wrapper_cuda.py", line 174, in generate_default_grid
+    params is not None
+AssertionError: cuda kernel parameters for triton_poi_fused_add_0 should already exist at this moment, only found dict_keys(['Placeholder.DESCRIPTIVE_NAME', 'triton_poi_fused_add_mul_0', 'triton_poi_fused_pow_1'])
+</code></pre></div>
+<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 amjames desertfire chauhang</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126623: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</guid>
+            <pubDate>Sat, 18 May 2024 16:04:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/126623: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126623</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126623</guid>
+            <pubDate>Sat, 18 May 2024 16:04:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125127]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125127</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125127</guid>
+            <pubDate>Sat, 18 May 2024 15:32:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Fixing linting issues</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from storybook: v8.2.0-alpha.2]]></title>
+            <link>https://github.com/storybookjs/storybook/releases/tag/v8.2.0-alpha.2</link>
+            <guid>https://github.com/storybookjs/storybook/releases/tag/v8.2.0-alpha.2</guid>
+            <pubDate>Sat, 18 May 2024 15:29:37 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>8.2.0-alpha.2</h2>
+<ul>
+<li>Angular: Cleanup types - <a href="https://github.com/storybookjs/storybook/pull/27189" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/27189/hovercard">#27189</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
+<li>Angular: Fix filtering of workspace config styles - <a href="https://github.com/storybookjs/storybook/pull/27108" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/27108/hovercard">#27108</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
+<li>Controls: Fix grouped Radio controls to have the same name - <a href="https://github.com/storybookjs/storybook/pull/23374" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/23374/hovercard">#23374</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/srapilly/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/srapilly">@srapilly</a>!</li>
+<li>Controls: Throttling makes Color control lagging - <a href="https://github.com/storybookjs/storybook/pull/22615" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/22615/hovercard">#22615</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gitstart/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gitstart">@gitstart</a>!</li>
+<li>Docs: Fix <code>Typeset</code> Doc block <code>fontSizes</code> type - <a href="https://github.com/storybookjs/storybook/pull/26475" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/26475/hovercard">#26475</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/noranda/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/noranda">@noranda</a>!</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4168]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4168</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4168</guid>
+            <pubDate>Sat, 18 May 2024 12:15:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/126469: [torchbench] Add torchao to PT2 Benchmark Runner (#126469)]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126469</link>
@@ -40,21 +180,6 @@ running benchmark: 100%
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4160</guid>
             <pubDate>Sat, 18 May 2024 11:24:30 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126615: Fix flexattention not realizing inputs before lowering]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126615</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126615</guid>
-            <pubDate>Sat, 18 May 2024 11:18:04 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126613: Update on "Cached required_fw_nodes creation"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126613</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126613</guid>
-            <pubDate>Sat, 18 May 2024 11:18:03 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx chenyang78 kadeng chauhang</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from solana: Mainnet v1.17.34]]></title>
@@ -95,9 +220,9 @@ running benchmark: 100%
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/solana-labs/solana/compare/v1.18.13...v1.18.14"><tt>v1.18.13...v1.18.14</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.81]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.81</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.81</guid>
+            <title><![CDATA[Release notes from v8: 12.7.81-pgo: Version 12.7.81]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.81-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.81-pgo</guid>
             <pubDate>Sat, 18 May 2024 05:46:45 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I1f280b635c17416ba1135d6016b9514a862846eb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546793" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546793</a><br>
@@ -106,9 +231,9 @@ Cr-Commit-Position: refs/heads/12.7.81@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46/hovercard" href="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46"><tt>0608700</tt></a>-refs/heads/main@{#93988}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.7.81-pgo: Version 12.7.81]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.81-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.81-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.7.81]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.81</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.81</guid>
             <pubDate>Sat, 18 May 2024 05:46:45 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I1f280b635c17416ba1135d6016b9514a862846eb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546793" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546793</a><br>
@@ -198,34 +323,6 @@ b1b62b0d4d8ad9adfc1ebe0d7480efd1baa70e1479ecc69383acae2c6c0bb8cb  nvim-macos-x86
 d8c2e1e85dbe079a4322cd32b50edb469a49ba5c0e9b0d72e41e2b7d84200a20  nvim-win64.zip
 e9d720fe004e53e16071815910ea935c4d9e035940c4659506a5de9f0d156172  nvim-win64.msi
 </code></pre></div>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126610: Update on "Bug fix"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126610</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126610</guid>
-            <pubDate>Sat, 18 May 2024 04:20:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 ColinPeppler amjames desertfire chauhang</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126609: Update on "typing scheduler.py [2/4]: Add NodeSchedulerNode"]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126609</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126609</guid>
-            <pubDate>Sat, 18 May 2024 04:20:17 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Split off to make reviewing easier.</p>
-<p><code>BaseSchedulerNode</code> really represents two types of nodes - ones where the <code>node</code> field is valid (most of them) and ones where the <code>node</code> field isn't (ones derived from <code>FusedSchedulerNode</code>).  In the <code>FusedSchedulerNode</code> case we also don't want to run <code>BaseSchedulerNode</code>'s <code>__init__</code>.  <code>FusedSchedulerNode</code> also overrides a bunch of methods to throw <code>NotImplementedError</code>.</p>
-<p>Add a new class, <code>NodeSchedulerNode</code> to represent nodes where <code>node</code> is valid and move the methods that <code>FusedSchedulerNode</code> doesn't care about onto it.</p>
-<p>No actual code changes - just moving methods around.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126608: Update on "typing scheduler.py [1/4]: Force lintrunner on ir.py & sch…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126608</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126608</guid>
-            <pubDate>Sat, 18 May 2024 04:20:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…eduler.py"</p>
-<p>Force lintrunner to run on ir.py and scheduler.py to have them auto-format.  Split off to make reviewing easier.</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from deno: v1.43.5]]></title>
@@ -338,9 +435,9 @@ Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Fail
             <content:encoded><![CDATA[<p>arangodb release 3.11.9</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.7.80-pgo: Version 12.7.80]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.80-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.80-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.7.80]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.80</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.80</guid>
             <pubDate>Fri, 17 May 2024 23:22:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: If289a190af30721100978cf649ce8dd4b2a42b54<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5547209" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5547209</a><br>
@@ -349,9 +446,9 @@ Cr-Commit-Position: refs/heads/12.7.80@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d2807fc306c668c70acf9b5ce20410882ede0046/hovercard" href="https://github.com/v8/v8/commit/d2807fc306c668c70acf9b5ce20410882ede0046"><tt>d2807fc</tt></a>-refs/heads/main@{#93985}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.80]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.80</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.80</guid>
+            <title><![CDATA[Release notes from v8: 12.7.80-pgo: Version 12.7.80]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.80-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.80-pgo</guid>
             <pubDate>Fri, 17 May 2024 23:22:36 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: If289a190af30721100978cf649ce8dd4b2a42b54<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5547209" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5547209</a><br>
@@ -556,9 +653,9 @@ to semantic-release, be sure to update them as well</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.78]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.78</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.78</guid>
+            <title><![CDATA[Release notes from v8: 12.7.78-pgo: Version 12.7.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.78-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.78-pgo</guid>
             <pubDate>Fri, 17 May 2024 20:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie70085e92f7d190b15bfda9811a0a9c37785841c<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546049" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546049</a><br>
@@ -567,9 +664,9 @@ Cr-Commit-Position: refs/heads/12.7.78@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/98f2024c364ea01c7fc0da3ae1ad9cb05cfe66b9/hovercard" href="https://github.com/v8/v8/commit/98f2024c364ea01c7fc0da3ae1ad9cb05cfe66b9"><tt>98f2024</tt></a>-refs/heads/main@{#93983}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.7.78-pgo: Version 12.7.78]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.78-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.78-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.7.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.78</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.78</guid>
             <pubDate>Fri, 17 May 2024 20:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie70085e92f7d190b15bfda9811a0a9c37785841c<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546049" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546049</a><br>
@@ -772,13 +869,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
             <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4097</link>
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4097</guid>
             <pubDate>Fri, 17 May 2024 15:22:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4094]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4094</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4094</guid>
-            <pubDate>Fri, 17 May 2024 15:08:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
@@ -1658,27 +1748,6 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p><a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Aafeld+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@afeld</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Agithub-actions+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3AJasonWeill+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@JasonWeill</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ajtpio+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Akrassowski+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@krassowski</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3ARRosio+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@RRosio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Atakluyver+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@takluyver</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree-extension@7.2.0: Publish 7.2.0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</guid>
@@ -1700,51 +1769,9 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -1784,6 +1811,48 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/ui-components@7.2.0: Publish 7.2.0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0</guid>
@@ -1805,9 +1874,9 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -1826,9 +1895,30 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -3151,426 +3241,6 @@ delimiters instead.</li>
             <guid>https://github.com/aws/aws-cli/releases/tag/2.15.51</guid>
             <pubDate>Wed, 15 May 2024 18:08:44 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tagging 2.15.51 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 1.32.106]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/1.32.106</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/1.32.106</guid>
-            <pubDate>Wed, 15 May 2024 18:04:38 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 1.32.106 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: v0.136.0-pre]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/v0.136.0-pre</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/v0.136.0-pre</guid>
-            <pubDate>Wed, 15 May 2024 17:43:11 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Enhancements</h2>
-<h3>General</h3>
-<ul>
-<li>Added support for hiding the tab bar (part of <a href="https://github.com/zed-industries/zed/issues/6424" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/6424/hovercard">#6424</a>, <a href="https://github.com/zed-industries/zed/issues/4963" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/4963/hovercard">#4963</a>). Turn off the tab bar by adding the following to your <code>settings.json</code>:</li>
-</ul>
-<div class="highlight highlight-source-json notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="&quot;tab_bar&quot;: {
-    &quot;show&quot;: false
-}"><pre><span class="pl-ent">"tab_bar"</span>: {
-    <span class="pl-ent">"show"</span>: <span class="pl-c1">false</span>
-}</pre></div>
-<ul>
-<li>Added support for opening subfolders of git repositories and treating them as part of a repository (show git status in project panel, show git diff in gutter, git blame works, ...) (<a href="https://github.com/zed-industries/zed/issues/4672" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/4672/hovercard">#4672</a>).
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/1185253/afc1cdc3-372c-404e-99ea-15708589251c">video</a></li>
-</ul>
-</li>
-<li>Added "Open permalink" option to right-click menu of git blame entries in gutter.
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/1185253/656c177c-79f0-4a40-8838-7e963d099479">video</a></li>
-</ul>
-</li>
-<li>Added a <code>pane: alternate file</code> command, to navigate back and forth between two buffers, and bound it to <code>ctrl-6</code> in Vim mode.
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/261929/2d10494e-5668-4988-b7b4-417c922d6c61">video</a></li>
-</ul>
-</li>
-<li>Added the <code>current_line_highlight</code> setting that defines how to highlight the current line in the editor (<a href="https://github.com/zed-industries/zed/issues/5222" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/5222/hovercard">#5222</a>).</li>
-<li>Added <code>--foreground</code> to the CLI to allow running Zed on the current PTY.</li>
-<li>Improved the behavioral consistency of <code>editor: go to diagnostic</code> and <code>editor: go to prev diagnostic</code>.</li>
-<li>Improved responsiveness of the main thread under high system load.</li>
-<li>Changed UI elements within the editor to scale based on <code>buffer_font_size</code> (e.g., code action indicators, task run indicators, etc.).</li>
-</ul>
-<h3>AI</h3>
-<ul>
-<li>Added support for interacting with Claude in the assistant panel (<a href="https://github.com/zed-industries/zed/issues/8914" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/8914/hovercard">#8914</a>). You can enable it by adding the following to your <code>settings.json</code>:</li>
-</ul>
-<div class="highlight highlight-source-json notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="&quot;assistant&quot;: {
-    &quot;version&quot;: &quot;1&quot;,
-    &quot;provider&quot;: {
-        &quot;name&quot;: &quot;anthropic&quot;
-    }
-}"><pre><span class="pl-ent">"assistant"</span>: {
-    <span class="pl-ent">"version"</span>: <span class="pl-s"><span class="pl-pds">"</span>1<span class="pl-pds">"</span></span>,
-    <span class="pl-ent">"provider"</span>: {
-        <span class="pl-ent">"name"</span>: <span class="pl-s"><span class="pl-pds">"</span>anthropic<span class="pl-pds">"</span></span>
-    }
-}</pre></div>
-<ul>
-<li>Added a new ambient context feature that allows showing the model up to three buffers (along with their diagnostics) that the user interacted with recently.</li>
-<li>Added the ability to use the inline assistant within the assistant panel.</li>
-<li>Added <a href="https://openai.com/index/hello-gpt-4o/" rel="nofollow"><code>GPT-4o</code></a> support to the assistant and made it the default.</li>
-<li>Added a <code>low_speed_timeout_in_seconds</code> setting to the Assistant's OpenAI provider (<a href="https://github.com/zed-industries/zed/issues/9913" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/9913/hovercard">#9913</a>).</li>
-</ul>
-<h3>Tasks</h3>
-<ul>
-<li>Improved tasks modal by highlighting a distinction between a task template and concrete task instance and surfacing available keybindings more prominently. Task templates are now always available in the modal, even if there's already a history entry with the same label.</li>
-</ul>
-<h3>Vim</h3>
-<ul>
-<li>Added support for the changelist. <code>g;</code> and <code>g,</code> to go to the previous/next change.</li>
-<li>Added support for the <code>'.</code> mark.</li>
-<li>Added support for <code>gi</code> to resume the previous insert.</li>
-<li>Added support for buffer-local marks (<code>'a-'z</code>) and some builtin marks <code>'&lt;</code>,<code>'&gt;</code>,<code>'[</code>,<code>']</code>, <code>'{</code>, <code>'}</code> and <code>^</code>. Global marks (<code>'A-'Z</code>), and other builtin marks (<code>'0-'9</code>, <code>'(</code>, <code>')</code>, <code>''</code>, <code>'.</code>, <code>'"</code>) are not yet implemented (<a href="https://github.com/zed-industries/zed/issues/5122" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/5122/hovercard">#5122</a>).</li>
-<li>Added support for pasting with a count (<a href="https://github.com/zed-industries/zed/issues/10842" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/10842/hovercard">#10842</a>).</li>
-</ul>
-<h3>Languages</h3>
-<ul>
-<li>Added ability to configure settings for <code>tailwindcss-language-server</code>, namely the <code>includeLanguages</code> and <code>experimental</code> objects.</li>
-</ul>
-<h2>Bug Fixes</h2>
-<ul>
-<li>Fixed icon in inline git blame entry not changing with the buffer font size (<a href="https://github.com/zed-industries/zed/issues/11311" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/11311/hovercard">#11311</a>).
-<ul>
-<li>See the <a href="https://github.com/zed-industries/zed/assets/1185253/4a288cae-a52b-4bee-8681-f1d9ba3b57f3">before</a> and <a href="https://github.com/zed-industries/zed/assets/1185253/f7a6a608-8ecc-4642-adbd-80858dea75e9">after</a>.</li>
-</ul>
-</li>
-<li>Fixed rendering issues that could arise when having large amounts of text displayed on a large display. Fixed by dynamically increasing the size of the buffers used on the GPU (<a href="https://github.com/zed-industries/zed/issues/11615" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/11615/hovercard">#11615</a>).
-<ul>
-<li>See the <a href="https://github.com/zed-industries/zed/assets/1185253/464463be-b61c-4149-a417-01701699decb">before</a> and <a href="https://github.com/zed-industries/zed/assets/1185253/4feacf5a-d862-4a6b-90b8-317ac74e9851">after</a>.</li>
-</ul>
-</li>
-<li>Fixed the size of the completions menu changing based on the size of the aside (<a href="https://github.com/zed-industries/zed/issues/11722" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/11722/hovercard">#11722</a>).
-<ul>
-<li>See the <a href="https://github.com/zed-industries/zed/assets/30776250/c67e6fef-20f2-4dc5-92b3-09bb73f874a7">before</a> and <a href="https://github.com/zed-industries/zed/assets/30776250/7467b8ee-6e66-42d7-a8cc-2df11df58c5e">after</a>.</li>
-</ul>
-</li>
-<li>Fixed a bug where all run buttons would show up as pressed when clicking on a single run button.</li>
-<li>Fixed a bug where Vim bindings were not available when mouse context menu was open.</li>
-<li>Fixed the <code>go to definition</code> before by not selecting the target range when the target range has more than one line (<a href="https://github.com/zed-industries/zed/issues/11347" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/11347/hovercard">#11347</a>).</li>
-<li>Fixed <code>ctrl-space</code> not being forwarded correctly in the terminal view (<a href="https://github.com/zed-industries/zed/issues/10502" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/10502/hovercard">#10502</a>).</li>
-<li>Fixed a bug where SHELL was outdated if Zed was launched via Finder or Raycast or other desktop launchers (<a href="https://github.com/zed-industries/zed/issues/8794" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/8794/hovercard">#8794</a>).</li>
-<li>Fixed a panic caused by missing bounds check in completion handler.</li>
-<li>Fixed a bug where autosave <code>after_delay</code> would auto-format the buffer (<a href="https://github.com/zed-industries/zed/issues/9787" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/9787/hovercard">#9787</a>).</li>
-<li>Fixed a bug where the last character of a line could be hidden under the scrollbar (<a href="https://github.com/zed-industries/zed/issues/7098" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7098/hovercard">#7098</a>).</li>
-<li>Fixed completions inside snippets breaking the jump-to-next-tabstop behaviour when using Go/<code>gopls</code> (<a href="https://github.com/zed-industries/zed/issues/10185" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/10185/hovercard">#10185</a>).
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/1185253/35384e5e-45c6-46ab-870d-b48e56d8786b">video</a></li>
-</ul>
-</li>
-<li>Fixed scrollbar markers for folded code.</li>
-<li>Fixed a bug where the code actions button and the test run button could not be triggered when the editor was not focused.
-<ul>
-<li>See the <a href="https://github.com/zed-industries/zed/assets/5518/546450fc-ad2c-45d0-8bdb-7b15cfebe235">before</a> and <a href="https://github.com/zed-industries/zed/assets/5518/efc4f863-9db1-4846-83ae-c99ae4dcb3ed">after</a>.</li>
-</ul>
-</li>
-<li>Vim: Fixed a bug where highlights would appear which were only cancellable by opening then closing the toolbar. Buffer search toolbar now opens on <code>n</code> and <code>gn</code> so that the highlights can be cleared.</li>
-<li>Vim: Fixed a bug where <code>e</code>/<code>E</code> was blocked by hint text (<a href="https://github.com/zed-industries/zed/issues/7046" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7046/hovercard">#7046</a>).</li>
-</ul>
-<h2>Breaking Changes</h2>
-<ul>
-<li>Removed built-in support for Ruby, in favor of making it available as an extension.</li>
-<li>Changed the default key binding for <code>picker::UseSelectedQuery</code> to <code>alt-e</code>.</li>
-<li>Changed the default <code>format_on_save</code> behavior for Markdown files to be <code>off</code>.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.134]]></title>
-            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.134</link>
-            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.134</guid>
-            <pubDate>Wed, 15 May 2024 16:59:50 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>chore: improve SSR invalid element error message (<a href="https://github.com/sveltejs/svelte/pull/11585" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11585/hovercard">#11585</a>)</p>
-</li>
-<li>
-<p>fix: deduplicate children prop and default slot (<a href="https://github.com/sveltejs/svelte/pull/10800" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/10800/hovercard">#10800</a>)</p>
-</li>
-<li>
-<p>feat: error on imports to <code>svelte/internal/*</code> (<a href="https://github.com/sveltejs/svelte/pull/11632" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11632/hovercard">#11632</a>)</p>
-</li>
-<li>
-<p>fix: better handle img loading attribute (<a href="https://github.com/sveltejs/svelte/pull/11635" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11635/hovercard">#11635</a>)</p>
-</li>
-<li>
-<p>feat: add $state.is rune (<a href="https://github.com/sveltejs/svelte/pull/11613" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11613/hovercard">#11613</a>)</p>
-</li>
-<li>
-<p>feat: provide $state warnings for accidental equality (<a href="https://github.com/sveltejs/svelte/pull/11610" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11610/hovercard">#11610</a>)</p>
-</li>
-<li>
-<p>feat: error when snippet shadow a prop (<a href="https://github.com/sveltejs/svelte/pull/11631" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11631/hovercard">#11631</a>)</p>
-</li>
-<li>
-<p>chore: use <code>new CustomEvent</code> instead of deprecated <code>initCustomEvent</code> (<a href="https://github.com/sveltejs/svelte/pull/11629" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11629/hovercard">#11629</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from solana: Testnet v1.18.12]]></title>
-            <link>https://github.com/solana-labs/solana/releases/tag/v1.18.12</link>
-            <guid>https://github.com/solana-labs/solana/releases/tag/v1.18.12</guid>
-            <pubDate>Wed, 15 May 2024 16:59:25 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This is a Testnet release. It is not recommended for Mainnet Beta.</p>
-<h2>What's Changed</h2>
-<ul>
-<li>v1.18: Disable cache warmer if RPC is not using it</li>
-<li>v1.18: Change DEFAULT_TPU_CONNECTION_POOL_SIZE to 1</li>
-<li>v1.18: Limit max concurrent connections</li>
-<li>v1.18: blockstore: send duplicate proofs for chained merkle root conflicts</li>
-<li>v1.18: quic: delay calling set_max_concurrent_uni_streams/set_receive_window</li>
-<li>v1.18: cli: Use --use-rpc flag correctly during program deployments</li>
-<li>v1.18: sleep instead of drop when stream rate exceeded limit;</li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/solana-labs/solana/compare/v1.18.11...v1.18.12"><tt>v1.18.11...v1.18.12</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from solana: Mainnet v1.17.33]]></title>
-            <link>https://github.com/solana-labs/solana/releases/tag/v1.17.33</link>
-            <guid>https://github.com/solana-labs/solana/releases/tag/v1.17.33</guid>
-            <pubDate>Wed, 15 May 2024 16:59:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This is a stable release suitable for use on Mainnet Beta.</p>
-<hr>
-<ul>
-<li>Backport connection stream counter to v1.17</li>
-<li>v1.17: corrected to not use hardcoded connections count for unstaked</li>
-<li>v1.17: Change DEFAULT_TPU_CONNECTION_POOL_SIZE to 1</li>
-<li>v1.17: quic: delay calling set_max_concurrent_uni_streams/set_receive_window</li>
-<li>v1.17: Disable cache warmer if RPC is not using it</li>
-<li>v1.17: Parameterize max streams per ms</li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/solana-labs/solana/compare/v1.17.32...v1.17.33"><tt>v1.17.32...v1.17.33</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from solana: Testnet v1.18.13]]></title>
-            <link>https://github.com/solana-labs/solana/releases/tag/v1.18.13</link>
-            <guid>https://github.com/solana-labs/solana/releases/tag/v1.18.13</guid>
-            <pubDate>Wed, 15 May 2024 16:58:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This is a Testnet release. It is not recommended for Mainnet Beta.</p>
-<hr>
-<ul>
-<li>v1.18: client: Resend transactions using same mechanism as initial send</li>
-<li>v1.18: cli: use newer blockhashes when deploying large programs</li>
-<li>v1.18: support Pubkey::to_bytes as constexpr</li>
-<li>v1.18: RPC: fix numNonVoteTransactions in getPerformanceSamples</li>
-<li>v1.18: blockstore: relax backwards chained merkle root check for upgrades</li>
-<li>v1.18: forwarder uses working bank as filter</li>
-<li>v1.18: Scheduler: throttle thread queueing by CUs</li>
-<li>v1.18: Replaces DashMap with HashMap in secondary indexes</li>
-<li>v1.18: blockstore: account for blockstore cleanup during shred insertion</li>
-<li>v1.18: ci: don't self-update rustup when using the rust-version script</li>
-<li>v1.18: Fix - Reloading of unload entries after finishing the recompilation phase</li>
-<li>v1.18: reverts back in SocketAddr dedup in retransmit stage</li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/solana-labs/solana/compare/v1.18.12...v1.18.13"><tt>v1.18.12...v1.18.13</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: v0.135.2]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/v0.135.2</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/v0.135.2</guid>
-            <pubDate>Wed, 15 May 2024 16:38:43 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>Enhancements</h2>
-<h3>General</h3>
-<ul>
-<li>Added <code>editor::ToggleHunkDiff</code> (<code>cmd-'</code>) and <code>editor::ExpandAllHunkDiffs</code> (<code>cmd-"</code>) actions to browse git hunk diffs in Zed.</li>
-<li>Added an <code>editor: convert to opposite case</code> command.</li>
-<li>Added a <code>stop_at_soft_wraps</code> setting for <code>Editor::move_to_{beginning|end}_of_line</code>. When <code>true</code>, it causes movement to the either end of the line (via, for example Home or End), to go to the logical end, as opposed to the nearest soft wrap point in the respective direction (<a href="https://github.com/zed-industries/zed/issues/10888" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/10888/hovercard">#10888</a>).</li>
-<li>Changed the branch picker to always show the current branch as the default selected entry.
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/1185253/18b50656-f6ac-4138-b4e0-9024072e1555">video</a></li>
-</ul>
-</li>
-<li>Changed inline git blame information to not show up on empty lines.
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/1185253/e506cf1f-81b1-407b-8dc7-1666b31ae142">video</a></li>
-</ul>
-</li>
-</ul>
-<h3>Tasks</h3>
-<ul>
-<li>Added buttons to the gutter to run tests in Rust files.</li>
-</ul>
-<h3>Vim</h3>
-<ul>
-<li>Added <code>shift-k</code> to show the hover tooltip.</li>
-</ul>
-<h3>Languages</h3>
-<ul>
-<li>Added syntax highlighting to regular expressions inside of Go.</li>
-<li>Added ESLint as a default language server for Svelte.</li>
-<li>Added brackets and missing operators to syntax highlighting in Python code (<a href="https://github.com/zed-industries/zed/issues/4341" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/4341/hovercard">#4341</a>).</li>
-<li>Added support for function call completion when using <code>typescript-language-server</code>. This will result in parameters being added, which can then be changed and navigated with <code>&lt;tab&gt;</code>. For this to work with <code>typescript-language-server</code>, the documentation for a given completion item needs to be resolved, meaning that if one types very quickly and accepts completion before <code>typescript-language-server</code> could respond with the documentation, no full function completion is used.
-<ul>
-<li>Check it out: <a href="https://github.com/zed-industries/zed/assets/1185253/c23ebe12-5902-4b50-888c-d9b8cd32965d">video</a></li>
-</ul>
-</li>
-</ul>
-<h2>Bug Fixes</h2>
-<ul>
-<li>Fixed terminals always using the global shell even when local settings specified a different shell (<a href="https://github.com/zed-industries/zed/issues/7599" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/7599/hovercard">#7599</a>).</li>
-<li>Fixed false-positive hunks appearing in files with <code>\r\n</code> endings (<a href="https://github.com/zed-industries/zed/issues/11452" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/11452/hovercard">#11452</a>).</li>
-<li>Fixed a bug where the Collab panel context menu could not be dismissed with <code>Escape</code> key (<a href="https://github.com/zed-industries/zed/issues/11413" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/11413/hovercard">#11413</a>).</li>
-<li>Fixed Copilot suggestions preventing completions from appearing on completion trigger inputs (<a href="https://github.com/zed-industries/zed/issues/8766" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/8766/hovercard">#8766</a>).</li>
-<li>Fixed <code>alt-shift-left</code> and <code>alt-shift-right</code> in the Textmate default keybindings (<a href="https://github.com/zed-industries/zed/issues/10242" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/10242/hovercard">#10242</a>).</li>
-<li>Restored the ability to confirm a prompt by pressing "Enter" when deleting/trashing files.</li>
-<li>Fixed detection of JSDoc to only do syntax highlighting in block comments (<a href="https://github.com/zed-industries/zed/issues/7826" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/7826/hovercard">#7826</a>).</li>
-<li>Vim: Fixed last character of reversed mouse selections (<a href="https://github.com/zed-industries/zed/issues/8492" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/8492/hovercard">#8492</a>).</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pandoc: pandoc-server-0.1.0.6]]></title>
-            <link>https://github.com/jgm/pandoc/releases/tag/pandoc-server-0.1.0.6</link>
-            <guid>https://github.com/jgm/pandoc/releases/tag/pandoc-server-0.1.0.6</guid>
-            <pubDate>Wed, 15 May 2024 15:24:34 GMT</pubDate>
-            <content:encoded><![CDATA[<p>pandoc-cli: constrain pandoc-server version.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cube: v0.35.34]]></title>
-            <link>https://github.com/cube-js/cube/releases/tag/v0.35.34</link>
-            <guid>https://github.com/cube-js/cube/releases/tag/v0.35.34</guid>
-            <pubDate>Wed, 15 May 2024 15:15:48 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.35.33...v0.35.34">0.35.34</a> (2024-05-15)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>cubestore:</strong> S3 - STS credentials (align aws-creds to 0.36 in fork) (<a href="https://github.com/cube-js/cube/issues/8264" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/8264/hovercard">#8264</a>) (<a href="https://github.com/cube-js/cube/commit/1a5b27d1775691456a90d34130841ee03b5edef6">1a5b27d</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pixijs: v8.1.3]]></title>
-            <link>https://github.com/pixijs/pixijs/releases/tag/v8.1.3</link>
-            <guid>https://github.com/pixijs/pixijs/releases/tag/v8.1.3</guid>
-            <pubDate>Wed, 15 May 2024 14:19:24 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>💾  Download</h2>
-<p>Development Build:</p>
-<ul>
-<li><a href="https://pixijs.download/v8.1.3/pixi.js" rel="nofollow">https://pixijs.download/v8.1.3/pixi.js</a></li>
-<li><a href="https://pixijs.download/v8.1.3/pixi.mjs" rel="nofollow">https://pixijs.download/v8.1.3/pixi.mjs</a></li>
-</ul>
-<p>Production Build:</p>
-<ul>
-<li><a href="https://pixijs.download/v8.1.3/pixi.min.js" rel="nofollow">https://pixijs.download/v8.1.3/pixi.min.js</a></li>
-<li><a href="https://pixijs.download/v8.1.3/pixi.min.mjs" rel="nofollow">https://pixijs.download/v8.1.3/pixi.min.mjs</a></li>
-</ul>
-<p>Documentation:</p>
-<ul>
-<li><a href="https://pixijs.download/v8.1.3/docs/index.html" rel="nofollow">https://pixijs.download/v8.1.3/docs/index.html</a></li>
-</ul>
-<h2>Changed</h2>
-<p><a class="commit-link" href="https://github.com/pixijs/pixijs/compare/v8.1.2...v8.1.3"><tt>v8.1.2...v8.1.3</tt></a></p>
-<h3>🐛 Fixed</h3>
-<ul>
-<li>Fix: mask issue when setting to null and back by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2298042045" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/10536" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/10536/hovercard" href="https://github.com/pixijs/pixijs/pull/10536">#10536</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from prisma: 5.14.0]]></title>
-            <link>https://github.com/prisma/prisma/releases/tag/5.14.0</link>
-            <guid>https://github.com/prisma/prisma/releases/tag/5.14.0</guid>
-            <pubDate>Wed, 15 May 2024 13:22:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Today, we are excited to share the <code>5.14.0</code> stable release 🎉</p>
-<p>🌟 <strong>Help us spread the word about Prisma by starring the repo ☝️ or <a href="https://twitter.com/intent/tweet?text=Check%20out%20the%20latest%20@prisma%20release%20v5.14.0%20%F0%9F%9A%80%0D%0A%0D%0Ahttps://github.com/prisma/prisma/releases/tag/5.14.0" rel="nofollow">posting on X</a> about the release.</strong> 🌟</p>
-<h2>Highlights</h2>
-<h3>Share your feedback about Prisma ORM</h3>
-<p>We want to know how you like working with Prisma ORM in your projects! Please <a href="https://pris.ly/orm/survey/release-5-14" rel="nofollow">take our 2min survey</a> and let us know what you like or where we can improve 🙏</p>
-<h3><code>createManyAndReturn()</code></h3>
-<p>We’re happy to announce the availability of a new, top-level Prisma Client query: <code>createManyAndReturn()</code>. It works similarly to <code>createMany()</code> but uses a <code>RETURNING</code> clause in the SQL query to retrieve the records that were just created.</p>
-<p>Here’s an example of creating multiple posts and then immediately returning those posts.</p>
-<div class="highlight highlight-source-tsx notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="const postBodies = req.json()['posts']
-
-const posts = prisma.post.createManyAndReturn({
-  data: postBodies
-});
-
-return posts"><pre><span class="pl-k">const</span> <span class="pl-s1">postBodies</span> <span class="pl-c1">=</span> <span class="pl-s1">req</span><span class="pl-kos">.</span><span class="pl-en">json</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">[</span><span class="pl-s">'posts'</span><span class="pl-kos">]</span>
-
-<span class="pl-k">const</span> <span class="pl-s1">posts</span> <span class="pl-c1">=</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">post</span><span class="pl-kos">.</span><span class="pl-en">createManyAndReturn</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
-  <span class="pl-c1">data</span>: <span class="pl-s1">postBodies</span>
-<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
-
-<span class="pl-k">return</span> <span class="pl-s1">posts</span></pre></div>
-<p>Additionally,<code>createManyAndReturn()</code> supports the same options as <code>findMany()</code>, such as the ability to return only specific fields.</p>
-<div class="highlight highlight-source-tsx notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="const postBodies = req.json()['posts']
-
-const postTitles = prisma.post.createManyAndReturn({
-  data: postBodies,
-  select: {
-    title: true,
-  },
-});
-
-return postTitles"><pre><span class="pl-k">const</span> <span class="pl-s1">postBodies</span> <span class="pl-c1">=</span> <span class="pl-s1">req</span><span class="pl-kos">.</span><span class="pl-en">json</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">[</span><span class="pl-s">'posts'</span><span class="pl-kos">]</span>
-
-<span class="pl-k">const</span> <span class="pl-s1">postTitles</span> <span class="pl-c1">=</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">post</span><span class="pl-kos">.</span><span class="pl-en">createManyAndReturn</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
-  <span class="pl-c1">data</span>: <span class="pl-s1">postBodies</span><span class="pl-kos">,</span>
-  <span class="pl-c1">select</span>: <span class="pl-kos">{</span>
-    <span class="pl-c1">title</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
-  <span class="pl-kos">}</span><span class="pl-kos">,</span>
-<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
-
-<span class="pl-k">return</span> <span class="pl-s1">postTitles</span></pre></div>
-<p>Full documentation for this feature can be found <a href="https://www.prisma.io/docs/orm/reference/prisma-client-reference#createmanyandreturn" rel="nofollow">in the Prisma Client API Reference</a>.</p>
-<p><strong>Note</strong>: Because <code>createManyAndReturn()</code> uses the <code>RETURNING</code> clause, it is only supported by PostgreSQL, CockroachDB, and SQLite databases. At this time, <code>relationLoadStrategy: join</code> is not supported in <code>createManyAndReturn()</code> queries.</p>
-<h3>MongoDB performance improvements</h3>
-<p>Previously, Prisma ORM suffered from performance issues when using the <code>in</code> operator or when including related models in queries against a MongoDB database. These queries were translated by the Prisma query engine in such a way that indexes were skipped and collection scans were used, leading to slower queries especially on large datasets.</p>
-<p>With 5.14.0, Prisma ORM now rewrites queries to use a combination of <code>$or</code> and <code>$eq</code> operators, leading to dramatic performance increases for queries that include <code>in</code> operators or relation loading.</p>
-<h2>Fixes and improvements</h2>
-<h3>Prisma Client</h3>
-<ul>
-<li><a href="https://github.com/prisma/prisma/issues/8131" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8131/hovercard"><code>createMany()</code> should return the created records</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/11582" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/11582/hovercard">Generating Prisma client without any model in its schema</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/13865" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/13865/hovercard">MongoDB: Performance issue with nested <code>take</code> on many-to-one relationship</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/15156" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/15156/hovercard">Slow queries on MongoDB using <code>include</code> for relations</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/15983" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/15983/hovercard">[MongoDB] Performance issue in <code>findMany()</code> query execution with <code>in</code></a></li>
-<li><a href="https://github.com/prisma/prisma/issues/17142" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/17142/hovercard">MongoDB nested/<code>include</code> query slow</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/17396" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/17396/hovercard">MongoDB Connector generates queries which do not take advantage of indices.</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/18025" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/18025/hovercard">Mongodb Nested Queries Not Using Indexes</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/19169" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/19169/hovercard">MongoDB slow delete with <code>onDelete: SetNull</code></a></li>
-<li><a href="https://github.com/prisma/prisma/issues/20600" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/20600/hovercard">Slow query with many-to-one relationship on MongoDB</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/20915" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/20915/hovercard"><code>prisma init --with-model</code></a></li>
-<li><a href="https://github.com/prisma/prisma/issues/21473" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/21473/hovercard">Fixed version of <code>@opentelemetry/*</code> dependencies</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/21644" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/21644/hovercard">Usage of deprecated punycode module</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/23902" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/23902/hovercard">Bug: D1 One-to-Many Relation INSERTs fail with <code>The required connected records were not found.</code> when using indices</a></li>
-</ul>
-<h3>Prisma Migrate</h3>
-<ul>
-<li><a href="https://github.com/prisma/prisma/issues/15654" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/15654/hovercard">Empty <code>dbgenerated()</code> still breaking for <code>Unsupported()</code> types</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/16628" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/16628/hovercard">Validation error when <code>shadowDatabaseUrl</code> is identical to <code>url</code> (or <code>directUrl</code>)</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/19955" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/19955/hovercard">MongoDB Query with 'in' condition will cause COLLSCAN, without leveraging indexes</a></li>
-<li><a href="https://github.com/prisma/prisma/issues/23827" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/23827/hovercard">"Not Authorised" when directly applying Prisma generated migrations to Cloudflare D1 with <code>PRAGMA foreign_key_check;</code></a></li>
-</ul>
-<h3>Language tools (e.g. VS Code)</h3>
-<ul>
-<li><a href="https://github.com/prisma/language-tools/issues/1651" data-hovercard-type="issue" data-hovercard-url="/prisma/language-tools/issues/1651/hovercard">make superior: model generate</a></li>
-<li><a href="https://github.com/prisma/language-tools/issues/1676" data-hovercard-type="issue" data-hovercard-url="/prisma/language-tools/issues/1676/hovercard">Missing code autocomplete for referential actions with mongodb</a></li>
-</ul>
-<h2>Company news</h2>
-<h3>Prisma Changelog</h3>
-<p>Curious about all things Prisma? Be sure to check out the <a href="https://www.prisma.io/changelog" rel="nofollow">Prisma Changelog</a> for updates across Prisma's products, including ORM, Accelerate, and Pulse!</p>
-<h3>New product announcement: Prisma Optimize</h3>
-<p>With this release, we are excited to introduce a new Prisma product. We’re calling it “Optimize” because that’s what it does! Let your favorite ORM also help you debug the performance of your application.</p>
-<p>Check out our <a href="https://www.prisma.io/blog/prisma-optimize-early-access" rel="nofollow">announcement blog post</a> for more details, including a demo video.</p>
-<h2>Credits</h2>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pranayat/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pranayat">@pranayat</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yubrot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yubrot">@yubrot</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/skyzh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/skyzh">@skyzh</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anuraaga/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anuraaga">@anuraaga</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gutyerrez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gutyerrez">@gutyerrez</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/avallete/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/avallete">@avallete</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ceddy4395/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ceddy4395">@ceddy4395</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Kayoshi-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Kayoshi-dev">@Kayoshi-dev</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v32.0.0-nightly.20240515]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v32.0.0-nightly.20240515</link>
-            <guid>https://github.com/electron/electron/releases/tag/v32.0.0-nightly.20240515</guid>
-            <pubDate>Wed, 15 May 2024 13:01:50 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v32.0.0-nightly.20240515</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from numba: 0.61.0dev0]]></title>
-            <link>https://github.com/numba/numba/releases/tag/0.61.0dev0</link>
-            <guid>https://github.com/numba/numba/releases/tag/0.61.0dev0</guid>
-            <pubDate>Wed, 15 May 2024 12:33:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Version 0.61.0dev0</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
