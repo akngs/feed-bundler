@@ -4,16 +4,255 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 19 May 2024 00:24:37 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 19 May 2024 06:06:59 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/125806]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125806</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125806</guid>
-            <pubDate>Sun, 19 May 2024 00:21:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/124021: Update on "[inductor][cpp] GEMM template (infra and fp32)"]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124021</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124021</guid>
+            <pubDate>Sun, 19 May 2024 05:24:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>This PR adds the Cpp template infrastructure and the initial FP32 gemm template. See RFC <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2283542676" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/125683" data-hovercard-type="issue" data-hovercard-url="/pytorch/pytorch/issues/125683/hovercard" href="https://github.com/pytorch/pytorch/issues/125683">#125683</a> for more background info.</p>
+<ol>
+<li>Cpp template infrastructure<br>
+Similar template abstractions as the CUTLASS template, i.e., <code>CppTemplate</code>, <code>CppTemplateKernel</code>, <code>CppTemplateBuffer</code>. The MicroGemm micro-kernel abstraction that can be used by Cpp GEMM templates.</li>
+<li>Initial FP32 gemm template<br>
+This involves a GEMM template implementation <code>CppPackedGemmTemplate</code> that supports GEMM with constant weight (<code>B</code>) requiring <code>N</code> to be a multiple of register blocking while allows the static or dynamic sizes for the <code>M</code> (batch dim) of <code>A</code>. The <code>B</code> matrix would be prepacked. This is a typical setting for inference workloads. The template handles the thread decomposition (via <code>thread_blocking</code>) and cache blocking (via <code>cache_blocking</code>). Then it invokes <code>CppMicroGemm</code> which handles register blocking, instruction selection, and other CPU architecture-specific optimizations. A <code>CppMicroGemmFP32Vec</code> micro-kernel implementation is provided for fp32 matmuls implemented with ATen vec abstraction.</li>
+<li>Correctness and performance<br>
+The changes have been validated with fp32 inference on the three benchmark suites (torchbench, huggingface and timm_models) with both static shape and dynamic shapes. Since it is an initial implementation, we are still working on further performance improves with follow-up PRs including the optimizations in kernels as well as fusions. The perf gains are only observed from a selective number of models compared to the ATen kernels which are implemented with MKL. The perf gains are more obvious with dynamic shapes since MKL only supports packed gemm for static shapes. Below are details.</li>
+</ol>
+<p>Static shapes</p>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>torchbench</th>
+<th>huggingface</th>
+<th>timm_models</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Multi-threaded (baseline)</td>
+<td>1.47x</td>
+<td>1.36x</td>
+<td>1.91x</td>
+</tr>
+<tr>
+<td>Multi-threaded (max-autotune)</td>
+<td>1.47x</td>
+<td>1.36x</td>
+<td>1.92x</td>
+</tr>
+<tr>
+<td>Single-threaded (baseline)</td>
+<td>1.56x</td>
+<td>1.19x</td>
+<td>1.51x</td>
+</tr>
+<tr>
+<td>Single-threaded (max-autotune)</td>
+<td>1.56x</td>
+<td>1.19x</td>
+<td>1.52x</td>
+</tr>
+</tbody>
+</table>
+<p>Key models being sped up:<br>
+drq: 1.14x<br>
+soft_act: 1.12<br>
+cait_m36_384: 1.18x</p>
+<p>Dynamic shapes</p>
+<table>
+<thead>
+<tr>
+<th>Benchmark</th>
+<th>torchbench</th>
+<th>huggingface</th>
+<th>timm_models</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Multi-threaded (baseline)</td>
+<td>1.43x</td>
+<td>1.28x</td>
+<td>1.85x</td>
+</tr>
+<tr>
+<td>Multi-threaded (max-autotune)</td>
+<td>1.47x</td>
+<td>1.28x</td>
+<td>1.85x</td>
+</tr>
+<tr>
+<td>Single-threaded (baseline)</td>
+<td>1.55x</td>
+<td>1.20x</td>
+<td>1.51x</td>
+</tr>
+<tr>
+<td>Single-threaded (max-autotune)</td>
+<td>1.56x</td>
+<td>1.19x</td>
+<td>1.53x</td>
+</tr>
+</tbody>
+</table>
+<p>Key models being sped up:<br>
+BERT_pytorch: 1.22x<br>
+pyhpc_turbulent: 1.13x<br>
+soft_actor_critic: 1.77x<br>
+BlenderbotForCausalLM: 1.09x<br>
+cait_m36_384: 1.17x</p>
+<p>cc voznesenskym penguinwu EikanWang Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 aakhundov ColinPeppler amjames desertfire chauhang</p>
+<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from oclif: 4.10.13]]></title>
+            <link>https://github.com/oclif/oclif/releases/tag/4.10.13</link>
+            <guid>https://github.com/oclif/oclif/releases/tag/4.10.13</guid>
+            <pubDate>Sun, 19 May 2024 05:23:30 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
+<ul>
+<li><strong>deps:</strong> bump semver from 7.6.0 to 7.6.2 (<a href="https://github.com/oclif/oclif/commit/62aaab39b88fe9038c232c2f293356a523f46167">62aaab3</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
+            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
+            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
+            <pubDate>Sun, 19 May 2024 05:12:39 GMT</pubDate>
+            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.11.0-dev-18+g63e3a63d2
+Build type: RelWithDebInfo
+LuaJIT 2.1.1713484068"><pre class="notranslate"><code>NVIM v0.11.0-dev-18+g63e3a63d2
+Build type: RelWithDebInfo
+LuaJIT 2.1.1713484068
+</code></pre></div>
+<h2>Install</h2>
+<h3>Windows</h3>
+<h4>Zip</h4>
+<ol>
+<li>Download <strong>nvim-win64.zip</strong></li>
+<li>Extract the zip</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h4>MSI</h4>
+<ol>
+<li>Download <strong>nvim-win64.msi</strong></li>
+<li>Run the MSI</li>
+<li>Run <code>nvim.exe</code> on your CLI of choice</li>
+</ol>
+<h3>macOS (x86_64)</h3>
+<ol>
+<li>Download <strong>nvim-macos-x86_64.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos-x86_64.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos-x86_64.tar.gz</code></li>
+<li>Run <code>./nvim-macos-x86_64/bin/nvim</code></li>
+</ol>
+<h3>macOS (arm64)</h3>
+<ol>
+<li>Download <strong>nvim-macos-arm64.tar.gz</strong></li>
+<li>Run <code>xattr -c ./nvim-macos-arm64.tar.gz</code> (to avoid "unknown developer" warning)</li>
+<li>Extract: <code>tar xzvf nvim-macos-arm64.tar.gz</code></li>
+<li>Run <code>./nvim-macos-arm64/bin/nvim</code></li>
+</ol>
+<h3>Linux (x64)</h3>
+<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
+that work on older glibc versions can find them at<br>
+<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
+<h4>AppImage</h4>
+<ol>
+<li>Download <strong>nvim.appimage</strong></li>
+<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
+<ul>
+<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
+./squashfs-root/usr/bin/nvim
+</code></pre></div>
+</li>
+</ul>
+</li>
+</ol>
+<h4>Tarball</h4>
+<ol>
+<li>Download <strong>nvim-linux64.tar.gz</strong></li>
+<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
+<li>Run <code>./nvim-linux64/bin/nvim</code></li>
+</ol>
+<h3>Other</h3>
+<ul>
+<li>Install by <a href="https://github.com/neovim/neovim/blob/master/INSTALL.md#install-from-package">package manager</a></li>
+</ul>
+<h2>SHA256 Checksums</h2>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="6a80eefad5bb585a1fdfdd538640e670a36524de50dc026b4d4b9d7d6457d170  nvim-linux64.tar.gz
+acb6e4aa35543c4b7d0102b113a3fd163189b45a52e1c048bfd8d51a4b1c797b  nvim.appimage
+ccb06b302d4c5fa30188681b65f8083e062a021dd6a050a96cc26fd8811a143d  nvim.appimage.zsync
+0ee55fe57354c18256054b77ab677af034e956b44fdee924a01dbe06847e5c04  nvim-macos-x86_64.tar.gz
+a81e90f0407e3b8cef06497ebe82bd7ff42decade5637406170307e2b53a271e  nvim-macos-arm64.tar.gz
+4297d6a02dee3a627d048ae9a6da8a4a6604e4474f3547ad7d373caf4d4a3e1e  nvim-win64.zip
+e78ad345ef4a66092d9d79d1824f55a125877c659b55ff3c6113072642dd5380  nvim-win64.msi"><pre class="notranslate"><code>6a80eefad5bb585a1fdfdd538640e670a36524de50dc026b4d4b9d7d6457d170  nvim-linux64.tar.gz
+acb6e4aa35543c4b7d0102b113a3fd163189b45a52e1c048bfd8d51a4b1c797b  nvim.appimage
+ccb06b302d4c5fa30188681b65f8083e062a021dd6a050a96cc26fd8811a143d  nvim.appimage.zsync
+0ee55fe57354c18256054b77ab677af034e956b44fdee924a01dbe06847e5c04  nvim-macos-x86_64.tar.gz
+a81e90f0407e3b8cef06497ebe82bd7ff42decade5637406170307e2b53a271e  nvim-macos-arm64.tar.gz
+4297d6a02dee3a627d048ae9a6da8a4a6604e4474f3547ad7d373caf4d4a3e1e  nvim-win64.zip
+e78ad345ef4a66092d9d79d1824f55a125877c659b55ff3c6113072642dd5380  nvim-win64.msi
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126639: [Inductor][Flex-attention] Support different sequence lengths for Que…]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126639</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126639</guid>
+            <pubDate>Sun, 19 May 2024 04:48:02 GMT</pubDate>
+            <content:encoded><![CDATA[<p>…ry and Key/Value</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126637: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126637</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126637</guid>
+            <pubDate>Sun, 19 May 2024 04:44:19 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126636: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126636</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126636</guid>
+            <pubDate>Sun, 19 May 2024 04:29:50 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126633: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126633</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126633</guid>
+            <pubDate>Sun, 19 May 2024 02:48:00 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from oclif: 4.10.12]]></title>
+            <link>https://github.com/oclif/oclif/releases/tag/4.10.12</link>
+            <guid>https://github.com/oclif/oclif/releases/tag/4.10.12</guid>
+            <pubDate>Sun, 19 May 2024 02:27:50 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Bug Fixes</h3>
+<ul>
+<li><strong>deps:</strong> bump @oclif/plugin-warn-if-update-available (<a href="https://github.com/oclif/oclif/commit/79a09ea26dbc1bd0b3c125d2d95cfa50d5215bc1">79a09ea</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-1.9.24-829]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.24-829</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-1.9.24-829</guid>
+            <pubDate>Sun, 19 May 2024 01:05:25 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4186]]></title>
+            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4186</link>
+            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4186</guid>
+            <pubDate>Sun, 19 May 2024 01:05:17 GMT</pubDate>
+            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/125806]]></title>
@@ -30,35 +269,11 @@
             <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126270: [pt2] grouped triton benchmarking in max-autotune-gemm mode (#126270)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126270</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126270</guid>
-            <pubDate>Sun, 19 May 2024 00:20:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:<br>
-we can save a significant amount of benchmarking time in max-autotune-gemm mode if we group the benchmarking of Triton templates and backout early of templates that don't show promise</p>
-<p>Test Plan: CI + perf run</p>
-<p>Differential Revision: D57371634</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from pytorch: ciflow/inductor/126630]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126630</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126630</guid>
             <pubDate>Sun, 19 May 2024 00:17:46 GMT</pubDate>
             <content:encoded><![CDATA[<p>update sort tuple</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126417: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126417</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126417</guid>
-            <pubDate>Sun, 19 May 2024 00:02:21 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126416: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126416</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126416</guid>
-            <pubDate>Sun, 19 May 2024 00:02:20 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/inductor/126631: Update]]></title>
@@ -71,13 +286,6 @@ we can save a significant amount of benchmarking time in max-autotune-gemm mode 
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/126623: Update]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126623</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126623</guid>
-            <pubDate>Sun, 19 May 2024 00:00:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126623: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</guid>
             <pubDate>Sun, 19 May 2024 00:00:46 GMT</pubDate>
             <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
@@ -188,17 +396,6 @@ we can save a significant amount of benchmarking time in max-autotune-gemm mode 
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/solana-labs/solana/compare/v1.18.13...v1.18.14"><tt>v1.18.13...v1.18.14</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.81]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.81</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.81</guid>
-            <pubDate>Sat, 18 May 2024 05:46:45 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I1f280b635c17416ba1135d6016b9514a862846eb<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546793" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546793</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.7.81@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46/hovercard" href="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46"><tt>0608700</tt></a>-refs/heads/main@{#93988}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: 12.7.81-pgo: Version 12.7.81]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.7.81-pgo</link>
             <guid>https://github.com/v8/v8/releases/tag/12.7.81-pgo</guid>
@@ -210,87 +407,15 @@ Cr-Commit-Position: refs/heads/12.7.81@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46/hovercard" href="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46"><tt>0608700</tt></a>-refs/heads/main@{#93988}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
-            <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
-            <guid>https://github.com/neovim/neovim/releases/tag/nightly</guid>
-            <pubDate>Sat, 18 May 2024 05:11:46 GMT</pubDate>
-            <content:encoded><![CDATA[<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="NVIM v0.11.0-dev-15+g62eb7e79a
-Build type: RelWithDebInfo
-LuaJIT 2.1.1713484068"><pre class="notranslate"><code>NVIM v0.11.0-dev-15+g62eb7e79a
-Build type: RelWithDebInfo
-LuaJIT 2.1.1713484068
-</code></pre></div>
-<h2>Install</h2>
-<h3>Windows</h3>
-<h4>Zip</h4>
-<ol>
-<li>Download <strong>nvim-win64.zip</strong></li>
-<li>Extract the zip</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h4>MSI</h4>
-<ol>
-<li>Download <strong>nvim-win64.msi</strong></li>
-<li>Run the MSI</li>
-<li>Run <code>nvim.exe</code> on your CLI of choice</li>
-</ol>
-<h3>macOS (x86_64)</h3>
-<ol>
-<li>Download <strong>nvim-macos-x86_64.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos-x86_64.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos-x86_64.tar.gz</code></li>
-<li>Run <code>./nvim-macos-x86_64/bin/nvim</code></li>
-</ol>
-<h3>macOS (arm64)</h3>
-<ol>
-<li>Download <strong>nvim-macos-arm64.tar.gz</strong></li>
-<li>Run <code>xattr -c ./nvim-macos-arm64.tar.gz</code> (to avoid "unknown developer" warning)</li>
-<li>Extract: <code>tar xzvf nvim-macos-arm64.tar.gz</code></li>
-<li>Run <code>./nvim-macos-arm64/bin/nvim</code></li>
-</ol>
-<h3>Linux (x64)</h3>
-<p>Minimum glibc version to run these releases is 2.31. People requiring releases<br>
-that work on older glibc versions can find them at<br>
-<a href="https://github.com/neovim/neovim-releases">https://github.com/neovim/neovim-releases</a>.</p>
-<h4>AppImage</h4>
-<ol>
-<li>Download <strong>nvim.appimage</strong></li>
-<li>Run <code>chmod u+x nvim.appimage &amp;&amp; ./nvim.appimage</code>
-<ul>
-<li>If your system does not have FUSE you can <a href="https://github.com/AppImage/AppImageKit/wiki/FUSE#type-2-appimage">extract the appimage</a>:
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim"><pre class="notranslate"><code>./nvim.appimage --appimage-extract
-./squashfs-root/usr/bin/nvim
-</code></pre></div>
-</li>
-</ul>
-</li>
-</ol>
-<h4>Tarball</h4>
-<ol>
-<li>Download <strong>nvim-linux64.tar.gz</strong></li>
-<li>Extract: <code>tar xzvf nvim-linux64.tar.gz</code></li>
-<li>Run <code>./nvim-linux64/bin/nvim</code></li>
-</ol>
-<h3>Other</h3>
-<ul>
-<li>Install by <a href="https://github.com/neovim/neovim/blob/master/INSTALL.md#install-from-package">package manager</a></li>
-</ul>
-<h2>SHA256 Checksums</h2>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="819f0c5d018e43ff80a4fb801f953d7af1e3fa0138f8ec334df1878f77531a8a  nvim-linux64.tar.gz
-5354e10e947129500d2ae566b8cf9cdc261bbbe087f98e86c26d5948eb48c711  nvim.appimage
-cca7080ba61b1a01e0838cc618fd041e8d4ca5bc3574a883775e0b82acf95878  nvim.appimage.zsync
-b1b62b0d4d8ad9adfc1ebe0d7480efd1baa70e1479ecc69383acae2c6c0bb8cb  nvim-macos-x86_64.tar.gz
-1c65120cc2351e231d7eb3bc3600b4471ade820cda6b7e88eb70450cbefd964f  nvim-macos-arm64.tar.gz
-d8c2e1e85dbe079a4322cd32b50edb469a49ba5c0e9b0d72e41e2b7d84200a20  nvim-win64.zip
-e9d720fe004e53e16071815910ea935c4d9e035940c4659506a5de9f0d156172  nvim-win64.msi"><pre class="notranslate"><code>819f0c5d018e43ff80a4fb801f953d7af1e3fa0138f8ec334df1878f77531a8a  nvim-linux64.tar.gz
-5354e10e947129500d2ae566b8cf9cdc261bbbe087f98e86c26d5948eb48c711  nvim.appimage
-cca7080ba61b1a01e0838cc618fd041e8d4ca5bc3574a883775e0b82acf95878  nvim.appimage.zsync
-b1b62b0d4d8ad9adfc1ebe0d7480efd1baa70e1479ecc69383acae2c6c0bb8cb  nvim-macos-x86_64.tar.gz
-1c65120cc2351e231d7eb3bc3600b4471ade820cda6b7e88eb70450cbefd964f  nvim-macos-arm64.tar.gz
-d8c2e1e85dbe079a4322cd32b50edb469a49ba5c0e9b0d72e41e2b7d84200a20  nvim-win64.zip
-e9d720fe004e53e16071815910ea935c4d9e035940c4659506a5de9f0d156172  nvim-win64.msi
-</code></pre></div>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: Version 12.7.81]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.81</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.81</guid>
+            <pubDate>Sat, 18 May 2024 05:46:45 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I1f280b635c17416ba1135d6016b9514a862846eb<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546793" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546793</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.7.81@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46/hovercard" href="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46"><tt>0608700</tt></a>-refs/heads/main@{#93988}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from deno: v1.43.5]]></title>
@@ -346,7 +471,7 @@ e9d720fe004e53e16071815910ea935c4d9e035940c4659506a5de9f0d156172  nvim-win64.msi
 <li>581b637: Update ruby/setup-ruby digest to 6615b4b (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2303547382" data-permission-text="Title is private" data-url="https://github.com/SeleniumHQ/selenium/issues/13962" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13962/hovercard" href="https://github.com/SeleniumHQ/selenium/pull/13962">#13962</a>) (renovate[bot]) <a href="https://github.com/SeleniumHQ/selenium/pull/13962" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13962/hovercard">#13962</a></li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/fee8c99979aed4e994be525e5cfafa920c778f29/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/fee8c99979aed4e994be525e5cfafa920c778f29"><tt>fee8c99</tt></a>: [rust] Bump zip, flate2, and anyhow to their latest stable versions (Boni Garcia)</li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/e752864eeb0565a621e6e06c0e613be5464fcbdf/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/e752864eeb0565a621e6e06c0e613be5464fcbdf"><tt>e752864</tt></a>: [rust] Downgrade anyhow to version 1.0.83 (Boni Garcia)</li>
-<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/dd8b8f87df2676404e201088e842563c4ac3b77a/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/dd8b8f87df2676404e201088e842563c4ac3b77a"><tt>dd8b8f8</tt></a>: [rust] Upgrade anyhow to 1.0.84 (Alex Rodionov)</li>
+<li>dd8b8f8: [rust] Upgrade anyhow to 1.0.84 (Alex Rodionov)</li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/8e379beec6298935179955ecbec40e6f2a869163/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/8e379beec6298935179955ecbec40e6f2a869163"><tt>8e379be</tt></a>: [rust] Format fix in cargo toml file (Boni Garcia)</li>
 </ul>]]></content:encoded>
         </item>
@@ -581,9 +706,9 @@ to semantic-release, be sure to update them as well</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.78]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.78</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.78</guid>
+            <title><![CDATA[Release notes from v8: 12.7.78-pgo: Version 12.7.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.78-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.78-pgo</guid>
             <pubDate>Fri, 17 May 2024 20:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie70085e92f7d190b15bfda9811a0a9c37785841c<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546049" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546049</a><br>
@@ -592,9 +717,9 @@ Cr-Commit-Position: refs/heads/12.7.78@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/98f2024c364ea01c7fc0da3ae1ad9cb05cfe66b9/hovercard" href="https://github.com/v8/v8/commit/98f2024c364ea01c7fc0da3ae1ad9cb05cfe66b9"><tt>98f2024</tt></a>-refs/heads/main@{#93983}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.7.78-pgo: Version 12.7.78]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.78-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.78-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.7.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.78</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.78</guid>
             <pubDate>Fri, 17 May 2024 20:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie70085e92f7d190b15bfda9811a0a9c37785841c<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546049" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546049</a><br>
@@ -774,13 +899,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4101]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4101</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4101</guid>
-            <pubDate>Fri, 17 May 2024 16:17:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from Ghost: 5.82.11]]></title>
             <link>https://github.com/TryGhost/Ghost/releases/tag/v5.82.11</link>
             <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.82.11</guid>
@@ -791,13 +909,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>
 <hr>
 <p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.82.10...v5.82.11"><tt>v5.82.10...v5.82.11</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4097]]></title>
-            <link>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4097</link>
-            <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4097</guid>
-            <pubDate>Fri, 17 May 2024 15:22:47 GMT</pubDate>
-            <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from gatsby: gatsby@4.25.9]]></title>
@@ -1676,6 +1787,69 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p><a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Aafeld+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@afeld</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Agithub-actions+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3AJasonWeill+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@JasonWeill</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ajtpio+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Akrassowski+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@krassowski</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3ARRosio+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@RRosio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Atakluyver+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@takluyver</a></p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.2.0: Publish 7.2.0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</guid>
@@ -1697,9 +1871,9 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/docmanager-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -1718,9 +1892,30 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/docmanager-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocmanager-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/documentsearch-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fdocumentsearch-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -1763,90 +1958,6 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree@7.2.0: Publish 7.2.0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/terminal-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fterminal-extension%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/lab-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Flab-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -2440,138 +2551,6 @@ de6dc1f0edb45f5f225ee24ce80a4fcbc3a337932037e98ae143975fca2556bf  nvim-win64.zip
             <content:encoded><![CDATA[<p>Merge pull request <a class="issue-link js-issue-link" href="https://github.com/microsoft/monaco-editor/pull/4305">#4305</a> from johnyanarella/typescript-upgrade</p>
 
 <p>Update TypeScript to TS 5.4.5 in all projects, vendored files</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.5.8-nightly-20240516.2]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.5.8-nightly-20240516.2</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.5.8-nightly-20240516.2</guid>
-            <pubDate>Thu, 16 May 2024 04:04:47 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from Ghost: 5.82.10]]></title>
-            <link>https://github.com/TryGhost/Ghost/releases/tag/v5.82.10</link>
-            <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.82.10</guid>
-            <pubDate>Thu, 16 May 2024 02:26:39 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>🐛 Fixed direct paid signups on Stripe beta (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2299064216" data-permission-text="Title is private" data-url="https://github.com/TryGhost/Ghost/issues/20215" data-hovercard-type="pull_request" data-hovercard-url="/TryGhost/Ghost/pull/20215/hovercard" href="https://github.com/TryGhost/Ghost/pull/20215">#20215</a>) - Ronald Langeveld</li>
-</ul>
-<hr>
-<p>View the changelog for full details: <a class="commit-link" href="https://github.com/TryGhost/Ghost/compare/v5.82.9...v5.82.10"><tt>v5.82.9...v5.82.10</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.135]]></title>
-            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.135</link>
-            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.135</guid>
-            <pubDate>Thu, 16 May 2024 02:07:27 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: make messages more consistent (<a href="https://github.com/sveltejs/svelte/pull/11643" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11643/hovercard">#11643</a>)</p>
-</li>
-<li>
-<p>feat: introduce <code>rootDir</code> compiler option, make <code>filename</code> relative to it (<a href="https://github.com/sveltejs/svelte/pull/11627" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11627/hovercard">#11627</a>)</p>
-</li>
-<li>
-<p>fix: rename <code>__svelte_meta.filename</code> to <code>__svelte_meta.file</code> to align with svelte 4 (<a href="https://github.com/sveltejs/svelte/pull/11627" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11627/hovercard">#11627</a>)</p>
-</li>
-<li>
-<p>fix: avoid state_referenced_locally warning within type annotations (<a href="https://github.com/sveltejs/svelte/pull/11638" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/11638/hovercard">#11638</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.5.8-nightly-20240516.1]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.5.8-nightly-20240516.1</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.5.8-nightly-20240516.1</guid>
-            <pubDate>Thu, 16 May 2024 02:05:49 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from helm: Helm v3.15.0]]></title>
-            <link>https://github.com/helm/helm/releases/tag/v3.15.0</link>
-            <guid>https://github.com/helm/helm/releases/tag/v3.15.0</guid>
-            <pubDate>Thu, 16 May 2024 00:43:54 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Helm v3.15.0 is a feature release. Users are encouraged to upgrade for the best experience.</p>
-<p>The community keeps growing, and we'd love to see you there!</p>
-<ul>
-<li>Join the discussion in <a href="https://kubernetes.slack.com" rel="nofollow">Kubernetes Slack</a>:
-<ul>
-<li>for questions and just to hang out</li>
-<li>for discussing PRs, code, and bugs</li>
-</ul>
-</li>
-<li>Hang out at the Public Developer Call: Thursday, 9:30 Pacific via <a href="https://zoom.us/j/696660622" rel="nofollow">Zoom</a></li>
-<li>Test, debug, and contribute charts: <a href="https://artifacthub.io/packages/search?kind=0" rel="nofollow">ArtifactHub/packages</a></li>
-</ul>
-<h2>Notable Changes</h2>
-<ul>
-<li>Opt-in to hiding secrets when running dry-run for install and upgrade</li>
-<li>Added robustness to wait checks</li>
-</ul>
-<h2>Installation and Upgrading</h2>
-<p>Download Helm v3.15.0. The common platform binaries are here:</p>
-<ul>
-<li><a href="https://get.helm.sh/helm-v3.15.0-darwin-amd64.tar.gz" rel="nofollow">MacOS amd64</a> (<a href="https://get.helm.sh/helm-v3.15.0-darwin-amd64.tar.gz.sha256sum" rel="nofollow">checksum</a> / ccaee03af72e5dc168ae9b9e3267e2b461b0ebb7a77849048f4567286158777d)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-darwin-arm64.tar.gz" rel="nofollow">MacOS arm64</a> (<a href="https://get.helm.sh/helm-v3.15.0-darwin-arm64.tar.gz.sha256sum" rel="nofollow">checksum</a> / 020df10fd29b0791f39aa5719d2926a995f78c1a2a7487923ca26485a0565909)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-amd64.tar.gz" rel="nofollow">Linux amd64</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-amd64.tar.gz.sha256sum" rel="nofollow">checksum</a> / a74747ac40777b86d3ff6f1be201504bba65ca46cd68b5fe25d3c394d0dcf745)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-arm.tar.gz" rel="nofollow">Linux arm</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-arm.tar.gz.sha256sum" rel="nofollow">checksum</a> / 614d53ab1192667facce7e8d4e884ff067e5684199a7e5223e8808abc43e927f)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-arm64.tar.gz" rel="nofollow">Linux arm64</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-arm64.tar.gz.sha256sum" rel="nofollow">checksum</a> / c3b0281fca4c030548211dd6e9b032ee0a9fc53eab614f6acbaff631682ce808)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-386.tar.gz" rel="nofollow">Linux i386</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-386.tar.gz.sha256sum" rel="nofollow">checksum</a> / 8a267c7527e3c13602feea7432209c8931f6eecd4bff5ded398d70791c74a5b7)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-ppc64le.tar.gz" rel="nofollow">Linux ppc64le</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-ppc64le.tar.gz.sha256sum" rel="nofollow">checksum</a> / bcec19cdad95cae99edce046ccd8090f275e63381ccb6accb4304819fc26e004)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-s390x.tar.gz" rel="nofollow">Linux s390x</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-s390x.tar.gz.sha256sum" rel="nofollow">checksum</a> / a3030533cceedaca4af8fb7661c7154c578ad770279bb6003e1ecd810c72077a)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-linux-riscv64.tar.gz" rel="nofollow">Linux riscv64</a> (<a href="https://get.helm.sh/helm-v3.15.0-linux-riscv64.tar.gz.sha256sum" rel="nofollow">checksum</a> / 468dc90d119b2faa91036747c559285a744ed7beb8b7d74b83878da6c13e0560)</li>
-<li><a href="https://get.helm.sh/helm-v3.15.0-windows-amd64.zip" rel="nofollow">Windows amd64</a> (<a href="https://get.helm.sh/helm-v3.15.0-windows-amd64.zip.sha256sum" rel="nofollow">checksum</a> / 23f0ee9fc93d325ddbc4dfdac97c83bc00c7784016541045756cf9abb36f21dc)<br>
-This release was signed with <code>672C 657B E06B 4B30 969C 4A57 4614 49C2 5E36 B98E </code> and can be found at <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mattfarina/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mattfarina">@mattfarina</a> <a href="https://keybase.io/mattfarina" rel="nofollow">keybase account</a>. Please use the attached signatures for verifying this release using <code>gpg</code>.</li>
-</ul>
-<p>The <a href="https://helm.sh/docs/intro/quickstart/" rel="nofollow">Quickstart Guide</a> will get you going from there. For <strong>upgrade instructions</strong> or detailed installation notes, check the <a href="https://helm.sh/docs/intro/install/" rel="nofollow">install guide</a>. You can also use a <a href="https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3" rel="nofollow">script to install</a> on any system with <code>bash</code>.</p>
-<h2>What's Next</h2>
-<ul>
-<li>3.15.1 is the next patch release and will be on June 12, 2024.</li>
-<li>3.16.0 is the next feature release and will be on September 11, 2024.</li>
-</ul>
-<h2>Changelog</h2>
-<ul>
-<li>Updating to k8s 1.30 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/c4e37b39dbb341cb3f716220df9f9d306d123a58/hovercard" href="https://github.com/helm/helm/commit/c4e37b39dbb341cb3f716220df9f9d306d123a58"><tt>c4e37b3</tt></a> (Matt Farina)</li>
-<li>bump version to v3.15.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/d7afa3b6b432c09a02cd07342e908ba5bed34940/hovercard" href="https://github.com/helm/helm/commit/d7afa3b6b432c09a02cd07342e908ba5bed34940"><tt>d7afa3b</tt></a> (Matt Farina)</li>
-<li>bump version to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/774346777c5b311251d8252cd470d56bdd23a403/hovercard" href="https://github.com/helm/helm/commit/774346777c5b311251d8252cd470d56bdd23a403"><tt>7743467</tt></a> (Matt Farina)</li>
-<li>Fix namespace on kubeconfig error <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/214fb6eff393f1c17890d45e9eaee86f6b37ea17/hovercard" href="https://github.com/helm/helm/commit/214fb6eff393f1c17890d45e9eaee86f6b37ea17"><tt>214fb6e</tt></a> (Calvin Krist)</li>
-<li>Update testdata PKI with keys that have validity until 3393 (Fixes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2185430381" data-permission-text="Title is private" data-url="https://github.com/helm/helm/issues/12880" data-hovercard-type="issue" data-hovercard-url="/helm/helm/issues/12880/hovercard" href="https://github.com/helm/helm/issues/12880">#12880</a>) <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/1b75d48189c2484cb5904f7996933d8d85315adb/hovercard" href="https://github.com/helm/helm/commit/1b75d48189c2484cb5904f7996933d8d85315adb"><tt>1b75d48</tt></a> (Dirk Müller)</li>
-<li>chore(deps): bump golang.org/x/net from 0.17.0 to 0.23.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/dac23c82ce3bc05b6e72a1571bea48e424494fb0/hovercard" href="https://github.com/helm/helm/commit/dac23c82ce3bc05b6e72a1571bea48e424494fb0"><tt>dac23c8</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump github/codeql-action from 3.24.7 to 3.24.10 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/167d57676d22ea10fa7869e6f85c6fe2e46b3292/hovercard" href="https://github.com/helm/helm/commit/167d57676d22ea10fa7869e6f85c6fe2e46b3292"><tt>167d576</tt></a> (dependabot[bot])</li>
-<li>chore: remove repetitive words <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/dd37787ffd25419cf5f76222e682fbba47d289eb/hovercard" href="https://github.com/helm/helm/commit/dd37787ffd25419cf5f76222e682fbba47d289eb"><tt>dd37787</tt></a> (deterclosed)</li>
-<li>Modified how created annotation is populated based on package creation time <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/0a69a0dea6b1dcebaaf5d5b67c9a56eade463a71/hovercard" href="https://github.com/helm/helm/commit/0a69a0dea6b1dcebaaf5d5b67c9a56eade463a71"><tt>0a69a0d</tt></a> (Andrew Block)</li>
-<li>chore(deps): bump github.com/docker/docker <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/aaaf1128d2dd2ce3e119472cae0bd9da3d62eb89/hovercard" href="https://github.com/helm/helm/commit/aaaf1128d2dd2ce3e119472cae0bd9da3d62eb89"><tt>aaaf112</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump google.golang.org/protobuf from 1.31.0 to 1.33.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/7f53529a701830dd86d78e932e83e4f7a928e9df/hovercard" href="https://github.com/helm/helm/commit/7f53529a701830dd86d78e932e83e4f7a928e9df"><tt>7f53529</tt></a> (dependabot[bot])</li>
-<li>Enabling hide secrets on install and upgrade dry run <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/25c473834e0cbb905fc8a524709fd4d5362dab11/hovercard" href="https://github.com/helm/helm/commit/25c473834e0cbb905fc8a524709fd4d5362dab11"><tt>25c4738</tt></a> (Matt Farina)</li>
-<li>chore(deps): bump github/codeql-action from 3.24.6 to 3.24.7 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/ff94e9319104a58321444d7d4656917147058936/hovercard" href="https://github.com/helm/helm/commit/ff94e9319104a58321444d7d4656917147058936"><tt>ff94e93</tt></a> (dependabot[bot])</li>
-<li>Fixing all the linting errors <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/d58d7b376265338e059ff11c71267b5a6cf504c3/hovercard" href="https://github.com/helm/helm/commit/d58d7b376265338e059ff11c71267b5a6cf504c3"><tt>d58d7b3</tt></a> (Robert Sirchia)</li>
-<li>Add a note about --dry-run displaying secrets <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/a23dd9e3b756c12cfdaa1b2c3a023c92530c0d0a/hovercard" href="https://github.com/helm/helm/commit/a23dd9e3b756c12cfdaa1b2c3a023c92530c0d0a"><tt>a23dd9e</tt></a> (Matt Farina)</li>
-<li>chore(deps): bump golang.org/x/term from 0.15.0 to 0.18.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/275f2ab43b86072a601d036acc6d7eb2bb501b08/hovercard" href="https://github.com/helm/helm/commit/275f2ab43b86072a601d036acc6d7eb2bb501b08"><tt>275f2ab</tt></a> (dependabot[bot])</li>
-<li>Updating .gitignore <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/8b424baea1e40a352acf549395e6498e63ac0aa2/hovercard" href="https://github.com/helm/helm/commit/8b424baea1e40a352acf549395e6498e63ac0aa2"><tt>8b424ba</tt></a> (Robert Sirchia)</li>
-<li>chore(deps): bump github/codeql-action from 3.24.5 to 3.24.6 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/e22d881495fcfee6b1c4afa1d12627f3e28b54e6/hovercard" href="https://github.com/helm/helm/commit/e22d881495fcfee6b1c4afa1d12627f3e28b54e6"><tt>e22d881</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump github/codeql-action from 3.24.3 to 3.24.5 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/4f200fa74f4b1bc8ad7261afb30ae7e2a8f0f546/hovercard" href="https://github.com/helm/helm/commit/4f200fa74f4b1bc8ad7261afb30ae7e2a8f0f546"><tt>4f200fa</tt></a> (dependabot[bot])</li>
-<li>Some fixes <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/764557c470533fa57aad99f865c9ff75a64d4163/hovercard" href="https://github.com/helm/helm/commit/764557c470533fa57aad99f865c9ff75a64d4163"><tt>764557c</tt></a> (Matt Farina)</li>
-<li>chore(deps): bump github/codeql-action from 3.23.1 to 3.24.3 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/5bc97b9c4eff3d2968d3c74c64b25052140558d6/hovercard" href="https://github.com/helm/helm/commit/5bc97b9c4eff3d2968d3c74c64b25052140558d6"><tt>5bc97b9</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump golangci/golangci-lint-action from 3.7.0 to 4.0.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/e6db0ec933582a0de2f55f8f2f1ef693739eedc0/hovercard" href="https://github.com/helm/helm/commit/e6db0ec933582a0de2f55f8f2f1ef693739eedc0"><tt>e6db0ec</tt></a> (dependabot[bot])</li>
-<li>add error messages <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/8d19bcb78aaeb489eba4ed1d68894e59c8f55876/hovercard" href="https://github.com/helm/helm/commit/8d19bcb78aaeb489eba4ed1d68894e59c8f55876"><tt>8d19bcb</tt></a> (George Jenkins)</li>
-<li>Fix: Ignore alias validation error for index load <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/68294fdae0deba2464805067228790e025207ebd/hovercard" href="https://github.com/helm/helm/commit/68294fdae0deba2464805067228790e025207ebd"><tt>68294fd</tt></a> (George Jenkins)</li>
-<li>validation fix <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/8e6a5149d2e2e3beffa51d53048b2fed90d8c529/hovercard" href="https://github.com/helm/helm/commit/8e6a5149d2e2e3beffa51d53048b2fed90d8c529"><tt>8e6a514</tt></a> (Matt Farina)</li>
-<li>bug: add proxy support for oci getter <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/94c1deae6d5a43491c5a4e8444ecd8273a8122a1/hovercard" href="https://github.com/helm/helm/commit/94c1deae6d5a43491c5a4e8444ecd8273a8122a1"><tt>94c1dea</tt></a> (Ricardo Maraschini)</li>
-<li>chore(deps): bump actions/setup-go from 4.1.0 to 5.0.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/cbab6d6227969435df516dcdfcc6d29808aff094/hovercard" href="https://github.com/helm/helm/commit/cbab6d6227969435df516dcdfcc6d29808aff094"><tt>cbab6d6</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump github/codeql-action from 3.23.0 to 3.23.1 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/de332ae396e1414cdc6923456cbe8a4b3af74c4e/hovercard" href="https://github.com/helm/helm/commit/de332ae396e1414cdc6923456cbe8a4b3af74c4e"><tt>de332ae</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump github.com/containerd/containerd from 1.7.11 to 1.7.12 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/a2dd34b3f2fe4eb8350ba168fb0943cf4ac990f9/hovercard" href="https://github.com/helm/helm/commit/a2dd34b3f2fe4eb8350ba168fb0943cf4ac990f9"><tt>a2dd34b</tt></a> (dependabot[bot])</li>
-<li>Update architecture detection method <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/57a1bb80e5829f20125447b2734469d97858960c/hovercard" href="https://github.com/helm/helm/commit/57a1bb80e5829f20125447b2734469d97858960c"><tt>57a1bb8</tt></a> (weidongkl)</li>
-<li>chore(deps): bump github/codeql-action from 3.22.11 to 3.23.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/8cab7c17f4163a5fc609f4a2f7fcdce796a4b870/hovercard" href="https://github.com/helm/helm/commit/8cab7c17f4163a5fc609f4a2f7fcdce796a4b870"><tt>8cab7c1</tt></a> (dependabot[bot])</li>
-<li>chore(deps): bump github.com/DATA-DOG/go-sqlmock from 1.5.0 to 1.5.2 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/5f9533fef733c514f24a6f33f130efa6ea775c58/hovercard" href="https://github.com/helm/helm/commit/5f9533fef733c514f24a6f33f130efa6ea775c58"><tt>5f9533f</tt></a> (dependabot[bot])</li>
-<li>Improve release action <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/4790bb9bcc224abee8a41f0bd8cac5880f605877/hovercard" href="https://github.com/helm/helm/commit/4790bb9bcc224abee8a41f0bd8cac5880f605877"><tt>4790bb9</tt></a> (George Jenkins)</li>
-<li>chore(deps): bump actions/setup-go from 4.1.0 to 5.0.0 <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/f980ad319c12774787c89ffaaef0f7fea0633bb3/hovercard" href="https://github.com/helm/helm/commit/f980ad319c12774787c89ffaaef0f7fea0633bb3"><tt>f980ad3</tt></a> (dependabot[bot])</li>
-<li>Fix grammatical error <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/c25736c894ed1058c75b68fca0094c8fd953e131/hovercard" href="https://github.com/helm/helm/commit/c25736c894ed1058c75b68fca0094c8fd953e131"><tt>c25736c</tt></a> (Matt Carr)</li>
-<li>Updated for review comments <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/d2cf8c66f1775783edbc150d1a509f58e769e75e/hovercard" href="https://github.com/helm/helm/commit/d2cf8c66f1775783edbc150d1a509f58e769e75e"><tt>d2cf8c6</tt></a> (MichaelMorris)</li>
-<li>Add robustness to wait status checks <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/fc74964f8a039ce209966b70fa7ba0fc7ea36a9e/hovercard" href="https://github.com/helm/helm/commit/fc74964f8a039ce209966b70fa7ba0fc7ea36a9e"><tt>fc74964</tt></a> (MichaelMorris)</li>
-<li>refactor: create a helper for checking if a release is uninstalled <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/f908379f1f8e3d764b0a52dcba2d234490fc0ffc/hovercard" href="https://github.com/helm/helm/commit/f908379f1f8e3d764b0a52dcba2d234490fc0ffc"><tt>f908379</tt></a> (Alex Petrov)</li>
-<li>fix: reinstall previously uninstalled chart with --keep-history <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/9e198fa89d3c798dec1012bb4dff7107e22700d7/hovercard" href="https://github.com/helm/helm/commit/9e198fa89d3c798dec1012bb4dff7107e22700d7"><tt>9e198fa</tt></a> (Alex Petrov)</li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
