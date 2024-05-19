@@ -4,128 +4,122 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 18 May 2024 18:07:15 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 19 May 2024 00:24:37 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/124014]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124014</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F124014</guid>
-            <pubDate>Sat, 18 May 2024 17:29:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[BE]: Update NCCL submodule to 2.21.5</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/125806]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125806</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F125806</guid>
+            <pubDate>Sun, 19 May 2024 00:21:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126622: Update on "[inductor] Fix edge case in JIT vs. AOT fusion after final…]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126622</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126622</guid>
-            <pubDate>Sat, 18 May 2024 16:27:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>…izing MultiTemplateBuffer"</p>
-<h1>Context</h1>
-<p>Here's a peripheral scenario causing the JIT-pass and AOT-pass to pick different fusions.</p>
-<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="# JIT -- buf3 is a MultiTemplateBuffer
-V.graph.buffers = [buf0, buf1, buf2, buf3, buf4]
-                                ^          ^
-# JIT pass calls finalize_multi_template_buffers()
-V.graph.buffers = [buf0, buf1, buf2, buf4, *buf3*]
-
-# AOT, note proximity_score(buf2, buf4) is &quot;better&quot; for fusion than JIT
-V.graph.buffers = [buf0, buf1, buf2, buf4, *buf3*]
-                                ^    ^"><pre><span class="pl-c"># JIT -- buf3 is a MultiTemplateBuffer</span>
-<span class="pl-v">V</span>.<span class="pl-s1">graph</span>.<span class="pl-s1">buffers</span> <span class="pl-c1">=</span> [<span class="pl-s1">buf0</span>, <span class="pl-s1">buf1</span>, <span class="pl-s1">buf2</span>, <span class="pl-s1">buf3</span>, <span class="pl-s1">buf4</span>]
-                                <span class="pl-c1">^</span>          <span class="pl-c1">^</span>
-<span class="pl-c"># JIT pass calls finalize_multi_template_buffers()</span>
-<span class="pl-v">V</span>.<span class="pl-s1">graph</span>.<span class="pl-s1">buffers</span> <span class="pl-c1">=</span> [<span class="pl-s1">buf0</span>, <span class="pl-s1">buf1</span>, <span class="pl-s1">buf2</span>, <span class="pl-s1">buf4</span>, <span class="pl-c1">*</span><span class="pl-s1">buf3</span><span class="pl-c1">*</span>]
-
-<span class="pl-c"># AOT, note proximity_score(buf2, buf4) is "better" for fusion than JIT</span>
-<span class="pl-v">V</span>.<span class="pl-s1">graph</span>.<span class="pl-s1">buffers</span> <span class="pl-c1">=</span> [<span class="pl-s1">buf0</span>, <span class="pl-s1">buf1</span>, <span class="pl-s1">buf2</span>, <span class="pl-s1">buf4</span>, <span class="pl-c1">*</span><span class="pl-s1">buf3</span><span class="pl-c1">*</span><span class="pl-s1"></span>]
-                                <span class="pl-c1">^</span>    <span class="pl-c1">^</span></pre></div>
-<p>It happens like this:</p>
-<ul>
-<li>JIT starts with the original set nodes using V.graph.buffers</li>
-<li>In JIT, finalize_multi_template_buffers() is called which can change the order of the buffers.</li>
-<li>This makes the order of buffers/scheduler nodes different.</li>
-<li>Now, each node's min/max-order is different than before.</li>
-<li>As a result, the proximity between two nodes is different. <a href="https://github.com/pytorch/pytorch/blob/ad67553c5c1672d65b810acd7a6a01e11695098b/torch/_inductor/scheduler.py#L2316-L2335">https://github.com/pytorch/pytorch/blob/ad67553c5c1672d65b810acd7a6a01e11695098b/torch/_inductor/scheduler.py#L2316-L2335</a></li>
-</ul>
-<h1>Error</h1>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="$ TORCH_LOGS=&quot;+fusion&quot; python test/inductor/test_max_autotune.py -k test_jit_fusion_matches_aot_fusion
-======================================================================
-FAIL: test_jit_fusion_matches_aot_fusion (__main__.TestMaxAutotune)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  ...
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/graph.py&quot;, line 1718, in compile_to_fn
-    code, linemap = self.codegen_with_cpp_wrapper()
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/graph.py&quot;, line 1618, in codegen_with_cpp_wrapper
-    return self.codegen()
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/graph.py&quot;, line 1636, in codegen
-    self.scheduler.codegen()
-  File &quot;/data/users/colinpeppler/pytorch/torch/_dynamo/utils.py&quot;, line 210, in time_wrapper
-    r = func(*args, **kwargs)
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/scheduler.py&quot;, line 2602, in codegen
-    self.get_backend(device).codegen_node(node)  # type: ignore[possibly-undefined]
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cuda_combined_scheduling.py&quot;, line 66, in codegen_node
-    return self._triton_scheduling.codegen_node(node)
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py&quot;, line 3377, in codegen_node
-    return self.codegen_node_schedule(node_schedule, buf_accesses, numel, rnumel)
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py&quot;, line 3602, in codegen_node_schedule
-    final_kernel.call_kernel(final_kernel.kernel_name)
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py&quot;, line 3055, in call_kernel
-    grid = wrapper.generate_default_grid(name, grid)
-  File &quot;/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cpp_wrapper_cuda.py&quot;, line 174, in generate_default_grid
-    params is not None
-AssertionError: cuda kernel parameters for triton_poi_fused_add_0 should already exist at this moment, only found dict_keys(['Placeholder.DESCRIPTIVE_NAME', 'triton_poi_fused_add_mul_0', 'triton_poi_fused_pow_1'])"><pre class="notranslate"><code>$ TORCH_LOGS="+fusion" python test/inductor/test_max_autotune.py -k test_jit_fusion_matches_aot_fusion
-======================================================================
-FAIL: test_jit_fusion_matches_aot_fusion (__main__.TestMaxAutotune)
-----------------------------------------------------------------------
-Traceback (most recent call last):
-  ...
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/graph.py", line 1718, in compile_to_fn
-    code, linemap = self.codegen_with_cpp_wrapper()
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/graph.py", line 1618, in codegen_with_cpp_wrapper
-    return self.codegen()
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/graph.py", line 1636, in codegen
-    self.scheduler.codegen()
-  File "/data/users/colinpeppler/pytorch/torch/_dynamo/utils.py", line 210, in time_wrapper
-    r = func(*args, **kwargs)
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/scheduler.py", line 2602, in codegen
-    self.get_backend(device).codegen_node(node)  # type: ignore[possibly-undefined]
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cuda_combined_scheduling.py", line 66, in codegen_node
-    return self._triton_scheduling.codegen_node(node)
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py", line 3377, in codegen_node
-    return self.codegen_node_schedule(node_schedule, buf_accesses, numel, rnumel)
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py", line 3602, in codegen_node_schedule
-    final_kernel.call_kernel(final_kernel.kernel_name)
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/triton.py", line 3055, in call_kernel
-    grid = wrapper.generate_default_grid(name, grid)
-  File "/data/users/colinpeppler/pytorch/torch/_inductor/codegen/cpp_wrapper_cuda.py", line 174, in generate_default_grid
-    params is not None
-AssertionError: cuda kernel parameters for triton_poi_fused_add_0 should already exist at this moment, only found dict_keys(['Placeholder.DESCRIPTIVE_NAME', 'triton_poi_fused_add_mul_0', 'triton_poi_fused_pow_1'])
-</code></pre></div>
-<p>cc voznesenskym penguinwu EikanWang jgong5 Guobing-Chen XiaobingSuper zhuhaozhe blzheng wenzhe-nrv jiayisunx peterbell10 ipiszy yf225 chenyang78 kadeng muchulee8 amjames desertfire chauhang</p>
-<p>[ghstack-poisoned]</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125806]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125806</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125806</guid>
+            <pubDate>Sun, 19 May 2024 00:21:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126623: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</guid>
-            <pubDate>Sat, 18 May 2024 16:04:56 GMT</pubDate>
+            <title><![CDATA[Release notes from pytorch: ciflow/trunk/123043]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</guid>
+            <pubDate>Sun, 19 May 2024 00:20:43 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126270: [pt2] grouped triton benchmarking in max-autotune-gemm mode (#126270)]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126270</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126270</guid>
+            <pubDate>Sun, 19 May 2024 00:20:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Summary:<br>
+we can save a significant amount of benchmarking time in max-autotune-gemm mode if we group the benchmarking of Triton templates and backout early of templates that don't show promise</p>
+<p>Test Plan: CI + perf run</p>
+<p>Differential Revision: D57371634</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126630]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126630</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126630</guid>
+            <pubDate>Sun, 19 May 2024 00:17:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>update sort tuple</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126417: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126417</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126417</guid>
+            <pubDate>Sun, 19 May 2024 00:02:21 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126416: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126416</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126416</guid>
+            <pubDate>Sun, 19 May 2024 00:02:20 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126631: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126631</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126631</guid>
+            <pubDate>Sun, 19 May 2024 00:02:15 GMT</pubDate>
             <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pytorch: ciflow/trunk/126623: Update]]></title>
             <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126623</link>
             <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126623</guid>
-            <pubDate>Sat, 18 May 2024 16:04:56 GMT</pubDate>
+            <pubDate>Sun, 19 May 2024 00:00:46 GMT</pubDate>
             <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125127]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125127</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125127</guid>
-            <pubDate>Sat, 18 May 2024 15:32:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Fixing linting issues</p>]]></content:encoded>
+            <title><![CDATA[Release notes from pytorch: ciflow/inductor/126623: Update]]></title>
+            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</link>
+            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Finductor%2F126623</guid>
+            <pubDate>Sun, 19 May 2024 00:00:46 GMT</pubDate>
+            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v14.3.0-canary.71]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v14.3.0-canary.71</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v14.3.0-canary.71</guid>
+            <pubDate>Sat, 18 May 2024 23:21:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v14.3.0-canary.71</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from rxdb: 15.21.0]]></title>
+            <link>https://github.com/pubkey/rxdb/releases/tag/15.21.0</link>
+            <guid>https://github.com/pubkey/rxdb/releases/tag/15.21.0</guid>
+            <pubDate>Sat, 18 May 2024 22:59:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p align="center">
+            <a href="https://rxdb.info/" rel="nofollow">
+                <img src="https://camo.githubusercontent.com/730cc6178a41adbcf079436b1d5eb785553d3a1b736766baba7a0a3419afd28a/68747470733a2f2f727864622e696e666f2f66696c65732f6c6f676f2f727864625f6a6176617363726970745f64617461626173652e737667" width="380px" alt="JavaScript Database" data-canonical-src="https://rxdb.info/files/logo/rxdb_javascript_database.svg" style="max-width: 100%;">
+            </a>
+        </p>
+<ul>
+<li>FIX <code>collection.remove()</code> must end up with the correct RxCollection state across tabs. <a href="https://github.com/pubkey/rxdb/issues/5721" data-hovercard-type="issue" data-hovercard-url="/pubkey/rxdb/issues/5721/hovercard">5721</a></li>
+<li>ADD <code>RxCollection.onRemove</code> hooks to detect the removing of a RxCollection across tabs.</li>
+<li>IMPROVE performance of insert to <a href="https://rxdb.info/rx-storage-indexeddb.html" rel="nofollow">IndexedDB</a></li>
+<li>ADD non-premium console.log on the <a href="https://rxdb.info/rx-storage-dexie.html#disabling-the-non-premium-console-log" rel="nofollow">Dexie.js RxStorage</a></li>
+</ul>
+<p><strong>NOTICE:</strong> An overview about all releases can be found <a href="https://github.com/pubkey/rxdb/blob/master/CHANGELOG.md">at the changelog</a></p>
+<h3>Join RxDB:</h3>
+<ul>
+<li>💬 <a href="https://rxdb.info/chat" rel="nofollow">Join the RxDB Chat</a></li>
+<li>⭐ <a href="https://github.com/pubkey/rxdb">Star the RxDB Repo</a></li>
+<li>📰 <a href="https://rxdb.info/newsletter" rel="nofollow">Subscribe to the newsletter</a></li>
+<li>🐦 <a href="https://twitter.com/intent/user?screen_name=rxdbjs" rel="nofollow">Follow at Twitter</a></li>
+<li>🔗 <a href="https://www.linkedin.com/company/rxdb" rel="nofollow">Follow at LinkedIn</a></li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Sat, 18 May 2024 22:01:33 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2024-05-18 22:01:33 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/dbeb31b7aded8bbf230a9a01c50e28d6cec09942/hovercard" href="https://github.com/kovidgoyal/kitty/commit/dbeb31b7aded8bbf230a9a01c50e28d6cec09942"><tt>dbeb31b</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from storybook: v8.2.0-alpha.2]]></title>
@@ -147,32 +141,6 @@ AssertionError: cuda kernel parameters for triton_poi_fused_add_0 should already
             <guid>https://github.com/JetBrains/kotlin/releases/tag/build-2.0.20-dev-4168</guid>
             <pubDate>Sat, 18 May 2024 12:15:16 GMT</pubDate>
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/126469: [torchbench] Add torchao to PT2 Benchmark Runner (#126469)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126469</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126469</guid>
-            <pubDate>Sat, 18 May 2024 11:57:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:</p>
-<p>X-link: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2301497947" data-permission-text="Title is private" data-url="https://github.com/pytorch/benchmark/issues/2268" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/benchmark/pull/2268/hovercard" href="https://github.com/pytorch/benchmark/pull/2268">pytorch/benchmark#2268</a></p>
-<p>Support torchao performance and accuracy tests in PT2 Benchmark Runner, using the inductor backend as the baseline.</p>
-<p>Test Plan:</p>
-<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="$ buck2 run mode/opt //caffe2/benchmarks/dynamo:torchbench -- --only BERT_pytorch --bfloat16 --quantization int8dynamic --performance --inference --print-memory
-
-loading model: 0it [00:50, ?it/s]
-cuda eval  BERT_pytorch                       
-memory: eager: 0.75 GB, dynamo: 0.75 GB, ratio: 1.00
-running benchmark: 100%
-1.003x"><pre class="notranslate"><code>$ buck2 run mode/opt //caffe2/benchmarks/dynamo:torchbench -- --only BERT_pytorch --bfloat16 --quantization int8dynamic --performance --inference --print-memory
-
-loading model: 0it [00:50, ?it/s]
-cuda eval  BERT_pytorch                       
-memory: eager: 0.75 GB, dynamo: 0.75 GB, ratio: 1.00
-running benchmark: 100%
-1.003x
-</code></pre></div>
-<p>Reviewed By: jerryzh168</p>
-<p>Differential Revision: D57463273</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4160]]></title>
@@ -220,9 +188,9 @@ running benchmark: 100%
 <p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/solana-labs/solana/compare/v1.18.13...v1.18.14"><tt>v1.18.13...v1.18.14</tt></a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.7.81-pgo: Version 12.7.81]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.81-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.81-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.7.81]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.81</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.81</guid>
             <pubDate>Sat, 18 May 2024 05:46:45 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I1f280b635c17416ba1135d6016b9514a862846eb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546793" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546793</a><br>
@@ -231,9 +199,9 @@ Cr-Commit-Position: refs/heads/12.7.81@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46/hovercard" href="https://github.com/v8/v8/commit/06087002beae64513f023778165c992aabb4ce46"><tt>0608700</tt></a>-refs/heads/main@{#93988}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.81]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.81</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.81</guid>
+            <title><![CDATA[Release notes from v8: 12.7.81-pgo: Version 12.7.81]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.81-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.81-pgo</guid>
             <pubDate>Sat, 18 May 2024 05:46:45 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I1f280b635c17416ba1135d6016b9514a862846eb<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546793" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546793</a><br>
@@ -356,44 +324,11 @@ e9d720fe004e53e16071815910ea935c4d9e035940c4659506a5de9f0d156172  nvim-win64.msi
             <content:encoded><![CDATA[<p>automatically created by TeamCity VCS labeling build feature</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/126596: Forward fix the failed new test from D57474327 (#126596)]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126596</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F126596</guid>
-            <pubDate>Sat, 18 May 2024 00:48:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Summary:<br>
-Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2303710462" data-permission-text="Title is private" data-url="https://github.com/pytorch/pytorch/issues/126596" data-hovercard-type="pull_request" data-hovercard-url="/pytorch/pytorch/pull/126596/hovercard" href="https://github.com/pytorch/pytorch/pull/126596">#126596</a></p>
-<p>TSIA</p>
-<p>Test Plan: <code>buck2 test 'fbcode//mode/opt' fbcode//caffe2/test/dynamo:test_dynamo -- --exact 'caffe2/test/dynamo:test_dynamo - test_repros.py::ReproTests::test_issue126128'</code></p>
-<p>Reviewed By: xmfan</p>
-<p>Differential Revision: D57516676</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/linux-aarch64/125808: Update]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Flinux-aarch64%2F125808</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Flinux-aarch64%2F125808</guid>
-            <pubDate>Sat, 18 May 2024 00:25:06 GMT</pubDate>
-            <content:encoded><![CDATA[<p>[ghstack-poisoned]</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/125806]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125806</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F125806</guid>
-            <pubDate>Sat, 18 May 2024 00:20:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update vision commit hash</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from mongo: r7.0.11-rc2]]></title>
             <link>https://github.com/mongodb/mongo/releases/tag/r7.0.11-rc2</link>
             <guid>https://github.com/mongodb/mongo/releases/tag/r7.0.11-rc2</guid>
             <pubDate>Sat, 18 May 2024 00:20:04 GMT</pubDate>
             <content:encoded><![CDATA[<p>'7.0.11-rc2'</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pytorch: ciflow/trunk/123043]]></title>
-            <link>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</link>
-            <guid>https://github.com/pytorch/pytorch/releases/tag/ciflow%2Ftrunk%2F123043</guid>
-            <pubDate>Sat, 18 May 2024 00:19:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>update executorch commit hash</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from selenium: Nightly]]></title>
@@ -411,7 +346,7 @@ Pull Request resolved: <a class="issue-link js-issue-link" data-error-text="Fail
 <li>581b637: Update ruby/setup-ruby digest to 6615b4b (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2303547382" data-permission-text="Title is private" data-url="https://github.com/SeleniumHQ/selenium/issues/13962" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13962/hovercard" href="https://github.com/SeleniumHQ/selenium/pull/13962">#13962</a>) (renovate[bot]) <a href="https://github.com/SeleniumHQ/selenium/pull/13962" data-hovercard-type="pull_request" data-hovercard-url="/SeleniumHQ/selenium/pull/13962/hovercard">#13962</a></li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/fee8c99979aed4e994be525e5cfafa920c778f29/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/fee8c99979aed4e994be525e5cfafa920c778f29"><tt>fee8c99</tt></a>: [rust] Bump zip, flate2, and anyhow to their latest stable versions (Boni Garcia)</li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/e752864eeb0565a621e6e06c0e613be5464fcbdf/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/e752864eeb0565a621e6e06c0e613be5464fcbdf"><tt>e752864</tt></a>: [rust] Downgrade anyhow to version 1.0.83 (Boni Garcia)</li>
-<li>dd8b8f8: [rust] Upgrade anyhow to 1.0.84 (Alex Rodionov)</li>
+<li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/dd8b8f87df2676404e201088e842563c4ac3b77a/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/dd8b8f87df2676404e201088e842563c4ac3b77a"><tt>dd8b8f8</tt></a>: [rust] Upgrade anyhow to 1.0.84 (Alex Rodionov)</li>
 <li><a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/SeleniumHQ/selenium/commit/8e379beec6298935179955ecbec40e6f2a869163/hovercard" href="https://github.com/SeleniumHQ/selenium/commit/8e379beec6298935179955ecbec40e6f2a869163"><tt>8e379be</tt></a>: [rust] Format fix in cargo toml file (Boni Garcia)</li>
 </ul>]]></content:encoded>
         </item>
@@ -499,17 +434,6 @@ Co-authored-by: Antonio <a href="mailto:antonio@zed.dev">antonio@zed.dev</a><br>
 Co-authored-by: Nathan <a href="mailto:nathan@zed.dev">nathan@zed.dev</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.79]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.79</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.79</guid>
-            <pubDate>Fri, 17 May 2024 22:10:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I8603ef59127ab187fd8a723291a78732a10aa8f5<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546792" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546792</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.7.79@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/581b5a38c131f601afbc081286c60a460964d2de/hovercard" href="https://github.com/v8/v8/commit/581b5a38c131f601afbc081286c60a460964d2de"><tt>581b5a3</tt></a>-refs/heads/main@{#93984}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from v8: 12.7.79-pgo: Version 12.7.79]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.7.79-pgo</link>
             <guid>https://github.com/v8/v8/releases/tag/12.7.79-pgo</guid>
@@ -521,11 +445,15 @@ Cr-Commit-Position: refs/heads/12.7.79@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/581b5a38c131f601afbc081286c60a460964d2de/hovercard" href="https://github.com/v8/v8/commit/581b5a38c131f601afbc081286c60a460964d2de"><tt>581b5a3</tt></a>-refs/heads/main@{#93984}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Fri, 17 May 2024 21:58:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2024-05-17 21:58:05 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/a9924d2ab76ae3399ced776e8df9931320f1e560/hovercard" href="https://github.com/kovidgoyal/kitty/commit/a9924d2ab76ae3399ced776e8df9931320f1e560"><tt>a9924d2</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+            <title><![CDATA[Release notes from v8: Version 12.7.79]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.79</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.79</guid>
+            <pubDate>Fri, 17 May 2024 22:10:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I8603ef59127ab187fd8a723291a78732a10aa8f5<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546792" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546792</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.7.79@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/581b5a38c131f601afbc081286c60a460964d2de/hovercard" href="https://github.com/v8/v8/commit/581b5a38c131f601afbc081286c60a460964d2de"><tt>581b5a3</tt></a>-refs/heads/main@{#93984}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from kotlin: build-2.0.20-dev-4134]]></title>
@@ -653,9 +581,9 @@ to semantic-release, be sure to update them as well</li>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.7.78-pgo: Version 12.7.78]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.78-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.78-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.7.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.78</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.78</guid>
             <pubDate>Fri, 17 May 2024 20:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie70085e92f7d190b15bfda9811a0a9c37785841c<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546049" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546049</a><br>
@@ -664,9 +592,9 @@ Cr-Commit-Position: refs/heads/12.7.78@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/98f2024c364ea01c7fc0da3ae1ad9cb05cfe66b9/hovercard" href="https://github.com/v8/v8/commit/98f2024c364ea01c7fc0da3ae1ad9cb05cfe66b9"><tt>98f2024</tt></a>-refs/heads/main@{#93983}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.7.78]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.7.78</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.7.78</guid>
+            <title><![CDATA[Release notes from v8: 12.7.78-pgo: Version 12.7.78]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.7.78-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.7.78-pgo</guid>
             <pubDate>Fri, 17 May 2024 20:22:47 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ie70085e92f7d190b15bfda9811a0a9c37785841c<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5546049" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5546049</a><br>
@@ -942,18 +870,18 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from gatsby: gatsby-adapter-netlify@1.1.5]]></title>
-            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.1.5</link>
-            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.1.5</guid>
-            <pubDate>Fri, 17 May 2024 13:57:40 GMT</pubDate>
-            <content:encoded><![CDATA[<p>gatsby-adapter-netlify@1.1.5</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from gatsby: gatsby@5.13.5]]></title>
             <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.13.5</link>
             <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby%405.13.5</guid>
             <pubDate>Fri, 17 May 2024 13:57:40 GMT</pubDate>
             <content:encoded><![CDATA[<p>gatsby@5.13.5</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from gatsby: gatsby-adapter-netlify@1.1.5]]></title>
+            <link>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.1.5</link>
+            <guid>https://github.com/gatsbyjs/gatsby/releases/tag/gatsby-adapter-netlify%401.1.5</guid>
+            <pubDate>Fri, 17 May 2024 13:57:40 GMT</pubDate>
+            <content:encoded><![CDATA[<p>gatsby-adapter-netlify@1.1.5</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from core: 2024.5.4]]></title>
@@ -1748,9 +1676,9 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p><a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Aafeld+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@afeld</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Agithub-actions+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3AJasonWeill+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@JasonWeill</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Ajtpio+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Akrassowski+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@krassowski</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3ARRosio+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@RRosio</a> | <a href="https://github.com/search?q=repo%3Ajupyter%2Fnotebook+involves%3Atakluyver+updated%3A2024-03-14..2024-05-16&amp;type=Issues">@takluyver</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -1811,6 +1739,27 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/ui-components@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0</guid>
+            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
+<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
+<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
+<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
+<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
+<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
+<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
+<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
+<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
+<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
+<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
+<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
+<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
+<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree@7.2.0: Publish 7.2.0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree%407.2.0</guid>
@@ -1853,27 +1802,6 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/ui-components@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fui-components%407.2.0</guid>
-            <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
-<p>jupyter-notebook-application-extension-7.2.0.tgz: c7516eea0d985bdadeae3a653156df3a2efc21b409d1c357b63616e0bea1fbb9</p>
-<p>jupyter-notebook-console-extension-7.2.0.tgz: 11bcfe7a2c6fb7897bbac91c24dfbdcd2441a5e1eecebc0a0688190ffd7378db</p>
-<p>jupyter-notebook-docmanager-extension-7.2.0.tgz: 0bd15a9a72446b234a70edab6e6d45e09ff4b62d7228804f226f0161297d06b9</p>
-<p>jupyter-notebook-documentsearch-extension-7.2.0.tgz: e478a7c1f7d2d50ddee350af5347773192285879d6542b34e1487d7a8efbc12d</p>
-<p>jupyter-notebook-help-extension-7.2.0.tgz: c6207a3699339c5e8dde5ddfdb840dc5aebbd5b381ecba36bd0e09c6ae97210d</p>
-<p>jupyter-notebook-lab-extension-7.2.0.tgz: 15a156225d77a4654eeed7f2b5bdc2b0f01eed8c8003d1c64db5a252ea947c7a</p>
-<p>jupyter-notebook-notebook-extension-7.2.0.tgz: 2f7ef6bf929617e354609b1a261d47f0cdd4800903edccb4e20e8cbee60411ec</p>
-<p>jupyter-notebook-terminal-extension-7.2.0.tgz: 7b1dfca37754af1a349815c694fab7067649dea2f3fb3fe9339ad290a759b0c1</p>
-<p>jupyter-notebook-tree-7.2.0.tgz: 31c85b8c5a7c456eee157cf12c674514f2b5407aa27d40f55e0de7099499c4aa</p>
-<p>jupyter-notebook-tree-extension-7.2.0.tgz: 8a88ac92481d9826c3d00aaf3a7ae2578bcd3f48f521ade5131a201baa8c0533</p>
-<p>jupyter-notebook-ui-components-7.2.0.tgz: cddf2b07c7ff5b8102d6619004b693b5eedd3b524a68e0a97c5c55ced479d56f</p>
-<p>notebook-7.2.0-py3-none-any.whl: b4752d7407d6c8872fc505df0f00d3cae46e8efb033b822adacbaa3f1f3ce8f5</p>
-<p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from notebook: @jupyter-notebook/notebook-extension@7.2.0: Publish 7.2.0]]></title>
             <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</link>
             <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fnotebook-extension%407.2.0</guid>
@@ -1895,9 +1823,9 @@ just publish (<a class="issue-link js-issue-link" data-error-text="Failed to loa
 <p>notebook-7.2.0.tar.gz: 34a2ba4b08ad5d19ec930db7484fb79746a1784be9e1a5f8218f9af8656a141f</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from notebook: @jupyter-notebook/help-extension@7.2.0: Publish 7.2.0]]></title>
-            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</link>
-            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Fhelp-extension%407.2.0</guid>
+            <title><![CDATA[Release notes from notebook: @jupyter-notebook/tree-extension@7.2.0: Publish 7.2.0]]></title>
+            <link>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</link>
+            <guid>https://github.com/jupyter/notebook/releases/tag/%40jupyter-notebook%2Ftree-extension%407.2.0</guid>
             <pubDate>Thu, 16 May 2024 14:09:18 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>jupyter-notebook-application-7.2.0.tgz: 68d6b11a2193d4742f34931fa288839272b9f8947b88daa49e4bc50287e5174f</p>
@@ -2644,603 +2572,6 @@ This release was signed with <code>672C 657B E06B 4B30 969C 4A57 4614 49C2 5E36 
 <li>refactor: create a helper for checking if a release is uninstalled <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/f908379f1f8e3d764b0a52dcba2d234490fc0ffc/hovercard" href="https://github.com/helm/helm/commit/f908379f1f8e3d764b0a52dcba2d234490fc0ffc"><tt>f908379</tt></a> (Alex Petrov)</li>
 <li>fix: reinstall previously uninstalled chart with --keep-history <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/helm/helm/commit/9e198fa89d3c798dec1012bb4dff7107e22700d7/hovercard" href="https://github.com/helm/helm/commit/9e198fa89d3c798dec1012bb4dff7107e22700d7"><tt>9e198fa</tt></a> (Alex Petrov)</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cdk: v2.142.0]]></title>
-            <link>https://github.com/aws/aws-cdk/releases/tag/v2.142.0</link>
-            <guid>https://github.com/aws/aws-cdk/releases/tag/v2.142.0</guid>
-            <pubDate>Wed, 15 May 2024 23:59:11 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Features</h3>
-<ul>
-<li><strong>asg:</strong> support keypair functionality for asg (<a href="https://github.com/aws/aws-cdk/issues/29679" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/29679/hovercard">#29679</a>) (<a href="https://github.com/aws/aws-cdk/commit/f6b649d47f8bc30ca741fbb7a4852d51e8275002">f6b649d</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29237" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29237/hovercard">#29237</a></li>
-<li><strong>codepipeline:</strong> <code>GitPullRequestFilter</code> for pipeline trigger (<a href="https://github.com/aws/aws-cdk/issues/29128" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/29128/hovercard">#29128</a>) (<a href="https://github.com/aws/aws-cdk/commit/5ce1b6485eb4336634f4f14bfe3d0b17b071e83b">5ce1b64</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29126" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29126/hovercard">#29126</a></li>
-<li><strong>docdb:</strong> add copyTagsToSnapshot property to the DatabaseCluster Construct (<a href="https://github.com/aws/aws-cdk/issues/30120" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30120/hovercard">#30120</a>) (<a href="https://github.com/aws/aws-cdk/commit/30f0db6ad810f0e93187082bd50ddb46726d8f5f">30f0db6</a>), closes <a href="https://github.com/aws/aws-cdk/issues/30090" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/30090/hovercard">#30090</a></li>
-<li><strong>docdb:</strong> support CA certificate for cluster instances (<a href="https://github.com/aws/aws-cdk/issues/28791" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/28791/hovercard">#28791</a>) (<a href="https://github.com/aws/aws-cdk/commit/e87f25e1e93350e53aadb15e19ed7a9bf378c315">e87f25e</a>), closes <a href="https://github.com/aws/aws-cdk/issues/27138" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/27138/hovercard">#27138</a> <a href="https://github.com/aws/aws-cdk/issues/28356" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/28356/hovercard">#28356</a></li>
-<li><strong>events-targets:</strong> add support for AppSync as an EventBridge rule target  (<a href="https://github.com/aws/aws-cdk/issues/29584" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/29584/hovercard">#29584</a>) (<a href="https://github.com/aws/aws-cdk/commit/5be88a3055fe1e6b55884847d1b8a75b03341b39">5be88a3</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29884" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29884/hovercard">#29884</a></li>
-<li><strong>servicecatalog:</strong> <code>ProductStack</code> memoryLimit prop (<a href="https://github.com/aws/aws-cdk/issues/30105" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30105/hovercard">#30105</a>) (<a href="https://github.com/aws/aws-cdk/commit/4b6dc8c650822bcd0231c8890bd94a934a0cd34d">4b6dc8c</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29862" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29862/hovercard">#29862</a></li>
-</ul>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>apigateway:</strong> set authorization scope when authorization type is Cognito (<a href="https://github.com/aws/aws-cdk/issues/30035" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30035/hovercard">#30035</a>) (<a href="https://github.com/aws/aws-cdk/commit/38a2284bccd9119f3bcc8d0baef8525ab416bb67">38a2284</a>)</li>
-<li><strong>autoscaling:</strong> cooldown cannot be set with step scaling actions (<a href="https://github.com/aws/aws-cdk/issues/30150" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30150/hovercard">#30150</a>) (<a href="https://github.com/aws/aws-cdk/commit/68107624e50d738be7e10fd22072b5a40983e720">6810762</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29779" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29779/hovercard">#29779</a></li>
-<li><strong>cli:</strong> cdk bootstrap --help does not show some options (<a href="https://github.com/aws/aws-cdk/issues/30113" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30113/hovercard">#30113</a>) (<a href="https://github.com/aws/aws-cdk/commit/8debd205b1f52e172de844f349d4e76e39df269d">8debd20</a>)</li>
-<li><strong>cli:</strong> handle attributes of AWS::KMS::Key when hotswapping (<a href="https://github.com/aws/aws-cdk/issues/30112" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30112/hovercard">#30112</a>) (<a href="https://github.com/aws/aws-cdk/commit/a1dcaa6c4a3db245d1becf0e9ace1d488b6d528d">a1dcaa6</a>), closes <a href="https://github.com/aws/aws-cdk/issues/25418" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/25418/hovercard">#25418</a></li>
-<li><strong>cli:</strong> template created during import should be written to assets folder (<a href="https://github.com/aws/aws-cdk/issues/29830" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/29830/hovercard">#29830</a>) (<a href="https://github.com/aws/aws-cdk/commit/a96cf5500242890cddbbaa46af7f7228c7126d98">a96cf55</a>), closes <a href="https://github.com/aws/aws-cdk/issues/22928" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/22928/hovercard">#22928</a> <a href="https://github.com/aws/aws-cdk/issues/22530" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/22530/hovercard">#22530</a></li>
-<li><strong>diff:</strong> properties from ChangeSet diff were ignored (<a href="https://github.com/aws/aws-cdk/issues/30093" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30093/hovercard">#30093</a>) (<a href="https://github.com/aws/aws-cdk/commit/9c3f3f5dbb9b4b9f86911d9cd7c056a9fc0432b3">9c3f3f5</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29731" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29731/hovercard">#29731</a></li>
-<li><strong>ecs:</strong> require task pidMode for Linux-based Fargate tasks, not host (<a href="https://github.com/aws/aws-cdk/issues/30020" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30020/hovercard">#30020</a>) (<a href="https://github.com/aws/aws-cdk/commit/3e9e0a8696630c9368adf012aff1fb919e398164">3e9e0a8</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29995" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29995/hovercard">#29995</a></li>
-<li><strong>eks:</strong> in place updates for EKS security group and Subnets (<a href="https://github.com/aws/aws-cdk/issues/30114" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30114/hovercard">#30114</a>) (<a href="https://github.com/aws/aws-cdk/commit/eb39d9e1924240d433dc91b7f8d98ebcf5cd87c8">eb39d9e</a>), closes <a href="https://github.com/aws/aws-cdk/issues/28584" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/28584/hovercard">#28584</a></li>
-<li><strong>iam:</strong> fromUserArn returns incorrect principalAccount (<a href="https://github.com/aws/aws-cdk/issues/30023" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30023/hovercard">#30023</a>) (<a href="https://github.com/aws/aws-cdk/commit/f9f3681be9fc6a0c998cd26119053c5832ef9806">f9f3681</a>), closes <a href="https://github.com/aws//github.com/aws/aws-cdk/issues/29999/issues/issuecomment-2087672380">/github.com/aws/aws-cdk/issues/29999#issuecomment-2087672380</a></li>
-<li><strong>s3:</strong> add bucket policy dependency to notification resource (<a href="https://github.com/aws/aws-cdk/issues/30053" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30053/hovercard">#30053</a>) (<a href="https://github.com/aws/aws-cdk/commit/71986ff986d13bbb496b33c0554f657e77dbb2d0">71986ff</a>), closes <a href="https://github.com/aws/aws-cdk/issues/27600" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/27600/hovercard">#27600</a> <a href="https://github.com/aws/aws-cdk/issues/16811" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/16811/hovercard">#16811</a></li>
-<li><strong>stepfunctions-tasks:</strong> documentation fix for retryOnServiceExceptions (<a href="https://github.com/aws/aws-cdk/issues/30077" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/30077/hovercard">#30077</a>) (<a href="https://github.com/aws/aws-cdk/commit/205163fc0d2cac84d3d746a98c393e137f0e2388">205163f</a>)</li>
-</ul>
-<hr>
-<h2>Alpha modules (2.142.0-alpha.0)</h2>
-<h3>Features</h3>
-<ul>
-<li><strong>pipes-targets:</strong> add step function target (<a href="https://github.com/aws/aws-cdk/issues/29987" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/29987/hovercard">#29987</a>) (<a href="https://github.com/aws/aws-cdk/commit/b0975e410a404d07952e01303af01224ccfad864">b0975e4</a>), closes <a href="https://github.com/aws/aws-cdk/issues/29665" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29665/hovercard">#29665</a> <a href="https://github.com/aws/aws-cdk/issues/29665" data-hovercard-type="issue" data-hovercard-url="/aws/aws-cdk/issues/29665/hovercard">#29665</a></li>
-<li><strong>redshift:</strong> multi AZ cluster (<a href="https://github.com/aws/aws-cdk/issues/29976" data-hovercard-type="pull_request" data-hovercard-url="/aws/aws-cdk/pull/29976/hovercard">#29976</a>) (<a href="https://github.com/aws/aws-cdk/commit/a53517c6772332cc2a15c9b38e964a933e9c8355">a53517c</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v29.4.0]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v29.4.0</link>
-            <guid>https://github.com/electron/electron/releases/tag/v29.4.0</guid>
-            <pubDate>Wed, 15 May 2024 22:53:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Release Notes for v29.4.0</h1>
-<h2>Fixes</h2>
-<ul>
-<li>Backported fix for <a href="https://github.com/advisories/GHSA-vr4q-vx84-9g5x">CVE-2024-22017</a>. <a href="https://github.com/electron/electron/pull/42128" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42128/hovercard">#42128</a></li>
-</ul>
-<h2>Other Changes</h2>
-<ul>
-<li>Backported fix for 339458194. <a href="https://github.com/electron/electron/pull/42123" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42123/hovercard">#42123</a></li>
-<li>Backported fix for 340221135. <a href="https://github.com/electron/electron/pull/42175" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42175/hovercard">#42175</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from angular: v18.0.0-rc.2]]></title>
-            <link>https://github.com/angular/angular/releases/tag/18.0.0-rc.2</link>
-            <guid>https://github.com/angular/angular/releases/tag/18.0.0-rc.2</guid>
-            <pubDate>Wed, 15 May 2024 22:50:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p><a name="user-content-18.0.0-rc.2"></a></p>
-<h1>18.0.0-rc.2 (2024-05-15)</h1>
-<h3>core</h3>
-<table>
-<thead>
-<tr>
-<th>Commit</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/angular/angular/commit/1fd63e9cff9159a8c10c35a0af43bc986e4e8e26"><img src="https://camo.githubusercontent.com/1d49fdcb4b380321b66b237cfa539ba9fb3afdbff6041996b0c8460552128a2f/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f316664363365396366662d7265666163746f722d79656c6c6f77" alt="refactor - 1fd63e9cff" data-canonical-src="https://img.shields.io/badge/1fd63e9cff-refactor-yellow" style="max-width: 100%;"></a></td>
-<td>deprecate <code>@Component.interpolation</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293293744" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/55778" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/55778/hovercard" href="https://github.com/angular/angular/pull/55778">#55778</a>)</td>
-</tr>
-</tbody>
-</table>
-<h3>forms</h3>
-<table>
-<thead>
-<tr>
-<th>Commit</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/angular/angular/commit/61007dced0f3396c40efcd2617c130633fb9837a"><img src="https://camo.githubusercontent.com/3425e6ba85851d543e0410611fe141d376caf072358d9772e47c1eb19deb762e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f363130303764636564302d6669782d677265656e" alt="fix - 61007dced0" data-canonical-src="https://img.shields.io/badge/61007dced0-fix-green" style="max-width: 100%;"></a></td>
-<td>Add event for forms submitted &amp; reset (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2278414400" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/55667" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/55667/hovercard" href="https://github.com/angular/angular/pull/55667">#55667</a>)</td>
-</tr>
-<tr>
-<td><a href="https://github.com/angular/angular/commit/2e27ca9ddfc1f3f0387cd720071e85ff46f19db6"><img src="https://camo.githubusercontent.com/138c7f37d044c382ff27e8f7445197cf95fe4014261b8213390e37345212afc3/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f326532376361396464662d6669782d677265656e" alt="fix - 2e27ca9ddf" data-canonical-src="https://img.shields.io/badge/2e27ca9ddf-fix-green" style="max-width: 100%;"></a></td>
-<td>Allow canceled async validators to emit. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2216281058" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/55134" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/55134/hovercard" href="https://github.com/angular/angular/pull/55134">#55134</a>)</td>
-</tr>
-</tbody>
-</table>
-<h3>migrations</h3>
-<table>
-<thead>
-<tr>
-<th>Commit</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><a href="https://github.com/angular/angular/commit/c4b2f18709076f8c400bd26226be37ae07e5e83d"><img src="https://camo.githubusercontent.com/55b4b1858bf2307cdfb78200ffa72c7a955f76933d54c02e7074462fbc25ea16/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f633462326631383730392d6669782d677265656e" alt="fix - c4b2f18709" data-canonical-src="https://img.shields.io/badge/c4b2f18709-fix-green" style="max-width: 100%;"></a></td>
-<td>migrate HttpClientTestingModule in test modules (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297062021" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/55803" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/55803/hovercard" href="https://github.com/angular/angular/pull/55803">#55803</a>)</td>
-</tr>
-<tr>
-<td><a href="https://github.com/angular/angular/commit/bb4a4016a9a29a9c56342ee01d866b0c8a3fb419"><img src="https://camo.githubusercontent.com/456f9eca9a8decd70745852f48a2a118ad69ea3553e15a955368e59f8ade160d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f626234613430313661392d6669782d677265656e" alt="fix - bb4a4016a9" data-canonical-src="https://img.shields.io/badge/bb4a4016a9-fix-green" style="max-width: 100%;"></a></td>
-<td>preserve existing properties in HttpClientModule migration (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293079822" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/55777" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/55777/hovercard" href="https://github.com/angular/angular/pull/55777">#55777</a>)</td>
-</tr>
-</tbody>
-</table>
-<h2>Deprecations</h2>
-<h3>core</h3>
-<ul>
-<li><code>@Component.interpolation</code> is deprecated. Use Angular's<br>
-delimiters instead.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmexec: v8.1.1]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmexec-v8.1.1</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmexec-v8.1.1</guid>
-            <pubDate>Wed, 15 May 2024 22:33:51 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmexec-v8.1.0...libnpmexec-v8.1.1">8.1.1</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/ea0b07da149767265f11d5d77d2156e2c9f43e63"><code>ea0b07d</code></a> <a href="https://github.com/npm/cli/pull/7482" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7482/hovercard">#7482</a> <code>pacote@18.0.6</code></li>
-<li><a href="https://github.com/npm/cli/commit/a9a6dcd4427ec82e491a2cad5672d8183e12180f"><code>a9a6dcd</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>pacote@18.0.5</code></li>
-<li><a href="https://github.com/npm/cli/commit/43331e4d0647c3af4cc2aa3db8b47d797584a6d8"><code>43331e4</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>bin-links@4.0.4</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmpack: v7.0.2]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmpack-v7.0.2</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmpack-v7.0.2</guid>
-            <pubDate>Wed, 15 May 2024 22:33:05 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmpack-v7.0.1...libnpmpack-v7.0.2">7.0.2</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/ea0b07da149767265f11d5d77d2156e2c9f43e63"><code>ea0b07d</code></a> <a href="https://github.com/npm/cli/pull/7482" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7482/hovercard">#7482</a> <code>pacote@18.0.6</code></li>
-<li><a href="https://github.com/npm/cli/commit/a9a6dcd4427ec82e491a2cad5672d8183e12180f"><code>a9a6dcd</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>pacote@18.0.5</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: v10.8.0]]></title>
-            <link>https://github.com/npm/cli/releases/tag/v10.8.0</link>
-            <guid>https://github.com/npm/cli/releases/tag/v10.8.0</guid>
-            <pubDate>Wed, 15 May 2024 22:32:34 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/v10.7.0...v10.8.0">10.8.0</a> (2024-05-15)</h2>
-<h3>Features</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/1e375c1f8d16ac114b615c2a2f374099345b0b69"><code>1e375c1</code></a> <a href="https://github.com/npm/cli/pull/7442" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7442/hovercard">#7442</a> create exit handler class (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2270264679" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7442" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7442/hovercard" href="https://github.com/npm/cli/pull/7442">#7442</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>
-<h3>Bug Fixes</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/d5c32899b6ffc6254c96f62a06a854bb2c2b95c5"><code>d5c3289</code></a> <a href="https://github.com/npm/cli/pull/7513" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7513/hovercard">#7513</a> refactor: use output buffer and error for more commands (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2291542735" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7513" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7513/hovercard" href="https://github.com/npm/cli/pull/7513">#7513</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/12f103ce55ed21c9c04f87a101fb64d55ac02d3c"><code>12f103c</code></a> <a href="https://github.com/npm/cli/pull/7533" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7533/hovercard">#7533</a> add first param titles to logs where missing (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2298632775" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7533" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7533/hovercard" href="https://github.com/npm/cli/pull/7533">#7533</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/badeac28faf9fde5f8c05d235219be840999a646"><code>badeac2</code></a> <a href="https://github.com/npm/cli/pull/7521" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7521/hovercard">#7521</a> config: use redact on config output (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293966448" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7521" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7521/hovercard" href="https://github.com/npm/cli/pull/7521">#7521</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/76aef7423ab7e47a5f9b73849b47ba029730d75a"><code>76aef74</code></a> <a href="https://github.com/npm/cli/pull/7520" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7520/hovercard">#7520</a> view: refactor exec and execWorkspaces to call same methods (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293870771" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7520" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7520/hovercard" href="https://github.com/npm/cli/pull/7520">#7520</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/b54cdb836d6c4146a1aa8e1a5fe9655ba2ed0a6a"><code>b54cdb8</code></a> <a href="https://github.com/npm/cli/pull/7515" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7515/hovercard">#7515</a> refactor: create new error output primitives (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2291698432" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7515" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7515/hovercard" href="https://github.com/npm/cli/pull/7515">#7515</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/e40454c35f75b5b814e7b5167c8a8b05664246f3"><code>e40454c</code></a> <a href="https://github.com/npm/cli/pull/7506" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7506/hovercard">#7506</a> view: dont unwrap arrays in json mode (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2290315720" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7506" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7506/hovercard" href="https://github.com/npm/cli/pull/7506">#7506</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/6f6414829fd82704233fbb56375b167495a0aaf5"><code>6f64148</code></a> require stdout to be a TTY for progress (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2290336458" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7507" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7507/hovercard" href="https://github.com/npm/cli/pull/7507">#7507</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/db6291036f076bf0251b74a504bd5b693c29c4bb"><code>db62910</code></a> <a href="https://github.com/npm/cli/pull/7504" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7504/hovercard">#7504</a> config: be more aggressive about hiding protected values (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2289863387" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7504" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7504/hovercard" href="https://github.com/npm/cli/pull/7504">#7504</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/6d456bba46d6afe1e2cf9464908e6ad99375cb7c"><code>6d456bb</code></a> <a href="https://github.com/npm/cli/pull/7497" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7497/hovercard">#7497</a> dont write log file for completion commands (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2288290954" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7497" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7497/hovercard" href="https://github.com/npm/cli/pull/7497">#7497</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/722c0faa387ae6e35886f08eefb238c03ae85db1"><code>722c0fa</code></a> <a href="https://github.com/npm/cli/pull/7463" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7463/hovercard">#7463</a> limit packument cache size based on heap size (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/ca1a68d14d184f2535720ed4715f388965ade21a"><code>ca1a68d</code></a> <a href="https://github.com/npm/cli/pull/7474" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7474/hovercard">#7474</a> log if <code>npm deprecate</code> does not match any version (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2279723014" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7474" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7474/hovercard" href="https://github.com/npm/cli/pull/7474">#7474</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mbtools/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mbtools">@mbtools</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/261ea193c96aaa73ce5630e21c6a31de9f19ef5b"><code>261ea19</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> run input.start around help and openining urls (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/4ab6cf4a9e7fca64f95422f4099b33cdbb9efa25"><code>4ab6cf4</code></a> <a href="https://github.com/npm/cli/pull/7459" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7459/hovercard">#7459</a> publish: validate dist-tag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2274050064" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7459" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7459/hovercard" href="https://github.com/npm/cli/pull/7459">#7459</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/reggi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/reggi">@reggi</a>)</li>
-</ul>
-<h3>Documentation</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/b2ce0250e32abaaaf60d895cda210914bdf903ea"><code>b2ce025</code></a> <a href="https://github.com/npm/cli/pull/7518" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7518/hovercard">#7518</a> suggest correct bin entry (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293776694" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7518" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7518/hovercard" href="https://github.com/npm/cli/pull/7518">#7518</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Santoshraj2/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Santoshraj2">@Santoshraj2</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/bdd2aae12b213815b5d800902b0a9722b263a03c"><code>bdd2aae</code></a> <a href="https://github.com/npm/cli/pull/7502" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7502/hovercard">#7502</a> remove obsolete removal using make uninstall (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2289271504" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7502" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7502/hovercard" href="https://github.com/npm/cli/pull/7502">#7502</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/avinal/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/avinal">@avinal</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/c3d281984ed363ed03d6a7abe083f301c1dd2c88"><code>c3d2819</code></a> <a href="https://github.com/npm/cli/pull/7496" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7496/hovercard">#7496</a> npm help json/global command on windows (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2288080032" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7496" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7496/hovercard" href="https://github.com/npm/cli/pull/7496">#7496</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/klm-turing/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/klm-turing">@klm-turing</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/268303c3b40551ae558f201841d3d5977769a7c9"><code>268303c</code></a> <a href="https://github.com/npm/cli/pull/7479" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7479/hovercard">#7479</a> add npm version to every local help output (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2281459811" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7479" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7479/hovercard" href="https://github.com/npm/cli/pull/7479">#7479</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/klm-turing/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/klm-turing">@klm-turing</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/e39d422d69c2275ed1e3a606447a9b9d87bdca4f"><code>e39d422</code></a> <a href="https://github.com/npm/cli/pull/7473" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7473/hovercard">#7473</a> suggest "npm repo" for showing the repo of a package (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2279555423" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7473" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7473/hovercard" href="https://github.com/npm/cli/pull/7473">#7473</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/full-stop/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/full-stop">@full-stop</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/f6fff3295d19b63003cf49eb1c4805f453c5390a"><code>f6fff32</code></a> <a href="https://github.com/npm/cli/pull/7433" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7433/hovercard">#7433</a> clarify what peerDependenciesMeta does (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2266858547" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7433" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7433/hovercard" href="https://github.com/npm/cli/pull/7433">#7433</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xuhdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xuhdev">@xuhdev</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-</ul>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/1cdc662bd2835531fbe790011a00f88ddb5f6868"><code>1cdc662</code></a> <a href="https://github.com/npm/cli/pull/7522" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7522/hovercard">#7522</a> <code>@tufjs/repo-mock@2.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/898bcfda5c5ac192b2cf5f47d0b939794c1b2164"><code>898bcfd</code></a> <a href="https://github.com/npm/cli/pull/7522" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7522/hovercard">#7522</a> <code>@sigstore/protobuf-specs@0.3.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/fec3c947d7dcc71071a8f527aa5bd81f47015486"><code>fec3c94</code></a> <a href="https://github.com/npm/cli/pull/7522" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7522/hovercard">#7522</a> <code>path-scurry@1.11.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/cb8597316a8d53815835901ae9d5756d4dc481ea"><code>cb85973</code></a> <a href="https://github.com/npm/cli/pull/7522" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7522/hovercard">#7522</a> <code>glob@10.3.15</code></li>
-<li><a href="https://github.com/npm/cli/commit/e18987371399f508cb224e159987b10ddb922bb8"><code>e189873</code></a> <a href="https://github.com/npm/cli/pull/7498" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7498/hovercard">#7498</a> <code>@sigstore/sign@2.3.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/c2b28f9d6cba12e88f849e5b4a82607e2c218a16"><code>c2b28f9</code></a> <a href="https://github.com/npm/cli/pull/7498" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7498/hovercard">#7498</a> <code>minipass@7.1.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/9064ffc6c85309de2e9e798fdc6caca209f5fa18"><code>9064ffc</code></a> <a href="https://github.com/npm/cli/pull/7498" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7498/hovercard">#7498</a> <code>@sigstore/tuf@2.3.3</code></li>
-<li><a href="https://github.com/npm/cli/commit/fd429866c79cc001979135857c019d7d2873f291"><code>fd42986</code></a> <a href="https://github.com/npm/cli/pull/7498" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7498/hovercard">#7498</a> <code>@npmcli/fs@3.1.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/4e53e33757c88ca9c413e3943b17e0cb246e955c"><code>4e53e33</code></a> <a href="https://github.com/npm/cli/pull/7498" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7498/hovercard">#7498</a> <code>semver@7.6.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/f078c8224f6775d53da98f310531524c616e6099"><code>f078c82</code></a> <a href="https://github.com/npm/cli/pull/7495" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7495/hovercard">#7495</a> <code>glob@10.3.14</code></li>
-<li><a href="https://github.com/npm/cli/commit/58f773c99742ef55ac2a9eca23c27b32800c2cf1"><code>58f773c</code></a> <a href="https://github.com/npm/cli/pull/7495" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7495/hovercard">#7495</a> <code>path-scurry@1.11.0</code></li>
-<li><a href="https://github.com/npm/cli/commit/ea0b07da149767265f11d5d77d2156e2c9f43e63"><code>ea0b07d</code></a> <a href="https://github.com/npm/cli/pull/7482" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7482/hovercard">#7482</a> <code>pacote@18.0.6</code></li>
-<li><a href="https://github.com/npm/cli/commit/8d161a414160dab7a930b1668c3af3ba280e8532"><code>8d161a4</code></a> <a href="https://github.com/npm/cli/pull/7482" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7482/hovercard">#7482</a> <code>semver@7.6.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/5b2317b472342428c6521d7b0d550d0fcc9bb202"><code>5b2317b</code></a> <a href="https://github.com/npm/cli/pull/7463" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7463/hovercard">#7463</a> add lru-cache</li>
-<li><a href="https://github.com/npm/cli/commit/26fefb82b3bd812009b8b627e3c19032a931aade"><code>26fefb8</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>promzard@1.0.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/2146e1f83ae94debecfaf08ef32e319c02223c12"><code>2146e1f</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>npm-bundled@3.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/ff6c5d161b52e8961e0c2ebf0467bc1382ef72d2"><code>ff6c5d1</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>minipass-fetch@3.0.5</code></li>
-<li><a href="https://github.com/npm/cli/commit/419f9b9d9d6806d56b68d96bd50f7d25274a8f48"><code>419f9b9</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>cmd-shim@6.0.3</code></li>
-<li><a href="https://github.com/npm/cli/commit/dade2c88d23289d57351d614feaa876d9e1e17f4"><code>dade2c8</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>minipass@7.1.0</code></li>
-<li><a href="https://github.com/npm/cli/commit/18e53129f0f3a19725e377b336336aa85ade3ba5"><code>18e5312</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>validate-npm-package-name@5.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/d44001164f66d15daa3fd27da004194478b7c99c"><code>d440011</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>npm-user-validate@2.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/552113e7a663efdcebfcbcc6148b1d51be55596b"><code>552113e</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>ignore-walk@6.0.5</code></li>
-<li><a href="https://github.com/npm/cli/commit/7e15b6d56abbf47456c12fa2d5688d5d187a0ae7"><code>7e15b6d</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>@npmcli/metavuln-calculator@7.1.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/8b20f8c8ba70e43ad222538fc396dedb071b1680"><code>8b20f8c</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>ssri@10.0.6</code></li>
-<li><a href="https://github.com/npm/cli/commit/a9a6dcd4427ec82e491a2cad5672d8183e12180f"><code>a9a6dcd</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>pacote@18.0.5</code></li>
-<li><a href="https://github.com/npm/cli/commit/e2fdb651cda9ec603f009f5713a5a2b489d49e15"><code>e2fdb65</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>npm-pick-manifest@9.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/310a7a5583d14da761d38b7421ebb6cee65600b6"><code>310a7a5</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>normalize-package-data@6.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/e71f541b020de7940faccffab68d0255c4079e1a"><code>e71f541</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>nopt@7.2.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/18c3b4058c7f721ff585de2f2766e53da897e16e"><code>18c3b40</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>json-parse-even-better-errors@3.0.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/4c5bf77af6db3b447f9b9abc3b67b211d7bb82b8"><code>4c5bf77</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>init-package-json@6.0.3</code></li>
-<li><a href="https://github.com/npm/cli/commit/714e3e1e1ce014cba71db41c2d6c02d9dd53fcd3"><code>714e3e1</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>hosted-git-info@7.0.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/f94d6726a6ca96cad0da88ea499fa22f35b7c4c0"><code>f94d672</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>cacache@18.0.3</code></li>
-<li><a href="https://github.com/npm/cli/commit/43331e4d0647c3af4cc2aa3db8b47d797584a6d8"><code>43331e4</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>bin-links@4.0.4</code></li>
-<li><a href="https://github.com/npm/cli/commit/823441219ce63d7863aede8b22b4b1d07021fd22"><code>8234412</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>@npmcli/promise-spawn@7.0.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/6dfaebb8f08acf992ac36faf4db8b650e8e55eae"><code>6dfaebb</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>@npmcli/git@5.0.7</code></li>
-<li><a href="https://github.com/npm/cli/commit/63ef498bf2916a882a92c0b9fe6de6728584694a"><code>63ef498</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-registry-fetch@17.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/4cbc2d402174933052c7addd6ea55b1ecee202c5"><code>4cbc2d4</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-profile@10.0.0</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/10256e8cbe3583b65cb253a19ba9ee64f21c9584"><code>10256e8</code></a> <a href="https://github.com/npm/cli/pull/7522" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7522/hovercard">#7522</a> dev dependency updates (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/dcfc3deba2bb0066ec5d8b1870719f730adc2e97"><code>dcfc3de</code></a> <a href="https://github.com/npm/cli/pull/7517" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7517/hovercard">#7517</a> convert run-script tests to snapshots (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293761123" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7517" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7517/hovercard" href="https://github.com/npm/cli/pull/7517">#7517</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/8add914841775f239acd838b1d8d52b251d0e1b2"><code>8add914</code></a> <a href="https://github.com/npm/cli/pull/7505" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7505/hovercard">#7505</a> create single bug report issue template (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2290157662" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7505" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7505/hovercard" href="https://github.com/npm/cli/pull/7505">#7505</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/7c7fba4fc92528287e1f2ef5fb8256e60760c201"><code>7c7fba4</code></a> <a href="https://github.com/npm/cli/pull/7500" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7500/hovercard">#7500</a> benchmarks: fix emoji reaction to comment (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2288926263" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7500" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7500/hovercard" href="https://github.com/npm/cli/pull/7500">#7500</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/d3b958756144d71c25cc4bd2020e040a940fbe3b"><code>d3b9587</code></a> <a href="https://github.com/npm/cli/pull/7494" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7494/hovercard">#7494</a> disable progress on npm pack test (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/67ebb66d3ffa61582f8dd63ddbb5679649a5d2a4"><code>67ebb66</code></a> <a href="https://github.com/npm/cli/pull/7494" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7494/hovercard">#7494</a> disable color in config tests (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2ec2e75ee81361a850bca643341d240441870334"><code>2ec2e75</code></a> <a href="https://github.com/npm/cli/pull/7494" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7494/hovercard">#7494</a> disable progress on shellout exit tests (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wraithgar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wraithgar">@wraithgar</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/e9fdc9a792666d5b9aa73833c65516bafcb80863"><code>e9fdc9a</code></a> <a href="https://github.com/npm/cli/pull/7483" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7483/hovercard">#7483</a> create smoke-publish-test.sh script (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2284539719" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7483" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7483/hovercard" href="https://github.com/npm/cli/pull/7483">#7483</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/1524cfd94daaca131ab16180c27323999fab07b3"><code>1524cfd</code></a> <a href="https://github.com/npm/cli/pull/7484" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7484/hovercard">#7484</a> remove extra quotes from benchmark event_type (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2284660458" data-permission-text="Title is private" data-url="https://github.com/npm/cli/issues/7484" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7484/hovercard" href="https://github.com/npm/cli/pull/7484">#7484</a>) (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/8ded848b099297a12a81ec008d6229f3ad3494a6"><code>8ded848</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> remove doctor snapshot stack traces (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmversion: v6.0.2]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmversion-v6.0.2</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmversion-v6.0.2</guid>
-            <pubDate>Wed, 15 May 2024 22:29:36 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmversion-v6.0.1...libnpmversion-v6.0.2">6.0.2</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/18c3b4058c7f721ff585de2f2766e53da897e16e"><code>18c3b40</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>json-parse-even-better-errors@3.0.2</code></li>
-<li><a href="https://github.com/npm/cli/commit/6dfaebb8f08acf992ac36faf4db8b650e8e55eae"><code>6dfaebb</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>@npmcli/git@5.0.7</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmteam: v6.0.5]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmteam-v6.0.5</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmteam-v6.0.5</guid>
-            <pubDate>Wed, 15 May 2024 22:29:35 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmteam-v6.0.4...libnpmteam-v6.0.5">6.0.5</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/63ef498bf2916a882a92c0b9fe6de6728584694a"><code>63ef498</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-registry-fetch@17.0.1</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmsearch: v7.0.5]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmsearch-v7.0.5</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmsearch-v7.0.5</guid>
-            <pubDate>Wed, 15 May 2024 22:29:33 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmsearch-v7.0.4...libnpmsearch-v7.0.5">7.0.5</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/63ef498bf2916a882a92c0b9fe6de6728584694a"><code>63ef498</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-registry-fetch@17.0.1</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmpublish: v9.0.8]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmpublish-v9.0.8</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmpublish-v9.0.8</guid>
-            <pubDate>Wed, 15 May 2024 22:29:32 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmpublish-v9.0.7...libnpmpublish-v9.0.8">9.0.8</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/8b20f8c8ba70e43ad222538fc396dedb071b1680"><code>8b20f8c</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>ssri@10.0.6</code></li>
-<li><a href="https://github.com/npm/cli/commit/310a7a5583d14da761d38b7421ebb6cee65600b6"><code>310a7a5</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>normalize-package-data@6.0.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/63ef498bf2916a882a92c0b9fe6de6728584694a"><code>63ef498</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-registry-fetch@17.0.1</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmorg: v6.0.6]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmorg-v6.0.6</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmorg-v6.0.6</guid>
-            <pubDate>Wed, 15 May 2024 22:29:29 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmorg-v6.0.5...libnpmorg-v6.0.6">6.0.6</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/c2b28f9d6cba12e88f849e5b4a82607e2c218a16"><code>c2b28f9</code></a> <a href="https://github.com/npm/cli/pull/7498" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7498/hovercard">#7498</a> <code>minipass@7.1.1</code></li>
-<li><a href="https://github.com/npm/cli/commit/dade2c88d23289d57351d614feaa876d9e1e17f4"><code>dade2c8</code></a> <a href="https://github.com/npm/cli/pull/7480" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7480/hovercard">#7480</a> <code>minipass@7.1.0</code></li>
-<li><a href="https://github.com/npm/cli/commit/63ef498bf2916a882a92c0b9fe6de6728584694a"><code>63ef498</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-registry-fetch@17.0.1</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmhook: v10.0.5]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmhook-v10.0.5</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmhook-v10.0.5</guid>
-            <pubDate>Wed, 15 May 2024 22:29:27 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/npm/cli/compare/libnpmhook-v10.0.4...libnpmhook-v10.0.5">10.0.5</a> (2024-05-15)</h2>
-<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/63ef498bf2916a882a92c0b9fe6de6728584694a"><code>63ef498</code></a> <a href="https://github.com/npm/cli/pull/7457" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7457/hovercard">#7457</a> <code>npm-registry-fetch@17.0.1</code></li>
-</ul>
-<h3>Chores</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/commit/9c4d3c402c77bd7aaa514ee9e02d7fd87223343e"><code>9c4d3c4</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> template-oss-apply (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-<li><a href="https://github.com/npm/cli/commit/2b7ec54f52f9e8aee568ccb4e34ce4a5733af21a"><code>2b7ec54</code></a> <a href="https://github.com/npm/cli/pull/7467" data-hovercard-type="pull_request" data-hovercard-url="/npm/cli/pull/7467/hovercard">#7467</a> <code>template-oss@4.22.0</code> (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukekarrys/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukekarrys">@lukekarrys</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cli: libnpmfund: v5.0.10]]></title>
-            <link>https://github.com/npm/cli/releases/tag/libnpmfund-v5.0.10</link>
-            <guid>https://github.com/npm/cli/releases/tag/libnpmfund-v5.0.10</guid>
-            <pubDate>Wed, 15 May 2024 22:29:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Dependencies</h3>
-<ul>
-<li><a href="https://github.com/npm/cli/releases/tag/arborist-v7.5.2">workspace</a>: <code>@npmcli/arborist@7.5.2</code></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from nx: 18.3.5]]></title>
-            <link>https://github.com/nrwl/nx/releases/tag/18.3.5</link>
-            <guid>https://github.com/nrwl/nx/releases/tag/18.3.5</guid>
-            <pubDate>Wed, 15 May 2024 21:44:15 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>18.3.5 (2024-05-15)</h2>
-<h3>🩹 Fixes</h3>
-<ul>
-<li><strong>core:</strong> fix affected detection for inputs after named inputs (<a href="https://github.com/nrwl/nx/pull/23354" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/23354/hovercard">#23354</a>)</li>
-</ul>
-<h3>❤️  Thank You</h3>
-<ul>
-<li>Jason Jean <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/FrozenPandaz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/FrozenPandaz">@FrozenPandaz</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from angular: v17.3.9]]></title>
-            <link>https://github.com/angular/angular/releases/tag/17.3.9</link>
-            <guid>https://github.com/angular/angular/releases/tag/17.3.9</guid>
-            <pubDate>Wed, 15 May 2024 20:43:05 GMT</pubDate>
-            <content:encoded><![CDATA[<p><a name="user-content-17.3.9"></a></p>
-<h1>17.3.9 (2024-05-15)</h1>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from node: 2024-05-15, Version 22.2.0 (Current), @targos]]></title>
-            <link>https://github.com/nodejs/node/releases/tag/v22.2.0</link>
-            <guid>https://github.com/nodejs/node/releases/tag/v22.2.0</guid>
-            <pubDate>Wed, 15 May 2024 19:28:44 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Notable Changes</h3>
-<ul>
-<li>[<a href="https://github.com/nodejs/node/commit/fb85d38e80"><code>fb85d38e80</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>cli</strong>: allow running wasm in limited vmem with --disable-wasm-trap-handler (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52766" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52766/hovercard">#52766</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/23a0d3339f"><code>23a0d3339f</code></a>] - <strong>doc</strong>: add pimterry to collaborators (Tim Perry) <a href="https://github.com/nodejs/node/pull/52874" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52874/hovercard">#52874</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/7d7a762156"><code>7d7a762156</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>fs</strong>: allow 'withFileTypes' to be used with globs (Aviv Keller) <a href="https://github.com/nodejs/node/pull/52837" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52837/hovercard">#52837</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/8748dd6477"><code>8748dd6477</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>inspector</strong>: introduce the <code>--inspect-wait</code> flag (Kohei Ueno) <a href="https://github.com/nodejs/node/pull/52734" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52734/hovercard">#52734</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/9a7ae9b6c4"><code>9a7ae9b6c4</code></a>] - <strong>lib,src</strong>: remove --experimental-policy (Rafael Gonzaga) <a href="https://github.com/nodejs/node/pull/52583" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52583/hovercard">#52583</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1f7c2a93fc"><code>1f7c2a93fc</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>perf_hooks</strong>: add <code>deliveryType</code> and <code>responseStatus</code> fields (Matthew Aitken) <a href="https://github.com/nodejs/node/pull/51589" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51589/hovercard">#51589</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/2f59529dc5"><code>2f59529dc5</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>test_runner</strong>: support test plans (Colin Ihrig) <a href="https://github.com/nodejs/node/pull/52860" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52860/hovercard">#52860</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/6b4dac3eb5"><code>6b4dac3eb5</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>zlib</strong>: expose zlib.crc32() (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52692" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52692/hovercard">#52692</a></li>
-</ul>
-<h3>Commits</h3>
-<ul>
-<li>[<a href="https://github.com/nodejs/node/commit/0f5716c364"><code>0f5716c364</code></a>] - <strong>assert</strong>: add deep equal check for more Error type (Zhenwei Jin) <a href="https://github.com/nodejs/node/pull/51805" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51805/hovercard">#51805</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/2c7d7caa8a"><code>2c7d7caa8a</code></a>] - <strong>benchmark</strong>: filter non-present deps from <code>start-cli-version</code> (Adam Majer) <a href="https://github.com/nodejs/node/pull/51746" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51746/hovercard">#51746</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5db4c54bd6"><code>5db4c54bd6</code></a>] - <strong>bootstrap</strong>: print <code>--help</code> message using <code>console.log</code> (Jacob Hummer) <a href="https://github.com/nodejs/node/pull/51463" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51463/hovercard">#51463</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/67fcb6b85e"><code>67fcb6b85e</code></a>] - <strong>buffer</strong>: even faster atob (Daniel Lemire) <a href="https://github.com/nodejs/node/pull/52443" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52443/hovercard">#52443</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a5d63f9052"><code>a5d63f9052</code></a>] - <strong>buffer</strong>: use size_t instead of uint32_t to avoid segmentation fault (Xavier Stouder) <a href="https://github.com/nodejs/node/pull/48033" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/48033/hovercard">#48033</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f1bc994826"><code>f1bc994826</code></a>] - <strong>buffer</strong>: remove lines setting indexes to integer value (Zhenwei Jin) <a href="https://github.com/nodejs/node/pull/52588" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52588/hovercard">#52588</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a97ff753ab"><code>a97ff753ab</code></a>] - <strong>build</strong>: add option to enable clang-cl on Windows (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52870" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52870/hovercard">#52870</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f96466a92c"><code>f96466a92c</code></a>] - <strong>build</strong>: enable building with shared uvwasi lib (Pooja D P) <a href="https://github.com/nodejs/node/pull/43987" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/43987/hovercard">#43987</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/b463385aa8"><code>b463385aa8</code></a>] - <strong>build</strong>: remove deprecated calls for argument groups (Mohammed Keyvanzadeh) <a href="https://github.com/nodejs/node/pull/52913" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52913/hovercard">#52913</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/daeb7dbb3e"><code>daeb7dbb3e</code></a>] - <strong>build</strong>: sync V8 warning cflags with BUILD.gn (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52873" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52873/hovercard">#52873</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/eed967430d"><code>eed967430d</code></a>] - <strong>build</strong>: harmonize Clang checks (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52873" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52873/hovercard">#52873</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e4b187433d"><code>e4b187433d</code></a>] - <strong>build</strong>: compile with C++20 support (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52838" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52838/hovercard">#52838</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/aea6ca25ba"><code>aea6ca25ba</code></a>] - <strong>build</strong>: drop base64 dep in GN build (Cheng) <a href="https://github.com/nodejs/node/pull/52856" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52856/hovercard">#52856</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/7f866a8225"><code>7f866a8225</code></a>] - <strong>build</strong>: make simdjson a public dep in GN build (Cheng) <a href="https://github.com/nodejs/node/pull/52755" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52755/hovercard">#52755</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e1bd53c098"><code>e1bd53c098</code></a>] - <strong>build</strong>: define <code>NOMINMAX</code> in common.gypi (Chengzhong Wu) <a href="https://github.com/nodejs/node/pull/52794" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52794/hovercard">#52794</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/18c530f8f7"><code>18c530f8f7</code></a>] - <strong>build, tools</strong>: copy release assets to staging R2 bucket once built (flakey5) <a href="https://github.com/nodejs/node/pull/51394" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51394/hovercard">#51394</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fb85d38e80"><code>fb85d38e80</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>cli</strong>: allow running wasm in limited vmem with --disable-wasm-trap-handler (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52766" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52766/hovercard">#52766</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/11e978916f"><code>11e978916f</code></a>] - <strong>cluster</strong>: replace <code>forEach</code> with <code>for-of</code> loop (Jérôme Benoit) <a href="https://github.com/nodejs/node/pull/50317" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/50317/hovercard">#50317</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/db76c58d68"><code>db76c58d68</code></a>] - <strong>console</strong>: colorize console error and warn (Jithil P Ponnan) <a href="https://github.com/nodejs/node/pull/51629" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51629/hovercard">#51629</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/0d040a3035"><code>0d040a3035</code></a>] - <strong>crypto</strong>: fix duplicated switch-case return values (Mustafa Ateş UZUN) <a href="https://github.com/nodejs/node/pull/49030" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/49030/hovercard">#49030</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ab7219f0b2"><code>ab7219f0b2</code></a>] - <strong>deps</strong>: update googletest to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/nodejs/node/commit/fa6de7f054feb2da23b9b188438f89b550e1bc9d/hovercard" href="https://github.com/nodejs/node/commit/fa6de7f054feb2da23b9b188438f89b550e1bc9d"><tt>fa6de7f</tt></a> (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52949" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52949/hovercard">#52949</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/4ab096eccc"><code>4ab096eccc</code></a>] - <strong>deps</strong>: update simdjson to 3.9.2 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52947" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52947/hovercard">#52947</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/89f275b1df"><code>89f275b1df</code></a>] - <strong>deps</strong>: update corepack to 0.28.1 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52946" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52946/hovercard">#52946</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fc568b4b42"><code>fc568b4b42</code></a>] - <strong>deps</strong>: update simdutf to 5.2.8 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52727" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52727/hovercard">#52727</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e399360182"><code>e399360182</code></a>] - <strong>deps</strong>: update simdutf to 5.2.6 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52727" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52727/hovercard">#52727</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/232831f013"><code>232831f013</code></a>] - <strong>deps</strong>: enable unbundling of simdjson, simdutf, ada (Daniel Lemire) <a href="https://github.com/nodejs/node/pull/52924" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52924/hovercard">#52924</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/7ca83a5abc"><code>7ca83a5abc</code></a>] - <strong>deps</strong>: update googletest to 2d16ed0 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/3b15eb5911"><code>3b15eb5911</code></a>] - <strong>deps</strong>: update googletest to d83fee1 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/4190d70035"><code>4190d70035</code></a>] - <strong>deps</strong>: update googletest to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/nodejs/node/commit/5a37b51f14885d006afedd6520b7dc20798dd352/hovercard" href="https://github.com/nodejs/node/commit/5a37b51f14885d006afedd6520b7dc20798dd352"><tt>5a37b51</tt></a> (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/7a166a2871"><code>7a166a2871</code></a>] - <strong>deps</strong>: update googletest to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/nodejs/node/commit/5197b1ac31f667b33e5193ca4ae5af419675ef97/hovercard" href="https://github.com/nodejs/node/commit/5197b1ac31f667b33e5193ca4ae5af419675ef97"><tt>5197b1a</tt></a> (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/812dbd749f"><code>812dbd749f</code></a>] - <strong>deps</strong>: update googletest to eff443c (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/cb3ae4b9ef"><code>cb3ae4b9ef</code></a>] - <strong>deps</strong>: update googletest to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/nodejs/node/commit/c231e6fa1016d17d25fe6eb005b82595d512c44d/hovercard" href="https://github.com/nodejs/node/commit/c231e6fa1016d17d25fe6eb005b82595d512c44d"><tt>c231e6f</tt></a> (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/d97317aaa1"><code>d97317aaa1</code></a>] - <strong>deps</strong>: update googletest to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/nodejs/node/commit/e4fdb8735ed469d046fe3200f130ad4f302c51f9/hovercard" href="https://github.com/nodejs/node/commit/e4fdb8735ed469d046fe3200f130ad4f302c51f9"><tt>e4fdb87</tt></a> (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ad8ca1259f"><code>ad8ca1259f</code></a>] - <strong>deps</strong>: update googletest to <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/nodejs/node/commit/5df02416861c72adeb21845baf5607c51f7bb5bd/hovercard" href="https://github.com/nodejs/node/commit/5df02416861c72adeb21845baf5607c51f7bb5bd"><tt>5df0241</tt></a> (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/828f0d7096"><code>828f0d7096</code></a>] - <strong>deps</strong>: update googletest to b75ecf1 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/3b60dbcf7b"><code>3b60dbcf7b</code></a>] - <strong>deps</strong>: update googletest to 4565741 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/51657" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51657/hovercard">#51657</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/37098eb880"><code>37098eb880</code></a>] - <strong>deps</strong>: update simdjson to 3.9.1 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52397" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52397/hovercard">#52397</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a13cf1c049"><code>a13cf1c049</code></a>] - <strong>deps</strong>: update uvwasi to 0.0.21 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52863" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52863/hovercard">#52863</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/faf8ada719"><code>faf8ada719</code></a>] - <strong>deps</strong>: V8: cherry-pick f6bef09b3b0a (Richard Lau) <a href="https://github.com/nodejs/node/pull/52802" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52802/hovercard">#52802</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/8e5844c2a4"><code>8e5844c2a4</code></a>] - <strong>doc</strong>: remove reference to AUTHORS file (Marco Ippolito) <a href="https://github.com/nodejs/node/pull/52960" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52960/hovercard">#52960</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1f3634e30f"><code>1f3634e30f</code></a>] - <strong>doc</strong>: update hljs with the latest styles (Aviv Keller) <a href="https://github.com/nodejs/node/pull/52911" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52911/hovercard">#52911</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/9102255749"><code>9102255749</code></a>] - <strong>doc</strong>: mention quicker way to build docs (Alex Crawford) <a href="https://github.com/nodejs/node/pull/52937" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52937/hovercard">#52937</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/15db3ef5fb"><code>15db3ef5fb</code></a>] - <strong>doc</strong>: mention push.followTags config (Rafael Gonzaga) <a href="https://github.com/nodejs/node/pull/52906" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52906/hovercard">#52906</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/80fa675af2"><code>80fa675af2</code></a>] - <strong>doc</strong>: document pipeline with <code>end</code> option (Alois Klink) <a href="https://github.com/nodejs/node/pull/48970" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/48970/hovercard">#48970</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/c0000f4118"><code>c0000f4118</code></a>] - <strong>doc</strong>: add example for <code>execFileSync</code> method and ref to stdio (Evan Shortiss) <a href="https://github.com/nodejs/node/pull/39412" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/39412/hovercard">#39412</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e0148e2653"><code>e0148e2653</code></a>] - <strong>doc</strong>: add examples and notes to http server.close et al (mary marchini) <a href="https://github.com/nodejs/node/pull/49091" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/49091/hovercard">#49091</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/030f56ee6d"><code>030f56ee6d</code></a>] - <strong>doc</strong>: fix <code>dns.lookup</code> family <code>0</code> and <code>all</code> descriptions (Adam Jones) <a href="https://github.com/nodejs/node/pull/51653" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51653/hovercard">#51653</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a6d624cd5a"><code>a6d624cd5a</code></a>] - <strong>doc</strong>: update <code>fs.realpath</code> documentation (sinkhaha) <a href="https://github.com/nodejs/node/pull/48170" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/48170/hovercard">#48170</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5dab187ca8"><code>5dab187ca8</code></a>] - <strong>doc</strong>: update fs read documentation for clarity (Mert Can Altin) <a href="https://github.com/nodejs/node/pull/52453" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52453/hovercard">#52453</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5d3ee7205d"><code>5d3ee7205d</code></a>] - <strong>doc</strong>: watermark string behavior (Benjamin Gruenbaum) <a href="https://github.com/nodejs/node/pull/52842" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52842/hovercard">#52842</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/2dd8f092a8"><code>2dd8f092a8</code></a>] - <strong>doc</strong>: exclude commits with baking-for-lts (Marco Ippolito) <a href="https://github.com/nodejs/node/pull/52896" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52896/hovercard">#52896</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/0c2539b913"><code>0c2539b913</code></a>] - <strong>doc</strong>: add names next to release key bash commands (Aviv Keller) <a href="https://github.com/nodejs/node/pull/52878" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52878/hovercard">#52878</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/23a0d3339f"><code>23a0d3339f</code></a>] - <strong>doc</strong>: add pimterry to collaborators (Tim Perry) <a href="https://github.com/nodejs/node/pull/52874" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52874/hovercard">#52874</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/15aad62e0c"><code>15aad62e0c</code></a>] - <strong>doc</strong>: update BUILDING.md previous versions links (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52852" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52852/hovercard">#52852</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f770a993d4"><code>f770a993d4</code></a>] - <strong>doc</strong>: add more definitions to GLOSSARY.md (Aviv Keller) <a href="https://github.com/nodejs/node/pull/52798" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52798/hovercard">#52798</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f35b838a65"><code>f35b838a65</code></a>] - <strong>doc</strong>: make docs more welcoming and descriptive for newcomers (Serkan Özel) <a href="https://github.com/nodejs/node/pull/38056" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/38056/hovercard">#38056</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/562a019a14"><code>562a019a14</code></a>] - <strong>doc</strong>: add OpenSSL errors to API docs (John Lamp) <a href="https://github.com/nodejs/node/pull/34213" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/34213/hovercard">#34213</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/0cb7cf7aa9"><code>0cb7cf7aa9</code></a>] - <strong>doc</strong>: fix grammatical mistake (codershiba) <a href="https://github.com/nodejs/node/pull/52808" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52808/hovercard">#52808</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a0147ff8d0"><code>a0147ff8d0</code></a>] - <strong>doc</strong>: simplify copy-pasting of <code>branch-diff</code> commands (Antoine du Hamel) <a href="https://github.com/nodejs/node/pull/52757" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52757/hovercard">#52757</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fce31fc829"><code>fce31fc829</code></a>] - <strong>doc</strong>: add test_runner to subsystem (Raz Luvaton) <a href="https://github.com/nodejs/node/pull/52774" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52774/hovercard">#52774</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ca5607bbc8"><code>ca5607bbc8</code></a>] - <strong>events</strong>: update MaxListenersExceededWarning message log (sinkhaha) <a href="https://github.com/nodejs/node/pull/51921" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51921/hovercard">#51921</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/96566fc696"><code>96566fc696</code></a>] - <strong>events</strong>: add stop propagation flag to <code>Event.stopImmediatePropagation</code> (Mickael Meausoone) <a href="https://github.com/nodejs/node/pull/39463" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/39463/hovercard">#39463</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5ee69243ed"><code>5ee69243ed</code></a>] - <strong>events</strong>: replace NodeCustomEvent with CustomEvent (Feng Yu) <a href="https://github.com/nodejs/node/pull/43876" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/43876/hovercard">#43876</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f076e721cb"><code>f076e721cb</code></a>] - <strong>fs</strong>: keep fs.promises.readFile read until EOF is reached (Zhenwei Jin) <a href="https://github.com/nodejs/node/pull/52178" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52178/hovercard">#52178</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/7d7a762156"><code>7d7a762156</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>fs</strong>: allow 'withFileTypes' to be used with globs (Aviv Keller) <a href="https://github.com/nodejs/node/pull/52837" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52837/hovercard">#52837</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ad9c4bddb1"><code>ad9c4bddb1</code></a>] - <strong>http</strong>: correctly translate HTTP method (Paolo Insogna) <a href="https://github.com/nodejs/node/pull/52701" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52701/hovercard">#52701</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/8748dd6477"><code>8748dd6477</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>inspector</strong>: introduce the <code>--inspect-wait</code> flag (Kohei Ueno) <a href="https://github.com/nodejs/node/pull/52734" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52734/hovercard">#52734</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/9a7ae9b6c4"><code>9a7ae9b6c4</code></a>] - <strong>lib,src</strong>: remove --experimental-policy (Rafael Gonzaga) <a href="https://github.com/nodejs/node/pull/52583" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52583/hovercard">#52583</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a850219600"><code>a850219600</code></a>] - <strong>meta</strong>: move <code>@anonrig</code> to TSC regular member (Yagiz Nizipli) <a href="https://github.com/nodejs/node/pull/52932" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52932/hovercard">#52932</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/4dc8a387b3"><code>4dc8a387b3</code></a>] - <strong>meta</strong>: add mailmap entry for legendecas (Chengzhong Wu) <a href="https://github.com/nodejs/node/pull/52795" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52795/hovercard">#52795</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/d10182d81d"><code>d10182d81d</code></a>] - <strong>meta</strong>: bump actions/checkout from 4.1.1 to 4.1.4 (dependabot[bot]) <a href="https://github.com/nodejs/node/pull/52787" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52787/hovercard">#52787</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/48d0ac0665"><code>48d0ac0665</code></a>] - <strong>meta</strong>: bump github/codeql-action from 3.24.9 to 3.25.3 (dependabot[bot]) <a href="https://github.com/nodejs/node/pull/52786" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52786/hovercard">#52786</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/7c7a25150e"><code>7c7a25150e</code></a>] - <strong>meta</strong>: bump actions/upload-artifact from 4.3.1 to 4.3.3 (dependabot[bot]) <a href="https://github.com/nodejs/node/pull/52785" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52785/hovercard">#52785</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/d9abf18342"><code>d9abf18342</code></a>] - <strong>meta</strong>: bump actions/download-artifact from 4.1.4 to 4.1.7 (dependabot[bot]) <a href="https://github.com/nodejs/node/pull/52784" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52784/hovercard">#52784</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/590e5c6c45"><code>590e5c6c45</code></a>] - <strong>meta</strong>: bump codecov/codecov-action from 4.1.1 to 4.3.1 (dependabot[bot]) <a href="https://github.com/nodejs/node/pull/52783" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52783/hovercard">#52783</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/b3d1720515"><code>b3d1720515</code></a>] - <strong>meta</strong>: bump step-security/harden-runner from 2.7.0 to 2.7.1 (dependabot[bot]) <a href="https://github.com/nodejs/node/pull/52782" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52782/hovercard">#52782</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f74beb53de"><code>f74beb53de</code></a>] - <strong>module</strong>: cache synchronous module jobs before linking (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52868" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52868/hovercard">#52868</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/8fbf6628d6"><code>8fbf6628d6</code></a>] - <strong>module</strong>: have a single hooks thread for all workers (Gabriel Bota) <a href="https://github.com/nodejs/node/pull/52706" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52706/hovercard">#52706</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/609d90bb4b"><code>609d90bb4b</code></a>] - <strong>path</strong>: fix toNamespacedPath on Windows (Hüseyin Açacak) <a href="https://github.com/nodejs/node/pull/52915" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52915/hovercard">#52915</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1f7c2a93fc"><code>1f7c2a93fc</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>perf_hooks</strong>: add <code>deliveryType</code> and <code>responseStatus</code> fields (Matthew Aitken) <a href="https://github.com/nodejs/node/pull/51589" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51589/hovercard">#51589</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/0bbc62c42a"><code>0bbc62c42a</code></a>] - <strong>process</strong>: improve event-loop (Aras Abbasi) <a href="https://github.com/nodejs/node/pull/52108" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52108/hovercard">#52108</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/619ac79abb"><code>619ac79abb</code></a>] - <strong>quic</strong>: address coverity warning (Michael Dawson) <a href="https://github.com/nodejs/node/pull/52824" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52824/hovercard">#52824</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/04de5766ee"><code>04de5766ee</code></a>] - <strong>repl</strong>: fix disruptive autocomplete without inspector (Nitzan Uziely) <a href="https://github.com/nodejs/node/pull/40661" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/40661/hovercard">#40661</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/663bb973ab"><code>663bb973ab</code></a>] - <strong>src</strong>: fix Worker termination in <code>inspector.waitForDebugger</code> (Daeyeon Jeong) <a href="https://github.com/nodejs/node/pull/52527" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52527/hovercard">#52527</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fca38b2d6e"><code>fca38b2d6e</code></a>] - <strong>src</strong>: use <code>S_ISDIR</code> to check if the file is a directory (theanarkh) <a href="https://github.com/nodejs/node/pull/52164" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52164/hovercard">#52164</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/b228db579f"><code>b228db579f</code></a>] - <strong>src</strong>: allow preventing debug signal handler start (Shelley Vohr) <a href="https://github.com/nodejs/node/pull/46681" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/46681/hovercard">#46681</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ace65a9aac"><code>ace65a9aac</code></a>] - <strong>src</strong>: make sure pass the <code>argv</code> to worker threads (theanarkh) <a href="https://github.com/nodejs/node/pull/52827" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52827/hovercard">#52827</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/75004d32ab"><code>75004d32ab</code></a>] - <strong>src</strong>: fix typo Unabled -&gt; Unable (Simon Siefke) <a href="https://github.com/nodejs/node/pull/52820" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52820/hovercard">#52820</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/c40a8273ef"><code>c40a8273ef</code></a>] - <strong>src</strong>: avoid unused variable 'error' warning (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52886" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52886/hovercard">#52886</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/d169d0f181"><code>d169d0f181</code></a>] - <strong>src</strong>: fix positional args in task runner (Yagiz Nizipli) <a href="https://github.com/nodejs/node/pull/52810" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52810/hovercard">#52810</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/9c76c95c10"><code>9c76c95c10</code></a>] - <strong>src</strong>: only apply fix in main thread (Paolo Insogna) <a href="https://github.com/nodejs/node/pull/52702" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52702/hovercard">#52702</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e1cba97df3"><code>e1cba97df3</code></a>] - <strong>src</strong>: fix test local edge case (Paolo Insogna) <a href="https://github.com/nodejs/node/pull/52702" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52702/hovercard">#52702</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/dc41c135d7"><code>dc41c135d7</code></a>] - <strong>src</strong>: reduce unnecessary serialization of CLI options in C++ (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52451" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52451/hovercard">#52451</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fb24c4475c"><code>fb24c4475c</code></a>] - <strong>src</strong>: rewrite task runner in c++ (Yagiz Nizipli) <a href="https://github.com/nodejs/node/pull/52609" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52609/hovercard">#52609</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/323f95de9e"><code>323f95de9e</code></a>] - <strong>src</strong>: migrate to new V8 interceptors API (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52745" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52745/hovercard">#52745</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/850ff02931"><code>850ff02931</code></a>] - <strong>src,permission</strong>: resolve path on fs_permission (Rafael Gonzaga) <a href="https://github.com/nodejs/node/pull/52761" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52761/hovercard">#52761</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/8d3b0b7ade"><code>8d3b0b7ade</code></a>] - <strong>stream</strong>: use <code>ByteLengthQueuingStrategy</code> when not in <code>objectMode</code> (Jason) <a href="https://github.com/nodejs/node/pull/48847" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/48847/hovercard">#48847</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fa715437b0"><code>fa715437b0</code></a>] - <strong>stream</strong>: fix util.inspect for compression/decompressionStream (Mert Can Altin) <a href="https://github.com/nodejs/node/pull/52283" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52283/hovercard">#52283</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/b0e6a6b3d5"><code>b0e6a6b3d5</code></a>] - <strong>string_decoder</strong>: throw an error when writing a too long buffer (zhenweijin) <a href="https://github.com/nodejs/node/pull/52215" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52215/hovercard">#52215</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e016e952e6"><code>e016e952e6</code></a>] - <strong>test</strong>: add <code>Debugger.setInstrumentationBreakpoint</code> known issue (Konstantin Ulitin) <a href="https://github.com/nodejs/node/pull/31137" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/31137/hovercard">#31137</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a589de0886"><code>a589de0886</code></a>] - <strong>test</strong>: use <code>for-of</code> instead of <code>forEach</code> (Gibby Free) <a href="https://github.com/nodejs/node/pull/49790" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/49790/hovercard">#49790</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/578868ddf8"><code>578868ddf8</code></a>] - <strong>test</strong>: verify request payload is uploaded consistently (Austin Wright) <a href="https://github.com/nodejs/node/pull/34066" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/34066/hovercard">#34066</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/c676e522e6"><code>c676e522e6</code></a>] - <strong>test</strong>: add fuzzer for native/js string conversion (Adam Korczynski) <a href="https://github.com/nodejs/node/pull/51120" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51120/hovercard">#51120</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5f6415b41d"><code>5f6415b41d</code></a>] - <strong>test</strong>: add fuzzer for <code>ClientHelloParser</code> (AdamKorcz) <a href="https://github.com/nodejs/node/pull/51088" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51088/hovercard">#51088</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/4d50d51a5e"><code>4d50d51a5e</code></a>] - <strong>test</strong>: fix broken env fuzzer by initializing process (AdamKorcz) <a href="https://github.com/nodejs/node/pull/51080" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51080/hovercard">#51080</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/cd00cdcbc8"><code>cd00cdcbc8</code></a>] - <strong>test</strong>: replace <code>forEach()</code> in <code>test-stream-pipe-unpipe-stream</code> (Dario) <a href="https://github.com/nodejs/node/pull/50786" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/50786/hovercard">#50786</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5469adf458"><code>5469adf458</code></a>] - <strong>test</strong>: test pipeline <code>end</code> on transform streams (Alois Klink) <a href="https://github.com/nodejs/node/pull/48970" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/48970/hovercard">#48970</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ea6070b0e8"><code>ea6070b0e8</code></a>] - <strong>test</strong>: improve coverage of lib/readline.js (Rongjian Zhang) <a href="https://github.com/nodejs/node/pull/38646" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/38646/hovercard">#38646</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/4f96b00307"><code>4f96b00307</code></a>] - <strong>test</strong>: updated for each to for of in test file (lyannel) <a href="https://github.com/nodejs/node/pull/50308" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/50308/hovercard">#50308</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5d91cf1976"><code>5d91cf1976</code></a>] - <strong>test</strong>: move <code>test-http-server-request-timeouts-mixed</code> to sequential (Madhuri) <a href="https://github.com/nodejs/node/pull/45722" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/45722/hovercard">#45722</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f47e8fccbb"><code>f47e8fccbb</code></a>] - <strong>test</strong>: fix DNS cancel tests (Szymon Marczak) <a href="https://github.com/nodejs/node/pull/44432" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/44432/hovercard">#44432</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/0b073f885a"><code>0b073f885a</code></a>] - <strong>test</strong>: add http agent to <code>executionAsyncResource</code> (psj-tar-gz) <a href="https://github.com/nodejs/node/pull/34966" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/34966/hovercard">#34966</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/fbce3178ba"><code>fbce3178ba</code></a>] - <strong>test</strong>: reduce memory usage of test-worker-stdio (Adam Majer) <a href="https://github.com/nodejs/node/pull/37769" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/37769/hovercard">#37769</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1f8eaec454"><code>1f8eaec454</code></a>] - <strong>test</strong>: add common.expectRequiredModule() (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52868" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52868/hovercard">#52868</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/5e731da572"><code>5e731da572</code></a>] - <strong>test</strong>: skip unstable shadow realm gc tests (Chengzhong Wu) <a href="https://github.com/nodejs/node/pull/52855" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52855/hovercard">#52855</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/30a35ae522"><code>30a35ae522</code></a>] - <strong>test</strong>: crypto-rsa-dsa testing for dynamic openssl (Michael Dawson) <a href="https://github.com/nodejs/node/pull/52781" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52781/hovercard">#52781</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/968fe6a8b1"><code>968fe6a8b1</code></a>] - <strong>test</strong>: skip some console tests on dumb terminal (Adam Majer) <a href="https://github.com/nodejs/node/pull/37770" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/37770/hovercard">#37770</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1448959e0d"><code>1448959e0d</code></a>] - <strong>test</strong>: skip v8-updates/test-linux-perf-logger (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52821" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52821/hovercard">#52821</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/30a4248b48"><code>30a4248b48</code></a>] - <strong>test</strong>: add env variable test for --run (Yagiz Nizipli) <a href="https://github.com/nodejs/node/pull/52811" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52811/hovercard">#52811</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/edb4ed3bc9"><code>edb4ed3bc9</code></a>] - <strong>test</strong>: drop test-crypto-timing-safe-equal-benchmarks (Rafael Gonzaga) <a href="https://github.com/nodejs/node/pull/52751" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52751/hovercard">#52751</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/944ae598b5"><code>944ae598b5</code></a>] - <strong>test, crypto</strong>: use correct object on assert (响马) <a href="https://github.com/nodejs/node/pull/51820" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51820/hovercard">#51820</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a814e720fa"><code>a814e720fa</code></a>] - <strong>test_runner</strong>: fix watch mode race condition (Moshe Atlow) <a href="https://github.com/nodejs/node/pull/52954" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52954/hovercard">#52954</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/2f59529dc5"><code>2f59529dc5</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>test_runner</strong>: support test plans (Colin Ihrig) <a href="https://github.com/nodejs/node/pull/52860" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52860/hovercard">#52860</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/3267b3c063"><code>3267b3c063</code></a>] - <strong>test_runner</strong>: display failed test stack trace with dot reporter (Mihir Bhansali) <a href="https://github.com/nodejs/node/pull/52655" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52655/hovercard">#52655</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/b96868b4e7"><code>b96868b4e7</code></a>] - <strong>test_runner</strong>: preserve hook promise when executed twice (Moshe Atlow) <a href="https://github.com/nodejs/node/pull/52791" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52791/hovercard">#52791</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/74341ba3c9"><code>74341ba3c9</code></a>] - <strong>tools</strong>: fix v8-update workflow (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52957" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52957/hovercard">#52957</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/afe39ed0df"><code>afe39ed0df</code></a>] - <strong>tools</strong>: add --certify-safe to nci-ci (Matteo Collina) <a href="https://github.com/nodejs/node/pull/52940" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52940/hovercard">#52940</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/bb97e1ccdd"><code>bb97e1ccdd</code></a>] - <strong>tools</strong>: fix doc update action (Marco Ippolito) <a href="https://github.com/nodejs/node/pull/52890" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52890/hovercard">#52890</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/c6043fe6c8"><code>c6043fe6c8</code></a>] - <strong>tools</strong>: fix get_asan_state() in tools/test.py (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52766" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52766/hovercard">#52766</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/6e71accc5f"><code>6e71accc5f</code></a>] - <strong>tools</strong>: support max_virtual_memory test configuration (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52766" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52766/hovercard">#52766</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1600bdac60"><code>1600bdac60</code></a>] - <strong>tools</strong>: support != in test status files (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52766" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52766/hovercard">#52766</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/8ce23dc9f3"><code>8ce23dc9f3</code></a>] - <strong>tools</strong>: update gyp-next to 0.18.0 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52835" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52835/hovercard">#52835</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/c5f832adc0"><code>c5f832adc0</code></a>] - <strong>tools</strong>: update gyp-next to 0.17.0 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52835" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52835/hovercard">#52835</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/646a094782"><code>646a094782</code></a>] - <strong>tools</strong>: prepare custom rules for ESLint v9 (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52889" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52889/hovercard">#52889</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/505566347d"><code>505566347d</code></a>] - <strong>tools</strong>: update lint-md-dependencies to rollup@4.17.2 (Node.js GitHub Bot) <a href="https://github.com/nodejs/node/pull/52836" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52836/hovercard">#52836</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/466e0c1321"><code>466e0c1321</code></a>] - <strong>tools</strong>: update <code>gr2m/create-or-update-pull-request-action</code> (Antoine du Hamel) <a href="https://github.com/nodejs/node/pull/52843" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52843/hovercard">#52843</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ce7a751ad1"><code>ce7a751ad1</code></a>] - <strong>tools</strong>: use sccache GitHub action (Michaël Zasso) <a href="https://github.com/nodejs/node/pull/52839" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52839/hovercard">#52839</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/1ee38a5ec1"><code>1ee38a5ec1</code></a>] - <strong>tools</strong>: specify a commit-message for V8 update workflow (Antoine du Hamel) <a href="https://github.com/nodejs/node/pull/52844" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52844/hovercard">#52844</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/317998a1e8"><code>317998a1e8</code></a>] - <strong>tools</strong>: fix V8 update workflow (Antoine du Hamel) <a href="https://github.com/nodejs/node/pull/52822" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52822/hovercard">#52822</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/ef6a2101e2"><code>ef6a2101e2</code></a>] - <strong>url,tools,benchmark</strong>: replace deprecated <code>substr()</code> (Jungku Lee) <a href="https://github.com/nodejs/node/pull/51546" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/51546/hovercard">#51546</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/0deef2d2b1"><code>0deef2d2b1</code></a>] - <strong>util</strong>: fix <code>%s</code> format behavior with <code>Symbol.toPrimitive</code> (Chenyu Yang) <a href="https://github.com/nodejs/node/pull/50992" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/50992/hovercard">#50992</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/a42b93b9aa"><code>a42b93b9aa</code></a>] - <strong>util</strong>: improve <code>isInsideNodeModules</code> (uzlopak) <a href="https://github.com/nodejs/node/pull/52147" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52147/hovercard">#52147</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/d71e16154a"><code>d71e16154a</code></a>] - <strong>watch</strong>: allow listening for grouped changes (Matthieu Sieben) <a href="https://github.com/nodejs/node/pull/52722" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52722/hovercard">#52722</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/e895f7cf32"><code>e895f7cf32</code></a>] - <strong>watch</strong>: enable passthrough ipc in watch mode (Zack) <a href="https://github.com/nodejs/node/pull/50890" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/50890/hovercard">#50890</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/f5d925706a"><code>f5d925706a</code></a>] - <strong>watch</strong>: fix arguments parsing (Moshe Atlow) <a href="https://github.com/nodejs/node/pull/52760" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52760/hovercard">#52760</a></li>
-<li>[<a href="https://github.com/nodejs/node/commit/6b4dac3eb5"><code>6b4dac3eb5</code></a>] - <strong>(SEMVER-MINOR)</strong> <strong>zlib</strong>: expose zlib.crc32() (Joyee Cheung) <a href="https://github.com/nodejs/node/pull/52692" data-hovercard-type="pull_request" data-hovercard-url="/nodejs/node/pull/52692/hovercard">#52692</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v30.0.6]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v30.0.6</link>
-            <guid>https://github.com/electron/electron/releases/tag/v30.0.6</guid>
-            <pubDate>Wed, 15 May 2024 18:33:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Release Notes for v30.0.6</h1>
-<h2>Fixes</h2>
-<ul>
-<li>Fixed a potential issue with Linux layout invalidation. <a href="https://github.com/electron/electron/pull/42189" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42189/hovercard">#42189</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from sentry: 24.5.0]]></title>
-            <link>https://github.com/getsentry/sentry/releases/tag/24.5.0</link>
-            <guid>https://github.com/getsentry/sentry/releases/tag/24.5.0</guid>
-            <pubDate>Wed, 15 May 2024 18:18:26 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Various fixes &amp; improvements</h3>
-<ul>
-<li>Revert "fix(staff): Prevent fetching authenticators before preloading (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297966391" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70938" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70938/hovercard" href="https://github.com/getsentry/sentry/pull/70938">#70938</a>)" (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/getsentry/sentry/commit/2d7dcff0a7b1dd23d252749af10d52836b922987/hovercard" href="https://github.com/getsentry/sentry/commit/2d7dcff0a7b1dd23d252749af10d52836b922987"><tt>2d7dcff</tt></a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/getsentry-bot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/getsentry-bot">@getsentry-bot</a></li>
-<li>feat(metrics): Add custom metrics banner (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2298209301" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70946" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70946/hovercard" href="https://github.com/getsentry/sentry/pull/70946">#70946</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/matejminar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/matejminar">@matejminar</a></li>
-<li>feat(metrics): Register guide (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2298253938" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70948" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70948/hovercard" href="https://github.com/getsentry/sentry/pull/70948">#70948</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/matejminar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/matejminar">@matejminar</a></li>
-<li>chore(issues): Add flag for resolve in upcoming release (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296524471" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70898" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70898/hovercard" href="https://github.com/getsentry/sentry/pull/70898">#70898</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/roggenkemper/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/roggenkemper">@roggenkemper</a></li>
-<li>chore(generic-metrics): Add new options to toggle dropping percentiles (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296411488" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70889" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70889/hovercard" href="https://github.com/getsentry/sentry/pull/70889">#70889</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ayirr7/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ayirr7">@ayirr7</a></li>
-<li>fix(slack): don't raise RuntimeError if unable to fetch property in slack request (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2211356550" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/67798" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/67798/hovercard" href="https://github.com/getsentry/sentry/pull/67798">#67798</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cathteng/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cathteng">@cathteng</a></li>
-<li>Revert "nit: Remove authenticators from state (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2281399429" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70365" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70365/hovercard" href="https://github.com/getsentry/sentry/pull/70365">#70365</a>)" (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/getsentry/sentry/commit/c946f52adeca0ef90a64d3da8b0ddfd12fa42100/hovercard" href="https://github.com/getsentry/sentry/commit/c946f52adeca0ef90a64d3da8b0ddfd12fa42100"><tt>c946f52</tt></a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/getsentry-bot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/getsentry-bot">@getsentry-bot</a></li>
-<li>feat(performance): Adds error rate to queues module (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296214194" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70883" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70883/hovercard" href="https://github.com/getsentry/sentry/pull/70883">#70883</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/edwardgou-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/edwardgou-sentry">@edwardgou-sentry</a></li>
-<li>feat(related_issues): Support passing an event_id to the endpoint (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296116136" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70878" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70878/hovercard" href="https://github.com/getsentry/sentry/pull/70878">#70878</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/armenzg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/armenzg">@armenzg</a></li>
-<li>dev(similarity): add more telemetry to backfill (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2298236078" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70947" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70947/hovercard" href="https://github.com/getsentry/sentry/pull/70947">#70947</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JoshFerge/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JoshFerge">@JoshFerge</a></li>
-<li>fix(issues): Fix missing retries configuration (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296553213" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70907" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70907/hovercard" href="https://github.com/getsentry/sentry/pull/70907">#70907</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mrduncan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mrduncan">@mrduncan</a></li>
-<li>chore(metrics): rollout feature flag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2298097808" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70940" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70940/hovercard" href="https://github.com/getsentry/sentry/pull/70940">#70940</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/obostjancic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/obostjancic">@obostjancic</a></li>
-<li>feat(trace-explorer): Supports metrics min/max (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296878741" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70920" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70920/hovercard" href="https://github.com/getsentry/sentry/pull/70920">#70920</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Zylphrex/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zylphrex">@Zylphrex</a></li>
-<li>feat(performance): queues module table sorting (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2293901525" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70817" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70817/hovercard" href="https://github.com/getsentry/sentry/pull/70817">#70817</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/edwardgou-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/edwardgou-sentry">@edwardgou-sentry</a></li>
-<li>feat(metrics): Default custom metric + dismiss empty state (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297916928" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70936" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70936/hovercard" href="https://github.com/getsentry/sentry/pull/70936">#70936</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/matejminar/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/matejminar">@matejminar</a></li>
-<li>ref: improve devimports test (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297429343" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70926" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70926/hovercard" href="https://github.com/getsentry/sentry/pull/70926">#70926</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asottile-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asottile-sentry">@asottile-sentry</a></li>
-<li>ref(insights): abstract ScreenLoadSpanSamples side panel for mobile modules (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296417775" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70890" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70890/hovercard" href="https://github.com/getsentry/sentry/pull/70890">#70890</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/KevinL10/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/KevinL10">@KevinL10</a></li>
-<li>fix(staff): Prevent fetching authenticators before preloading (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297966391" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70938" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70938/hovercard" href="https://github.com/getsentry/sentry/pull/70938">#70938</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/schew2381/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/schew2381">@schew2381</a></li>
-<li>fix(api): Update Endpoint so it Returns 404 as a <code>status_code</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296690062" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70918" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70918/hovercard" href="https://github.com/getsentry/sentry/pull/70918">#70918</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/iamrajjoshi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/iamrajjoshi">@iamrajjoshi</a></li>
-<li>Hook up <code>peanutbutter</code> as an LPQ backend (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2250528618" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/69187" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/69187/hovercard" href="https://github.com/getsentry/sentry/pull/69187">#69187</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Swatinem/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Swatinem">@Swatinem</a></li>
-<li>ref(insights): Declare module base URLs as constants (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2295839157" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70861" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70861/hovercard" href="https://github.com/getsentry/sentry/pull/70861">#70861</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gggritso/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gggritso">@gggritso</a></li>
-<li>fix(metrics): copy code location (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297598699" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70932" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70932/hovercard" href="https://github.com/getsentry/sentry/pull/70932">#70932</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/obostjancic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/obostjancic">@obostjancic</a></li>
-<li>chore(metrics): remove meta datetime param (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2297501103" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70928" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70928/hovercard" href="https://github.com/getsentry/sentry/pull/70928">#70928</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/obostjancic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/obostjancic">@obostjancic</a></li>
-<li>ci: reduce time running codecov (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2296294265" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/70885" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/70885/hovercard" href="https://github.com/getsentry/sentry/pull/70885">#70885</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/giovanni-guidini/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/giovanni-guidini">@giovanni-guidini</a></li>
-</ul>
-<p><em>Plus 747 more</em></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from aws-cli: 2.15.51]]></title>
-            <link>https://github.com/aws/aws-cli/releases/tag/2.15.51</link>
-            <guid>https://github.com/aws/aws-cli/releases/tag/2.15.51</guid>
-            <pubDate>Wed, 15 May 2024 18:08:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Tagging 2.15.51 release.</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
