@@ -4,10 +4,428 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Mon, 22 Jul 2024 18:07:12 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 23 Jul 2024 00:24:26 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from selenium: Nightly]]></title>
+            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
+            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
+            <pubDate>Tue, 23 Jul 2024 00:12:00 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from apollo-client: v3.11.0]]></title>
+            <link>https://github.com/apollographql/apollo-client/releases/tag/v3.11.0</link>
+            <guid>https://github.com/apollographql/apollo-client/releases/tag/v3.11.0</guid>
+            <pubDate>Mon, 22 Jul 2024 23:41:54 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Potentially Breaking Fixes</h3>
+<ul>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11789" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11789/hovercard">#11789</a> <a href="https://github.com/apollographql/apollo-client/commit/579330147d6bd6f7167a35413a33746103e375cb"><code>5793301</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Changes usages of the <code>GraphQLError</code> type to <code>GraphQLFormattedError</code>.</p>
+<p>This was a type bug - these errors were never <code>GraphQLError</code> instances<br>
+to begin with, and the <code>GraphQLError</code> class has additional properties that can<br>
+never be correctly rehydrated from a GraphQL result.<br>
+The correct type to use here is <code>GraphQLFormattedError</code>.</p>
+<p>Similarly, please ensure to use the type <code>FormattedExecutionResult</code><br>
+instead of <code>ExecutionResult</code> - the non-"Formatted" versions of these types<br>
+are for use on the server only, but don't get transported over the network.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11626" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11626/hovercard">#11626</a> <a href="https://github.com/apollographql/apollo-client/commit/228429a1d36eae691473b24fb641ec3cd84c8a3d"><code>228429a</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Call <code>nextFetchPolicy</code> with "variables-changed" even if there is a <code>fetchPolicy</code> specified.</p>
+<p>Previously this would only be called when the current <code>fetchPolicy</code> was equal to the <code>fetchPolicy</code> option or the option was not specified. If you use <code>nextFetchPolicy</code> as a function, expect to see this function called more often.</p>
+<p>Due to this bug, this also meant that the <code>fetchPolicy</code> might be reset to the initial <code>fetchPolicy</code>, even when you specified a <code>nextFetchPolicy</code> function. If you previously relied on this behavior, you will need to update your <code>nextFetchPolicy</code> callback function to implement this resetting behavior.</p>
+<p>As an example, if your code looked like the following:</p>
+<div class="highlight highlight-source-js notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="useQuery(QUERY, {
+  nextFetchPolicy(currentFetchPolicy, info) {
+    // your logic here
+  }
+);"><pre><span class="pl-en">useQuery</span><span class="pl-kos">(</span><span class="pl-c1">QUERY</span><span class="pl-kos">,</span> <span class="pl-kos">{</span>
+  <span class="pl-en">nextFetchPolicy</span><span class="pl-kos">(</span><span class="pl-s1">currentFetchPolicy</span><span class="pl-kos">,</span> <span class="pl-s1">info</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-c">// your logic here</span>
+  <span class="pl-kos">}</span><span class="pl-kos"></span>
+<span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
+<p>Update your function to the following to reimplement the resetting behavior:</p>
+<div class="highlight highlight-source-js notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="useQuery(QUERY, {
+  nextFetchPolicy(currentFetchPolicy, info) {
+    if (info.reason === 'variables-changed') {
+      return info.initialFetchPolicy;
+    }
+    // your logic here
+  }
+);"><pre><span class="pl-en">useQuery</span><span class="pl-kos">(</span><span class="pl-c1">QUERY</span><span class="pl-kos">,</span> <span class="pl-kos">{</span>
+  <span class="pl-en">nextFetchPolicy</span><span class="pl-kos">(</span><span class="pl-s1">currentFetchPolicy</span><span class="pl-kos">,</span> <span class="pl-s1">info</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+    <span class="pl-k">if</span> <span class="pl-kos">(</span><span class="pl-s1">info</span><span class="pl-kos">.</span><span class="pl-c1">reason</span> <span class="pl-c1">===</span> <span class="pl-s">'variables-changed'</span><span class="pl-kos">)</span> <span class="pl-kos">{</span>
+      <span class="pl-k">return</span> <span class="pl-s1">info</span><span class="pl-kos">.</span><span class="pl-c1">initialFetchPolicy</span><span class="pl-kos">;</span>
+    <span class="pl-kos">}</span>
+    <span class="pl-c">// your logic here</span>
+  <span class="pl-kos">}</span><span class="pl-kos"></span>
+<span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
+</li>
+</ul>
+<h3>Minor Changes</h3>
+<ul>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11923" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11923/hovercard">#11923</a> <a href="https://github.com/apollographql/apollo-client/commit/d88c7f8909e3cb31532e8b1fc7dd06be12f35591"><code>d88c7f8</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Add support for <code>subscribeToMore</code> function to <code>useQueryRefHandlers</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11854" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11854/hovercard">#11854</a> <a href="https://github.com/apollographql/apollo-client/commit/3812800c6e4e5e3e64f473543babdba35ce100c2"><code>3812800</code></a> Thanks <a href="https://github.com/jcostello-atlassian">@jcostello-atlassian</a>! - Support extensions in useSubscription</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11923" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11923/hovercard">#11923</a> <a href="https://github.com/apollographql/apollo-client/commit/d88c7f8909e3cb31532e8b1fc7dd06be12f35591"><code>d88c7f8</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Add support for <code>subscribeToMore</code> function to <code>useLoadableQuery</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11863" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11863/hovercard">#11863</a> <a href="https://github.com/apollographql/apollo-client/commit/98e44f74cb7c7e93a81bdc7492c9218bf4a2dcd4"><code>98e44f7</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Reimplement <code>useSubscription</code> to fix rules of React violations.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11869" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11869/hovercard">#11869</a> <a href="https://github.com/apollographql/apollo-client/commit/a69327cce1b36e8855258e9b19427511e0af8748"><code>a69327c</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Rewrite big parts of <code>useQuery</code> and <code>useLazyQuery</code> to be more compliant with the Rules of React and React Compiler</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11936" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11936/hovercard">#11936</a> <a href="https://github.com/apollographql/apollo-client/commit/1b23337e5a9eec4ce3ed69531ca4f4afe8e897a6"><code>1b23337</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Add the ability to specify a name for the client instance for use with Apollo Client Devtools. This is useful when instantiating multiple clients to identify the client instance more easily. This deprecates the <code>connectToDevtools</code> option in favor of a new <code>devtools</code> configuration.</p>
+<div class="highlight highlight-source-ts notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="new ApolloClient({
+  devtools: {
+    enabled: true,
+    name: &quot;Test Client&quot;,
+  },
+});"><pre><span class="pl-k">new</span> <span class="pl-smi">ApolloClient</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">devtools</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">enabled</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
+    <span class="pl-c1">name</span>: <span class="pl-s">"Test Client"</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
+<p>This option is backwards-compatible with <code>connectToDevtools</code> and will be used in the absense of a <code>devtools</code> option.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11923" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11923/hovercard">#11923</a> <a href="https://github.com/apollographql/apollo-client/commit/d88c7f8909e3cb31532e8b1fc7dd06be12f35591"><code>d88c7f8</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Add support for <code>subscribeToMore</code> function to <code>useBackgroundQuery</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11930" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11930/hovercard">#11930</a> <a href="https://github.com/apollographql/apollo-client/commit/a768575ac1454587208aad63abc811b6a966fe72"><code>a768575</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Deprecates experimental schema testing utilities introduced in 3.10 in favor of recommending <a href="https://github.com/apollographql/graphql-testing-library"><code>@apollo/graphql-testing-library</code></a>.</p>
+</li>
+</ul>
+<h3>Patch Changes</h3>
+<ul>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11951" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11951/hovercard">#11951</a> <a href="https://github.com/apollographql/apollo-client/commit/0de03af912a76c4e0111f21b4f90a073317b63b6"><code>0de03af</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - add React 19 RC to <code>peerDependencies</code></p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11927" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11927/hovercard">#11927</a> <a href="https://github.com/apollographql/apollo-client/commit/2941824dd66cdd20eee5f2293373ad7a9cf991a4"><code>2941824</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Add <code>restart</code> function to <code>useSubscription</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11949" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11949/hovercard">#11949</a> <a href="https://github.com/apollographql/apollo-client/commit/45289186bcaaa33dfe904913eb6df31e2541c219"><code>4528918</code></a> Thanks <a href="https://github.com/alessbell">@alessbell</a>! - Remove deprecated <code>watchFragment</code> option, <code>canonizeResults</code></p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11937" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11937/hovercard">#11937</a> <a href="https://github.com/apollographql/apollo-client/commit/78332be32a9af0da33eb3e4100e7a76c3eac2496"><code>78332be</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - <code>createSchemaFetch</code>: simulate serialized errors instead of an <code>ApolloError</code> instance</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11902" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11902/hovercard">#11902</a> <a href="https://github.com/apollographql/apollo-client/commit/96422ce95b923b560321a88acd2eec35cf2a1c18"><code>96422ce</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Add <code>cause</code> field to <code>ApolloError</code>.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11806" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11806/hovercard">#11806</a> <a href="https://github.com/apollographql/apollo-client/commit/8df6013b6b45452ec058fab3e068b5b6d6c493f7"><code>8df6013</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - MockLink: add query default variables if not specified in mock request</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11926" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11926/hovercard">#11926</a> <a href="https://github.com/apollographql/apollo-client/commit/3dd64324dc5156450cead27f8141ea93315ffe65"><code>3dd6432</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - <code>watchFragment</code>: forward additional options to <code>diffOptions</code></p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11946" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11946/hovercard">#11946</a> <a href="https://github.com/apollographql/apollo-client/commit/7d833b80119a991e6d2eb58f2c71074d697b8e63"><code>7d833b8</code></a> Thanks <a href="https://github.com/jerelmiller">@jerelmiller</a>! - Fix issue where mutations were not accessible by Apollo Client Devtools in 3.11.0-rc.0.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11944" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11944/hovercard">#11944</a> <a href="https://github.com/apollographql/apollo-client/commit/8f3d7eb3bc2e0c2d79c5b1856655abe829390742"><code>8f3d7eb</code></a> Thanks <a href="https://github.com/sneyderdev">@sneyderdev</a>! - Allow <code>IgnoreModifier</code> to be returned from a <code>optimisticResponse</code> function when inferring from a <code>TypedDocumentNode</code> when used with a generic argument.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11954" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11954/hovercard">#11954</a> <a href="https://github.com/apollographql/apollo-client/commit/4a6e86aeaf6685abf0dd23110784848c8b085735"><code>4a6e86a</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Document (and deprecate) the previously undocumented <code>errors</code> property on the <code>useQuery</code> <code>QueryResult</code> type.</p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11719" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11719/hovercard">#11719</a> <a href="https://github.com/apollographql/apollo-client/commit/09a6677ec1a0cffedeecb2cbac5cd3a3c8aa0fa1"><code>09a6677</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Allow wrapping <code>createQueryPreloader</code></p>
+</li>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/11921" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/11921/hovercard">#11921</a> <a href="https://github.com/apollographql/apollo-client/commit/70406bfd2b9a645d781638569853d9b435e047df"><code>70406bf</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - add <code>ignoreResults</code> option to <code>useSubscription</code></p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v15.0.0-canary.77]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.77</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.77</guid>
+            <pubDate>Mon, 22 Jul 2024 23:36:41 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>Fix logging option internal consuming: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419688647" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67972" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67972/hovercard" href="https://github.com/vercel/next.js/pull/67972">#67972</a></li>
+<li>Turbopack build: Implement reactProductionProfiling: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2416554622" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67909" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67909/hovercard" href="https://github.com/vercel/next.js/pull/67909">#67909</a></li>
+<li>Update metadata ready tracking: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417488208" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67929" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67929/hovercard" href="https://github.com/vercel/next.js/pull/67929">#67929</a></li>
+<li>Fix <code>next lint</code> with async eslint-formatters: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2413996525" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67860" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67860/hovercard" href="https://github.com/vercel/next.js/pull/67860">#67860</a></li>
+<li>refactor: move rust crates to the repo root directory: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2408887361" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67780" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67780/hovercard" href="https://github.com/vercel/next.js/pull/67780">#67780</a></li>
+<li>Wait for pending Webpack Hot Updates before evaluating JS from RSC responses: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2403576397" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67673" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67673/hovercard" href="https://github.com/vercel/next.js/pull/67673">#67673</a></li>
+<li>Stop handling hydration errors from unsupported React versions: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2416292045" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67903" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67903/hovercard" href="https://github.com/vercel/next.js/pull/67903">#67903</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Turbopack build: Properly isolate scss/webpack-error test: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2421044934" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67995" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67995/hovercard" href="https://github.com/vercel/next.js/pull/67995">#67995</a></li>
+<li>pre-push: Don't block pushes to canary for forked repos: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2418696525" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67946" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67946/hovercard" href="https://github.com/vercel/next.js/pull/67946">#67946</a></li>
+<li>Label React syncs in GitHub with <code>type: react-sync</code>: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2405719583" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67710" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67710/hovercard" href="https://github.com/vercel/next.js/pull/67710">#67710</a></li>
+<li>Remove stray heading in error page: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2422232847" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/68025" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/68025/hovercard" href="https://github.com/vercel/next.js/pull/68025">#68025</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lubieowoce/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lubieowoce">@lubieowoce</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gnoff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gnoff">@gnoff</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/darthmaim/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/darthmaim">@darthmaim</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ForsakenHarmony/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ForsakenHarmony">@ForsakenHarmony</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eps1lon/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eps1lon">@eps1lon</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mischnic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mischnic">@mischnic</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from TypeScript: TypeScript 5.5.4]]></title>
+            <link>https://github.com/microsoft/TypeScript/releases/tag/v5.5.4</link>
+            <guid>https://github.com/microsoft/TypeScript/releases/tag/v5.5.4</guid>
+            <pubDate>Mon, 22 Jul 2024 23:09:26 GMT</pubDate>
+            <content:encoded><![CDATA[<p>For release notes, check out the <a href="https://devblogs.microsoft.com/typescript/announcing-typescript-5-5/" rel="nofollow">release announcement</a>.</p>
+<p>For the complete list of fixed issues, check out the</p>
+<ul>
+<li><a href="https://github.com/Microsoft/TypeScript/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+milestone%3A%22TypeScript+5.5.4%22+is%3Aclosed+">fixed issues query for TypeScript v5.5.4 (Stable)</a>.</li>
+<li><a href="https://github.com/Microsoft/TypeScript/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+milestone%3A%22TypeScript+5.5.3%22+is%3Aclosed+">fixed issues query for TypeScript v5.5.3 (Stable)</a>.</li>
+<li><a href="https://github.com/Microsoft/TypeScript/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+milestone%3A%22TypeScript+5.5.2%22+is%3Aclosed+">fixed issues query for TypeScript v5.5.2 (Stable)</a>.</li>
+<li><a href="https://github.com/Microsoft/TypeScript/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+milestone%3A%22TypeScript+5.5.1%22+is%3Aclosed+">fixed issues query for TypeScript v5.5.1 (RC)</a>.</li>
+<li><a href="https://github.com/Microsoft/TypeScript/issues?utf8=%E2%9C%93&amp;q=is%3Aissue+milestone%3A%22TypeScript+5.5.0%22+is%3Aclosed+">fixed issues query for TypeScript v5.5.0 (Beta)</a>.</li>
+</ul>
+<p>Downloads are available on:</p>
+<ul>
+<li><a href="https://www.npmjs.com/package/typescript" rel="nofollow">npm</a></li>
+<li><a href="https://www.nuget.org/packages/Microsoft.TypeScript.MSBuild" rel="nofollow">NuGet package</a> (soon!)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from electron: electron v32.0.0-beta.1]]></title>
+            <link>https://github.com/electron/electron/releases/tag/v32.0.0-beta.1</link>
+            <guid>https://github.com/electron/electron/releases/tag/v32.0.0-beta.1</guid>
+            <pubDate>Mon, 22 Jul 2024 22:55:52 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Note: This is a beta release.  Please file new issues for any bugs you find in it.</p>
+<p>This release is published to npm under the beta tag and can be installed via <code>npm install electron@beta</code>, or <code>npm install electron@32.0.0-beta.1</code>.</p>
+<h1>Release Notes for v32.0.0-beta.1</h1>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Mon, 22 Jul 2024 21:58:41 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2024-07-22 21:58:41 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/d08dcd92c75342d50670f9056b040b45841586ca/hovercard" href="https://github.com/kovidgoyal/kitty/commit/d08dcd92c75342d50670f9056b040b45841586ca"><tt>d08dcd9</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.195]]></title>
+            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.195</link>
+            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.195</guid>
+            <pubDate>Mon, 22 Jul 2024 21:42:21 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>fix: update original source in HMR update (<a href="https://github.com/sveltejs/svelte/pull/12547" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/12547/hovercard">#12547</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.9.3]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.3</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.3</guid>
+            <pubDate>Mon, 22 Jul 2024 21:34:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6e69df340fe2255d1d9c4e65e24c0c74757fde68<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731082" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731082</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.3@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/3ffa9f036f0cf930007aa1ae81f1facaebb718e1/hovercard" href="https://github.com/v8/v8/commit/3ffa9f036f0cf930007aa1ae81f1facaebb718e1"><tt>3ffa9f0</tt></a>-refs/heads/main@{#95174}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.9.3-pgo: Version 12.9.3]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.3-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.3-pgo</guid>
+            <pubDate>Mon, 22 Jul 2024 21:34:37 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6e69df340fe2255d1d9c4e65e24c0c74757fde68<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731082" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731082</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.3@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/3ffa9f036f0cf930007aa1ae81f1facaebb718e1/hovercard" href="https://github.com/v8/v8/commit/3ffa9f036f0cf930007aa1ae81f1facaebb718e1"><tt>3ffa9f0</tt></a>-refs/heads/main@{#95174}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from deno: v1.45.3: 1.45.3 (#24679)]]></title>
+            <link>https://github.com/denoland/deno/releases/tag/v1.45.3</link>
+            <guid>https://github.com/denoland/deno/releases/tag/v1.45.3</guid>
+            <pubDate>Mon, 22 Jul 2024 21:34:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Bumped versions for 1.45.3</p>
+<hr>
+<p>Co-authored-by: bartlomieju <a href="mailto:bartlomieju@users.noreply.github.com">bartlomieju@users.noreply.github.com</a><br>
+Co-authored-by: Bartek Iwańczuk <a href="mailto:biwanczuk@gmail.com">biwanczuk@gmail.com</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from carbon: v11.62.1]]></title>
+            <link>https://github.com/carbon-design-system/carbon/releases/tag/v11.62.1</link>
+            <guid>https://github.com/carbon-design-system/carbon/releases/tag/v11.62.1</guid>
+            <pubDate>Mon, 22 Jul 2024 21:12:55 GMT</pubDate>
+            <content:encoded><![CDATA[<h1><a href="https://github.com/carbon-design-system/carbon/compare/v11.62.0...v11.62.1">v11.62.1</a> (2024-7-22)</h1>
+<h2><code>carbon-components-react@8.62.1</code></h2>
+<h3>Housekeeping 🏠</h3>
+<ul>
+<li>chore(release): v11.62.1 (<a href="https://github.com/carbon-design-system/carbon/commit/14d9d64e3"><code>14d9d64e3</code></a>)</li>
+</ul>
+<h2><code>@carbon/react@1.62.1</code></h2>
+<h3>Bug fixes 🐛</h3>
+<ul>
+<li>fix(tabs): ellipsis should only be applied with vertical variant (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419373055" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/17004" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/17004/hovercard" href="https://github.com/carbon-design-system/carbon/pull/17004">#17004</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/ddf13d7ea"><code>ddf13d7ea</code></a>)</li>
+<li>fix(dropdown): memoize floating ui ref to prevent max call depth (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2418783255" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/17002" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/17002/hovercard" href="https://github.com/carbon-design-system/carbon/pull/17002">#17002</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/242ffddf0"><code>242ffddf0</code></a>)</li>
+<li>fix(16992): Prevent Page Scroll During Keyboard Navigation in MenuButton and ComboButton options  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2418435493" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/16998" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/16998/hovercard" href="https://github.com/carbon-design-system/carbon/pull/16998">#16998</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/133a9e9a5"><code>133a9e9a5</code></a>)</li>
+</ul>
+<h3>Housekeeping 🏠</h3>
+<ul>
+<li>chore(release): v11.62.1 (<a href="https://github.com/carbon-design-system/carbon/commit/14d9d64e3"><code>14d9d64e3</code></a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from mesop: v0.9.5]]></title>
+            <link>https://github.com/google/mesop/releases/tag/v0.9.5</link>
+            <guid>https://github.com/google/mesop/releases/tag/v0.9.5</guid>
+            <pubDate>Mon, 22 Jul 2024 21:03:07 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>What's Changed</h2>
+<ul>
+<li>Redesign home page by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2402232811" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/599" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/599/hovercard" href="https://github.com/google/mesop/pull/599">#599</a></li>
+<li>Add SQL state session backend. by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/richard-to/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/richard-to">@richard-to</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2402005400" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/597" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/597/hovercard" href="https://github.com/google/mesop/pull/597">#597</a></li>
+<li>Fix bug with .env not loading for pip installs by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/richard-to/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/richard-to">@richard-to</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2404225923" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/601" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/601/hovercard" href="https://github.com/google/mesop/pull/601">#601</a></li>
+<li>Namespace g attribute by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2404935703" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/606" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/606/hovercard" href="https://github.com/google/mesop/pull/606">#606</a></li>
+<li>Create python FE fatigue blog post by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2374139291" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/542" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/542/hovercard" href="https://github.com/google/mesop/pull/542">#542</a></li>
+<li>Set LRU cache for compute_fn_id by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2406112738" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/614" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/614/hovercard" href="https://github.com/google/mesop/pull/614">#614</a></li>
+<li>Improve publishing docs and pip.sh by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2406473615" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/616" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/616/hovercard" href="https://github.com/google/mesop/pull/616">#616</a></li>
+<li>Add Hugging Face deployment steps by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/richard-to/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/richard-to">@richard-to</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2406596822" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/617" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/617/hovercard" href="https://github.com/google/mesop/pull/617">#617</a></li>
+<li>Budget more time for playwright tests &amp; disable retries by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2404948008" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/607" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/607/hovercard" href="https://github.com/google/mesop/pull/607">#607</a></li>
+<li>Add notebook_show, notebook_run for Jupyter notebook environments by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2406443350" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/615" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/615/hovercard" href="https://github.com/google/mesop/pull/615">#615</a></li>
+<li>Create DuoChat codelab by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2406741153" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/620" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/620/hovercard" href="https://github.com/google/mesop/pull/620">#620</a></li>
+<li>Allow iframing any other sites by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2415066010" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/630" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/630/hovercard" href="https://github.com/google/mesop/pull/630">#630</a></li>
+<li>Update codelab docs by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417317709" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/636" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/636/hovercard" href="https://github.com/google/mesop/pull/636">#636</a></li>
+<li>Add {min, max}-{height, width} to Style by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2415490424" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/632" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/632/hovercard" href="https://github.com/google/mesop/pull/632">#632</a></li>
+<li>Create starter kit template by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2415470067" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/631" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/631/hovercard" href="https://github.com/google/mesop/pull/631">#631</a></li>
+<li>Add <code>mesop init</code> CLI command by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2415515053" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/633" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/633/hovercard" href="https://github.com/google/mesop/pull/633">#633</a></li>
+<li>Update docs with starter kit by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2415558975" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/634" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/634/hovercard" href="https://github.com/google/mesop/pull/634">#634</a></li>
+<li>(experimental) Generate prompt context for Mesop by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2387615603" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/572" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/572/hovercard" href="https://github.com/google/mesop/pull/572">#572</a></li>
+<li>Add web component that integrates Code Mirror by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/richard-to/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/richard-to">@richard-to</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420042135" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/645" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/645/hovercard" href="https://github.com/google/mesop/pull/645">#645</a></li>
+<li>Do not use class variables in runtime modules by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419894551" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/642" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/642/hovercard" href="https://github.com/google/mesop/pull/642">#642</a></li>
+<li>Allow data URL for font-src by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/richard-to/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/richard-to">@richard-to</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420055115" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/646" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/646/hovercard" href="https://github.com/google/mesop/pull/646">#646</a></li>
+<li>Clean-up docs style for GitHub button in mobile mode by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420545521" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/650" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/650/hovercard" href="https://github.com/google/mesop/pull/650">#650</a></li>
+<li>Add link component by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419754852" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/640" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/640/hovercard" href="https://github.com/google/mesop/pull/640">#640</a></li>
+<li>Provide more explicit docs about mutable state default values by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420618811" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/653" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/653/hovercard" href="https://github.com/google/mesop/pull/653">#653</a></li>
+<li>Enable RUF lint rules by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420584498" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/652" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/652/hovercard" href="https://github.com/google/mesop/pull/652">#652</a></li>
+<li>Clean up unused code generated from component scaffold by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420544209" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/649" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/649/hovercard" href="https://github.com/google/mesop/pull/649">#649</a></li>
+<li>Create a concurrency test to stress-test state is isolated across sessions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2421245691" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/657" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/657/hovercard" href="https://github.com/google/mesop/pull/657">#657</a></li>
+<li>Bump to v0.9.5 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wwwillchen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wwwillchen">@wwwillchen</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2423764712" data-permission-text="Title is private" data-url="https://github.com/google/mesop/issues/661" data-hovercard-type="pull_request" data-hovercard-url="/google/mesop/pull/661/hovercard" href="https://github.com/google/mesop/pull/661">#661</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/google/mesop/compare/v0.9.4...v0.9.5"><tt>v0.9.4...v0.9.5</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.194]]></title>
+            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.194</link>
+            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.0.0-next.194</guid>
+            <pubDate>Mon, 22 Jul 2024 20:42:04 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>fix: bail-out of hydrating head if no anchor is found (<a href="https://github.com/sveltejs/svelte/pull/12541" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/12541/hovercard">#12541</a>)</p>
+</li>
+<li>
+<p>chore: add warning for invalid render function of createRawSnippet (<a href="https://github.com/sveltejs/svelte/pull/12535" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/12535/hovercard">#12535</a>)</p>
+</li>
+<li>
+<p>fix: correctly set filename on HMR wrappers (<a href="https://github.com/sveltejs/svelte/pull/12543" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/12543/hovercard">#12543</a>)</p>
+</li>
+<li>
+<p>fix: only emit binding_property_non_reactive warning in runes mode (<a href="https://github.com/sveltejs/svelte/pull/12544" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/12544/hovercard">#12544</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.9.2]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.2</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.2</guid>
+            <pubDate>Mon, 22 Jul 2024 20:10:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I18adba50ebc1561b2610f64e51c171671676f734<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731080" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731080</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.2@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/69e793da6051ca7515eb8e1d76fd18d3ecfe1fbc/hovercard" href="https://github.com/v8/v8/commit/69e793da6051ca7515eb8e1d76fd18d3ecfe1fbc"><tt>69e793d</tt></a>-refs/heads/main@{#95171}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.9.2-pgo: Version 12.9.2]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.2-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.2-pgo</guid>
+            <pubDate>Mon, 22 Jul 2024 20:10:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I18adba50ebc1561b2610f64e51c171671676f734<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731080" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731080</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.2@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/69e793da6051ca7515eb8e1d76fd18d3ecfe1fbc/hovercard" href="https://github.com/v8/v8/commit/69e793da6051ca7515eb8e1d76fd18d3ecfe1fbc"><tt>69e793d</tt></a>-refs/heads/main@{#95171}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from mongo: r8.0.0-rc14]]></title>
+            <link>https://github.com/mongodb/mongo/releases/tag/r8.0.0-rc14</link>
+            <guid>https://github.com/mongodb/mongo/releases/tag/r8.0.0-rc14</guid>
+            <pubDate>Mon, 22 Jul 2024 19:44:07 GMT</pubDate>
+            <content:encoded><![CDATA[<p>'8.0.0-rc14'</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from mongo: r7.3.4-rc0]]></title>
+            <link>https://github.com/mongodb/mongo/releases/tag/r7.3.4-rc0</link>
+            <guid>https://github.com/mongodb/mongo/releases/tag/r7.3.4-rc0</guid>
+            <pubDate>Mon, 22 Jul 2024 19:30:29 GMT</pubDate>
+            <content:encoded><![CDATA[<p>'7.3.4-rc0'</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.9.1-pgo: Version 12.9.1]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.1-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.1-pgo</guid>
+            <pubDate>Mon, 22 Jul 2024 19:28:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6449631dccab7c3cd49e6856fa71cdf0496969ae<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731077" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731077</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.1@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ae048a1f3f314a4a4daa77079bbe64bac0917b52/hovercard" href="https://github.com/v8/v8/commit/ae048a1f3f314a4a4daa77079bbe64bac0917b52"><tt>ae048a1</tt></a>-refs/heads/main@{#95169}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.9.1]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.1</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.1</guid>
+            <pubDate>Mon, 22 Jul 2024 19:28:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I6449631dccab7c3cd49e6856fa71cdf0496969ae<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731077" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731077</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.1@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ae048a1f3f314a4a4daa77079bbe64bac0917b52/hovercard" href="https://github.com/v8/v8/commit/ae048a1f3f314a4a4daa77079bbe64bac0917b52"><tt>ae048a1</tt></a>-refs/heads/main@{#95169}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.8.374.1]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.8.374.1</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.8.374.1</guid>
+            <pubDate>Mon, 22 Jul 2024 18:32:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I4bacc518306b7e0e37afbbb503225b8b8f978378<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731693" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731693</a><br>
+Reviewed-by: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
+Commit-Queue: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
+Cr-Commit-Position: refs/branch-heads/12.8@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/70cbb397b153166027e34c75adf8e7993858222e/hovercard" href="https://github.com/v8/v8/commit/70cbb397b153166027e34c75adf8e7993858222e"><tt>70cbb39</tt></a>-refs/heads/12.8.374@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/451b63ed4251c2b21c56144d8428f8be3331539b/hovercard" href="https://github.com/v8/v8/commit/451b63ed4251c2b21c56144d8428f8be3331539b"><tt>451b63e</tt></a>-refs/heads/main@{#95151}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.8.374.1-pgo: Version 12.8.374.1]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.8.374.1-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.8.374.1-pgo</guid>
+            <pubDate>Mon, 22 Jul 2024 18:32:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I4bacc518306b7e0e37afbbb503225b8b8f978378<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5731693" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5731693</a><br>
+Reviewed-by: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
+Commit-Queue: Lutz Vahl <a href="mailto:vahl@chromium.org">vahl@chromium.org</a><br>
+Cr-Commit-Position: refs/branch-heads/12.8@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/70cbb397b153166027e34c75adf8e7993858222e/hovercard" href="https://github.com/v8/v8/commit/70cbb397b153166027e34c75adf8e7993858222e"><tt>70cbb39</tt></a>-refs/heads/12.8.374@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/451b63ed4251c2b21c56144d8428f8be3331539b/hovercard" href="https://github.com/v8/v8/commit/451b63ed4251c2b21c56144d8428f8be3331539b"><tt>451b63e</tt></a>-refs/heads/main@{#95151}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 2.17.15]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/2.17.15</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/2.17.15</guid>
+            <pubDate>Mon, 22 Jul 2024 18:08:23 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 2.17.15 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.33.28]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.33.28</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.33.28</guid>
+            <pubDate>Mon, 22 Jul 2024 18:07:58 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.33.28 release.</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from zed: nightly: Position X for deleted hunks better (#14973)]]></title>
             <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
@@ -64,9 +482,9 @@
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.8.374]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.374</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.374</guid>
+            <title><![CDATA[Release notes from v8: 12.8.374-pgo: Version 12.8.374]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.8.374-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.8.374-pgo</guid>
             <pubDate>Mon, 22 Jul 2024 12:58:34 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I45a91f08a83f9cadff0d82b9090c2bc73fe93ed7<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728997" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728997</a><br>
@@ -75,9 +493,9 @@ Cr-Commit-Position: refs/heads/12.8.374@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/451b63ed4251c2b21c56144d8428f8be3331539b/hovercard" href="https://github.com/v8/v8/commit/451b63ed4251c2b21c56144d8428f8be3331539b"><tt>451b63e</tt></a>-refs/heads/main@{#95151}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.8.374-pgo: Version 12.8.374]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.374-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.374-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.8.374]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.8.374</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.8.374</guid>
             <pubDate>Mon, 22 Jul 2024 12:58:34 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: I45a91f08a83f9cadff0d82b9090c2bc73fe93ed7<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728997" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728997</a><br>
@@ -137,50 +555,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.8.373-pgo: Version 12.8.373]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.373-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.373-pgo</guid>
-            <pubDate>Mon, 22 Jul 2024 11:41:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I4b3093606a96f6cf42b6f2a34fb5d93ae15d8443<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728795" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728795</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.373@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9662b5251108f8457809a12bafd3d89baa9e920c/hovercard" href="https://github.com/v8/v8/commit/9662b5251108f8457809a12bafd3d89baa9e920c"><tt>9662b52</tt></a>-refs/heads/main@{#95150}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.8.373]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.373</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.373</guid>
-            <pubDate>Mon, 22 Jul 2024 11:41:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I4b3093606a96f6cf42b6f2a34fb5d93ae15d8443<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728795" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728795</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.373@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/9662b5251108f8457809a12bafd3d89baa9e920c/hovercard" href="https://github.com/v8/v8/commit/9662b5251108f8457809a12bafd3d89baa9e920c"><tt>9662b52</tt></a>-refs/heads/main@{#95150}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.8.372]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.372</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.372</guid>
-            <pubDate>Mon, 22 Jul 2024 10:54:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I3a52b694a3089aaf2fb23a4d025262eee1b47e94<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728914" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728914</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.372@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2a5f5c1f470d9ad91d89afb81ccb50a9555d05b9/hovercard" href="https://github.com/v8/v8/commit/2a5f5c1f470d9ad91d89afb81ccb50a9555d05b9"><tt>2a5f5c1</tt></a>-refs/heads/main@{#95149}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.8.372-pgo: Version 12.8.372]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.372-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.372-pgo</guid>
-            <pubDate>Mon, 22 Jul 2024 10:54:59 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I3a52b694a3089aaf2fb23a4d025262eee1b47e94<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728914" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728914</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.372@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/2a5f5c1f470d9ad91d89afb81ccb50a9555d05b9/hovercard" href="https://github.com/v8/v8/commit/2a5f5c1f470d9ad91d89afb81ccb50a9555d05b9"><tt>2a5f5c1</tt></a>-refs/heads/main@{#95149}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from zed: collab-staging: Allow using a custom model when using zed.dev (#14933)]]></title>
             <link>https://github.com/zed-industries/zed/releases/tag/collab-staging</link>
             <guid>https://github.com/zed-industries/zed/releases/tag/collab-staging</guid>
@@ -189,28 +563,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 <ul>
 <li>N/A</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.8.371]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.371</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.371</guid>
-            <pubDate>Mon, 22 Jul 2024 10:06:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2e984d20f4a1e7eb329b4527f298d94e9fb8d019<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5727418" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5727418</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.371@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8be7127b3b6c1b7039b6e9279116e855be7aa5eb/hovercard" href="https://github.com/v8/v8/commit/8be7127b3b6c1b7039b6e9279116e855be7aa5eb"><tt>8be7127</tt></a>-refs/heads/main@{#95147}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.8.371-pgo: Version 12.8.371]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.371-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.371-pgo</guid>
-            <pubDate>Mon, 22 Jul 2024 10:06:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2e984d20f4a1e7eb329b4527f298d94e9fb8d019<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5727418" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5727418</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.371@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/8be7127b3b6c1b7039b6e9279116e855be7aa5eb/hovercard" href="https://github.com/v8/v8/commit/8be7127b3b6c1b7039b6e9279116e855be7aa5eb"><tt>8be7127</tt></a>-refs/heads/main@{#95147}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from vitest: v2.0.4]]></title>
@@ -243,28 +595,6 @@ Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hover
 </li>
 </ul>
 <h5>    <a href="https://github.com/vitest-dev/vitest/compare/v2.0.3...v2.0.4">View changes on GitHub</a></h5>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.8.370]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.370</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.370</guid>
-            <pubDate>Mon, 22 Jul 2024 09:22:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Id39673a1fc66d00f5a203f080143f188dbc53cb5<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728267" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728267</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.370@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ee85ad6cbf30b7d7709583563760f607c1a4c6ea/hovercard" href="https://github.com/v8/v8/commit/ee85ad6cbf30b7d7709583563760f607c1a4c6ea"><tt>ee85ad6</tt></a>-refs/heads/main@{#95145}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.8.370-pgo: Version 12.8.370]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.8.370-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.8.370-pgo</guid>
-            <pubDate>Mon, 22 Jul 2024 09:22:32 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Id39673a1fc66d00f5a203f080143f188dbc53cb5<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5728267" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5728267</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.8.370@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ee85ad6cbf30b7d7709583563760f607c1a4c6ea/hovercard" href="https://github.com/v8/v8/commit/ee85ad6cbf30b7d7709583563760f607c1a4c6ea"><tt>ee85ad6</tt></a>-refs/heads/main@{#95145}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from three.js: r166]]></title>
@@ -843,13 +1173,6 @@ eacf3291e263d5a67d8c1a581a8ebbcfd6447204ef58828caf69a5e3e8c75990  numpy-2.0.1-pp
             <content:encoded><![CDATA[<p>🚧</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from selenium: Nightly]]></title>
-            <link>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</link>
-            <guid>https://github.com/SeleniumHQ/selenium/releases/tag/nightly</guid>
-            <pubDate>Mon, 22 Jul 2024 00:14:02 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from next.js: v15.0.0-canary.76]]></title>
             <link>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.76</link>
             <guid>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.76</guid>
@@ -868,13 +1191,6 @@ eacf3291e263d5a67d8c1a581a8ebbcfd6447204ef58828caf69a5e3e8c75990  numpy-2.0.1-pp
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/NavidNourani/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/NavidNourani">@NavidNourani</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/allanchau/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/allanchau">@allanchau</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ekremkenter/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ekremkenter">@ekremkenter</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yurivangeffen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yurivangeffen">@yurivangeffen</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Juneezee/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Juneezee">@Juneezee</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/KagamiChan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/KagamiChan">@KagamiChan</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Sun, 21 Jul 2024 22:01:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2024-07-21 22:01:34 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/e97de84668495921cfb686a37f2ca049b03251ef/hovercard" href="https://github.com/kovidgoyal/kitty/commit/e97de84668495921cfb686a37f2ca049b03251ef"><tt>e97de84</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from svelte: svelte@5.0.0-next.193]]></title>
@@ -1464,328 +1780,6 @@ through the pre-commit tool integration -- by <code>webknjaz</code>{.interpreted
 <li>Bump JamesIves/github-pages-deploy-action from 4.6.1 to 4.6.3 <a class="user-mention notranslate" data-hovercard-type="organization" data-hovercard-url="/orgs/dependabot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dependabot">@dependabot</a> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2396667264" data-permission-text="Title is private" data-url="https://github.com/dask/dask/issues/11222" data-hovercard-type="pull_request" data-hovercard-url="/dask/dask/pull/11222/hovercard" href="https://github.com/dask/dask/pull/11222">#11222</a>)</li>
 </ul>
 <p>See the <a href="https://docs.dask.org/en/stable/changelog.html" rel="nofollow">Changelog</a> for more information.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from marimo: 0.7.9]]></title>
-            <link>https://github.com/marimo-team/marimo/releases/tag/0.7.9</link>
-            <guid>https://github.com/marimo-team/marimo/releases/tag/0.7.9</guid>
-            <pubDate>Sat, 20 Jul 2024 00:04:16 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<h3>Highlights</h3>
-<p><strong>✍ Scratchpad panel.</strong> Version 0.7.9 ships with a new panel: the scratchpad. The scratchpad panel lets you type arbitrary Python code, free from the restrictions of marimo's constraints. Scratchpad code doesn't get saved into your notebook; instead, it's an exploratory REPL for quick and dirty analyses.</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/350646832-6d425f24-bfc1-4a9b-bb69-c1ca0a14b78a.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjE2NzE5MjAsIm5iZiI6MTcyMTY3MTYyMCwicGF0aCI6Ii8xOTk0MzA4LzM1MDY0NjgzMi02ZDQyNWYyNC1iZmMxLTRhOWItYmI2OS1jMWNhMGExNGI3OGEucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDcyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA3MjJUMTgwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9Njk3MDFlMDQwNGVjNjYwYjVlYmI4ZjFlMzk2MmMyMDZmZTdlYjFjYTViZTkzYzM0MDljNjNjMWNmOWU5ZTdmZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.EPg_BI-vA0JIVoQga1s8PABYAs2A8efjZ7JBex7z39I"><img src="https://private-user-images.githubusercontent.com/1994308/350646832-6d425f24-bfc1-4a9b-bb69-c1ca0a14b78a.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjE2NzE5MjAsIm5iZiI6MTcyMTY3MTYyMCwicGF0aCI6Ii8xOTk0MzA4LzM1MDY0NjgzMi02ZDQyNWYyNC1iZmMxLTRhOWItYmI2OS1jMWNhMGExNGI3OGEucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDcyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA3MjJUMTgwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9Njk3MDFlMDQwNGVjNjYwYjVlYmI4ZjFlMzk2MmMyMDZmZTdlYjFjYTViZTkzYzM0MDljNjNjMWNmOWU5ZTdmZCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.EPg_BI-vA0JIVoQga1s8PABYAs2A8efjZ7JBex7z39I" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<p><strong>Collapsible markdown headings.</strong> You can now collapse sections of your notebooks, based on markdown headings. For example, collapse all cells under an <code>H2</code> heading. This makes it much easier to work with long notebooks.</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/350646753-ccaffd0a-86c0-47fe-8254-78b8037d4903.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjE2NzE5MjAsIm5iZiI6MTcyMTY3MTYyMCwicGF0aCI6Ii8xOTk0MzA4LzM1MDY0Njc1My1jY2FmZmQwYS04NmMwLTQ3ZmUtODI1NC03OGI4MDM3ZDQ5MDMucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDcyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA3MjJUMTgwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ODYyN2E3ZDUxMDIzNjNlZDUwZGRiYjExYzY1MzdkNGRhMzJhZDNiNDE2NjcwNjMyZGNmMjA4MzRlOTcxMjQ2MCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.1S8z7Lv-iIauWtgsP8IpSOiUim3t9vSGsNK6KPmzzo0"><img src="https://private-user-images.githubusercontent.com/1994308/350646753-ccaffd0a-86c0-47fe-8254-78b8037d4903.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjE2NzE5MjAsIm5iZiI6MTcyMTY3MTYyMCwicGF0aCI6Ii8xOTk0MzA4LzM1MDY0Njc1My1jY2FmZmQwYS04NmMwLTQ3ZmUtODI1NC03OGI4MDM3ZDQ5MDMucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MDcyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDA3MjJUMTgwNzAwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ODYyN2E3ZDUxMDIzNjNlZDUwZGRiYjExYzY1MzdkNGRhMzJhZDNiNDE2NjcwNjMyZGNmMjA4MzRlOTcxMjQ2MCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QmYWN0b3JfaWQ9MCZrZXlfaWQ9MCZyZXBvX2lkPTAifQ.1S8z7Lv-iIauWtgsP8IpSOiUim3t9vSGsNK6KPmzzo0" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
-<ul>
-<li>feat: scratchpad by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2414868612" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/1821" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/1821/hovercard" href="https://github.com/marimo-team/marimo/pull/1821">#1821</a></li>
-<li>feat: collapsible sections by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417008865" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/1826" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/1826/hovercard" href="https://github.com/marimo-team/marimo/pull/1826">#1826</a></li>
-<li>fix: dont autoinstall pkgs we already tried installing by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshayka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshayka">@akshayka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417617067" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/1828" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/1828/hovercard" href="https://github.com/marimo-team/marimo/pull/1828">#1828</a></li>
-<li>improvement: support nested polars data in mo.ui.table, support polars &gt; 1.0 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419090876" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/1830" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/1830/hovercard" href="https://github.com/marimo-team/marimo/pull/1830">#1830</a></li>
-<li>improvement: always allow converting cell to markdown from python by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mscolnick/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mscolnick">@mscolnick</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419832898" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/1834" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/1834/hovercard" href="https://github.com/marimo-team/marimo/pull/1834">#1834</a></li>
-<li>0.7.9 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/akshayka/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/akshayka">@akshayka</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2420349455" data-permission-text="Title is private" data-url="https://github.com/marimo-team/marimo/issues/1835" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/1835/hovercard" href="https://github.com/marimo-team/marimo/pull/1835">#1835</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/marimo-team/marimo/compare/0.7.8...0.7.9"><tt>0.7.8...0.7.9</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v15.0.0-canary.74]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.74</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.74</guid>
-            <pubDate>Fri, 19 Jul 2024 23:31:18 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Core Changes</h3>
-<ul>
-<li>Log fetch requests during client-side navigation: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417282643" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67925" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67925/hovercard" href="https://github.com/vercel/next.js/pull/67925">#67925</a></li>
-<li>Fix fetch logging in edge runtime: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2418959083" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67952" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67952/hovercard" href="https://github.com/vercel/next.js/pull/67952">#67952</a></li>
-<li>fix: merged middleware cookies should preserve options: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419138496" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67956" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67956/hovercard" href="https://github.com/vercel/next.js/pull/67956">#67956</a></li>
-<li>feat: disable development logging by setting <code>logging: false</code> in next config: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2398174454" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67590" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67590/hovercard" href="https://github.com/vercel/next.js/pull/67590">#67590</a></li>
-<li>Add experimental flag for chunk failure handling during app navigation: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417385612" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67926" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67926/hovercard" href="https://github.com/vercel/next.js/pull/67926">#67926</a></li>
-<li>Do not limit the number of fetch requests that are logged: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419207363" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67957" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67957/hovercard" href="https://github.com/vercel/next.js/pull/67957">#67957</a></li>
-<li>Fix a bug in the webpack-sources patch that happens sometimes when using the webpack cache: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417476877" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67928" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67928/hovercard" href="https://github.com/vercel/next.js/pull/67928">#67928</a></li>
-</ul>
-<h3>Example Changes</h3>
-<ul>
-<li>Examples:  Updated the example of headers to utilize the App Router: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2416943799" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67920" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67920/hovercard" href="https://github.com/vercel/next.js/pull/67920">#67920</a></li>
-<li>Updated/Migrated next-css example to the  App Router: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2418590562" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67942" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67942/hovercard" href="https://github.com/vercel/next.js/pull/67942">#67942</a></li>
-</ul>
-<h3>Misc Changes</h3>
-<ul>
-<li>Exclude aarch64-pc-windows-msvc instead of x86_64 for preview build: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2417432150" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67927" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67927/hovercard" href="https://github.com/vercel/next.js/pull/67927">#67927</a></li>
-<li>fix retrieval of deploy test build logs: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419669730" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67971" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67971/hovercard" href="https://github.com/vercel/next.js/pull/67971">#67971</a></li>
-<li>capture test-deploy stderr in cliOutput: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419828564" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67976" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67976/hovercard" href="https://github.com/vercel/next.js/pull/67976">#67976</a></li>
-<li>Print Redbox content if <code>assertNoRedbox</code> fails: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2419704248" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/67973" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/67973/hovercard" href="https://github.com/vercel/next.js/pull/67973">#67973</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Sam-Phillemon9493/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Sam-Phillemon9493">@Sam-Phillemon9493</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Shruthireddy04/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Shruthireddy04">@Shruthireddy04</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/unstubbable/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/unstubbable">@unstubbable</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ztanner/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ztanner">@ztanner</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/devjiwonchoi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/devjiwonchoi">@devjiwonchoi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ijjk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ijjk">@ijjk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eps1lon/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eps1lon">@eps1lon</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mknichel/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mknichel">@mknichel</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: electron v30.3.0]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v30.3.0</link>
-            <guid>https://github.com/electron/electron/releases/tag/v30.3.0</guid>
-            <pubDate>Fri, 19 Jul 2024 21:57:14 GMT</pubDate>
-            <content:encoded><![CDATA[<h1>Release Notes for v30.3.0</h1>
-<h2>Features</h2>
-<ul>
-<li>Added <code>DownloadItem.getCurrentBytesPerSecond()</code>, <code>DownloadItem.getPercentComplete()</code>, <code>DownloadItem.getEndTime()</code>. <a href="https://github.com/electron/electron/pull/42914" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42914/hovercard">#42914</a> <span>(Also in <a href="https://github.com/electron/electron/pull/42915" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42915/hovercard">31</a>, <a href="https://github.com/electron/electron/pull/42913" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42913/hovercard">32</a>)</span></li>
-</ul>
-<h2>Fixes</h2>
-<ul>
-<li>Fixed a potential crash when using off screen rendering. <a href="https://github.com/electron/electron/pull/42939" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42939/hovercard">#42939</a> <span>(Also in <a href="https://github.com/electron/electron/pull/42941" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42941/hovercard">31</a>, <a href="https://github.com/electron/electron/pull/42940" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42940/hovercard">32</a>)</span></li>
-<li>Fixed an issue where <code>navigator.mediaDevices.getUserMedia</code> and <code>navigator.getUserMedia</code> should reject with a <code>NotAllowedError</code> if microphone or camera permissions have been denied at the system level on macOS. <a href="https://github.com/electron/electron/pull/42938" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42938/hovercard">#42938</a> <span>(Also in <a href="https://github.com/electron/electron/pull/42937" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42937/hovercard">31</a>, <a href="https://github.com/electron/electron/pull/42936" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42936/hovercard">32</a>)</span></li>
-<li>Fixed crash when resolving proxy with <code>session.resolveProxy</code> api. <a href="https://github.com/electron/electron/pull/42896" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42896/hovercard">#42896</a> <span>(Also in <a href="https://github.com/electron/electron/pull/42897" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42897/hovercard">31</a>, <a href="https://github.com/electron/electron/pull/42898" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42898/hovercard">32</a>)</span></li>
-</ul>
-<h2>Other Changes</h2>
-<ul>
-<li>Fixed an issue where opening multiple file pickers on Windows via the <code>input</code> tag could cause a crash. <a href="https://github.com/electron/electron/pull/42826" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42826/hovercard">#42826</a> <span>(Also in <a href="https://github.com/electron/electron/pull/42825" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42825/hovercard">31</a>, <a href="https://github.com/electron/electron/pull/42780" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42780/hovercard">32</a>)</span></li>
-<li>Updated Node.js to v20.15.1. <a href="https://github.com/electron/electron/pull/42838" data-hovercard-type="pull_request" data-hovercard-url="/electron/electron/pull/42838/hovercard">#42838</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/v3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/v3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:38:01 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Please check out <a href="https://github.com/etcd-io/etcd/blob/main/CHANGELOG/CHANGELOG-3.5.md">CHANGELOG</a> for a full list of changes. And make sure to read <a href="https://github.com/etcd-io/website/blob/main/content/en/docs/v3.5/upgrades/upgrade_3_5.md">upgrade guide</a> before upgrading etcd (there may be breaking changes).</p>
-<p>For installation guides, please check out <a href="http://play.etcd.io" rel="nofollow">play.etcd.io</a> and <a href="https://github.com/etcd-io/etcd/tree/master/Documentation#operating-etcd-clusters">operating etcd</a>. Latest support status for common architectures and operating systems can be found at <a href="https://github.com/etcd-io/website/blob/main/content/en/docs/v3.5/op-guide/supported-platform.md">supported platforms</a>.</p>
-<h6>Linux</h6>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="ETCD_VER=v3.5.15
-
-# choose either URL
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=${GOOGLE_URL}
-
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-rm -rf /tmp/etcd-download-test &amp;&amp; mkdir -p /tmp/etcd-download-test
-
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version"><pre>ETCD_VER=v3.5.15
-
-<span class="pl-c"><span class="pl-c">#</span> choose either URL</span>
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=<span class="pl-smi">${GOOGLE_URL}</span>
-
-rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz
-rm -rf /tmp/etcd-download-test <span class="pl-k">&amp;&amp;</span> mkdir -p /tmp/etcd-download-test
-
-curl -L <span class="pl-smi">${DOWNLOAD_URL}</span>/<span class="pl-smi">${ETCD_VER}</span>/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz -o /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz
-tar xzvf /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
-rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-linux-amd64.tar.gz
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version</pre></div>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="# start a local etcd server
-/tmp/etcd-download-test/etcd
-
-# write,read to etcd
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 put foo bar
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 get foo"><pre><span class="pl-c"><span class="pl-c">#</span> start a local etcd server</span>
-/tmp/etcd-download-test/etcd
-
-<span class="pl-c"><span class="pl-c">#</span> write,read to etcd</span>
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 put foo bar
-/tmp/etcd-download-test/etcdctl --endpoints=localhost:2379 get foo</pre></div>
-<h6>macOS (Darwin)</h6>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="ETCD_VER=v3.5.15
-
-# choose either URL
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=${GOOGLE_URL}
-
-rm -f /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
-rm -rf /tmp/etcd-download-test &amp;&amp; mkdir -p /tmp/etcd-download-test
-
-curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-darwin-amd64.zip -o /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
-unzip /tmp/etcd-${ETCD_VER}-darwin-amd64.zip -d /tmp &amp;&amp; rm -f /tmp/etcd-${ETCD_VER}-darwin-amd64.zip
-mv /tmp/etcd-${ETCD_VER}-darwin-amd64/* /tmp/etcd-download-test &amp;&amp; rm -rf mv /tmp/etcd-${ETCD_VER}-darwin-amd64
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version"><pre>ETCD_VER=v3.5.15
-
-<span class="pl-c"><span class="pl-c">#</span> choose either URL</span>
-GOOGLE_URL=https://storage.googleapis.com/etcd
-GITHUB_URL=https://github.com/etcd-io/etcd/releases/download
-DOWNLOAD_URL=<span class="pl-smi">${GOOGLE_URL}</span>
-
-rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip
-rm -rf /tmp/etcd-download-test <span class="pl-k">&amp;&amp;</span> mkdir -p /tmp/etcd-download-test
-
-curl -L <span class="pl-smi">${DOWNLOAD_URL}</span>/<span class="pl-smi">${ETCD_VER}</span>/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip -o /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip
-unzip /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip -d /tmp <span class="pl-k">&amp;&amp;</span> rm -f /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64.zip
-mv /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64/<span class="pl-k">*</span> /tmp/etcd-download-test <span class="pl-k">&amp;&amp;</span> rm -rf mv /tmp/etcd-<span class="pl-smi">${ETCD_VER}</span>-darwin-amd64
-
-/tmp/etcd-download-test/etcd --version
-/tmp/etcd-download-test/etcdctl version
-/tmp/etcd-download-test/etcdutl version</pre></div>
-<h6>Docker</h6>
-<p>etcd uses <a href="https://gcr.io/etcd-development/etcd" rel="nofollow"><code>gcr.io/etcd-development/etcd</code></a> as a primary container registry, and <a href="https://quay.io/coreos/etcd" rel="nofollow"><code>quay.io/coreos/etcd</code></a> as secondary.</p>
-<div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="rm -rf /tmp/etcd-data.tmp &amp;&amp; mkdir -p /tmp/etcd-data.tmp &amp;&amp; \
-  docker rmi gcr.io/etcd-development/etcd:v3.5.15 || true &amp;&amp; \
-  docker run \
-  -p 2379:2379 \
-  -p 2380:2380 \
-  --mount type=bind,source=/tmp/etcd-data.tmp,destination=/etcd-data \
-  --name etcd-gcr-v3.5.15 \
-  gcr.io/etcd-development/etcd:v3.5.15 \
-  /usr/local/bin/etcd \
-  --name s1 \
-  --data-dir /etcd-data \
-  --listen-client-urls http://0.0.0.0:2379 \
-  --advertise-client-urls http://0.0.0.0:2379 \
-  --listen-peer-urls http://0.0.0.0:2380 \
-  --initial-advertise-peer-urls http://0.0.0.0:2380 \
-  --initial-cluster s1=http://0.0.0.0:2380 \
-  --initial-cluster-token tkn \
-  --initial-cluster-state new \
-  --log-level info \
-  --logger zap \
-  --log-outputs stderr
-
-docker exec etcd-gcr-v3.5.15 /usr/local/bin/etcd --version
-docker exec etcd-gcr-v3.5.15 /usr/local/bin/etcdctl version
-docker exec etcd-gcr-v3.5.15 /usr/local/bin/etcdutl version
-docker exec etcd-gcr-v3.5.15 /usr/local/bin/etcdctl endpoint health
-docker exec etcd-gcr-v3.5.15 /usr/local/bin/etcdctl put foo bar
-docker exec etcd-gcr-v3.5.15 /usr/local/bin/etcdctl get foo"><pre>rm -rf /tmp/etcd-data.tmp <span class="pl-k">&amp;&amp;</span> mkdir -p /tmp/etcd-data.tmp <span class="pl-k">&amp;&amp;</span> \
-  docker rmi gcr.io/etcd-development/etcd:v3.5.15 <span class="pl-k">||</span> <span class="pl-c1">true</span> <span class="pl-k">&amp;&amp;</span> \
-  docker run \
-  -p 2379:2379 \
-  -p 2380:2380 \
-  --mount type=bind,source=/tmp/etcd-data.tmp,destination=/etcd-data \
-  --name etcd-gcr-v3.5.15 \
-  gcr.io/etcd-development/etcd:v3.5.15 \
-  /usr/local/bin/etcd \
-  --name s1 \
-  --data-dir /etcd-data \
-  --listen-client-urls http://0.0.0.0:2379 \
-  --advertise-client-urls http://0.0.0.0:2379 \
-  --listen-peer-urls http://0.0.0.0:2380 \
-  --initial-advertise-peer-urls http://0.0.0.0:2380 \
-  --initial-cluster s1=http://0.0.0.0:2380 \
-  --initial-cluster-token tkn \
-  --initial-cluster-state new \
-  --log-level info \
-  --logger zap \
-  --log-outputs stderr
-
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.15 /usr/local/bin/etcd --version
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.15 /usr/local/bin/etcdctl version
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.15 /usr/local/bin/etcdutl version
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.15 /usr/local/bin/etcdctl endpoint health
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.15 /usr/local/bin/etcdctl put foo bar
-docker <span class="pl-c1">exec</span> etcd-gcr-v3.5.15 /usr/local/bin/etcdctl get foo</pre></div>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: tests/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/tests%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/tests%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:39 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: etcdctl/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/etcdctl%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/etcdctl%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:37 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: etcdutl/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/etcdutl%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/etcdutl%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:35 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: server/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/server%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/server%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:33 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: client/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/client%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/client%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:31 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: client/v2.305.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/client%2Fv2.305.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/client%2Fv2.305.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:29 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v2.305.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: client/pkg/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/client%2Fpkg%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/client%2Fpkg%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:26 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: raft/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/raft%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/raft%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from etcd: pkg/v3.5.15]]></title>
-            <link>https://github.com/etcd-io/etcd/releases/tag/pkg%2Fv3.5.15</link>
-            <guid>https://github.com/etcd-io/etcd/releases/tag/pkg%2Fv3.5.15</guid>
-            <pubDate>Fri, 19 Jul 2024 20:13:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v3.5.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: v0.144.4]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/v0.144.4</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/v0.144.4</guid>
-            <pubDate>Fri, 19 Jul 2024 20:02:22 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>go: Fix running single tests by changing the quoted expression in the <code>go test</code> command to work again in <code>bash</code>, <code>zsh</code>, etc. (<a href="https://github.com/zed-industries/zed/issues/14818" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/14818/hovercard">#14818</a>).</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: v0.145.1-pre]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/v0.145.1-pre</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/v0.145.1-pre</guid>
-            <pubDate>Fri, 19 Jul 2024 20:00:39 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>go: Fix running single tests by changing the quoted expression in the <code>go test</code> command to work again in <code>bash</code>, <code>zsh</code>, etc. (<a href="https://github.com/zed-industries/zed/issues/14818" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/14818/hovercard">#14818</a>).</li>
-<li>Fixed a bug where tooltips would sometimes continuously display when the button was selected.</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v8.2.5]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v8.2.5</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v8.2.5</guid>
-            <pubDate>Fri, 19 Jul 2024 19:14:52 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>8.2.5</h2>
-<ul>
-<li>CPC: Add the globals export for manager - <a href="https://github.com/storybookjs/storybook/pull/28650" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28650/hovercard">#28650</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>CPC: Correct path to the <code>@storybook/theming/create</code> alias - <a href="https://github.com/storybookjs/storybook/pull/28643" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28643/hovercard">#28643</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Averethel/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Averethel">@Averethel</a>!</li>
-<li>Components: Remove external overrides - <a href="https://github.com/storybookjs/storybook/pull/28632" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28632/hovercard">#28632</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Core: Fix header for MountMustBeDestructuredError message - <a href="https://github.com/storybookjs/storybook/pull/28590" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28590/hovercard">#28590</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/0916dhkim/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/0916dhkim">@0916dhkim</a>!</li>
-<li>Onboarding: Fix code snippet when story name differs from export name - <a href="https://github.com/storybookjs/storybook/pull/28649" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28649/hovercard">#28649</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Telemetry: Add mount, beforeEach, moduleMock stats - <a href="https://github.com/storybookjs/storybook/pull/28624" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28624/hovercard">#28624</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>Telemetry: CSF feature usage - <a href="https://github.com/storybookjs/storybook/pull/28622" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28622/hovercard">#28622</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from electron: v33.0.0-nightly.20240719]]></title>
-            <link>https://github.com/electron/electron/releases/tag/v33.0.0-nightly.20240719</link>
-            <guid>https://github.com/electron/electron/releases/tag/v33.0.0-nightly.20240719</guid>
-            <pubDate>Fri, 19 Jul 2024 18:14:08 GMT</pubDate>
-            <content:encoded><![CDATA[<p>v33.0.0-nightly.20240719</p>]]></content:encoded>
         </item>
     </channel>
 </rss>
