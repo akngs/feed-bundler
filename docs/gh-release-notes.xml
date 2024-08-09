@@ -4,21 +4,275 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 09 Aug 2024 06:08:38 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 09 Aug 2024 12:09:48 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
         <item>
+            <title><![CDATA[Release notes from prisma: 5.14.0]]></title>
+            <link>https://github.com/prisma/prisma/releases/tag/5.14.0</link>
+            <guid>https://github.com/prisma/prisma/releases/tag/5.14.0</guid>
+            <pubDate>Fri, 09 Aug 2024 12:04:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Today, we are excited to share the <code>5.14.0</code> stable release 🎉</p>
+<p>🌟 <strong>Help us spread the word about Prisma by starring the repo ☝️ or <a href="https://twitter.com/intent/tweet?text=Check%20out%20the%20latest%20@prisma%20release%20v5.14.0%20%F0%9F%9A%80%0D%0A%0D%0Ahttps://github.com/prisma/prisma/releases/tag/5.14.0" rel="nofollow">posting on X</a> about the release.</strong> 🌟</p>
+<h2>Highlights</h2>
+<h3>Share your feedback about Prisma ORM</h3>
+<p>We want to know how you like working with Prisma ORM in your projects! Please <a href="https://pris.ly/orm/survey/release-5-14" rel="nofollow">take our 2min survey</a> and let us know what you like or where we can improve 🙏</p>
+<h3><code>createManyAndReturn()</code></h3>
+<p>We’re happy to announce the availability of a new, top-level Prisma Client query: <code>createManyAndReturn()</code>. It works similarly to <code>createMany()</code> but uses a <code>RETURNING</code> clause in the SQL query to retrieve the records that were just created.</p>
+<p>Here’s an example of creating multiple posts and then immediately returning those posts.</p>
+<div class="highlight highlight-source-tsx notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="const postBodies = req.json()['posts']
+
+const posts = prisma.post.createManyAndReturn({
+  data: postBodies
+});
+
+return posts"><pre><span class="pl-k">const</span> <span class="pl-s1">postBodies</span> <span class="pl-c1">=</span> <span class="pl-s1">req</span><span class="pl-kos">.</span><span class="pl-en">json</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">[</span><span class="pl-s">'posts'</span><span class="pl-kos">]</span>
+
+<span class="pl-k">const</span> <span class="pl-s1">posts</span> <span class="pl-c1">=</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">post</span><span class="pl-kos">.</span><span class="pl-en">createManyAndReturn</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">data</span>: <span class="pl-s1">postBodies</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+
+<span class="pl-k">return</span> <span class="pl-s1">posts</span></pre></div>
+<p>Additionally,<code>createManyAndReturn()</code> supports the same options as <code>findMany()</code>, such as the ability to return only specific fields.</p>
+<div class="highlight highlight-source-tsx notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="const postBodies = req.json()['posts']
+
+const postTitles = prisma.post.createManyAndReturn({
+  data: postBodies,
+  select: {
+    title: true,
+  },
+});
+
+return postTitles"><pre><span class="pl-k">const</span> <span class="pl-s1">postBodies</span> <span class="pl-c1">=</span> <span class="pl-s1">req</span><span class="pl-kos">.</span><span class="pl-en">json</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">[</span><span class="pl-s">'posts'</span><span class="pl-kos">]</span>
+
+<span class="pl-k">const</span> <span class="pl-s1">postTitles</span> <span class="pl-c1">=</span> <span class="pl-s1">prisma</span><span class="pl-kos">.</span><span class="pl-c1">post</span><span class="pl-kos">.</span><span class="pl-en">createManyAndReturn</span><span class="pl-kos">(</span><span class="pl-kos">{</span>
+  <span class="pl-c1">data</span>: <span class="pl-s1">postBodies</span><span class="pl-kos">,</span>
+  <span class="pl-c1">select</span>: <span class="pl-kos">{</span>
+    <span class="pl-c1">title</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span>
+  <span class="pl-kos">}</span><span class="pl-kos">,</span>
+<span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span>
+
+<span class="pl-k">return</span> <span class="pl-s1">postTitles</span></pre></div>
+<p>Full documentation for this feature can be found <a href="https://www.prisma.io/docs/orm/reference/prisma-client-reference#createmanyandreturn" rel="nofollow">in the Prisma Client API Reference</a>.</p>
+<p><strong>Note</strong>: Because <code>createManyAndReturn()</code> uses the <code>RETURNING</code> clause, it is only supported by PostgreSQL, CockroachDB, and SQLite databases. At this time, <code>relationLoadStrategy: join</code> is not supported in <code>createManyAndReturn()</code> queries.</p>
+<h3>MongoDB performance improvements</h3>
+<p>Previously, Prisma ORM suffered from performance issues when using the <code>in</code> operator or when including related models in queries against a MongoDB database. These queries were translated by the Prisma query engine in such a way that indexes were skipped and collection scans were used, leading to slower queries especially on large datasets.</p>
+<p>With 5.14.0, Prisma ORM now rewrites queries to use a combination of <code>$or</code> and <code>$eq</code> operators, leading to dramatic performance increases for queries that include <code>in</code> operators or relation loading.</p>
+<h2>Fixes and improvements</h2>
+<h3>Prisma Client</h3>
+<ul>
+<li><a href="https://github.com/prisma/prisma/issues/8131" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/8131/hovercard"><code>createMany()</code> should return the created records</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/11582" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/11582/hovercard">Generating Prisma client without any model in its schema</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/13865" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/13865/hovercard">MongoDB: Performance issue with nested <code>take</code> on many-to-one relationship</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/15156" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/15156/hovercard">Slow queries on MongoDB using <code>include</code> for relations</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/15983" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/15983/hovercard">[MongoDB] Performance issue in <code>findMany()</code> query execution with <code>in</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/17142" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/17142/hovercard">MongoDB nested/<code>include</code> query slow</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/17396" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/17396/hovercard">MongoDB Connector generates queries which do not take advantage of indices.</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/18025" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/18025/hovercard">Mongodb Nested Queries Not Using Indexes</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/19169" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/19169/hovercard">MongoDB slow delete with <code>onDelete: SetNull</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/20600" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/20600/hovercard">Slow query with many-to-one relationship on MongoDB</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/20915" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/20915/hovercard"><code>prisma init --with-model</code></a></li>
+<li><a href="https://github.com/prisma/prisma/issues/21473" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/21473/hovercard">Fixed version of <code>@opentelemetry/*</code> dependencies</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/21644" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/21644/hovercard">Usage of deprecated punycode module</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/23902" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/23902/hovercard">Bug: D1 One-to-Many Relation INSERTs fail with <code>The required connected records were not found.</code> when using indices</a></li>
+</ul>
+<h3>Prisma Migrate</h3>
+<ul>
+<li><a href="https://github.com/prisma/prisma/issues/15654" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/15654/hovercard">Empty <code>dbgenerated()</code> still breaking for <code>Unsupported()</code> types</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/16628" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/16628/hovercard">Validation error when <code>shadowDatabaseUrl</code> is identical to <code>url</code> (or <code>directUrl</code>)</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/19955" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/19955/hovercard">MongoDB Query with 'in' condition will cause COLLSCAN, without leveraging indexes</a></li>
+<li><a href="https://github.com/prisma/prisma/issues/23827" data-hovercard-type="issue" data-hovercard-url="/prisma/prisma/issues/23827/hovercard">"Not Authorised" when directly applying Prisma generated migrations to Cloudflare D1 with <code>PRAGMA foreign_key_check;</code></a></li>
+</ul>
+<h3>Language tools (e.g. VS Code)</h3>
+<ul>
+<li><a href="https://github.com/prisma/language-tools/issues/1651" data-hovercard-type="issue" data-hovercard-url="/prisma/language-tools/issues/1651/hovercard">make superior: model generate</a></li>
+<li><a href="https://github.com/prisma/language-tools/issues/1676" data-hovercard-type="issue" data-hovercard-url="/prisma/language-tools/issues/1676/hovercard">Missing code autocomplete for referential actions with mongodb</a></li>
+<li><a href="https://github.com/prisma/language-tools/pull/1710" data-hovercard-type="pull_request" data-hovercard-url="/prisma/language-tools/pull/1710/hovercard">add codelens provider w/ generate client command</a></li>
+</ul>
+<h2>Company news</h2>
+<h3>Prisma Changelog</h3>
+<p>Curious about all things Prisma? Be sure to check out the <a href="https://www.prisma.io/changelog" rel="nofollow">Prisma Changelog</a> for updates across Prisma's products, including ORM, Accelerate, and Pulse!</p>
+<h3>New product announcement: Prisma Optimize</h3>
+<p>With this release, we are excited to introduce a new Prisma product. We’re calling it “Optimize” because that’s what it does! Let your favorite ORM also help you debug the performance of your application.</p>
+<p>Check out our <a href="https://www.prisma.io/blog/prisma-optimize-early-access" rel="nofollow">announcement blog post</a> for more details, including a demo video.</p>
+<h2>Credits</h2>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pranayat/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pranayat">@pranayat</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yubrot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yubrot">@yubrot</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/skyzh/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/skyzh">@skyzh</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/anuraaga/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/anuraaga">@anuraaga</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/gutyerrez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/gutyerrez">@gutyerrez</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/avallete/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/avallete">@avallete</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ceddy4395/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ceddy4395">@ceddy4395</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Kayoshi-dev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Kayoshi-dev">@Kayoshi-dev</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from prometheus: v0.54.0]]></title>
+            <link>https://github.com/prometheus/prometheus/releases/tag/v0.54.0</link>
+            <guid>https://github.com/prometheus/prometheus/releases/tag/v0.54.0</guid>
+            <pubDate>Fri, 09 Aug 2024 11:35:02 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v0.54.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from prometheus: v2.54.0]]></title>
+            <link>https://github.com/prometheus/prometheus/releases/tag/v2.54.0</link>
+            <guid>https://github.com/prometheus/prometheus/releases/tag/v2.54.0</guid>
+            <pubDate>Fri, 09 Aug 2024 11:34:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>v2.54.0</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.9.145-pgo: Version 12.9.145]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.145-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.145-pgo</guid>
+            <pubDate>Fri, 09 Aug 2024 11:18:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I0ababa196a058f84e33b95ebb821821b679c19b6<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5776463" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5776463</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.145@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d2ff515a777c4c19da92abe4317b5300a98c8719/hovercard" href="https://github.com/v8/v8/commit/d2ff515a777c4c19da92abe4317b5300a98c8719"><tt>d2ff515</tt></a>-refs/heads/main@{#95550}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.9.145]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.145</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.145</guid>
+            <pubDate>Fri, 09 Aug 2024 11:18:16 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: I0ababa196a058f84e33b95ebb821821b679c19b6<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5776463" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5776463</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.145@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/d2ff515a777c4c19da92abe4317b5300a98c8719/hovercard" href="https://github.com/v8/v8/commit/d2ff515a777c4c19da92abe4317b5300a98c8719"><tt>d2ff515</tt></a>-refs/heads/main@{#95550}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from mocha: v10.7.3]]></title>
+            <link>https://github.com/mochajs/mocha/releases/tag/v10.7.3</link>
+            <guid>https://github.com/mochajs/mocha/releases/tag/v10.7.3</guid>
+            <pubDate>Fri, 09 Aug 2024 10:59:12 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/mochajs/mocha/compare/v10.7.2...v10.7.3">10.7.3</a> (2024-08-09)</h2>
+<h3>🩹 Fixes</h3>
+<ul>
+<li>make release-please build work (<a href="https://github.com/mochajs/mocha/issues/5194" data-hovercard-type="pull_request" data-hovercard-url="/mochajs/mocha/pull/5194/hovercard">#5194</a>) (<a href="https://github.com/mochajs/mocha/commit/afd66ef3df20fab51ce38b97216c09108e5c2bfd">afd66ef</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.9.144-pgo: Version 12.9.144]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.144-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.144-pgo</guid>
+            <pubDate>Fri, 09 Aug 2024 10:17:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ia35f01ac9785190c75970ad7f0fb98e1430fec29<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5776586" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5776586</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.144@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7448e8cacb948a7be3c7b9b84c30310786332ce0/hovercard" href="https://github.com/v8/v8/commit/7448e8cacb948a7be3c7b9b84c30310786332ce0"><tt>7448e8c</tt></a>-refs/heads/main@{#95549}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: Version 12.9.144]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.144</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.144</guid>
+            <pubDate>Fri, 09 Aug 2024 10:17:11 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Ia35f01ac9785190c75970ad7f0fb98e1430fec29<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5776586" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5776586</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.144@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/7448e8cacb948a7be3c7b9b84c30310786332ce0/hovercard" href="https://github.com/v8/v8/commit/7448e8cacb948a7be3c7b9b84c30310786332ce0"><tt>7448e8c</tt></a>-refs/heads/main@{#95549}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from WasmEdge: WasmEdge 0.14.1-rc.1]]></title>
+            <link>https://github.com/WasmEdge/WasmEdge/releases/tag/0.14.1-rc.1</link>
+            <guid>https://github.com/WasmEdge/WasmEdge/releases/tag/0.14.1-rc.1</guid>
+            <pubDate>Fri, 09 Aug 2024 09:42:54 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>0.14.1-rc.1 (2024-08-07)</h3>
+<p>Features:</p>
+<ul>
+<li>Supported LLVM 17.0.6.</li>
+<li>[WASI-NN] ggml backend:
+<ul>
+<li>Bump llama.cpp to b3499.</li>
+<li>Static link <code>libggml</code> and <code>libllama</code>.</li>
+<li>Refined the CMake to support multiple backends of WASI-NN with ggml backend.</li>
+<li>Supported compute single in RPC mode.</li>
+</ul>
+</li>
+<li>[WASI-NN] Added support for neural speed backend.</li>
+<li>[WASI-NN] Added support for whisper.cpp backend.</li>
+<li>[WASI-NN] Added support for piper backend.</li>
+<li>[WASI-NN] Added support for ChatTTS backend.</li>
+<li>[Plugin] Supported <code>wasmedge_stablediffusion</code> plug-in.</li>
+<li>[Plugin] Moved <code>wasi_logging</code> into built-in plug-in.
+<ul>
+<li>Instead of installing <code>wasi_logging</code> plug-in shared library, developers can find and get this plug-in after calling <code>WasmEdge_PluginLoadWithDefaultPaths()</code> API.</li>
+<li>In the WasmEdge CLI tools, the built-in plug-ins will automatically be loaded.</li>
+</ul>
+</li>
+<li>[Proposal] Initial support for instantiation phase of component model.
+<ul>
+<li>Due to the breaking change of API, bump the plug-in <code>API_VERSION</code> to <code>3</code>.</li>
+</ul>
+</li>
+<li>[Proposal] Supported WASM Relaxed-SIMD proposal.
+<ul>
+<li>Added the <code>WasmEdge_Proposal_RelaxSIMD</code> for the configuration in WasmEdge C API.</li>
+<li>Users can use the <code>--enable-relaxed-simd</code> to enable the proposal in <code>wasmedge</code> and <code>wasmedgec</code> tools.</li>
+</ul>
+</li>
+</ul>
+<p>Fixed issues:</p>
+<ul>
+<li>Fixed the <code>fmt</code> related header inclusion for error logging.</li>
+<li>Fixed WASI test error in Windows.</li>
+<li>Fixed version checking in source tarball.</li>
+<li>[Loader] Fixed alignment checking in loading immediates for memory instructions.</li>
+<li>[Runtime] Fixed allocation issue when configured the limited memory page size.</li>
+</ul>
+<p>Tests:</p>
+<ul>
+<li>Added WASI test suites on Windows.</li>
+</ul>
+<p>Known issues:</p>
+<ul>
+<li>Universal WASM format failed on macOS platforms.
+<ul>
+<li>In the current status, the universal WASM format output of the AOT compiler with the <code>O1</code> or upper optimizations on MacOS platforms will cause a bus error during execution.</li>
+<li>We are trying to fix this issue. For a working around, please use the <code>--optimize=0</code> to set the compiler optimization level to <code>O0</code> in <code>wasmedgec</code> CLI.</li>
+</ul>
+</li>
+</ul>
+<p>Thank all the contributors who made this release possible!</p>
+<p>Biswapriyo Nath, Elmira, Fusaaaann, Han-Wen Tsao, Jun Zhang, Kefu Chai, Lîm Tsú-thuàn, Michael Morris, PeterD1524, Shen-Ta Hsieh, Shreyas Atre, Sylveon, Yi Huang, Yi-Ying He, alabulei1, dm4, grorge, hydai, junxiangMu</p>
+<p>If you want to build from source, please use WasmEdge-0.14.1-rc.1-src.tar.gz instead of the zip or tarball provided by GitHub directly.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swagger-codegen: Swagger Codegen 3.0.61 has been released!]]></title>
+            <link>https://github.com/swagger-api/swagger-codegen/releases/tag/v3.0.61</link>
+            <guid>https://github.com/swagger-api/swagger-codegen/releases/tag/v3.0.61</guid>
+            <pubDate>Fri, 09 Aug 2024 07:11:08 GMT</pubDate>
+            <content:encoded><![CDATA[<h2>What's Changed</h2>
+<ul>
+<li>bump 3.0.61-SNAPSHOT by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frantuma/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frantuma">@frantuma</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2457191502" data-permission-text="Title is private" data-url="https://github.com/swagger-api/swagger-codegen/issues/12443" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-codegen/pull/12443/hovercard" href="https://github.com/swagger-api/swagger-codegen/pull/12443">#12443</a></li>
+</ul>
+<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/swagger-api/swagger-codegen/compare/v3.0.60...v3.0.61"><tt>v3.0.60...v3.0.61</tt></a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from swc: v1.7.8]]></title>
+            <link>https://github.com/swc-project/swc/releases/tag/v1.7.8</link>
+            <guid>https://github.com/swc-project/swc/releases/tag/v1.7.8</guid>
+            <pubDate>Fri, 09 Aug 2024 07:00:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>swc_core v0.100.4</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from swc: v1.7.8-nightly-20240809.2]]></title>
             <link>https://github.com/swc-project/swc/releases/tag/v1.7.8-nightly-20240809.2</link>
             <guid>https://github.com/swc-project/swc/releases/tag/v1.7.8-nightly-20240809.2</guid>
-            <pubDate>Fri, 09 Aug 2024 06:04:07 GMT</pubDate>
-            <content:encoded><![CDATA[<p>swc_core v0.100.4</p>]]></content:encoded>
+            <pubDate>Fri, 09 Aug 2024 06:43:56 GMT</pubDate>
+            <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from v8: Version 12.9.143]]></title>
             <link>https://github.com/v8/v8/releases/tag/12.9.143</link>
             <guid>https://github.com/v8/v8/releases/tag/12.9.143</guid>
+            <pubDate>Fri, 09 Aug 2024 05:40:57 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Change-Id: Iac0229d57ab30917ced7811990cfbb10a136001d<br>
+Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5775263" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5775263</a><br>
+Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
+Cr-Commit-Position: refs/heads/12.9.143@{#1}<br>
+Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ea523f3b55feb2e07cc12f042cc6b65b97344ae9/hovercard" href="https://github.com/v8/v8/commit/ea523f3b55feb2e07cc12f042cc6b65b97344ae9"><tt>ea523f3</tt></a>-refs/heads/main@{#95547}</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from v8: 12.9.143-pgo: Version 12.9.143]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.143-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.143-pgo</guid>
             <pubDate>Fri, 09 Aug 2024 05:40:57 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Iac0229d57ab30917ced7811990cfbb10a136001d<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5775263" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5775263</a><br>
@@ -210,71 +464,6 @@ d9bb66fca82511748258e67febcb78ad8f227201a390e5c361a20d5710e7a067  nvim-win64.zip
             <content:encoded><![CDATA[No content.]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from WasmEdge: WasmEdge 0.14.1-rc.1]]></title>
-            <link>https://github.com/WasmEdge/WasmEdge/releases/tag/0.14.1-rc.1</link>
-            <guid>https://github.com/WasmEdge/WasmEdge/releases/tag/0.14.1-rc.1</guid>
-            <pubDate>Thu, 08 Aug 2024 20:03:53 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>0.14.1-rc.1 (2024-08-07)</h3>
-<p>Features:</p>
-<ul>
-<li>Supported LLVM 17.0.6.</li>
-<li>[WASI-NN] ggml backend:
-<ul>
-<li>Bump llama.cpp to b3499.</li>
-<li>Static link <code>libggml</code> and <code>libllama</code>.</li>
-<li>Refined the CMake to support multiple backends of WASI-NN with ggml backend.</li>
-<li>Supported compute single in RPC mode.</li>
-</ul>
-</li>
-<li>[WASI-NN] Added support for neural speed backend.</li>
-<li>[WASI-NN] Added support for whisper.cpp backend.</li>
-<li>[WASI-NN] Added support for piper backend.</li>
-<li>[WASI-NN] Added support for ChatTTS backend.</li>
-<li>[Plugin] Supported <code>wasmedge_stablediffusion</code> plug-in.</li>
-<li>[Plugin] Moved <code>wasi_logging</code> into built-in plug-in.
-<ul>
-<li>Instead of installing <code>wasi_logging</code> plug-in shared library, developers can find and get this plug-in after calling <code>WasmEdge_PluginLoadWithDefaultPaths()</code> API.</li>
-<li>In the WasmEdge CLI tools, the built-in plug-ins will automatically be loaded.</li>
-</ul>
-</li>
-<li>[Proposal] Initial support for instantiation phase of component model.
-<ul>
-<li>Due to the breaking change of API, bump the plug-in <code>API_VERSION</code> to <code>3</code>.</li>
-</ul>
-</li>
-<li>[Proposal] Supported WASM Relaxed-SIMD proposal.
-<ul>
-<li>Added the <code>WasmEdge_Proposal_RelaxSIMD</code> for the configuration in WasmEdge C API.</li>
-<li>Users can use the <code>--enable-relaxed-simd</code> to enable the proposal in <code>wasmedge</code> and <code>wasmedgec</code> tools.</li>
-</ul>
-</li>
-</ul>
-<p>Fixed issues:</p>
-<ul>
-<li>Fixed the <code>fmt</code> related header inclusion for error logging.</li>
-<li>Fixed WASI test error in Windows.</li>
-<li>Fixed version checking in source tarball.</li>
-<li>[Loader] Fixed alignment checking in loading immediates for memory instructions.</li>
-<li>[Runtime] Fixed allocation issue when configured the limited memory page size.</li>
-</ul>
-<p>Tests:</p>
-<ul>
-<li>Added WASI test suites on Windows.</li>
-</ul>
-<p>Known issues:</p>
-<ul>
-<li>Universal WASM format failed on macOS platforms.
-<ul>
-<li>In the current status, the universal WASM format output of the AOT compiler with the <code>O1</code> or upper optimizations on MacOS platforms will cause a bus error during execution.</li>
-<li>We are trying to fix this issue. For a working around, please use the <code>--optimize=0</code> to set the compiler optimization level to <code>O0</code> in <code>wasmedgec</code> CLI.</li>
-</ul>
-</li>
-</ul>
-<p>Thank all the contributors who made this release possible!</p>
-<p>Biswapriyo Nath, Elmira, Fusaaaann, Han-Wen Tsao, Jun Zhang, Kefu Chai, Lîm Tsú-thuàn, Michael Morris, PeterD1524, Shen-Ta Hsieh, Shreyas Atre, Sylveon, Yi Huang, Yi-Ying He, alabulei1, dm4, grorge, hydai, junxiangMu</p>
-<p>If you want to build from source, please use WasmEdge-0.14.1-rc.1-src.tar.gz instead of the zip or tarball provided by GitHub directly.</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from next.js: v15.0.0-canary.109]]></title>
             <link>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.109</link>
             <guid>https://github.com/vercel/next.js/releases/tag/v15.0.0-canary.109</guid>
@@ -308,9 +497,9 @@ d9bb66fca82511748258e67febcb78ad8f227201a390e5c361a20d5710e7a067  nvim-win64.zip
             <content:encoded><![CDATA[<p>Tagging 2.17.26 release.</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.9.142]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.142</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.142</guid>
+            <title><![CDATA[Release notes from v8: 12.9.142-pgo: Version 12.9.142]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.142-pgo</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.142-pgo</guid>
             <pubDate>Thu, 08 Aug 2024 18:46:56 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ibdfff7130cf327eb9f8b0369232074db0808121f<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5771784" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5771784</a><br>
@@ -319,9 +508,9 @@ Cr-Commit-Position: refs/heads/12.9.142@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/074a841ff4dd80bee53a7dcff0f7247a21d8335d/hovercard" href="https://github.com/v8/v8/commit/074a841ff4dd80bee53a7dcff0f7247a21d8335d"><tt>074a841</tt></a>-refs/heads/main@{#95544}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: 12.9.142-pgo: Version 12.9.142]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.142-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.142-pgo</guid>
+            <title><![CDATA[Release notes from v8: Version 12.9.142]]></title>
+            <link>https://github.com/v8/v8/releases/tag/12.9.142</link>
+            <guid>https://github.com/v8/v8/releases/tag/12.9.142</guid>
             <pubDate>Thu, 08 Aug 2024 18:46:56 GMT</pubDate>
             <content:encoded><![CDATA[<p>Change-Id: Ibdfff7130cf327eb9f8b0369232074db0808121f<br>
 Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5771784" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5771784</a><br>
@@ -352,55 +541,11 @@ Cr-Commit-Position: refs/heads/12.9.141@{#1}<br>
 Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/475c1b71c3e723610c41822a57cf33ad9b561468/hovercard" href="https://github.com/v8/v8/commit/475c1b71c3e723610c41822a57cf33ad9b561468"><tt>475c1b7</tt></a>-refs/heads/main@{#95543}</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.9.140]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.140</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.140</guid>
-            <pubDate>Thu, 08 Aug 2024 18:16:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: If02c0efbf24ddb00cbbb3d8d7abdb682cc947dbc<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5770500" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5770500</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.9.140@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a5ebc0ae0f87139c9db50d3d393a858aee8e431c/hovercard" href="https://github.com/v8/v8/commit/a5ebc0ae0f87139c9db50d3d393a858aee8e431c"><tt>a5ebc0a</tt></a>-refs/heads/main@{#95542}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.9.140-pgo: Version 12.9.140]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.140-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.140-pgo</guid>
-            <pubDate>Thu, 08 Aug 2024 18:16:57 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: If02c0efbf24ddb00cbbb3d8d7abdb682cc947dbc<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5770500" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5770500</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.9.140@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/a5ebc0ae0f87139c9db50d3d393a858aee8e431c/hovercard" href="https://github.com/v8/v8/commit/a5ebc0ae0f87139c9db50d3d393a858aee8e431c"><tt>a5ebc0a</tt></a>-refs/heads/main@{#95542}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from aws-cli: 1.33.39]]></title>
             <link>https://github.com/aws/aws-cli/releases/tag/1.33.39</link>
             <guid>https://github.com/aws/aws-cli/releases/tag/1.33.39</guid>
             <pubDate>Thu, 08 Aug 2024 18:05:34 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tagging 1.33.39 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: Version 12.9.139]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.139</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.139</guid>
-            <pubDate>Thu, 08 Aug 2024 17:46:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie5add2753786a6a65f30359e8e81ed8a23625678<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5771783" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5771783</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.9.139@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ecff63e8768e78863673c5821240ad12bb20c7fb/hovercard" href="https://github.com/v8/v8/commit/ecff63e8768e78863673c5821240ad12bb20c7fb"><tt>ecff63e</tt></a>-refs/heads/main@{#95541}</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from v8: 12.9.139-pgo: Version 12.9.139]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.139-pgo</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.139-pgo</guid>
-            <pubDate>Thu, 08 Aug 2024 17:46:44 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: Ie5add2753786a6a65f30359e8e81ed8a23625678<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5771783" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5771783</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.9.139@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/ecff63e8768e78863673c5821240ad12bb20c7fb/hovercard" href="https://github.com/v8/v8/commit/ecff63e8768e78863673c5821240ad12bb20c7fb"><tt>ecff63e</tt></a>-refs/heads/main@{#95541}</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pixijs: v8.3.2]]></title>
@@ -623,17 +768,6 @@ Release notes: <a href="https://www.elastic.co/guide/en/elasticsearch/reference/
 </table>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from v8: Version 12.9.138]]></title>
-            <link>https://github.com/v8/v8/releases/tag/12.9.138</link>
-            <guid>https://github.com/v8/v8/releases/tag/12.9.138</guid>
-            <pubDate>Thu, 08 Aug 2024 15:40:48 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Change-Id: I2c8e2c0c6aa3c114997ece64d9fcdccd493c6def<br>
-Reviewed-on: <a href="https://chromium-review.googlesource.com/c/v8/v8/+/5769806" rel="nofollow">https://chromium-review.googlesource.com/c/v8/v8/+/5769806</a><br>
-Bot-Commit: v8-ci-autoroll-builder <a href="mailto:v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com">v8-ci-autoroll-builder@chops-service-accounts.iam.gserviceaccount.com</a><br>
-Cr-Commit-Position: refs/heads/12.9.138@{#1}<br>
-Cr-Branched-From: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/v8/v8/commit/b00e995fb212737802810384ba2b868d0d92f7e5/hovercard" href="https://github.com/v8/v8/commit/b00e995fb212737802810384ba2b868d0d92f7e5"><tt>b00e995</tt></a>-refs/heads/main@{#95539}</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from mongo: r7.0.13-rc1]]></title>
             <link>https://github.com/mongodb/mongo/releases/tag/r7.0.13-rc1</link>
             <guid>https://github.com/mongodb/mongo/releases/tag/r7.0.13-rc1</guid>
@@ -679,17 +813,6 @@ within the assistant panel.</li>
 Co-authored-by: Antonio <a href="mailto:antonio@zed.dev">antonio@zed.dev</a></p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from puppeteer: puppeteer-core: v23.0.2]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v23.0.2</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v23.0.2</guid>
-            <pubDate>Thu, 08 Aug 2024 12:51:56 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-core-v23.0.1...puppeteer-core-v23.0.2">23.0.2</a> (2024-08-08)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li>roll to Chrome 127.0.6533.99 (<a href="https://github.com/puppeteer/puppeteer/issues/12910" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12910/hovercard">#12910</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/ffc90b2fc19e5347e59e7e2e361733c602759567">ffc90b2</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from puppeteer: puppeteer: v23.0.2]]></title>
             <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v23.0.2</link>
             <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v23.0.2</guid>
@@ -710,6 +833,17 @@ Co-authored-by: Antonio <a href="mailto:antonio@zed.dev">antonio@zed.dev</a></p>
 </li>
 </ul>
 </li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from puppeteer: puppeteer-core: v23.0.2]]></title>
+            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v23.0.2</link>
+            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v23.0.2</guid>
+            <pubDate>Thu, 08 Aug 2024 12:51:56 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-core-v23.0.1...puppeteer-core-v23.0.2">23.0.2</a> (2024-08-08)</h2>
+<h3>Bug Fixes</h3>
+<ul>
+<li>roll to Chrome 127.0.6533.99 (<a href="https://github.com/puppeteer/puppeteer/issues/12910" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12910/hovercard">#12910</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/ffc90b2fc19e5347e59e7e2e361733c602759567">ffc90b2</a>)</li>
 </ul>]]></content:encoded>
         </item>
         <item>
@@ -1493,9 +1627,9 @@ the given function by default. To opt-out of this, you can use <code>{flush: fal
 <ul>
 <li>Added GitHub Copilot Chat support (<a href="https://github.com/zed-industries/zed/issues/4673" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/4673/hovercard">#4673</a>; thanks <a href="https://github.com/hawkback">Hawkbawk</a>).</li>
 </ul>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/42885142/350570566-73eaf6a2-792b-4c40-a7fe-f763bd6417d7.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMxODQwMTcsIm5iZiI6MTcyMzE4MzcxNywicGF0aCI6Ii80Mjg4NTE0Mi8zNTA1NzA1NjYtNzNlYWY2YTItNzkyYi00YzQwLWE3ZmUtZjc2M2JkNjQxN2Q3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDA2MDgzN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQwYmUxMDI2MmU1MmZlM2FkNzc1NTM2ZDg0MTBmZGQzYjQxNDlhMWY1M2ViN2VmMTg2NjhkNDBjNzM4MmQ4MDQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.RO0Z95IIiaffbPiZi8nj0u271seeC75Xem9iY-YBWv4"><img src="https://private-user-images.githubusercontent.com/42885142/350570566-73eaf6a2-792b-4c40-a7fe-f763bd6417d7.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMxODQwMTcsIm5iZiI6MTcyMzE4MzcxNywicGF0aCI6Ii80Mjg4NTE0Mi8zNTA1NzA1NjYtNzNlYWY2YTItNzkyYi00YzQwLWE3ZmUtZjc2M2JkNjQxN2Q3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDA2MDgzN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWQwYmUxMDI2MmU1MmZlM2FkNzc1NTM2ZDg0MTBmZGQzYjQxNDlhMWY1M2ViN2VmMTg2NjhkNDBjNzM4MmQ4MDQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.RO0Z95IIiaffbPiZi8nj0u271seeC75Xem9iY-YBWv4" alt="A screenshot showing a conversation between a user and GitHub Copilot Chat within the Zed editor" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/42885142/350570566-73eaf6a2-792b-4c40-a7fe-f763bd6417d7.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMyMDU2ODcsIm5iZiI6MTcyMzIwNTM4NywicGF0aCI6Ii80Mjg4NTE0Mi8zNTA1NzA1NjYtNzNlYWY2YTItNzkyYi00YzQwLWE3ZmUtZjc2M2JkNjQxN2Q3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDEyMDk0N1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTZkMjVlMTgyM2ZkMzM5ZTJiMmZjZjk5ODYyMDBmZjIwZjBiOGY0Mzg1ZGNlMzUxZmIzYTEwMWYzMWYzYzMwZTkmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.8UBPajRWkPNwprXeDHDAoNdL4S947gRChi-Zl7516-U"><img src="https://private-user-images.githubusercontent.com/42885142/350570566-73eaf6a2-792b-4c40-a7fe-f763bd6417d7.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMyMDU2ODcsIm5iZiI6MTcyMzIwNTM4NywicGF0aCI6Ii80Mjg4NTE0Mi8zNTA1NzA1NjYtNzNlYWY2YTItNzkyYi00YzQwLWE3ZmUtZjc2M2JkNjQxN2Q3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDEyMDk0N1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTZkMjVlMTgyM2ZkMzM5ZTJiMmZjZjk5ODYyMDBmZjIwZjBiOGY0Mzg1ZGNlMzUxZmIzYTEwMWYzMWYzYzMwZTkmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.8UBPajRWkPNwprXeDHDAoNdL4S947gRChi-Zl7516-U" alt="A screenshot showing a conversation between a user and GitHub Copilot Chat within the Zed editor" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <p>Once you've signed into GitHub Copilot within Zed, Copilot Chat should be available as an option in the model dropdown in the assistant.</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/19867440/353957916-8ca3a38c-2d42-4fe7-8e65-a839a3ff3207.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMxODQwMTcsIm5iZiI6MTcyMzE4MzcxNywicGF0aCI6Ii8xOTg2NzQ0MC8zNTM5NTc5MTYtOGNhM2EzOGMtMmQ0Mi00ZmU3LThlNjUtYTgzOWEzZmYzMjA3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDA2MDgzN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTQxY2FiZWQzOWVmYmRiNzZhOTM5NmU1YzcwOGFjZmY4MTM5N2UyZGNhNTczODhkOGM3ODVhZTBiM2UyYTRjNzAmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.NZ0hHqG2qA1r3oujL4elj5Lh5XAr8BfZ35YQSf4RRc8"><img src="https://private-user-images.githubusercontent.com/19867440/353957916-8ca3a38c-2d42-4fe7-8e65-a839a3ff3207.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMxODQwMTcsIm5iZiI6MTcyMzE4MzcxNywicGF0aCI6Ii8xOTg2NzQ0MC8zNTM5NTc5MTYtOGNhM2EzOGMtMmQ0Mi00ZmU3LThlNjUtYTgzOWEzZmYzMjA3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDA2MDgzN1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTQxY2FiZWQzOWVmYmRiNzZhOTM5NmU1YzcwOGFjZmY4MTM5N2UyZGNhNTczODhkOGM3ODVhZTBiM2UyYTRjNzAmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.NZ0hHqG2qA1r3oujL4elj5Lh5XAr8BfZ35YQSf4RRc8" alt="Copilot Chat model option" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/19867440/353957916-8ca3a38c-2d42-4fe7-8e65-a839a3ff3207.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMyMDU2ODcsIm5iZiI6MTcyMzIwNTM4NywicGF0aCI6Ii8xOTg2NzQ0MC8zNTM5NTc5MTYtOGNhM2EzOGMtMmQ0Mi00ZmU3LThlNjUtYTgzOWEzZmYzMjA3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDEyMDk0N1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY5ZWJiNjdkZTk4ZDljZDM0NjI5ZTM5ODZmNTZjNmM3MmVkYjVhMjUzYjhiMmY5ODNiNWQxNzkwZTE0M2RjMGQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.sxs1vvlZ3J1nBpIMZTu6L5inm6--TLaRp4x-MpXZPGc"><img src="https://private-user-images.githubusercontent.com/19867440/353957916-8ca3a38c-2d42-4fe7-8e65-a839a3ff3207.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MjMyMDU2ODcsIm5iZiI6MTcyMzIwNTM4NywicGF0aCI6Ii8xOTg2NzQ0MC8zNTM5NTc5MTYtOGNhM2EzOGMtMmQ0Mi00ZmU3LThlNjUtYTgzOWEzZmYzMjA3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNDA4MDklMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjQwODA5VDEyMDk0N1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY5ZWJiNjdkZTk4ZDljZDM0NjI5ZTM5ODZmNTZjNmM3MmVkYjVhMjUzYjhiMmY5ODNiNWQxNzkwZTE0M2RjMGQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JmFjdG9yX2lkPTAma2V5X2lkPTAmcmVwb19pZD0wIn0.sxs1vvlZ3J1nBpIMZTu6L5inm6--TLaRp4x-MpXZPGc" alt="Copilot Chat model option" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <ul>
 <li>Added double-click to create a new file when clicking on blank space in the project panel (<a href="https://github.com/zed-industries/zed/pull/15353" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/15353/hovercard">#15353</a>; thanks <a href="https://github.com/ssut">ssut</a>).</li>
 <li>Added support for tab switcher in Assistant panel (<a href="https://github.com/zed-industries/zed/pull/15475" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/15475/hovercard">#15475</a>).</li>
@@ -1725,41 +1859,6 @@ root endpoint.</p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from puppeteer: puppeteer: v23.0.0]]></title>
-            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v23.0.0</link>
-            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v23.0.0</guid>
-            <pubDate>Wed, 07 Aug 2024 09:29:15 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-v22.15.0...puppeteer-v23.0.0">23.0.0</a> (2024-08-07)</h2>
-<h3>⚠ BREAKING CHANGES</h3>
-<ul>
-<li>support multiple browser downloads for Puppeteer (<a href="https://github.com/puppeteer/puppeteer/issues/12795" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12795/hovercard">#12795</a>)</li>
-<li>remove support for NPM configuration (<a href="https://github.com/puppeteer/puppeteer/issues/12792" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12792/hovercard">#12792</a>)</li>
-<li>rename product to browser (<a href="https://github.com/puppeteer/puppeteer/issues/12757" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12757/hovercard">#12757</a>)</li>
-</ul>
-<h3>Features</h3>
-<ul>
-<li>rename product to browser (<a href="https://github.com/puppeteer/puppeteer/issues/12757" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12757/hovercard">#12757</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/ca82e8e070dd1ddb627d034888782133d8cad49c">ca82e8e</a>)</li>
-<li>support multiple browser downloads for Puppeteer (<a href="https://github.com/puppeteer/puppeteer/issues/12795" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12795/hovercard">#12795</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/4d4b358dca34ab23df075efd08a62947e6feb98c">4d4b358</a>)</li>
-<li><strong>webdriver:</strong> support WebDriver capabilities in puppeteer.connect (<a href="https://github.com/puppeteer/puppeteer/issues/12877" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12877/hovercard">#12877</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/897df478b4b64ac9b146378d32b1f1b8347c6263">897df47</a>)</li>
-</ul>
-<h3>Code Refactoring</h3>
-<ul>
-<li>remove support for NPM configuration (<a href="https://github.com/puppeteer/puppeteer/issues/12792" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12792/hovercard">#12792</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/8ab71fb4ea64e4e08e3fabf0c227fcb2a42ae2cd">8ab71fb</a>)</li>
-</ul>
-<h3>Dependencies</h3>
-<ul>
-<li>The following workspace dependencies were updated
-<ul>
-<li>dependencies
-<ul>
-<li>puppeteer-core bumped from 22.15.0 to 23.0.0</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from puppeteer: puppeteer-core: v23.0.0]]></title>
             <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v23.0.0</link>
             <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-core-v23.0.0</guid>
@@ -1799,6 +1898,41 @@ root endpoint.</p>
 <li>remove isIncognito (<a href="https://github.com/puppeteer/puppeteer/issues/12830" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12830/hovercard">#12830</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/9e82e2b640378314e1ea5102727bdd4274baf57b">9e82e2b</a>)</li>
 <li>replace dynamic imports with static dependency injection (<a href="https://github.com/puppeteer/puppeteer/issues/12710" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12710/hovercard">#12710</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/3aacc1c80792dee34ebbaa3cbf9d32d2baf2b139">3aacc1c</a>)</li>
 <li>use Uint8Array instead of Buffer for browser compatibility (<a href="https://github.com/puppeteer/puppeteer/issues/12823" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12823/hovercard">#12823</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/f3377e1708a72f7f4395678492755f577dd57936">f3377e1</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from puppeteer: puppeteer: v23.0.0]]></title>
+            <link>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v23.0.0</link>
+            <guid>https://github.com/puppeteer/puppeteer/releases/tag/puppeteer-v23.0.0</guid>
+            <pubDate>Wed, 07 Aug 2024 09:29:15 GMT</pubDate>
+            <content:encoded><![CDATA[<h2><a href="https://github.com/puppeteer/puppeteer/compare/puppeteer-v22.15.0...puppeteer-v23.0.0">23.0.0</a> (2024-08-07)</h2>
+<h3>⚠ BREAKING CHANGES</h3>
+<ul>
+<li>support multiple browser downloads for Puppeteer (<a href="https://github.com/puppeteer/puppeteer/issues/12795" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12795/hovercard">#12795</a>)</li>
+<li>remove support for NPM configuration (<a href="https://github.com/puppeteer/puppeteer/issues/12792" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12792/hovercard">#12792</a>)</li>
+<li>rename product to browser (<a href="https://github.com/puppeteer/puppeteer/issues/12757" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12757/hovercard">#12757</a>)</li>
+</ul>
+<h3>Features</h3>
+<ul>
+<li>rename product to browser (<a href="https://github.com/puppeteer/puppeteer/issues/12757" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12757/hovercard">#12757</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/ca82e8e070dd1ddb627d034888782133d8cad49c">ca82e8e</a>)</li>
+<li>support multiple browser downloads for Puppeteer (<a href="https://github.com/puppeteer/puppeteer/issues/12795" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12795/hovercard">#12795</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/4d4b358dca34ab23df075efd08a62947e6feb98c">4d4b358</a>)</li>
+<li><strong>webdriver:</strong> support WebDriver capabilities in puppeteer.connect (<a href="https://github.com/puppeteer/puppeteer/issues/12877" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12877/hovercard">#12877</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/897df478b4b64ac9b146378d32b1f1b8347c6263">897df47</a>)</li>
+</ul>
+<h3>Code Refactoring</h3>
+<ul>
+<li>remove support for NPM configuration (<a href="https://github.com/puppeteer/puppeteer/issues/12792" data-hovercard-type="pull_request" data-hovercard-url="/puppeteer/puppeteer/pull/12792/hovercard">#12792</a>) (<a href="https://github.com/puppeteer/puppeteer/commit/8ab71fb4ea64e4e08e3fabf0c227fcb2a42ae2cd">8ab71fb</a>)</li>
+</ul>
+<h3>Dependencies</h3>
+<ul>
+<li>The following workspace dependencies were updated
+<ul>
+<li>dependencies
+<ul>
+<li>puppeteer-core bumped from 22.15.0 to 23.0.0</li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>]]></content:encoded>
         </item>
         <item>
@@ -2708,110 +2842,6 @@ For pre-releases, please refer to <a href="https://github.com/vuejs/core/blob/mi
             <guid>https://github.com/django/django/releases/tag/4.2.15</guid>
             <pubDate>Tue, 06 Aug 2024 13:08:32 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tag 4.2.15</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from core: 2024.8.0b4]]></title>
-            <link>https://github.com/home-assistant/core/releases/tag/2024.8.0b4</link>
-            <guid>https://github.com/home-assistant/core/releases/tag/2024.8.0b4</guid>
-            <pubDate>Tue, 06 Aug 2024 11:24:16 GMT</pubDate>
-            <content:encoded><![CDATA[<ul>
-<li>Fix yamaha legacy receivers (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Petro31/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Petro31">@Petro31</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2441156927" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/122985" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/122985/hovercard" href="https://github.com/home-assistant/core/pull/122985">#122985</a>)</li>
-<li>Add support for ESPHome update entities to be checked on demand (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jesserockz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jesserockz">@jesserockz</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2447521242" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123161" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123161/hovercard" href="https://github.com/home-assistant/core/pull/123161">#123161</a>)</li>
-<li>Show project version as <code>sw_version</code> in ESPHome (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jesserockz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jesserockz">@jesserockz</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2448298783" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123183" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123183/hovercard" href="https://github.com/home-assistant/core/pull/123183">#123183</a>)</li>
-<li>Fix growatt server tlx battery api key (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/flopp999/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/flopp999">@flopp999</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2448682531" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123191" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123191/hovercard" href="https://github.com/home-assistant/core/pull/123191">#123191</a>)</li>
-<li>Update greeclimate to 2.1.0 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cmroche/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cmroche">@cmroche</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2449528153" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123210" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123210/hovercard" href="https://github.com/home-assistant/core/pull/123210">#123210</a>)</li>
-<li>Update knx-frontend to 2024.8.6.85349 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/farmio/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/farmio">@farmio</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2450390614" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123226" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123226/hovercard" href="https://github.com/home-assistant/core/pull/123226">#123226</a>)</li>
-<li>Bump yt-dlp to 2023.08.06 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/joostlek/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/joostlek">@joostlek</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2450461833" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123229" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123229/hovercard" href="https://github.com/home-assistant/core/pull/123229">#123229</a>)</li>
-<li>Update frontend to 20240806.0 (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frenck/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frenck">@frenck</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2450507624" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123230" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123230/hovercard" href="https://github.com/home-assistant/core/pull/123230">#123230</a>) </li>
-<li>Mark Alexa integration as system type (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frenck/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frenck">@frenck</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2450587018" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123232" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123232/hovercard" href="https://github.com/home-assistant/core/pull/123232">#123232</a>)</li>
-<li>Mark Google Assistant integration as system type (<a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frenck/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frenck">@frenck</a> - <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2450592143" data-permission-text="Title is private" data-url="https://github.com/home-assistant/core/issues/123233" data-hovercard-type="pull_request" data-hovercard-url="/home-assistant/core/pull/123233/hovercard" href="https://github.com/home-assistant/core/pull/123233">#123233</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.7.7-nightly-20240806.4]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.7.7-nightly-20240806.4</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.7.7-nightly-20240806.4</guid>
-            <pubDate>Tue, 06 Aug 2024 11:20:29 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from cube: v0.35.66]]></title>
-            <link>https://github.com/cube-js/cube/releases/tag/v0.35.66</link>
-            <guid>https://github.com/cube-js/cube/releases/tag/v0.35.66</guid>
-            <pubDate>Tue, 06 Aug 2024 11:00:23 GMT</pubDate>
-            <content:encoded><![CDATA[<h2><a href="https://github.com/cube-js/cube/compare/v0.35.65...v0.35.66">0.35.66</a> (2024-08-06)</h2>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>cubestore:</strong> Skip HEAD requests for AWS S3, fix <a href="https://github.com/cube-js/cube/issues/8536" data-hovercard-type="issue" data-hovercard-url="/cube-js/cube/issues/8536/hovercard">#8536</a> (<a href="https://github.com/cube-js/cube/issues/8542" data-hovercard-type="pull_request" data-hovercard-url="/cube-js/cube/pull/8542/hovercard">#8542</a>) (<a href="https://github.com/cube-js/cube/commit/41e30704fa0d9c72bb2aea9f64d5bddcdf71b796">41e3070</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swc: v1.7.7-nightly-20240806.3]]></title>
-            <link>https://github.com/swc-project/swc/releases/tag/v1.7.7-nightly-20240806.3</link>
-            <guid>https://github.com/swc-project/swc/releases/tag/v1.7.7-nightly-20240806.3</guid>
-            <pubDate>Tue, 06 Aug 2024 09:52:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>swc_core v0.100.1</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kubernetes: Kubernetes v1.31.0-rc.1]]></title>
-            <link>https://github.com/kubernetes/kubernetes/releases/tag/v1.31.0-rc.1</link>
-            <guid>https://github.com/kubernetes/kubernetes/releases/tag/v1.31.0-rc.1</guid>
-            <pubDate>Tue, 06 Aug 2024 09:46:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>See <a href="https://groups.google.com/forum/#!forum/kubernetes-announce" rel="nofollow">kubernetes-announce@</a>. Additional binary downloads are linked in the <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.31.md">CHANGELOG</a>.</p>
-<p>See <a href="https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG/CHANGELOG-1.31.md">the CHANGELOG</a> for more details.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from theia: Eclipse Theia v1.52.0]]></title>
-            <link>https://github.com/eclipse-theia/theia/releases/tag/v1.52.0</link>
-            <guid>https://github.com/eclipse-theia/theia/releases/tag/v1.52.0</guid>
-            <pubDate>Tue, 06 Aug 2024 09:26:11 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li><a href="https://github.com/eclipse-theia/theia/blob/release/1.52.x/CHANGELOG.md#1520---07252024">Release Notes</a></li>
-<li><a href="https://eclipsesource.com/blogs/2024/08/06/eclipse-theia-1-52-release-news-and-noteworthy/" rel="nofollow">News &amp; Noteworthy</a></li>
-</ul>
-<h2>Contributors</h2>
-<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/cdamus/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/cdamus">@cdamus</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/danielledeleo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/danielledeleo">@danielledeleo</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dhuebner/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dhuebner">@dhuebner</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Hanksha/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Hanksha">@Hanksha</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/haydar-metin/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/haydar-metin">@haydar-metin</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jonah-iden/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jonah-iden">@jonah-iden</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/KR155E/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/KR155E">@KR155E</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/msujew/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/msujew">@msujew</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pisv/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pisv">@pisv</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rifat87/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rifat87">@rifat87</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rschnekenbu/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rschnekenbu">@rschnekenbu</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sgraband/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sgraband">@sgraband</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tsmaeder/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tsmaeder">@tsmaeder</a></p>
-<h2>New Contributors 🚀</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/rifat87/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/rifat87">@rifat87</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2383995879" data-permission-text="Title is private" data-url="https://github.com/eclipse-theia/theia/issues/13866" data-hovercard-type="pull_request" data-hovercard-url="/eclipse-theia/theia/pull/13866/hovercard" href="https://github.com/eclipse-theia/theia/pull/13866">#13866</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/danielledeleo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/danielledeleo">@danielledeleo</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2410966383" data-permission-text="Title is private" data-url="https://github.com/eclipse-theia/theia/issues/13931" data-hovercard-type="pull_request" data-hovercard-url="/eclipse-theia/theia/pull/13931/hovercard" href="https://github.com/eclipse-theia/theia/pull/13931">#13931</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/eclipse-theia/theia/compare/v1.51.0...v1.52.0"><tt>v1.51.0...v1.52.0</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v8.3.0-alpha.4]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v8.3.0-alpha.4</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v8.3.0-alpha.4</guid>
-            <pubDate>Tue, 06 Aug 2024 09:21:07 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>8.3.0-alpha.4</h2>
-<ul>
-<li>CSF: Allow overridding globals at the story level - <a href="https://github.com/storybookjs/storybook/pull/26654" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/26654/hovercard">#26654</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tmeasday/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tmeasday">@tmeasday</a>!</li>
-<li>Core: Introduce run over play in portable stories, and revert back play changes of 8.2 - <a href="https://github.com/storybookjs/storybook/pull/28764" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28764/hovercard">#28764</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Core: Split Storybook CLI  - <a href="https://github.com/storybookjs/storybook/pull/28519" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28519/hovercard">#28519</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Fix: Invariant failed: Expected package.json#version to be defined in the "undefined" package - <a href="https://github.com/storybookjs/storybook/pull/28752" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28752/hovercard">#28752</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/abcdmku/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/abcdmku">@abcdmku</a>!</li>
-<li>Next.js: Make RSC portable-stories compatible - <a href="https://github.com/storybookjs/storybook/pull/28756" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28756/hovercard">#28756</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>UI: Fix collapse/expand all functionality - <a href="https://github.com/storybookjs/storybook/pull/28582" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28582/hovercard">#28582</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/filipemelo2002/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/filipemelo2002">@filipemelo2002</a>!</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from monaco-editor: v0.51.0-dev-20240806]]></title>
-            <link>https://github.com/microsoft/monaco-editor/releases/tag/v0.51.0-dev-20240806</link>
-            <guid>https://github.com/microsoft/monaco-editor/releases/tag/v0.51.0-dev-20240806</guid>
-            <pubDate>Tue, 06 Aug 2024 07:43:19 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Merge pull request <a class="issue-link js-issue-link" href="https://github.com/microsoft/monaco-editor/pull/4630">#4630</a> from microsoft/dev/bhavyau/workflows</p>
-
-<p>Remove locker and info-needed-closer workflows.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from prometheus: 2.54.0-rc.1 / 2024-08-05]]></title>
-            <link>https://github.com/prometheus/prometheus/releases/tag/v2.54.0-rc.1</link>
-            <guid>https://github.com/prometheus/prometheus/releases/tag/v2.54.0-rc.1</guid>
-            <pubDate>Tue, 06 Aug 2024 07:40:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>RC1 includes a fix to a bug introduced in RC0:</p>
-<ul>
-<li>[BUGFIX] TSDB: Exclude OOO chunks mapped after compaction starts (introduced by <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2386776982" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/14396" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/14396/hovercard" href="https://github.com/prometheus/prometheus/pull/14396">#14396</a>). <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2446638680" data-permission-text="Title is private" data-url="https://github.com/prometheus/prometheus/issues/14584" data-hovercard-type="pull_request" data-hovercard-url="/prometheus/prometheus/pull/14584/hovercard" href="https://github.com/prometheus/prometheus/pull/14584">#14584</a></li>
-</ul>]]></content:encoded>
         </item>
     </channel>
 </rss>
