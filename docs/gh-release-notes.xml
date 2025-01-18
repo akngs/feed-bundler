@@ -4,10 +4,63 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sat, 18 Jan 2025 12:09:13 GMT</lastBuildDate>
+        <lastBuildDate>Sat, 18 Jan 2025 18:07:24 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from zed: collab-staging: windows: Improve foreground task dispatching on Windows (#23283)]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/collab-staging</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/collab-staging</guid>
+            <pubDate>Sat, 18 Jan 2025 15:43:56 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Closes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2768817570" data-permission-text="Title is private" data-url="https://github.com/zed-industries/zed/issues/22653" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/22653/hovercard" href="https://github.com/zed-industries/zed/issues/22653">#22653</a></p>
+<p>After some investigation, I found this bug is due to that sometimes<br>
+<code>foreground_task</code> is not dispatched to the main thread unless there is<br>
+user input. The current Windows implementation works as follows: when<br>
+the <code>WindowsDispatcher</code> receives a <code>foreground_task</code>, it adds the task<br>
+to a queue and uses <code>SetEvent(dispatch_event)</code> to notify the main<br>
+thread.</p>
+<p>The main thread then listens for notifications using<br>
+<code>MsgWaitForMultipleObjects(&amp;[dispatch_event])</code>.</p>
+<p>Essentially, this is a synchronous method, but it is not robust. For<br>
+example, if 100 <code>foreground_task</code>s are sent, <code>dispatch_event</code> should<br>
+theoretically be triggered 100 times, and<br>
+<code>MsgWaitForMultipleObjects(&amp;[dispatch_event])</code> should receive 100<br>
+notifications, causing the main thread to execute all 100 tasks.<br>
+However, in practice, some <code>foreground_task</code>s may not get a chance to<br>
+execute due to certain reasons.</p>
+<p>As shown in the attached video, when I don't move the mouse, there are<br>
+about 20-30 <code>foreground_task</code>s waiting in the queue to be executed. When<br>
+I move the mouse, <code>run_foreground_tasks()</code> is called, which processes<br>
+the tasks in the queue.</p>
+<details open="" class="details-reset border rounded-2">
+  <summary class="px-3 py-2">
+    <svg aria-hidden="true" height="16" viewBox="0 0 16 16" version="1.1" width="16" data-view-component="true" class="octicon octicon-device-camera-video">
+    <path d="M16 3.75v8.5a.75.75 0 0 1-1.136.643L11 10.575v.675A1.75 1.75 0 0 1 9.25 13h-7.5A1.75 1.75 0 0 1 0 11.25v-6.5C0 3.784.784 3 1.75 3h7.5c.966 0 1.75.784 1.75 1.75v.675l3.864-2.318A.75.75 0 0 1 16 3.75Zm-6.5 1a.25.25 0 0 0-.25-.25h-7.5a.25.25 0 0 0-.25.25v6.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-6.5ZM11 8.825l3.5 2.1v-5.85l-3.5 2.1Z"></path>
+</svg>
+    <span aria-label="Video description 2025-01-18.190517.mp4" class="m-1">2025-01-18.190517.mp4</span>
+    <span class="dropdown-caret"></span>
+  </summary>
+
+  <video src="https://private-user-images.githubusercontent.com/14981363/404530106-83cd09ca-4b17-4a1f-9a2a-5d1569b23483.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzcyMjM5NDMsIm5iZiI6MTczNzIyMzY0MywicGF0aCI6Ii8xNDk4MTM2My80MDQ1MzAxMDYtODNjZDA5Y2EtNGIxNy00YTFmLTlhMmEtNWQxNTY5YjIzNDgzLm1wND9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTAxMTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwMTE4VDE4MDcyM1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTdhNjZjZWFmNzAxOWUwZTVjZTIyYjdhYjkyNmY0YTQ5OWM0MjczZDU2NzFkNTkxZmQ2OTlkZDI0MWQ3Nzk4NTQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.r0o3JaGFlSvDIjR8z4p2X_S6-f37kv-qM3Pwdr9RRx4" data-canonical-src="https://private-user-images.githubusercontent.com/14981363/404530106-83cd09ca-4b17-4a1f-9a2a-5d1569b23483.mp4?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzcyMjM5NDMsIm5iZiI6MTczNzIyMzY0MywicGF0aCI6Ii8xNDk4MTM2My80MDQ1MzAxMDYtODNjZDA5Y2EtNGIxNy00YTFmLTlhMmEtNWQxNTY5YjIzNDgzLm1wND9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTAxMTglMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwMTE4VDE4MDcyM1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTdhNjZjZWFmNzAxOWUwZTVjZTIyYjdhYjkyNmY0YTQ5OWM0MjczZDU2NzFkNTkxZmQ2OTlkZDI0MWQ3Nzk4NTQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.r0o3JaGFlSvDIjR8z4p2X_S6-f37kv-qM3Pwdr9RRx4" controls="controls" muted="muted" class="d-block rounded-bottom-2 border-top width-fit" style="max-height:640px; min-height: 200px">
+
+  </video>
+</details>
+
+<p>To address this, this PR adopts an approach similar to <code>winit</code>. In<br>
+<code>winit</code>, an invisible window is created for message passing. In this PR,<br>
+we use <code>PostThreadMessage</code> to directly send messages to the main thread.</p>
+<p>With this implementation, when 100 <code>foreground_task</code>s are sent, the<br>
+<code>WindowsDispatcher</code> uses <code>PostThreadMessageW(thread_id, RUNNABLE_DISPATCHED)</code> to notify the main thread. This approach enqueues<br>
+100 <code>RUNNABLE_DISPATCHED</code> messages in the main thread's message queue,<br>
+ensuring that each <code>foreground_task</code> is executed as expected. The main<br>
+thread continuously processes these messages, guaranteeing that all 100<br>
+tasks are executed.</p>
+<p>Release Notes:</p>
+<ul>
+<li>N/A</li>
+</ul>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -167,7 +220,7 @@ d8f663bea670cb427510c8ea5a09b7f2bea9e478f0ed418f71fb824ede382914  nvim-win64.zip
             <content:encoded><![CDATA[<h2>What's Changed</h2>
 <h3>Highlights</h3>
 <p>🪟 <strong>Lay out notebooks in columns!</strong> Thanks to work by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/wasimsandhu/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/wasimsandhu">@wasimsandhu</a>, you can now arrange cells into multiple columns while editing — use your screen real-estate to the fullest! (<a href="https://docs.marimo.io/guides/editor_features/overview/#editor-widths" rel="nofollow">Docs</a>.)</p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/404473557-30b52c79-b68a-4b1b-9650-7fcca6b21ab0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzcyMDI0NDIsIm5iZiI6MTczNzIwMjE0MiwicGF0aCI6Ii8xOTk0MzA4LzQwNDQ3MzU1Ny0zMGI1MmM3OS1iNjhhLTRiMWItOTY1MC03ZmNjYTZiMjFhYjAucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDExOCUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTAxMThUMTIwOTAyWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDk2OGU4MTkwN2ExMjAzOGE1ZTBlNTgxZWM5MTEzZWNhOWI1ZTBiNzc1Nzg0NGMzZjkyOGY3ZTNlMGI2OTRlNyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.gpBt5UMMZOMQhWON4T1xw7lga9qWxzdQb9VNUdCfpMs"><img src="https://private-user-images.githubusercontent.com/1994308/404473557-30b52c79-b68a-4b1b-9650-7fcca6b21ab0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzcyMDI0NDIsIm5iZiI6MTczNzIwMjE0MiwicGF0aCI6Ii8xOTk0MzA4LzQwNDQ3MzU1Ny0zMGI1MmM3OS1iNjhhLTRiMWItOTY1MC03ZmNjYTZiMjFhYjAucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDExOCUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTAxMThUMTIwOTAyWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NDk2OGU4MTkwN2ExMjAzOGE1ZTBlNTgxZWM5MTEzZWNhOWI1ZTBiNzc1Nzg0NGMzZjkyOGY3ZTNlMGI2OTRlNyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.gpBt5UMMZOMQhWON4T1xw7lga9qWxzdQb9VNUdCfpMs" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/1994308/404473557-30b52c79-b68a-4b1b-9650-7fcca6b21ab0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzcyMjM5MzMsIm5iZiI6MTczNzIyMzYzMywicGF0aCI6Ii8xOTk0MzA4LzQwNDQ3MzU1Ny0zMGI1MmM3OS1iNjhhLTRiMWItOTY1MC03ZmNjYTZiMjFhYjAucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDExOCUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTAxMThUMTgwNzEzWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YmRjYWJlZmQxNDhjMzAwMThkOTdkMGJhZjcwZWQwZGIxNzcwZTJhNTc1ZmU4NDk0NjljNzE4OTU3NWU1YWIyNCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.I8_KzX9tKEzkHQLNefsdu2niElg7T2edaigumAraUng"><img src="https://private-user-images.githubusercontent.com/1994308/404473557-30b52c79-b68a-4b1b-9650-7fcca6b21ab0.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzcyMjM5MzMsIm5iZiI6MTczNzIyMzYzMywicGF0aCI6Ii8xOTk0MzA4LzQwNDQ3MzU1Ny0zMGI1MmM3OS1iNjhhLTRiMWItOTY1MC03ZmNjYTZiMjFhYjAucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDExOCUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTAxMThUMTgwNzEzWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9YmRjYWJlZmQxNDhjMzAwMThkOTdkMGJhZjcwZWQwZGIxNzcwZTJhNTc1ZmU4NDk0NjljNzE4OTU3NWU1YWIyNCZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.I8_KzX9tKEzkHQLNefsdu2niElg7T2edaigumAraUng" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></p>
 <p>📃 <strong>Edit notebooks using your own editor.</strong> Announcing initial support for one of our most asked-for features: you can now edit notebook files <a href="https://docs.marimo.io/guides/editor_features/watching/" rel="nofollow">using your editor of choice</a> (neovim, Cursor, VS Code, ...) and stream changes to a running edit session. To opt-in, start your edit session with <code>--watch</code>:</p>
 <div class="highlight highlight-source-shell notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="marimo edit --watch my_notebook.py"><pre>marimo edit --watch my_notebook.py</pre></div>
 <p>When editing <code>my_notebook.py</code> in your text editor, changes are sent to the browser on save.</p>
@@ -413,20 +466,6 @@ d8f663bea670cb427510c8ea5a09b7f2bea9e478f0ed418f71fb824ede382914  nvim-win64.zip
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from zed: collab-staging: Extract `PromptLibrary` to `prompt_library` (#23285)]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/collab-staging</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/collab-staging</guid>
-            <pubDate>Fri, 17 Jan 2025 15:28:27 GMT</pubDate>
-            <content:encoded><![CDATA[<p>This PR extracts the <code>PromptLibrary</code> out of the <code>assistant</code> crate and<br>
-moves it to the <code>prompt_library</code> crate.</p>
-<p>The <code>PromptLibrary</code> is now decoupled from the specifics of the<br>
-<code>AssistantPanel</code> and <code>InlineAssistant</code>.</p>
-<p>Release Notes:</p>
-<ul>
-<li>N/A</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from Ghost: 5.107.0]]></title>
             <link>https://github.com/TryGhost/Ghost/releases/tag/v5.107.0</link>
             <guid>https://github.com/TryGhost/Ghost/releases/tag/v5.107.0</guid>
@@ -515,90 +554,6 @@ moves it to the <code>prompt_library</code> crate.</p>
 <p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.6.0-alpha.0</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.6.0-alpha.0</guid>
-            <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
-<p>jupyterlite-0.6.0a0-py3-none-any.whl: 97f8ed2e939b20a388ca97fb148f1c0f41b01239bc410d955008f6fad2d0f446</p>
-<p>jupyterlite-0.6.0a0.tar.gz: b46675267fd6683ba07846c5e5236adc91bec028b4fca79296d783461e178bd5</p>
-<p>jupyterlite-application-0.6.0-alpha.0.tgz: 4efc2215942f58248973de1e97ccf71a95ec08351dfc4135b4908a743e519500</p>
-<p>jupyterlite-application-extension-0.6.0-alpha.0.tgz: b9a9ec821cb5c4cffbec130d389e530f3976987ffa663fd41d57982e3415a950</p>
-<p>jupyterlite-contents-0.6.0-alpha.0.tgz: 6ba5313a449e263431b114c7df837087dfc760eededb5f128b99cdc94597c245</p>
-<p>jupyterlite-iframe-extension-0.6.0-alpha.0.tgz: e5346786e6a7073eb3e8e8b27310d6f707dfe35a1e1fccbde35a48617edd8f62</p>
-<p>jupyterlite-kernel-0.6.0-alpha.0.tgz: 1c07c269380845ebfb1087618bc055514a9197e49a38c97d03fd940614019b18</p>
-<p>jupyterlite-licenses-0.6.0-alpha.0.tgz: bf6daa086a03706a78d98116537ac3a32fcad729e19530047a8f6ef44f976bed</p>
-<p>jupyterlite-localforage-0.6.0-alpha.0.tgz: 537dc504fadd87370b1c2746196a3eeeeb30a245c758ef9c52b488a2dbcde857</p>
-<p>jupyterlite-notebook-application-extension-0.6.0-alpha.0.tgz: 707094eb787b113bc47f35b8d2da889fe54c7f575388ae9460e84f9890c29028</p>
-<p>jupyterlite-repl-extension-0.6.0-alpha.0.tgz: 461a7a4c417fa82d992c8a61f1210939521fa9cbea6eb64e9a8dbe0c82353ec4</p>
-<p>jupyterlite-server-0.6.0-alpha.0.tgz: d63dd5d16cba05e0fc7fbbeaec242a2137f24d6c864e2d8f77c900ea4fcb6b66</p>
-<p>jupyterlite-server-extension-0.6.0-alpha.0.tgz: bccfa41e059c3765c8ec62a3b70b4dd19e8715d78f2bd4dc1b01dd18649edf2c</p>
-<p>jupyterlite-session-0.6.0-alpha.0.tgz: 2609dac81f7df990bec247216950252c48615693982770da9b21496d69d9cfbd</p>
-<p>jupyterlite-settings-0.6.0-alpha.0.tgz: e0b2f6fd7760030ff68efeee4ff764e7b29270a85e9ba2412d218c659da1e57a</p>
-<p>jupyterlite-translation-0.6.0-alpha.0.tgz: 24adeb2fa47553d93b4441777213573a0b712af90ce25a9138df24b0421d05d4</p>
-<p>jupyterlite-types-0.6.0-alpha.0.tgz: 08c667f1b6bfc0a4d4f83bac97045d6ba32b20481406968c2c18cf17549b9a89</p>
-<p>jupyterlite-ui-components-0.6.0-alpha.0.tgz: 558b22a1abf65a4ae128820fc71d6f72be1f929d6cd601a81a442acee23453a6</p>
-<p>jupyterlite_core-0.6.0a0-py3-none-any.whl: 200472a587e7a9fc8b456de63b774502a86adec8b2a9d6c3fb88fcc888ec03e2</p>
-<p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.6.0-alpha.0</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.6.0-alpha.0</guid>
-            <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
-<p>jupyterlite-0.6.0a0-py3-none-any.whl: 97f8ed2e939b20a388ca97fb148f1c0f41b01239bc410d955008f6fad2d0f446</p>
-<p>jupyterlite-0.6.0a0.tar.gz: b46675267fd6683ba07846c5e5236adc91bec028b4fca79296d783461e178bd5</p>
-<p>jupyterlite-application-0.6.0-alpha.0.tgz: 4efc2215942f58248973de1e97ccf71a95ec08351dfc4135b4908a743e519500</p>
-<p>jupyterlite-application-extension-0.6.0-alpha.0.tgz: b9a9ec821cb5c4cffbec130d389e530f3976987ffa663fd41d57982e3415a950</p>
-<p>jupyterlite-contents-0.6.0-alpha.0.tgz: 6ba5313a449e263431b114c7df837087dfc760eededb5f128b99cdc94597c245</p>
-<p>jupyterlite-iframe-extension-0.6.0-alpha.0.tgz: e5346786e6a7073eb3e8e8b27310d6f707dfe35a1e1fccbde35a48617edd8f62</p>
-<p>jupyterlite-kernel-0.6.0-alpha.0.tgz: 1c07c269380845ebfb1087618bc055514a9197e49a38c97d03fd940614019b18</p>
-<p>jupyterlite-licenses-0.6.0-alpha.0.tgz: bf6daa086a03706a78d98116537ac3a32fcad729e19530047a8f6ef44f976bed</p>
-<p>jupyterlite-localforage-0.6.0-alpha.0.tgz: 537dc504fadd87370b1c2746196a3eeeeb30a245c758ef9c52b488a2dbcde857</p>
-<p>jupyterlite-notebook-application-extension-0.6.0-alpha.0.tgz: 707094eb787b113bc47f35b8d2da889fe54c7f575388ae9460e84f9890c29028</p>
-<p>jupyterlite-repl-extension-0.6.0-alpha.0.tgz: 461a7a4c417fa82d992c8a61f1210939521fa9cbea6eb64e9a8dbe0c82353ec4</p>
-<p>jupyterlite-server-0.6.0-alpha.0.tgz: d63dd5d16cba05e0fc7fbbeaec242a2137f24d6c864e2d8f77c900ea4fcb6b66</p>
-<p>jupyterlite-server-extension-0.6.0-alpha.0.tgz: bccfa41e059c3765c8ec62a3b70b4dd19e8715d78f2bd4dc1b01dd18649edf2c</p>
-<p>jupyterlite-session-0.6.0-alpha.0.tgz: 2609dac81f7df990bec247216950252c48615693982770da9b21496d69d9cfbd</p>
-<p>jupyterlite-settings-0.6.0-alpha.0.tgz: e0b2f6fd7760030ff68efeee4ff764e7b29270a85e9ba2412d218c659da1e57a</p>
-<p>jupyterlite-translation-0.6.0-alpha.0.tgz: 24adeb2fa47553d93b4441777213573a0b712af90ce25a9138df24b0421d05d4</p>
-<p>jupyterlite-types-0.6.0-alpha.0.tgz: 08c667f1b6bfc0a4d4f83bac97045d6ba32b20481406968c2c18cf17549b9a89</p>
-<p>jupyterlite-ui-components-0.6.0-alpha.0.tgz: 558b22a1abf65a4ae128820fc71d6f72be1f929d6cd601a81a442acee23453a6</p>
-<p>jupyterlite_core-0.6.0a0-py3-none-any.whl: 200472a587e7a9fc8b456de63b774502a86adec8b2a9d6c3fb88fcc888ec03e2</p>
-<p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/session@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.6.0-alpha.0</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.6.0-alpha.0</guid>
-            <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
-<p>jupyterlite-0.6.0a0-py3-none-any.whl: 97f8ed2e939b20a388ca97fb148f1c0f41b01239bc410d955008f6fad2d0f446</p>
-<p>jupyterlite-0.6.0a0.tar.gz: b46675267fd6683ba07846c5e5236adc91bec028b4fca79296d783461e178bd5</p>
-<p>jupyterlite-application-0.6.0-alpha.0.tgz: 4efc2215942f58248973de1e97ccf71a95ec08351dfc4135b4908a743e519500</p>
-<p>jupyterlite-application-extension-0.6.0-alpha.0.tgz: b9a9ec821cb5c4cffbec130d389e530f3976987ffa663fd41d57982e3415a950</p>
-<p>jupyterlite-contents-0.6.0-alpha.0.tgz: 6ba5313a449e263431b114c7df837087dfc760eededb5f128b99cdc94597c245</p>
-<p>jupyterlite-iframe-extension-0.6.0-alpha.0.tgz: e5346786e6a7073eb3e8e8b27310d6f707dfe35a1e1fccbde35a48617edd8f62</p>
-<p>jupyterlite-kernel-0.6.0-alpha.0.tgz: 1c07c269380845ebfb1087618bc055514a9197e49a38c97d03fd940614019b18</p>
-<p>jupyterlite-licenses-0.6.0-alpha.0.tgz: bf6daa086a03706a78d98116537ac3a32fcad729e19530047a8f6ef44f976bed</p>
-<p>jupyterlite-localforage-0.6.0-alpha.0.tgz: 537dc504fadd87370b1c2746196a3eeeeb30a245c758ef9c52b488a2dbcde857</p>
-<p>jupyterlite-notebook-application-extension-0.6.0-alpha.0.tgz: 707094eb787b113bc47f35b8d2da889fe54c7f575388ae9460e84f9890c29028</p>
-<p>jupyterlite-repl-extension-0.6.0-alpha.0.tgz: 461a7a4c417fa82d992c8a61f1210939521fa9cbea6eb64e9a8dbe0c82353ec4</p>
-<p>jupyterlite-server-0.6.0-alpha.0.tgz: d63dd5d16cba05e0fc7fbbeaec242a2137f24d6c864e2d8f77c900ea4fcb6b66</p>
-<p>jupyterlite-server-extension-0.6.0-alpha.0.tgz: bccfa41e059c3765c8ec62a3b70b4dd19e8715d78f2bd4dc1b01dd18649edf2c</p>
-<p>jupyterlite-session-0.6.0-alpha.0.tgz: 2609dac81f7df990bec247216950252c48615693982770da9b21496d69d9cfbd</p>
-<p>jupyterlite-settings-0.6.0-alpha.0.tgz: e0b2f6fd7760030ff68efeee4ff764e7b29270a85e9ba2412d218c659da1e57a</p>
-<p>jupyterlite-translation-0.6.0-alpha.0.tgz: 24adeb2fa47553d93b4441777213573a0b712af90ce25a9138df24b0421d05d4</p>
-<p>jupyterlite-types-0.6.0-alpha.0.tgz: 08c667f1b6bfc0a4d4f83bac97045d6ba32b20481406968c2c18cf17549b9a89</p>
-<p>jupyterlite-ui-components-0.6.0-alpha.0.tgz: 558b22a1abf65a4ae128820fc71d6f72be1f929d6cd601a81a442acee23453a6</p>
-<p>jupyterlite_core-0.6.0a0-py3-none-any.whl: 200472a587e7a9fc8b456de63b774502a86adec8b2a9d6c3fb88fcc888ec03e2</p>
-<p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.6.0-alpha.0</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.6.0-alpha.0</guid>
@@ -627,9 +582,9 @@ moves it to the <code>prompt_library</code> crate.</p>
 <p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.6.0-alpha.0</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.6.0-alpha.0</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.6.0-alpha.0</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.6.0-alpha.0</guid>
             <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
@@ -683,6 +638,62 @@ moves it to the <code>prompt_library</code> crate.</p>
 <p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server-extension@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.6.0-alpha.0</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver-extension%400.6.0-alpha.0</guid>
+            <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
+<p>jupyterlite-0.6.0a0-py3-none-any.whl: 97f8ed2e939b20a388ca97fb148f1c0f41b01239bc410d955008f6fad2d0f446</p>
+<p>jupyterlite-0.6.0a0.tar.gz: b46675267fd6683ba07846c5e5236adc91bec028b4fca79296d783461e178bd5</p>
+<p>jupyterlite-application-0.6.0-alpha.0.tgz: 4efc2215942f58248973de1e97ccf71a95ec08351dfc4135b4908a743e519500</p>
+<p>jupyterlite-application-extension-0.6.0-alpha.0.tgz: b9a9ec821cb5c4cffbec130d389e530f3976987ffa663fd41d57982e3415a950</p>
+<p>jupyterlite-contents-0.6.0-alpha.0.tgz: 6ba5313a449e263431b114c7df837087dfc760eededb5f128b99cdc94597c245</p>
+<p>jupyterlite-iframe-extension-0.6.0-alpha.0.tgz: e5346786e6a7073eb3e8e8b27310d6f707dfe35a1e1fccbde35a48617edd8f62</p>
+<p>jupyterlite-kernel-0.6.0-alpha.0.tgz: 1c07c269380845ebfb1087618bc055514a9197e49a38c97d03fd940614019b18</p>
+<p>jupyterlite-licenses-0.6.0-alpha.0.tgz: bf6daa086a03706a78d98116537ac3a32fcad729e19530047a8f6ef44f976bed</p>
+<p>jupyterlite-localforage-0.6.0-alpha.0.tgz: 537dc504fadd87370b1c2746196a3eeeeb30a245c758ef9c52b488a2dbcde857</p>
+<p>jupyterlite-notebook-application-extension-0.6.0-alpha.0.tgz: 707094eb787b113bc47f35b8d2da889fe54c7f575388ae9460e84f9890c29028</p>
+<p>jupyterlite-repl-extension-0.6.0-alpha.0.tgz: 461a7a4c417fa82d992c8a61f1210939521fa9cbea6eb64e9a8dbe0c82353ec4</p>
+<p>jupyterlite-server-0.6.0-alpha.0.tgz: d63dd5d16cba05e0fc7fbbeaec242a2137f24d6c864e2d8f77c900ea4fcb6b66</p>
+<p>jupyterlite-server-extension-0.6.0-alpha.0.tgz: bccfa41e059c3765c8ec62a3b70b4dd19e8715d78f2bd4dc1b01dd18649edf2c</p>
+<p>jupyterlite-session-0.6.0-alpha.0.tgz: 2609dac81f7df990bec247216950252c48615693982770da9b21496d69d9cfbd</p>
+<p>jupyterlite-settings-0.6.0-alpha.0.tgz: e0b2f6fd7760030ff68efeee4ff764e7b29270a85e9ba2412d218c659da1e57a</p>
+<p>jupyterlite-translation-0.6.0-alpha.0.tgz: 24adeb2fa47553d93b4441777213573a0b712af90ce25a9138df24b0421d05d4</p>
+<p>jupyterlite-types-0.6.0-alpha.0.tgz: 08c667f1b6bfc0a4d4f83bac97045d6ba32b20481406968c2c18cf17549b9a89</p>
+<p>jupyterlite-ui-components-0.6.0-alpha.0.tgz: 558b22a1abf65a4ae128820fc71d6f72be1f929d6cd601a81a442acee23453a6</p>
+<p>jupyterlite_core-0.6.0a0-py3-none-any.whl: 200472a587e7a9fc8b456de63b774502a86adec8b2a9d6c3fb88fcc888ec03e2</p>
+<p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.6.0-alpha.0</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.6.0-alpha.0</guid>
+            <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
+<p>jupyterlite-0.6.0a0-py3-none-any.whl: 97f8ed2e939b20a388ca97fb148f1c0f41b01239bc410d955008f6fad2d0f446</p>
+<p>jupyterlite-0.6.0a0.tar.gz: b46675267fd6683ba07846c5e5236adc91bec028b4fca79296d783461e178bd5</p>
+<p>jupyterlite-application-0.6.0-alpha.0.tgz: 4efc2215942f58248973de1e97ccf71a95ec08351dfc4135b4908a743e519500</p>
+<p>jupyterlite-application-extension-0.6.0-alpha.0.tgz: b9a9ec821cb5c4cffbec130d389e530f3976987ffa663fd41d57982e3415a950</p>
+<p>jupyterlite-contents-0.6.0-alpha.0.tgz: 6ba5313a449e263431b114c7df837087dfc760eededb5f128b99cdc94597c245</p>
+<p>jupyterlite-iframe-extension-0.6.0-alpha.0.tgz: e5346786e6a7073eb3e8e8b27310d6f707dfe35a1e1fccbde35a48617edd8f62</p>
+<p>jupyterlite-kernel-0.6.0-alpha.0.tgz: 1c07c269380845ebfb1087618bc055514a9197e49a38c97d03fd940614019b18</p>
+<p>jupyterlite-licenses-0.6.0-alpha.0.tgz: bf6daa086a03706a78d98116537ac3a32fcad729e19530047a8f6ef44f976bed</p>
+<p>jupyterlite-localforage-0.6.0-alpha.0.tgz: 537dc504fadd87370b1c2746196a3eeeeb30a245c758ef9c52b488a2dbcde857</p>
+<p>jupyterlite-notebook-application-extension-0.6.0-alpha.0.tgz: 707094eb787b113bc47f35b8d2da889fe54c7f575388ae9460e84f9890c29028</p>
+<p>jupyterlite-repl-extension-0.6.0-alpha.0.tgz: 461a7a4c417fa82d992c8a61f1210939521fa9cbea6eb64e9a8dbe0c82353ec4</p>
+<p>jupyterlite-server-0.6.0-alpha.0.tgz: d63dd5d16cba05e0fc7fbbeaec242a2137f24d6c864e2d8f77c900ea4fcb6b66</p>
+<p>jupyterlite-server-extension-0.6.0-alpha.0.tgz: bccfa41e059c3765c8ec62a3b70b4dd19e8715d78f2bd4dc1b01dd18649edf2c</p>
+<p>jupyterlite-session-0.6.0-alpha.0.tgz: 2609dac81f7df990bec247216950252c48615693982770da9b21496d69d9cfbd</p>
+<p>jupyterlite-settings-0.6.0-alpha.0.tgz: e0b2f6fd7760030ff68efeee4ff764e7b29270a85e9ba2412d218c659da1e57a</p>
+<p>jupyterlite-translation-0.6.0-alpha.0.tgz: 24adeb2fa47553d93b4441777213573a0b712af90ce25a9138df24b0421d05d4</p>
+<p>jupyterlite-types-0.6.0-alpha.0.tgz: 08c667f1b6bfc0a4d4f83bac97045d6ba32b20481406968c2c18cf17549b9a89</p>
+<p>jupyterlite-ui-components-0.6.0-alpha.0.tgz: 558b22a1abf65a4ae128820fc71d6f72be1f929d6cd601a81a442acee23453a6</p>
+<p>jupyterlite_core-0.6.0a0-py3-none-any.whl: 200472a587e7a9fc8b456de63b774502a86adec8b2a9d6c3fb88fcc888ec03e2</p>
+<p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from jupyterlite: @jupyterlite/notebook-application-extension@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
             <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.6.0-alpha.0</link>
             <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.6.0-alpha.0</guid>
@@ -711,9 +722,37 @@ moves it to the <code>prompt_library</code> crate.</p>
 <p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/translation@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.6.0-alpha.0</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftranslation%400.6.0-alpha.0</guid>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/session@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.6.0-alpha.0</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.6.0-alpha.0</guid>
+            <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
+            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
+<p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
+<p>jupyterlite-0.6.0a0-py3-none-any.whl: 97f8ed2e939b20a388ca97fb148f1c0f41b01239bc410d955008f6fad2d0f446</p>
+<p>jupyterlite-0.6.0a0.tar.gz: b46675267fd6683ba07846c5e5236adc91bec028b4fca79296d783461e178bd5</p>
+<p>jupyterlite-application-0.6.0-alpha.0.tgz: 4efc2215942f58248973de1e97ccf71a95ec08351dfc4135b4908a743e519500</p>
+<p>jupyterlite-application-extension-0.6.0-alpha.0.tgz: b9a9ec821cb5c4cffbec130d389e530f3976987ffa663fd41d57982e3415a950</p>
+<p>jupyterlite-contents-0.6.0-alpha.0.tgz: 6ba5313a449e263431b114c7df837087dfc760eededb5f128b99cdc94597c245</p>
+<p>jupyterlite-iframe-extension-0.6.0-alpha.0.tgz: e5346786e6a7073eb3e8e8b27310d6f707dfe35a1e1fccbde35a48617edd8f62</p>
+<p>jupyterlite-kernel-0.6.0-alpha.0.tgz: 1c07c269380845ebfb1087618bc055514a9197e49a38c97d03fd940614019b18</p>
+<p>jupyterlite-licenses-0.6.0-alpha.0.tgz: bf6daa086a03706a78d98116537ac3a32fcad729e19530047a8f6ef44f976bed</p>
+<p>jupyterlite-localforage-0.6.0-alpha.0.tgz: 537dc504fadd87370b1c2746196a3eeeeb30a245c758ef9c52b488a2dbcde857</p>
+<p>jupyterlite-notebook-application-extension-0.6.0-alpha.0.tgz: 707094eb787b113bc47f35b8d2da889fe54c7f575388ae9460e84f9890c29028</p>
+<p>jupyterlite-repl-extension-0.6.0-alpha.0.tgz: 461a7a4c417fa82d992c8a61f1210939521fa9cbea6eb64e9a8dbe0c82353ec4</p>
+<p>jupyterlite-server-0.6.0-alpha.0.tgz: d63dd5d16cba05e0fc7fbbeaec242a2137f24d6c864e2d8f77c900ea4fcb6b66</p>
+<p>jupyterlite-server-extension-0.6.0-alpha.0.tgz: bccfa41e059c3765c8ec62a3b70b4dd19e8715d78f2bd4dc1b01dd18649edf2c</p>
+<p>jupyterlite-session-0.6.0-alpha.0.tgz: 2609dac81f7df990bec247216950252c48615693982770da9b21496d69d9cfbd</p>
+<p>jupyterlite-settings-0.6.0-alpha.0.tgz: e0b2f6fd7760030ff68efeee4ff764e7b29270a85e9ba2412d218c659da1e57a</p>
+<p>jupyterlite-translation-0.6.0-alpha.0.tgz: 24adeb2fa47553d93b4441777213573a0b712af90ce25a9138df24b0421d05d4</p>
+<p>jupyterlite-types-0.6.0-alpha.0.tgz: 08c667f1b6bfc0a4d4f83bac97045d6ba32b20481406968c2c18cf17549b9a89</p>
+<p>jupyterlite-ui-components-0.6.0-alpha.0.tgz: 558b22a1abf65a4ae128820fc71d6f72be1f929d6cd601a81a442acee23453a6</p>
+<p>jupyterlite_core-0.6.0a0-py3-none-any.whl: 200472a587e7a9fc8b456de63b774502a86adec8b2a9d6c3fb88fcc888ec03e2</p>
+<p>jupyterlite_core-0.6.0a0.tar.gz: 9a7d75ad67e61e19e42e39c6b25b20f61ef69fe9bfb9bd2c6e263b193d9becd6</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.6.0-alpha.0: Publish 0.6.0a0]]></title>
+            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.6.0-alpha.0</link>
+            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.6.0-alpha.0</guid>
             <pubDate>Fri, 17 Jan 2025 14:39:28 GMT</pubDate>
             <content:encoded><![CDATA[<p>SHA256 hashes:</p>
 <p>SHA256SUMS: 4767dc7e4c8b94c76a7bd014cc41845243a2235c0b44cbd9f7cbf06e8067171e</p>
@@ -3052,595 +3091,6 @@ If you run into such an issue, try <code>BUNDLE_BUILD__CHARLOCK_HOLMES="--with-c
 <li>Changed inline completions (Copilot, Supermaven, ...) to not show up in empty buffers. (<a href="https://github.com/zed-industries/zed/pull/23125" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/23125/hovercard">#23125</a>)</li>
 <li>Changed the behavior of <code>&lt;tab&gt;</code> at start of line when an inline completion (Copilot, Supermaven, ...) is visible. If the cursor is before the suggested indentation, <code>&lt;tab&gt;</code> now indents the line instead of accepting the visible completion. (<a href="https://github.com/zed-industries/zed/pull/22892" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/22892/hovercard">#22892</a>)</li>
 <li>Fixed duplicate "Fix with Assistant" entries showing in the code action list. (<a href="https://github.com/zed-industries/zed/pull/23118" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/23118/hovercard">#23118</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from sentry: 25.1.0]]></title>
-            <link>https://github.com/getsentry/sentry/releases/tag/25.1.0</link>
-            <guid>https://github.com/getsentry/sentry/releases/tag/25.1.0</guid>
-            <pubDate>Wed, 15 Jan 2025 17:26:34 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Various fixes &amp; improvements</h3>
-<ul>
-<li>fix(issues): inherit ShortIdLookupEndpoint from GroupEndpoint (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789927244" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83502" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83502/hovercard" href="https://github.com/getsentry/sentry/pull/83502">#83502</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/oioki/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/oioki">@oioki</a></li>
-<li>feat(widget-builder): Create blank widget preview for templates (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2790218302" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83509" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83509/hovercard" href="https://github.com/getsentry/sentry/pull/83509">#83509</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nikkikapadia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nikkikapadia">@nikkikapadia</a></li>
-<li>fix(eslint): Cleanup some TS cruft in the eslint.config.mjs file (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788527558" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83468" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83468/hovercard" href="https://github.com/getsentry/sentry/pull/83468">#83468</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ryan953/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ryan953">@ryan953</a></li>
-<li>feat(eap): Add has filters to eap search query builder (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788276762" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83437" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83437/hovercard" href="https://github.com/getsentry/sentry/pull/83437">#83437</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Zylphrex/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zylphrex">@Zylphrex</a></li>
-<li>feat(explore): Add is_transaction to explore fields (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788125428" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83423" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83423/hovercard" href="https://github.com/getsentry/sentry/pull/83423">#83423</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Zylphrex/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zylphrex">@Zylphrex</a></li>
-<li>styles(explore): Fix spacing between explore toolbar visualize (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788366167" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83449" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83449/hovercard" href="https://github.com/getsentry/sentry/pull/83449">#83449</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Zylphrex/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Zylphrex">@Zylphrex</a></li>
-<li>feat(streamline): Add an option to remove opt-out for new users (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2778810724" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83205" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83205/hovercard" href="https://github.com/getsentry/sentry/pull/83205">#83205</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/leeandher/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/leeandher">@leeandher</a></li>
-<li>ref(issue-details): Remove all query params from legacy UI when no event is found. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788341637" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83441" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83441/hovercard" href="https://github.com/getsentry/sentry/pull/83441">#83441</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/leeandher/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/leeandher">@leeandher</a></li>
-<li>Revert "ref(quick-start): Update backend enums names (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2786594609" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83361" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83361/hovercard" href="https://github.com/getsentry/sentry/pull/83361">#83361</a>)" (<a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/getsentry/sentry/commit/0729289dad0b3c75393b3b5047e655660e81b6ee/hovercard" href="https://github.com/getsentry/sentry/commit/0729289dad0b3c75393b3b5047e655660e81b6ee"><tt>0729289</tt></a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/getsentry-bot/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/getsentry-bot">@getsentry-bot</a></li>
-<li>feat(symx): Add os as a tag (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2790028004" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83504" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83504/hovercard" href="https://github.com/getsentry/sentry/pull/83504">#83504</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/loewenheim/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/loewenheim">@loewenheim</a></li>
-<li>ref(quick-start): Update backend enums names (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2786594609" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83361" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83361/hovercard" href="https://github.com/getsentry/sentry/pull/83361">#83361</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref: fix type for serializers.models.rule (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788356521" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83444" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83444/hovercard" href="https://github.com/getsentry/sentry/pull/83444">#83444</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asottile-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asottile-sentry">@asottile-sentry</a></li>
-<li>ref: fix typing for plugins.bases.issue{,2} (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788359428" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83445" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83445/hovercard" href="https://github.com/getsentry/sentry/pull/83445">#83445</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asottile-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asottile-sentry">@asottile-sentry</a></li>
-<li>ref: standardize user param as User | RpcUser | AnonymousUser in Serializers (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788256973" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83436" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83436/hovercard" href="https://github.com/getsentry/sentry/pull/83436">#83436</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asottile-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asottile-sentry">@asottile-sentry</a></li>
-<li>Reapply "ref: upgrade to python 3.13" (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788364600" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83448" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83448/hovercard" href="https://github.com/getsentry/sentry/pull/83448">#83448</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/asottile-sentry/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/asottile-sentry">@asottile-sentry</a></li>
-<li>feat(widget-builder): Add widget dropdown for templates (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2788128656" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83426" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83426/hovercard" href="https://github.com/getsentry/sentry/pull/83426">#83426</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nikkikapadia/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nikkikapadia">@nikkikapadia</a></li>
-<li>ref(quick-start): Update comments in onboarding tasks model (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789793440" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83496" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83496/hovercard" href="https://github.com/getsentry/sentry/pull/83496">#83496</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref(quick-start): Remove unused functions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789866866" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83499" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83499/hovercard" href="https://github.com/getsentry/sentry/pull/83499">#83499</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref(quick-start): Remove 'INTEGRATIONS' from onboarding task (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789459324" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83488" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83488/hovercard" href="https://github.com/getsentry/sentry/pull/83488">#83488</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref(quick-start): Remove 'USER_CONTEXT' from onboarding tasks (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789485560" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83489" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83489/hovercard" href="https://github.com/getsentry/sentry/pull/83489">#83489</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref(quick-start): Remove 'METRIC_ALERT' from onboarding task (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789447277" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83487" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83487/hovercard" href="https://github.com/getsentry/sentry/pull/83487">#83487</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref(quick-start): Add 'default=True' to the flag manager (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789374701" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83483" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83483/hovercard" href="https://github.com/getsentry/sentry/pull/83483">#83483</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>ref(quick-start): Remove 'USER_REPORTS' from onboarding task (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789495024" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83490" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83490/hovercard" href="https://github.com/getsentry/sentry/pull/83490">#83490</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/priscilawebdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/priscilawebdev">@priscilawebdev</a></li>
-<li>fix(symx): Remove log message (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789523433" data-permission-text="Title is private" data-url="https://github.com/getsentry/sentry/issues/83491" data-hovercard-type="pull_request" data-hovercard-url="/getsentry/sentry/pull/83491/hovercard" href="https://github.com/getsentry/sentry/pull/83491">#83491</a>) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tobias-wilfert/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tobias-wilfert">@tobias-wilfert</a></li>
-</ul>
-<p><em>Plus 26 more</em></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pandoc: pandoc 3.6.2]]></title>
-            <link>https://github.com/jgm/pandoc/releases/tag/3.6.2</link>
-            <guid>https://github.com/jgm/pandoc/releases/tag/3.6.2</guid>
-            <pubDate>Wed, 15 Jan 2025 16:55:48 GMT</pubDate>
-            <content:encoded><![CDATA[<details>
-  <summary>Click to expand changelog</summary>
-<ul>
-<li>
-<p>New input format: <code>pod</code> (Evan Silberman). Pod (“Plain old documentation”) is a markup languaged used principally to document Perl modules and programs.</p>
-</li>
-<li>
-<p>New reader module Text.Pandoc.Readers.Pod, exporting <code>readPod</code> [API change].</p>
-</li>
-<li>
-<p>Docx reader:</p>
-<ul>
-<li>Support row heads in tables (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2149512269" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/9495" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/9495/hovercard" href="https://github.com/jgm/pandoc/issues/9495">#9495</a>). Reader: When <code>w:tblLook</code> has <code>w:firstColumn</code> set (or an equivalent bit mask), we set row heads = 1 in the AST.</li>
-<li>Read table styles as custom styles when <code>styles</code> extension is enabled (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2205373396" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/9603" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/9603/hovercard" href="https://github.com/jgm/pandoc/issues/9603">#9603</a>).</li>
-</ul>
-</li>
-<li>
-<p>HTML reader:</p>
-<ul>
-<li>Add size information for font awesome SVG icons (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2498959557" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10134" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10134/hovercard" href="https://github.com/jgm/pandoc/issues/10134">#10134</a>). If the icon has class <code>fa-fw</code> or <code>fa-w16</code> or <code>fa-w14</code>, we add a width attribute to prevent the icon from appearing full-width in PDF or docx output.</li>
-</ul>
-</li>
-<li>
-<p>Djot reader:</p>
-<ul>
-<li>Use a Span with class “mark” rather than “highlighted” for highlighted text, for consistency with the other pandoc readers and writers.</li>
-</ul>
-</li>
-<li>
-<p>mandoc reader:</p>
-<ul>
-<li>Add mdoc St for C23 (Evan Silberman).</li>
-</ul>
-</li>
-<li>
-<p>RST reader:</p>
-<ul>
-<li>Fix handling of underscores (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2760105692" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10497" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10497/hovercard" href="https://github.com/jgm/pandoc/issues/10497">#10497</a>). Fixes a a regression introduced in 3.6.</li>
-</ul>
-</li>
-<li>
-<p>Docx writer:</p>
-<ul>
-<li>Support row heads in tables (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2149512269" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/9495" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/9495/hovercard" href="https://github.com/jgm/pandoc/issues/9495">#9495</a>). Writer: set <code>w:firstColumn</code> in <code>w:tblLook</code> when there are row heads. (Word only allows one, so this is triggered by any number of row heads &gt; 0.)</li>
-</ul>
-</li>
-<li>
-<p>Djot writer:</p>
-<ul>
-<li>Render a Span with sole class “mark” as highlighted text.</li>
-</ul>
-</li>
-<li>
-<p>Asciidoc writer:</p>
-<ul>
-<li>Don’t emit the class in a span if it’s just “mark” (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2770241886" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10511" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10511/hovercard" href="https://github.com/jgm/pandoc/issues/10511">#10511</a>). The “mark” class is used for highlighting, and Asciidoc treats bare <code>#...#</code> with no attributes as highlighted text.</li>
-<li>Improve escaping (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2657228115" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10385" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10385/hovercard" href="https://github.com/jgm/pandoc/issues/10385">#10385</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="98106305" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/2337" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/2337/hovercard" href="https://github.com/jgm/pandoc/issues/2337">#2337</a>, <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="630751040" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/6424" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/6424/hovercard" href="https://github.com/jgm/pandoc/issues/6424">#6424</a>).</li>
-</ul>
-</li>
-<li>
-<p>EPUB v2 writer:</p>
-<ul>
-<li>Fix cover image (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2764983649" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10505" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10505/hovercard" href="https://github.com/jgm/pandoc/issues/10505">#10505</a>). This is a regression introduced in 3.6.</li>
-</ul>
-</li>
-<li>
-<p>Typst writer:</p>
-<ul>
-<li>Fix handling of pixel image dimensions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2389559308" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/9945" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/9945/hovercard" href="https://github.com/jgm/pandoc/issues/9945">#9945</a>). These are now converted to inches as in the LaTeX writer.</li>
-</ul>
-</li>
-<li>
-<p>Improve error message given when users specify <code>asciidoc</code> as input format (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="1434434614" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/8416" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/8416/hovercard" href="https://github.com/jgm/pandoc/issues/8416">#8416</a>, Santiago Zarate).</p>
-</li>
-<li>
-<p>Allow random 1.3.</p>
-</li>
-<li>
-<p>Use texmath 0.12.8.13 (typst improvements).</p>
-</li>
-<li>
-<p><code>lua-filters.md</code>: document <code>system.os</code> return values (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2781923240" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10523" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10523/hovercard" href="https://github.com/jgm/pandoc/issues/10523">#10523</a>).</p>
-</li>
-<li>
-<p><code>MANUAL.txt</code>:</p>
-<ul>
-<li>Improve manual’s coverage of custom styles.</li>
-<li>Replace LibreOffice PDF documentation link to latest so it links to the latest major release rather than a specific major release (which there are two of every year) (Stéphane Guillou).</li>
-<li>Improve links and descriptions for <code>odt</code>, <code>opendocument</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2779132696" data-permission-text="Title is private" data-url="https://github.com/jgm/pandoc/issues/10518" data-hovercard-type="issue" data-hovercard-url="/jgm/pandoc/issues/10518/hovercard" href="https://github.com/jgm/pandoc/issues/10518">#10518</a>).</li>
-</ul>
-</li>
-</ul>
-</details>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from nx: 20.4.0-beta.0]]></title>
-            <link>https://github.com/nrwl/nx/releases/tag/20.4.0-beta.0</link>
-            <guid>https://github.com/nrwl/nx/releases/tag/20.4.0-beta.0</guid>
-            <pubDate>Wed, 15 Jan 2025 16:30:32 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>20.4.0-beta.0 (2025-01-15)</h2>
-<h3>🚀 Features</h3>
-<ul>
-<li><strong>core:</strong> allow tasks to run with a substring of project name (<a href="https://github.com/nrwl/nx/pull/29552" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29552/hovercard">#29552</a>)</li>
-<li><strong>core:</strong> add support for skipping remote cache (<a href="https://github.com/nrwl/nx/pull/29574" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29574/hovercard">#29574</a>)</li>
-<li><strong>graph:</strong> update headlessui v2 (<a href="https://github.com/nrwl/nx/pull/29586" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29586/hovercard">#29586</a>)</li>
-<li><strong>js:</strong> simplify generated tsconfig.base.json compiler options in ts solution setup (<a href="https://github.com/nrwl/nx/pull/29550" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29550/hovercard">#29550</a>)</li>
-<li><strong>js:</strong> infer build-deps and watch-deps targets for incremental builds (<a href="https://github.com/nrwl/nx/pull/29609" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29609/hovercard">#29609</a>)</li>
-<li><strong>module-federation:</strong> upgrade to latest version of @module-federation/enhanced (<a href="https://github.com/nrwl/nx/pull/29535" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29535/hovercard">#29535</a>)</li>
-<li><strong>nx-dev:</strong> add TOC markdoc component for blog posts (<a href="https://github.com/nrwl/nx/commit/3e564864fd">3e564864fd</a>)</li>
-<li><strong>nx-dev:</strong> customer videos on customer page (<a href="https://github.com/nrwl/nx/pull/29380" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29380/hovercard">#29380</a>)</li>
-<li><strong>nx-dev:</strong> add trial pages for Powerpack and Enterprise, update contact sales team page (<a href="https://github.com/nrwl/nx/pull/29554" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29554/hovercard">#29554</a>)</li>
-<li><strong>testing:</strong> add option <code>ciGroupName</code> to <code>@nx/jest/plugin</code> (<a href="https://github.com/nrwl/nx/pull/29365" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29365/hovercard">#29365</a>)</li>
-<li><strong>web:</strong> support custom cors headers (<a href="https://github.com/nrwl/nx/pull/29382" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29382/hovercard">#29382</a>)</li>
-<li><strong>web:</strong> add support for TS solution setup for @nx/web (<a href="https://github.com/nrwl/nx/pull/29583" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29583/hovercard">#29583</a>)</li>
-</ul>
-<h3>🩹 Fixes</h3>
-<ul>
-<li><strong>angular:</strong> restore esm2022 bundle and drop fesm2022 in ng-packagr-lite executor (<a href="https://github.com/nrwl/nx/pull/29615" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29615/hovercard">#29615</a>)</li>
-<li><strong>core:</strong> daemon spinner should show text (<a href="https://github.com/nrwl/nx/pull/29448" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29448/hovercard">#29448</a>)</li>
-<li><strong>core:</strong> update nx cloud bundle install directory logic (<a href="https://github.com/nrwl/nx/pull/29555" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29555/hovercard">#29555</a>)</li>
-<li><strong>core:</strong> avoid launching default plugins twice (<a href="https://github.com/nrwl/nx/pull/29539" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29539/hovercard">#29539</a>)</li>
-<li><strong>core:</strong> support subpath exports when constructing the project graph (<a href="https://github.com/nrwl/nx/pull/29577" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29577/hovercard">#29577</a>)</li>
-<li><strong>core:</strong> update package script logic to handle cli tool name as command (<a href="https://github.com/nrwl/nx/pull/29617" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29617/hovercard">#29617</a>)</li>
-<li><strong>core:</strong> show better project graph errors (<a href="https://github.com/nrwl/nx/pull/29525" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29525/hovercard">#29525</a>)</li>
-<li><strong>core:</strong> check only for watcher connections during inactivity shutdown (<a href="https://github.com/nrwl/nx/pull/29621" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29621/hovercard">#29621</a>)</li>
-<li><strong>js:</strong> not generate tsconfig if already exists (<a href="https://github.com/nrwl/nx/pull/29317" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29317/hovercard">#29317</a>)</li>
-<li><strong>js:</strong> only add typescript project references for explicit dependencies in sync generator (<a href="https://github.com/nrwl/nx/pull/28998" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/28998/hovercard">#28998</a>)</li>
-<li><strong>js:</strong> infer outputs correctly when both rootDir and outDir are set for tsconfig (<a href="https://github.com/nrwl/nx/pull/29531" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29531/hovercard">#29531</a>)</li>
-<li><strong>js:</strong> do not set project references to non-existing tsconfig files in sync generator (<a href="https://github.com/nrwl/nx/pull/29536" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29536/hovercard">#29536</a>)</li>
-<li><strong>js:</strong> ensure js libraries' build produce esm output in ts solution setup (<a href="https://github.com/nrwl/nx/pull/29546" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29546/hovercard">#29546</a>)</li>
-<li><strong>js:</strong> avoid nested paths in workspaces because they can lead to future issues (<a href="https://github.com/nrwl/nx/pull/29553" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29553/hovercard">#29553</a>)</li>
-<li><strong>js:</strong> Update typescript plugin check for buildable projects (<a href="https://github.com/nrwl/nx/pull/29431" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29431/hovercard">#29431</a>)</li>
-<li><strong>js:</strong> update detection of ts solution setup (<a href="https://github.com/nrwl/nx/pull/29576" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29576/hovercard">#29576</a>)</li>
-<li><strong>js:</strong> generate js libs with exports in package.json and ensure esm output when using rollup bundler (<a href="https://github.com/nrwl/nx/pull/29565" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29565/hovercard">#29565</a>)</li>
-<li><strong>js:</strong> do not generate explicit vitest task config for a js library unless adding plugin is disabled (<a href="https://github.com/nrwl/nx/pull/29606" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29606/hovercard">#29606</a>)</li>
-<li><strong>js:</strong> improve error handling during SWC compilation (<a href="https://github.com/nrwl/nx/pull/29605" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29605/hovercard">#29605</a>)</li>
-<li><strong>js:</strong> non-buildable js libs specify type=module (<a href="https://github.com/nrwl/nx/pull/29620" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29620/hovercard">#29620</a>)</li>
-<li><strong>misc:</strong> ensure all project generators add project to workspaces config (<a href="https://github.com/nrwl/nx/pull/29582" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29582/hovercard">#29582</a>)</li>
-<li><strong>misc:</strong> ensure <code>exports</code> are generated for several lib generators in ts solution setup (<a href="https://github.com/nrwl/nx/pull/29588" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29588/hovercard">#29588</a>)</li>
-<li><strong>nx-dev:</strong> Quote typo (<a href="https://github.com/nrwl/nx/pull/29513" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29513/hovercard">#29513</a>)</li>
-<li><strong>nx-dev:</strong> add playsInline to video loop component (<a href="https://github.com/nrwl/nx/commit/aceebca1aa">aceebca1aa</a>)</li>
-<li><strong>nx-dev:</strong> fix heroicons for safari (<a href="https://github.com/nrwl/nx/pull/29544" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29544/hovercard">#29544</a>)</li>
-<li><strong>nx-dev:</strong> Update Webinar link (<a href="https://github.com/nrwl/nx/pull/29590" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29590/hovercard">#29590</a>)</li>
-<li><strong>react:</strong> transpile SVGR into React 19 compatible component (<a href="https://github.com/nrwl/nx/pull/29543" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29543/hovercard">#29543</a>)</li>
-<li><strong>react:</strong> setup mf env var as input for rspack (<a href="https://github.com/nrwl/nx/pull/29584" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29584/hovercard">#29584</a>)</li>
-<li><strong>release:</strong> invalid config path in hint for using skipLockFileUpdate (<a href="https://github.com/nrwl/nx/pull/29425" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29425/hovercard">#29425</a>)</li>
-<li><strong>release:</strong> ensure git push option is always applied (<a href="https://github.com/nrwl/nx/pull/29596" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29596/hovercard">#29596</a>)</li>
-<li><strong>rspack:</strong> make subresourceIntegrity usage configurable (<a href="https://github.com/nrwl/nx/pull/29629" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29629/hovercard">#29629</a>)</li>
-<li><strong>testing:</strong> infer correct outputs when absolute paths are provided in playwright config (<a href="https://github.com/nrwl/nx/pull/29549" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29549/hovercard">#29549</a>)</li>
-<li><strong>vite:</strong> tsconfig paths plugin should not partially match paths (<a href="https://github.com/nrwl/nx/pull/29501" data-hovercard-type="pull_request" data-hovercard-url="/nrwl/nx/pull/29501/hovercard">#29501</a>)</li>
-</ul>
-<h3>❤️ Thank You</h3>
-<ul>
-<li>Aidan Temple <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/aidant/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/aidant">@aidant</a></li>
-<li>Bartosz Adamczyk <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/clxandstuff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/clxandstuff">@clxandstuff</a></li>
-<li>Chau Tran</li>
-<li>Colum Ferry <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Coly010/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Coly010">@Coly010</a></li>
-<li>Craigory Coppola <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/AgentEnder/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/AgentEnder">@AgentEnder</a></li>
-<li>Emily Xiong <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/xiongemi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/xiongemi">@xiongemi</a></li>
-<li>Jack Hsu <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jaysoo/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jaysoo">@jaysoo</a></li>
-<li>Jack Stevenson</li>
-<li>Jason Jean <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/FrozenPandaz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/FrozenPandaz">@FrozenPandaz</a></li>
-<li>Jonathan Cammisuli <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Cammisuli/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Cammisuli">@Cammisuli</a></li>
-<li>Juri <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/juristr/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/juristr">@juristr</a></li>
-<li>Juri Strumpflohner <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/juristr/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/juristr">@juristr</a></li>
-<li>Leosvel Pérez Espinosa <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/leosvelperez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/leosvelperez">@leosvelperez</a></li>
-<li>Matt Lewis <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mattlewis92/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mattlewis92">@mattlewis92</a></li>
-<li>Mike Hartington <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mhartington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mhartington">@mhartington</a></li>
-<li>Nicholas Cunningham <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndcunningham/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndcunningham">@ndcunningham</a></li>
-<li>Philip Fulcher</li>
-<li>Robb Traister</li>
-<li>Thomas Dekiere <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/thdk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/thdk">@thdk</a></li>
-<li>Tine Kondo <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tinesoft/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tinesoft">@tinesoft</a></li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from carbon: v11.74.0]]></title>
-            <link>https://github.com/carbon-design-system/carbon/releases/tag/v11.74.0</link>
-            <guid>https://github.com/carbon-design-system/carbon/releases/tag/v11.74.0</guid>
-            <pubDate>Wed, 15 Jan 2025 16:16:29 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/carbon-design-system/carbon/compare/v11.73.0...v11.74.0">v11.74.0</a> (2025-1-15)</h1>
-<h2><code>@carbon/colors@11.28.0</code></h2>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(deps): bump next in /packages/colors/examples/sass-modules (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2745229232" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18259" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18259/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18259">#18259</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/a62d322a3"><code>a62d322a3</code></a>)</li>
-</ul>
-<h2><code>@carbon/elements@11.59.0</code></h2>
-<h3>New features 🚀</h3>
-<ul>
-<li>feat(icon-indicator): new component  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2715923795" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18191" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18191/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18191">#18191</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/03ec6cb85"><code>03ec6cb85</code></a>)</li>
-</ul>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(release): v11.74.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789531450" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18348" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18348/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18348">#18348</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1896aed10"><code>1896aed10</code></a>)</li>
-<li>chore(release): v11.74.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2783776899" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18326" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18326/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18326">#18326</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e14e6577e"><code>e14e6577e</code></a>)</li>
-</ul>
-<h2><code>@carbon/grid@11.30.0</code></h2>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(deps): bump nanoid in /packages/grid/examples/preview (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2733182347" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18242" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18242/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18242">#18242</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/51edaf18f"><code>51edaf18f</code></a>)</li>
-</ul>
-<h2><code>@carbon/icons-vue@10.102.0</code></h2>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(deps): bump vue in /packages/icons-vue/examples/storybook (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2633392456" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/17963" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/17963/hovercard" href="https://github.com/carbon-design-system/carbon/pull/17963">#17963</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/5900fdc3a"><code>5900fdc3a</code></a>)</li>
-</ul>
-<h2><code>@carbon/react@1.74.0</code></h2>
-<h3>New features 🚀</h3>
-<ul>
-<li>feat: Added open in Stackblitz to stories (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2776071537" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18309" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18309/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18309">#18309</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/75421587c"><code>75421587c</code></a>)</li>
-<li>feat(icon-indicator): new component  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2715923795" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18191" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18191/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18191">#18191</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/03ec6cb85"><code>03ec6cb85</code></a>)</li>
-</ul>
-<h3>Bug fixes 🐛</h3>
-<ul>
-<li>fix: fixed aira-current in breadcrumb (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2691503787" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18155" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18155/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18155">#18155</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/05c05f7a6"><code>05c05f7a6</code></a>)</li>
-<li>fix: added href to iconButton (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2761195471" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18283" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18283/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18283">#18283</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/424f22e5d"><code>424f22e5d</code></a>)</li>
-<li>fix(composed-modal): don't close on mouse drag and release outside modal (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2715511480" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18188" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18188/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18188">#18188</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/85158ba75"><code>85158ba75</code></a>)</li>
-<li>fix(fluid-date-picker): decorator styles (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2766510710" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18290" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18290/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18290">#18290</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1abaf5a0b"><code>1abaf5a0b</code></a>)</li>
-</ul>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(release): v11.74.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789531450" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18348" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18348/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18348">#18348</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1896aed10"><code>1896aed10</code></a>)</li>
-<li>chore(release): v11.74.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2783776899" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18326" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18326/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18326">#18326</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e14e6577e"><code>e14e6577e</code></a>)</li>
-<li>chore(sb): normalize SB deps versions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2778481300" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18321" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18321/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18321">#18321</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/9840477ed"><code>9840477ed</code></a>)</li>
-<li>chore(deps): bump cross-spawn (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2668869211" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18103" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18103/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18103">#18103</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/b7906ade5"><code>b7906ade5</code></a>)</li>
-</ul>
-<h2><code>@carbon/styles@1.73.0</code></h2>
-<h3>New features 🚀</h3>
-<ul>
-<li>feat(icon-indicator): new component  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2715923795" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18191" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18191/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18191">#18191</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/03ec6cb85"><code>03ec6cb85</code></a>)</li>
-</ul>
-<h3>Bug fixes 🐛</h3>
-<ul>
-<li>fix: word counter position when text area have cols (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2761125314" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18282" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18282/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18282">#18282</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/853df59c3"><code>853df59c3</code></a>)</li>
-<li>fix(fluid-date-picker): decorator styles (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2766510710" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18290" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18290/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18290">#18290</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1abaf5a0b"><code>1abaf5a0b</code></a>)</li>
-</ul>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(release): v11.74.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789531450" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18348" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18348/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18348">#18348</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1896aed10"><code>1896aed10</code></a>)</li>
-<li>chore(release): v11.74.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2783776899" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18326" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18326/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18326">#18326</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e14e6577e"><code>e14e6577e</code></a>)</li>
-</ul>
-<h2><code>@carbon/themes@11.45.0</code></h2>
-<h3>New features 🚀</h3>
-<ul>
-<li>feat(icon-indicator): new component  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2715923795" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18191" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18191/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18191">#18191</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/03ec6cb85"><code>03ec6cb85</code></a>)</li>
-</ul>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(release): v11.74.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789531450" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18348" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18348/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18348">#18348</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1896aed10"><code>1896aed10</code></a>)</li>
-<li>chore(release): v11.74.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2783776899" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18326" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18326/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18326">#18326</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e14e6577e"><code>e14e6577e</code></a>)</li>
-</ul>
-<h2><code>@carbon/web-components@2.21.0</code></h2>
-<h3>New features 🚀</h3>
-<ul>
-<li>feat(icon-indicator): new component  (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2715923795" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18191" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18191/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18191">#18191</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/03ec6cb85"><code>03ec6cb85</code></a>)</li>
-</ul>
-<h3>Bug fixes 🐛</h3>
-<ul>
-<li>fix(web-component): export missing components (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2758180513" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18273" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18273/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18273">#18273</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/96b5a472e"><code>96b5a472e</code></a>)</li>
-</ul>
-<h3>Housekeeping 🏠</h3>
-<ul>
-<li>chore(release): v11.74.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789531450" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18348" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18348/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18348">#18348</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/1896aed10"><code>1896aed10</code></a>)</li>
-<li>chore(release): v11.74.0-rc.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2783776899" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18326" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18326/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18326">#18326</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e14e6577e"><code>e14e6577e</code></a>)</li>
-<li>refactor(icons): move componets/icon to elements/icons (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2776897342" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18316" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18316/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18316">#18316</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/e973f281a"><code>e973f281a</code></a>)</li>
-<li>chore(sb): normalize SB deps versions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2778481300" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18321" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18321/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18321">#18321</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/9840477ed"><code>9840477ed</code></a>)</li>
-<li>chore(deps-dev): bump vite (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2771135297" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18299" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18299/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18299">#18299</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/921760972"><code>921760972</code></a>)</li>
-<li>chore: update web-components storybook packages to 8.4.5 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2766396145" data-permission-text="Title is private" data-url="https://github.com/carbon-design-system/carbon/issues/18289" data-hovercard-type="pull_request" data-hovercard-url="/carbon-design-system/carbon/pull/18289/hovercard" href="https://github.com/carbon-design-system/carbon/pull/18289">#18289</a>) (<a href="https://github.com/carbon-design-system/carbon/commit/ba8759c55"><code>ba8759c55</code></a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from strapi: v5.8.0]]></title>
-            <link>https://github.com/strapi/strapi/releases/tag/v5.8.0</link>
-            <guid>https://github.com/strapi/strapi/releases/tag/v5.8.0</guid>
-            <pubDate>Wed, 15 Jan 2025 16:06:19 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>5.8.0 (2025-01-15)</h2>
-<h3>🔥 Bug fix</h3>
-<ul>
-<li>handle clearing of number field to send null instead of undefined (<a href="https://github.com/strapi/strapi/pull/22537" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22537/hovercard">#22537</a>)</li>
-<li>add missing <code>name</code> to <code>ColorPickerInput</code> (<a href="https://github.com/strapi/strapi/pull/21976" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/21976/hovercard">#21976</a>)</li>
-<li>missing hover pointer in bottom of ctb menu add another field to this collection type (<a href="https://github.com/strapi/strapi/pull/22393" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22393/hovercard">#22393</a>)</li>
-<li>changed active state background color (<a href="https://github.com/strapi/strapi/pull/22545" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22545/hovercard">#22545</a>)</li>
-<li>add missing borders to widgets (<a href="https://github.com/strapi/strapi/pull/22612" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22612/hovercard">#22612</a>)</li>
-<li>scripts-front version number (<a href="https://github.com/strapi/strapi/commit/d7f6a8b2b6">d7f6a8b2b6</a>)</li>
-<li><strong>database:</strong> only drop indexes that exist; do not drop on create (<a href="https://github.com/strapi/strapi/pull/22633" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22633/hovercard">#22633</a>)</li>
-<li><strong>history:</strong> handle nested component images (<a href="https://github.com/strapi/strapi/pull/22278" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22278/hovercard">#22278</a>)</li>
-</ul>
-<h3>⚙️ Chore</h3>
-<ul>
-<li>fix version numbers (<a href="https://github.com/strapi/strapi/commit/27928ae50a">27928ae50a</a>)</li>
-<li><strong>deps:</strong> bump path-to-regexp in the npm_and_yarn group (<a href="https://github.com/strapi/strapi/commit/affd279425">affd279425</a>)</li>
-<li><strong>docs:</strong> document traverseEntity util (<a href="https://github.com/strapi/strapi/pull/22573" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22573/hovercard">#22573</a>)</li>
-<li><strong>tests:</strong> enable and update relations ordering test (<a href="https://github.com/strapi/strapi/pull/22574" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22574/hovercard">#22574</a>)</li>
-</ul>
-<h3>💅 Enhancement</h3>
-<ul>
-<li>apollo landing page config (<a href="https://github.com/strapi/strapi/pull/22285" data-hovercard-type="pull_request" data-hovercard-url="/strapi/strapi/pull/22285/hovercard">#22285</a>)</li>
-</ul>
-<h3>❤️  Thank You</h3>
-<ul>
-<li>Ben Irvin</li>
-<li>Dhruv Maradiya <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Dhruv-Maradiya/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Dhruv-Maradiya">@Dhruv-Maradiya</a></li>
-<li>Kaio Duarte <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kaioduarte/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kaioduarte">@kaioduarte</a></li>
-<li>Lucas Boilly <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lucasboilly/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lucasboilly">@lucasboilly</a></li>
-<li>markkaylor</li>
-<li>Prafull Pandey <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/pandeyprafull/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/pandeyprafull">@pandeyprafull</a></li>
-<li>Rémi de Juvigny</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v8.5.0]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v8.5.0</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v8.5.0</guid>
-            <pubDate>Wed, 15 Jan 2025 14:53:58 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>8.5.0</h2>
-<p>Storybook 8.5 is packed with powerful features to enhance your development workflow. This release makes it easier than ever to build accessible, well-tested UIs. Here’s what’s new:</p>
-<ul>
-<li>🦾 Realtime accessibility tests to help build UIs for everybody</li>
-<li>🛡️ Project code coverage to measure the completeness of your tests</li>
-<li>🎯 Focused tests for faster test feedback</li>
-<li>⚛️ React Native Web Vite framework (experimental) for testing mobile UI</li>
-<li>⚛️ React 19 support</li>
-<li>🎁 Storybook test early access program to level up your testing game</li>
-<li>💯 Hundreds more improvements</li>
-</ul>
-<details>
-<summary>List of all updates</summary>
-<ul>
-<li>Addon A11y: Add conditional rendering for a11y violation number in Testing Module - <a href="https://github.com/storybookjs/storybook/pull/30073" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30073/hovercard">#30073</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Add typesVersions support for TypeScript definitions in a11y package - <a href="https://github.com/storybookjs/storybook/pull/30005" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30005/hovercard">#30005</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Adjust default behaviour when using with experimental-addon-test - <a href="https://github.com/storybookjs/storybook/pull/30162" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30162/hovercard">#30162</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Change default element selector - <a href="https://github.com/storybookjs/storybook/pull/30253" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30253/hovercard">#30253</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Create a11y test provider and revamp a11y addon - <a href="https://github.com/storybookjs/storybook/pull/29643" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29643/hovercard">#29643</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Don't set a11y tag as comment in automigrations - <a href="https://github.com/storybookjs/storybook/pull/30257" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30257/hovercard">#30257</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Fix skipped status handling in Testing Module - <a href="https://github.com/storybookjs/storybook/pull/30077" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30077/hovercard">#30077</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Refactor environment variable handling for Vitest integration - <a href="https://github.com/storybookjs/storybook/pull/30022" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30022/hovercard">#30022</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon A11y: Remove warnings API - <a href="https://github.com/storybookjs/storybook/pull/30049" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30049/hovercard">#30049</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Addon A11y: Run the a11y automigration on postInstall - <a href="https://github.com/storybookjs/storybook/pull/30004" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30004/hovercard">#30004</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Addon A11y: Show errors of axe properly - <a href="https://github.com/storybookjs/storybook/pull/30050" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30050/hovercard">#30050</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Addon A11y: Update accessibility status handling in TestProviderRender - <a href="https://github.com/storybookjs/storybook/pull/30027" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30027/hovercard">#30027</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Docs: Dynamically import rehype - <a href="https://github.com/storybookjs/storybook/pull/29544" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29544/hovercard">#29544</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Docs: Make new code panel opt in - <a href="https://github.com/storybookjs/storybook/pull/30248" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30248/hovercard">#30248</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>Addon Onboarding: Prebundle react-confetti - <a href="https://github.com/storybookjs/storybook/pull/29996" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29996/hovercard">#29996</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Add <code>@vitest/coverage-v8</code> during postinstall if no coverage reporter is installed - <a href="https://github.com/storybookjs/storybook/pull/29993" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29993/hovercard">#29993</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Add prerequisite check for MSW - <a href="https://github.com/storybookjs/storybook/pull/30193" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30193/hovercard">#30193</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Add support for previewHead - <a href="https://github.com/storybookjs/storybook/pull/29808" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29808/hovercard">#29808</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Addon Test: Add Vitest 3 support - <a href="https://github.com/storybookjs/storybook/pull/30181" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30181/hovercard">#30181</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Test: Always run Vitest in watch mode internally - <a href="https://github.com/storybookjs/storybook/pull/29749" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29749/hovercard">#29749</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Addon Test: Always use installed version of vitest - <a href="https://github.com/storybookjs/storybook/pull/30134" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30134/hovercard">#30134</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Addon Test: Clarify message when <code>vitest</code> detects missing deps - <a href="https://github.com/storybookjs/storybook/pull/29763" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29763/hovercard">#29763</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Addon Test: Clear coverage data when starting or watching - <a href="https://github.com/storybookjs/storybook/pull/30072" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30072/hovercard">#30072</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Context menu UI - <a href="https://github.com/storybookjs/storybook/pull/29727" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29727/hovercard">#29727</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Context menu updates - <a href="https://github.com/storybookjs/storybook/pull/30107" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30107/hovercard">#30107</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Correctly stop Storybook when Vitest closes - <a href="https://github.com/storybookjs/storybook/pull/30012" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30012/hovercard">#30012</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Addon Test: Filter out falsy test results in TestProviderRender - <a href="https://github.com/storybookjs/storybook/pull/30001" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30001/hovercard">#30001</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Test: Fix documentation links - <a href="https://github.com/storybookjs/storybook/pull/30128" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30128/hovercard">#30128</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Fix duplicate <code>test.include</code> patterns - <a href="https://github.com/storybookjs/storybook/pull/30029" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30029/hovercard">#30029</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Addon Test: Fix environment variable for Vitest Storybook integration - <a href="https://github.com/storybookjs/storybook/pull/30054" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30054/hovercard">#30054</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Test: Fix error reporting for <code>vitest</code> crashes - <a href="https://github.com/storybookjs/storybook/pull/29751" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29751/hovercard">#29751</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Addon Test: Fix generated path to <code>vitest.setup.js</code> - <a href="https://github.com/storybookjs/storybook/pull/30233" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30233/hovercard">#30233</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Addon Test: Fix indexing behavior - <a href="https://github.com/storybookjs/storybook/pull/29836" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29836/hovercard">#29836</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Fix printing null% for coverage - <a href="https://github.com/storybookjs/storybook/pull/30061" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30061/hovercard">#30061</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Fix run request while booting or restarting Vitest - <a href="https://github.com/storybookjs/storybook/pull/29829" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29829/hovercard">#29829</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Handle undefined storyId - <a href="https://github.com/storybookjs/storybook/pull/29998" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29998/hovercard">#29998</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Improve error message on missing coverage package - <a href="https://github.com/storybookjs/storybook/pull/30088" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30088/hovercard">#30088</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Addon Test: Improve support for mono-repos - <a href="https://github.com/storybookjs/storybook/pull/30216" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30216/hovercard">#30216</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Test: Make component tests status row link to the story's tests panel - <a href="https://github.com/storybookjs/storybook/pull/29992" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29992/hovercard">#29992</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Merge viteFinal config into vitest config - <a href="https://github.com/storybookjs/storybook/pull/29806" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29806/hovercard">#29806</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Addon Test: Only optimize react deps if applicable in vitest-plugin - <a href="https://github.com/storybookjs/storybook/pull/29617" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29617/hovercard">#29617</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Only reset story count on file change when watch mode is enabled - <a href="https://github.com/storybookjs/storybook/pull/30121" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30121/hovercard">#30121</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Optimize internal dependencies - <a href="https://github.com/storybookjs/storybook/pull/29595" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29595/hovercard">#29595</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Prompt switch to <code>experimental-nextjs-vite</code> - <a href="https://github.com/storybookjs/storybook/pull/29814" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29814/hovercard">#29814</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Addon Test: Refactor test addon to include stories automatically - <a href="https://github.com/storybookjs/storybook/pull/29367" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29367/hovercard">#29367</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Addon Test: Remove a11y placeholder - <a href="https://github.com/storybookjs/storybook/pull/29769" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29769/hovercard">#29769</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Addon Test: Replace <code>glob</code> with <code>tinyglobby</code> - <a href="https://github.com/storybookjs/storybook/pull/29817" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29817/hovercard">#29817</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Serve <code>staticDirs</code> with Vitest - <a href="https://github.com/storybookjs/storybook/pull/29811" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29811/hovercard">#29811</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Show sub test provider toggle state in main testing module - <a href="https://github.com/storybookjs/storybook/pull/30019" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30019/hovercard">#30019</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Support Storybook environment variables in Vitest - <a href="https://github.com/storybookjs/storybook/pull/29792" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29792/hovercard">#29792</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Use correct vitest config file path - <a href="https://github.com/storybookjs/storybook/pull/30135" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30135/hovercard">#30135</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Addon Test: Use local storybook binary instead - <a href="https://github.com/storybookjs/storybook/pull/30021" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30021/hovercard">#30021</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kasperpeulen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kasperpeulen">@kasperpeulen</a>!</li>
-<li>Addon Test: Use ProgressSpinner for stop button in Testing Module - <a href="https://github.com/storybookjs/storybook/pull/29997" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29997/hovercard">#29997</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Wait for 2 seconds before showing result mismatch warning - <a href="https://github.com/storybookjs/storybook/pull/30002" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30002/hovercard">#30002</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Addon Test: Wrap sub-paths exported with <code>require.resolve</code> - <a href="https://github.com/storybookjs/storybook/pull/30026" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30026/hovercard">#30026</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Addon Themes: Deprecate useThemeParameters - <a href="https://github.com/storybookjs/storybook/pull/30111" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30111/hovercard">#30111</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Angular: Support statsJson in angular schemas - <a href="https://github.com/storybookjs/storybook/pull/29233" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29233/hovercard">#29233</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Automigration: Improve addon-a11y-addon-test - <a href="https://github.com/storybookjs/storybook/pull/30127" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30127/hovercard">#30127</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Automigration: Improve setup file transformation and version range handling for a11y migration - <a href="https://github.com/storybookjs/storybook/pull/30060" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30060/hovercard">#30060</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Automigrations: Skip vite config file migration for react native web - <a href="https://github.com/storybookjs/storybook/pull/30190" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30190/hovercard">#30190</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dannyhw/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dannyhw">@dannyhw</a>!</li>
-<li>Build: Downgrade to esbuild 0.24.0 - <a href="https://github.com/storybookjs/storybook/pull/30116" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30116/hovercard">#30116</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Build: Revert Downgrade to esbuild 0.24.0 - <a href="https://github.com/storybookjs/storybook/pull/30120" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30120/hovercard">#30120</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>CLI: Fix init help for <code>storybook</code> command - <a href="https://github.com/storybookjs/storybook/pull/29480" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29480/hovercard">#29480</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/toothlessdev/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/toothlessdev">@toothlessdev</a>!</li>
-<li>CLI: Fix new-frameworks automigration - <a href="https://github.com/storybookjs/storybook/pull/29804" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29804/hovercard">#29804</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>CLI: Re-Add Nuxt support - <a href="https://github.com/storybookjs/storybook/pull/28607" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28607/hovercard">#28607</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>CLI: Update a11y-test comment with experimental caveat - <a href="https://github.com/storybookjs/storybook/pull/30258" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30258/hovercard">#30258</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>Composition: Fix composed story search - <a href="https://github.com/storybookjs/storybook/pull/29453" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29453/hovercard">#29453</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jsingh0026/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jsingh0026">@jsingh0026</a>!</li>
-<li>Composition: Hide contextMenu on composed storybooks - <a href="https://github.com/storybookjs/storybook/pull/29803" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29803/hovercard">#29803</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Core / Addon Test: Add config UI to Testing Module - <a href="https://github.com/storybookjs/storybook/pull/29708" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29708/hovercard">#29708</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core / Addon Test: Support intercepting and modifying internal test provider state updates - <a href="https://github.com/storybookjs/storybook/pull/29680" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29680/hovercard">#29680</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core + Addon Test: Refactor test API and fix total test count - <a href="https://github.com/storybookjs/storybook/pull/29656" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29656/hovercard">#29656</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core: Add bun support with npm fallback - <a href="https://github.com/storybookjs/storybook/pull/29267" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29267/hovercard">#29267</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/stephenjason89/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/stephenjason89">@stephenjason89</a>!</li>
-<li>Core: Avoid getting stuck in locked state - <a href="https://github.com/storybookjs/storybook/pull/29768" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29768/hovercard">#29768</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core: Disable SidebarContextMenu in static builds - <a href="https://github.com/storybookjs/storybook/pull/29743" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29743/hovercard">#29743</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Core: Emit deprecated <code>TESTING_MODULE_RUN_ALL_REQUEST</code> for backward compatibility - <a href="https://github.com/storybookjs/storybook/pull/29711" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29711/hovercard">#29711</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core: Evaluate main config when checking 'whats new' notifications - <a href="https://github.com/storybookjs/storybook/pull/29622" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29622/hovercard">#29622</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Core: Fix <code>ERR_PACKAGE_PATH_NOT_EXPORTED</code> in <code>@storybook/node-logger</code> - <a href="https://github.com/storybookjs/storybook/pull/30093" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30093/hovercard">#30093</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Core: Fix <code>scrollIntoView</code> behavior and reimplement testing module time rendering - <a href="https://github.com/storybookjs/storybook/pull/30044" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30044/hovercard">#30044</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core: Fix bundling of React - <a href="https://github.com/storybookjs/storybook/pull/30003" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30003/hovercard">#30003</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Core: Float context menu button on top of story titles in sidebar - <a href="https://github.com/storybookjs/storybook/pull/30080" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30080/hovercard">#30080</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core: Prevent clipping box shadow on file search modal - <a href="https://github.com/storybookjs/storybook/pull/29523" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29523/hovercard">#29523</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Core: Prevent infinite rerendering caused by comparison by reference - <a href="https://github.com/storybookjs/storybook/pull/30081" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30081/hovercard">#30081</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>Docs: Add code snippet to addons panel - <a href="https://github.com/storybookjs/storybook/pull/29253" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29253/hovercard">#29253</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/larsrickert/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/larsrickert">@larsrickert</a>!</li>
-<li>Interactions: Correctly load preset when absolute paths are used - <a href="https://github.com/storybookjs/storybook/pull/30264" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30264/hovercard">#30264</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Maintenance: Move <code>@types/node</code> to <code>devDeps</code> consistently - <a href="https://github.com/storybookjs/storybook/pull/30163" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30163/hovercard">#30163</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Manager API: Fix infinite render-loop caused by <code>useSharedState</code> - <a href="https://github.com/storybookjs/storybook/pull/30259" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30259/hovercard">#30259</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Manager: Add tags property to GroupEntry objects - <a href="https://github.com/storybookjs/storybook/pull/29672" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29672/hovercard">#29672</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Sidnioulz/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Sidnioulz">@Sidnioulz</a>!</li>
-<li>Manager: Fix size regression - <a href="https://github.com/storybookjs/storybook/pull/29660" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29660/hovercard">#29660</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Manager: Optimize getPanels function with memoization - <a href="https://github.com/storybookjs/storybook/pull/30192" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30192/hovercard">#30192</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Next.js: Fix webpack fsCache not working - <a href="https://github.com/storybookjs/storybook/pull/29654" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29654/hovercard">#29654</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sentience/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sentience">@sentience</a>!</li>
-<li>Next.js: Support v15.1.1 - <a href="https://github.com/storybookjs/storybook/pull/30068" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30068/hovercard">#30068</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Next.js: Upgrade sass-loader from ^13.2.0 to ^14.2.1 - <a href="https://github.com/storybookjs/storybook/pull/29264" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29264/hovercard">#29264</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/HoncharenkoZhenya/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/HoncharenkoZhenya">@HoncharenkoZhenya</a>!</li>
-<li>Nextjs-Vite: Add TS docgen support - <a href="https://github.com/storybookjs/storybook/pull/29824" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29824/hovercard">#29824</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Nextjs-Vite: Fix docgen types in main config - <a href="https://github.com/storybookjs/storybook/pull/30042" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30042/hovercard">#30042</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Onboarding: Replace <code>react-confetti</code> with <code>@neoconfetti/react</code> - <a href="https://github.com/storybookjs/storybook/pull/30098" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30098/hovercard">#30098</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>React Native Web: Add framework, CLI integration, sandboxes - <a href="https://github.com/storybookjs/storybook/pull/29520" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29520/hovercard">#29520</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>React: Fix RSC compatibility with addon-themes and hooks - <a href="https://github.com/storybookjs/storybook/pull/26243" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/26243/hovercard">#26243</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>React: Force act running always in sequence - <a href="https://github.com/storybookjs/storybook/pull/30191" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30191/hovercard">#30191</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>React: Use Act wrapper in Storybook for component rendering - <a href="https://github.com/storybookjs/storybook/pull/30037" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30037/hovercard">#30037</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>ReactVite: Add <code>@storybook/test</code> as optional peer dependency - <a href="https://github.com/storybookjs/storybook/pull/29754" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29754/hovercard">#29754</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>RNW-Vite: Add built-in Flow support - <a href="https://github.com/storybookjs/storybook/pull/29756" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29756/hovercard">#29756</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dannyhw/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dannyhw">@dannyhw</a>!</li>
-<li>RNW-Vite: Add tsconfig path aliases support - <a href="https://github.com/storybookjs/storybook/pull/29953" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29953/hovercard">#29953</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>RNW-Vite: Fix flow plugin including too many things - <a href="https://github.com/storybookjs/storybook/pull/29952" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29952/hovercard">#29952</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dannyhw/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dannyhw">@dannyhw</a>!</li>
-<li>RNW-Vite: Fix reanimated support with babel plugin for node_modules - <a href="https://github.com/storybookjs/storybook/pull/30188" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30188/hovercard">#30188</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/dannyhw/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/dannyhw">@dannyhw</a>!</li>
-<li>RNW-Vite: Integrate with experimental-addon-test - <a href="https://github.com/storybookjs/storybook/pull/29645" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29645/hovercard">#29645</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>Storysource Addon: Fix source-loader prettier imports - <a href="https://github.com/storybookjs/storybook/pull/29669" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29669/hovercard">#29669</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/slax57/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/slax57">@slax57</a>!</li>
-<li>Telemetry: Add metadata distinguishing "apps" from "design systems" - <a href="https://github.com/storybookjs/storybook/pull/30070" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30070/hovercard">#30070</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tmeasday/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tmeasday">@tmeasday</a>!</li>
-<li>Test: Add coverage feature - <a href="https://github.com/storybookjs/storybook/pull/29713" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29713/hovercard">#29713</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>TestAddon: Refactor UI &amp; add config options - <a href="https://github.com/storybookjs/storybook/pull/29662" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29662/hovercard">#29662</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Toolbars: Suppress deprecation warning when using dynamic icons - <a href="https://github.com/storybookjs/storybook/pull/29545" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29545/hovercard">#29545</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ValeraS/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ValeraS">@ValeraS</a>!</li>
-<li>UI: Add support for groups to <code>TooltipLinkList</code> and use it in main menu - <a href="https://github.com/storybookjs/storybook/pull/29507" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29507/hovercard">#29507</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>UI: Add Yarn to About Section - <a href="https://github.com/storybookjs/storybook/pull/29225" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29225/hovercard">#29225</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/grantwforsythe/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/grantwforsythe">@grantwforsythe</a>!</li>
-<li>UI: Fix controls and parameters on tag-filtered stories - <a href="https://github.com/storybookjs/storybook/pull/30038" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30038/hovercard">#30038</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/shilman/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/shilman">@shilman</a>!</li>
-<li>UI: Fix overlapping shadow of testing module on scrollbar - <a href="https://github.com/storybookjs/storybook/pull/30132" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30132/hovercard">#30132</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>UI: Fix test provider event handling on startup - <a href="https://github.com/storybookjs/storybook/pull/30083" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30083/hovercard">#30083</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ghengeveld/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ghengeveld">@ghengeveld</a>!</li>
-<li>UI: Keep failing stories in the sidebar, disregarding filters - <a href="https://github.com/storybookjs/storybook/pull/30086" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30086/hovercard">#30086</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>UI: Sidebar context menu addon API - <a href="https://github.com/storybookjs/storybook/pull/29557" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29557/hovercard">#29557</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Vite: Add extra entries to <code>optimizeDeps</code> - <a href="https://github.com/storybookjs/storybook/pull/30117" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30117/hovercard">#30117</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ndelangen/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ndelangen">@ndelangen</a>!</li>
-<li>Vite: Don't prefix story import with <code>@fs</code> - <a href="https://github.com/storybookjs/storybook/pull/28941" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28941/hovercard">#28941</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tobiasdiez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tobiasdiez">@tobiasdiez</a>!</li>
-<li>Vite: Fix preview runtime import - <a href="https://github.com/storybookjs/storybook/pull/29802" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29802/hovercard">#29802</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yannbf/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yannbf">@yannbf</a>!</li>
-<li>Vite: Fix wrong import paths when configDir is not in project root - <a href="https://github.com/storybookjs/storybook/pull/30206" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30206/hovercard">#30206</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Vite: Import preview runtime as ordinary module - <a href="https://github.com/storybookjs/storybook/pull/29172" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29172/hovercard">#29172</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/tobiasdiez/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/tobiasdiez">@tobiasdiez</a>!</li>
-<li>Vitest: Add plugins from <code>viteFinal</code> - <a href="https://github.com/storybookjs/storybook/pull/30105" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/30105/hovercard">#30105</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JReinhold/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JReinhold">@JReinhold</a>!</li>
-<li>Vue: Extend sourceDecorator to support v-bind and nested keys in slots - <a href="https://github.com/storybookjs/storybook/pull/28787" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/28787/hovercard">#28787</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/JoCa96/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/JoCa96">@JoCa96</a>!</li>
-<li>Vue: Fix <code>vue-component-meta</code> docgen HMR not working - <a href="https://github.com/storybookjs/storybook/pull/29518" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/29518/hovercard">#29518</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/IonianPlayboy/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/IonianPlayboy">@IonianPlayboy</a>!</li>
-</ul>
-</details>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v8.6.0-alpha.0]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v8.6.0-alpha.0</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v8.6.0-alpha.0</guid>
-            <pubDate>Wed, 15 Jan 2025 14:45:55 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>8.6.0-alpha.0</h2>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from pyodide: 0.27.1]]></title>
-            <link>https://github.com/pyodide/pyodide/releases/tag/0.27.1</link>
-            <guid>https://github.com/pyodide/pyodide/releases/tag/0.27.1</guid>
-            <pubDate>Wed, 15 Jan 2025 13:47:43 GMT</pubDate>
-            <content:encoded><![CDATA[No content.]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from meteor: release/METEOR@3.1.1]]></title>
-            <link>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%403.1.1</link>
-            <guid>https://github.com/meteor/meteor/releases/tag/release%2FMETEOR%403.1.1</guid>
-            <pubDate>Wed, 15 Jan 2025 13:07:30 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Meteor version to 3.1.1 ☄️</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swagger-core: Swagger-core 1.6.15 released!]]></title>
-            <link>https://github.com/swagger-api/swagger-core/releases/tag/v1.6.15</link>
-            <guid>https://github.com/swagger-api/swagger-core/releases/tag/v1.6.15</guid>
-            <pubDate>Wed, 15 Jan 2025 13:06:08 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>Correct table structure by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/micryc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/micryc">@micryc</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2494021380" data-permission-text="Title is private" data-url="https://github.com/swagger-api/swagger-core/issues/4726" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-core/pull/4726/hovercard" href="https://github.com/swagger-api/swagger-core/pull/4726">#4726</a></li>
-<li>bump jetty to 9.4.56.v20240826 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frantuma/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frantuma">@frantuma</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2588070839" data-permission-text="Title is private" data-url="https://github.com/swagger-api/swagger-core/issues/4759" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-core/pull/4759/hovercard" href="https://github.com/swagger-api/swagger-core/pull/4759">#4759</a></li>
-<li>update dependencies by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/frantuma/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/frantuma">@frantuma</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2789612960" data-permission-text="Title is private" data-url="https://github.com/swagger-api/swagger-core/issues/4825" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-core/pull/4825/hovercard" href="https://github.com/swagger-api/swagger-core/pull/4825">#4825</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/swagger-api/swagger-core/compare/v1.6.14...v1.6.15"><tt>v1.6.14...v1.6.15</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/kit@2.15.3]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%402.15.3</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fkit%402.15.3</guid>
-            <pubDate>Wed, 15 Jan 2025 12:27:42 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: fix race-condition when not using SSR when pressing back before initial load (<a href="https://github.com/sveltejs/kit/pull/12925" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/12925/hovercard">#12925</a>)</p>
-</li>
-<li>
-<p>fix: remove ":$" from virtual module ids to allow dev server to work with proxies (<a href="https://github.com/sveltejs/kit/pull/12157" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/12157/hovercard">#12157</a>)</p>
-</li>
-<li>
-<p>fix: upgrade esm-env to remove warning when NODE_ENV is not set (<a href="https://github.com/sveltejs/kit/pull/13291" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/13291/hovercard">#13291</a>)</p>
-</li>
-<li>
-<p>fix: handle <code>Redirect</code> thrown from root layout load function when client-side navigating to a non-existent page (<a href="https://github.com/sveltejs/kit/pull/12005" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/12005/hovercard">#12005</a>)</p>
-</li>
-<li>
-<p>fix: make param matchers generated type import end with <code>.js</code> (<a href="https://github.com/sveltejs/kit/pull/13286" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/13286/hovercard">#13286</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-cloudflare@5.0.1]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%405.0.1</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-cloudflare%405.0.1</guid>
-            <pubDate>Wed, 15 Jan 2025 12:27:39 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>fix: prevent vitest from hanging (<a href="https://github.com/sveltejs/kit/pull/12830" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/12830/hovercard">#12830</a>)</p>
-</li>
-<li>
-<p>Updated dependencies [<a href="https://github.com/sveltejs/kit/commit/1bedcc1cfc1f2d85946c1423f60faa8a2a56148b"><code>1bedcc1cfc1f2d85946c1423f60faa8a2a56148b</code></a>, <a href="https://github.com/sveltejs/kit/commit/e201fa9380a00e072a80a2dcab56de3d77e5b67c"><code>e201fa9380a00e072a80a2dcab56de3d77e5b67c</code></a>, <a href="https://github.com/sveltejs/kit/commit/f3f08582d41b08c3fd1daf742e5703d9cdca7823"><code>f3f08582d41b08c3fd1daf742e5703d9cdca7823</code></a>, <a href="https://github.com/sveltejs/kit/commit/d4bcfccb4503b12fe76140dbb6cfddc81f9419fc"><code>d4bcfccb4503b12fe76140dbb6cfddc81f9419fc</code></a>, <a href="https://github.com/sveltejs/kit/commit/d09bc033123903f359c1ad6fd3a6d8d7fc19298a"><code>d09bc033123903f359c1ad6fd3a6d8d7fc19298a</code></a>]:</p>
-<ul>
-<li>@sveltejs/kit@2.15.3</li>
-</ul>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from kit: @sveltejs/adapter-auto@4.0.0]]></title>
-            <link>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%404.0.0</link>
-            <guid>https://github.com/sveltejs/kit/releases/tag/%40sveltejs%2Fadapter-auto%404.0.0</guid>
-            <pubDate>Wed, 15 Jan 2025 12:27:36 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Major Changes</h3>
-<ul>
-<li>feat: update Vercel, Cloudflare Pages, and Netlify adapter major versions (<a href="https://github.com/sveltejs/kit/pull/13142" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/kit/pull/13142/hovercard">#13142</a>)</li>
-</ul>
-<h3>Patch Changes</h3>
-<ul>
-<li>Updated dependencies [<a href="https://github.com/sveltejs/kit/commit/1bedcc1cfc1f2d85946c1423f60faa8a2a56148b"><code>1bedcc1cfc1f2d85946c1423f60faa8a2a56148b</code></a>, <a href="https://github.com/sveltejs/kit/commit/e201fa9380a00e072a80a2dcab56de3d77e5b67c"><code>e201fa9380a00e072a80a2dcab56de3d77e5b67c</code></a>, <a href="https://github.com/sveltejs/kit/commit/f3f08582d41b08c3fd1daf742e5703d9cdca7823"><code>f3f08582d41b08c3fd1daf742e5703d9cdca7823</code></a>, <a href="https://github.com/sveltejs/kit/commit/d4bcfccb4503b12fe76140dbb6cfddc81f9419fc"><code>d4bcfccb4503b12fe76140dbb6cfddc81f9419fc</code></a>, <a href="https://github.com/sveltejs/kit/commit/d09bc033123903f359c1ad6fd3a6d8d7fc19298a"><code>d09bc033123903f359c1ad6fd3a6d8d7fc19298a</code></a>]:
-<ul>
-<li>@sveltejs/kit@2.15.3</li>
-</ul>
-</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
