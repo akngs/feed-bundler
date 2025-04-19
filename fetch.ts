@@ -1,4 +1,4 @@
-import { aggregateFeeds, FeedDefSchema } from "./tools/feeds.ts"
+import { aggregateFeeds, FeedDefSchema } from "./libs/feeds.ts"
 import yaml from "js-yaml"
 import * as fs from "node:fs/promises"
 
