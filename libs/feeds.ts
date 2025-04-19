@@ -6,7 +6,6 @@ import { z } from "zod"
 export const FeedSourceSchema = z.object({
   url: z.string(),
   filters: z.array(z.string()).default([]),
-  llmInstruction: z.string().optional(),
 })
 
 export type FeedSource = z.infer<typeof FeedSourceSchema>
