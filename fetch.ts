@@ -1,18 +1,19 @@
-import { aggregateFeeds, validateFeedDef, toXml } from "./tools/feeds.ts"
+import { aggregateFeeds, FeedDefSchema } from "./tools/feeds.ts"
 import yaml from "js-yaml"
-import { promises as fs } from "fs"
+import * as fs from "node:fs/promises"
 
 const MAX_AGE_IN_DAYS = 3
 const URL = "https://akngs.github.io/feed-bundler/"
 
 async function main(): Promise<void> {
-  const raw = await fs.readFile("feed-defs.yaml", "utf-8")
-  const feedDefs = (yaml.load(raw) as Record<string, unknown>[]).map(validateFeedDef)
+  // Load feed definitions
+  const defs = FeedDefSchema.array().parse(yaml.load(await fs.readFile("feed-defs.yaml", "utf-8")))
+
+  // Fetch and save feeds
   await Promise.all(
-    feedDefs.map(async (d) => {
-      const feed = await aggregateFeeds(URL, d, new Date(), MAX_AGE_IN_DAYS)
-      const xml = toXml(d.feedId, feed)
-      await fs.writeFile(`docs/${d.feedId}.xml`, xml, "utf-8")
+    defs.map(async (def) => {
+      const xml = await aggregateFeeds(URL, def, new Date(), MAX_AGE_IN_DAYS)
+      await fs.writeFile(`docs/${def.feedId}.xml`, xml, "utf-8")
     }),
   )
 }

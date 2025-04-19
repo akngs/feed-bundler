@@ -1,45 +1,47 @@
 import Bottleneck from "bottleneck"
 import { Feed } from "feed"
 import Parser from "rss-parser"
+import { z } from "zod"
 
-export type FeedDef = {
-  feedId: string
-  title: string
-  description: string
-  sources: FeedSource[]
-}
+export const FeedSourceSchema = z.object({
+  url: z.string(),
+  filters: z.array(z.string()).default([]),
+})
 
-export type FeedSource = {
-  url: string
-  filters: string[]
-}
+export type FeedSource = z.infer<typeof FeedSourceSchema>
+
+export const FeedDefSchema = z.object({
+  feedId: z.string(),
+  title: z.string(),
+  description: z.string(),
+  sources: z.array(FeedSourceSchema),
+})
+
+export type FeedDef = z.infer<typeof FeedDefSchema>
 
 type ParserOutput = Parser.Output<Parser.Item>
 
-export async function fetchFeed(source: FeedSource): Promise<ParserOutput | null> {
-  try {
-    const parser = new Parser()
-    const output = await parser.parseURL(source.url)
-    const items = filterItems(output.items || [], source.filters)
-    return { ...output, items }
-  } catch (e) {
-    console.log(e)
-    return null
-  }
-}
-
+/**
+ * Aggregates feeds from multiple sources into a single feed.
+ *
+ * @param baseUrl - The base URL of the feed.
+ * @param def - The feed definition.
+ * @param now - The current date.
+ * @param maxAgeInDays - The maximum age of the feed in days.
+ * @returns The aggregated feed as an XML string.
+ */
 export async function aggregateFeeds(
   baseUrl: string,
   def: FeedDef,
   now: Date,
   maxAgeInDays: number,
-): Promise<ParserOutput> {
+): Promise<string> {
   // rate-limit concurrent HTTP requests
   const limiter = new Bottleneck({ maxConcurrent: 10, minTime: 100 })
   const tasks = def.sources.map((source) => limiter.schedule(fetchFeed, source))
 
   // fetch all feeds
-  const feeds = (await Promise.all(tasks)).filter(isNotNull)
+  const feeds = (await Promise.all(tasks)).filter((d) => d !== null)
 
   // merge and sort items
   const items: Parser.Item[] = []
@@ -55,15 +57,15 @@ export async function aggregateFeeds(
   })
 
   // done
-  return {
+  return toXml(def.feedId, {
     feedUrl: `${baseUrl}${def.feedId}`,
     title: def.title,
     description: def.description,
     items,
-  }
+  })
 }
 
-export function toXml(id: string, feed: ParserOutput): string {
+function toXml(id: string, feed: ParserOutput): string {
   const gen = new Feed({
     id,
     link: feed.feedUrl ?? "",
@@ -84,7 +86,18 @@ export function toXml(id: string, feed: ParserOutput): string {
   return gen.rss2()
 }
 
-export function filterItems(items: Parser.Item[], rawFilters: string[]): Parser.Item[] {
+async function fetchFeed(source: FeedSource): Promise<ParserOutput | null> {
+  try {
+    const parser = new Parser()
+    const output = await parser.parseURL(source.url)
+    const items = filterItems(output.items, source.filters)
+    return { ...output, items }
+  } catch {
+    return null
+  }
+}
+
+function filterItems(items: Parser.Item[], rawFilters: string[]): Parser.Item[] {
   const filters = rawFilters.map((f) => ({
     negative: f.startsWith("! "),
     pattern: new RegExp(f.startsWith("! ") ? f.substring(2) : f),
@@ -95,24 +108,4 @@ export function filterItems(items: Parser.Item[], rawFilters: string[]): Parser.
     if (!text) return false
     return filters.every((f) => (f.negative ? !f.pattern.test(text) : f.pattern.test(text)))
   })
-}
-
-export function validateFeedDef(def: Record<string, unknown>): FeedDef {
-  return {
-    feedId: String(def.feedId ?? ""),
-    title: String(def.title ?? ""),
-    description: String(def.description ?? ""),
-    sources: ((def.sources ?? []) as Record<string, unknown>[]).map(validateFeedSource),
-  }
-}
-
-function validateFeedSource(src: Record<string, unknown>): FeedSource {
-  return {
-    url: String(src.url ?? ""),
-    filters: ((src.filters ?? []) as unknown[]).map(String),
-  }
-}
-
-function isNotNull<T>(value: T | null): value is T {
-  return value !== null
 }
