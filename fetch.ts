@@ -1,4 +1,4 @@
-import { aggregateFeeds, validateFeedDef, toXml } from "./tools/feeds"
+import { aggregateFeeds, validateFeedDef, toXml } from "./tools/feeds.ts"
 import yaml from "js-yaml"
 import { promises as fs } from "fs"
 
