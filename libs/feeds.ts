@@ -1,12 +1,39 @@
+import { md2html } from "./utils.ts"
 import Bottleneck from "bottleneck"
+import dotenv from "dotenv"
 import { Feed } from "feed"
+import OpenAI from "openai"
+import { zodResponseFormat } from "openai/helpers/zod"
 import Parser from "rss-parser"
 import { z } from "zod"
 
-export const FeedSourceSchema = z.object({
-  url: z.string(),
-  filters: z.array(z.string()).default([]),
-})
+dotenv.config()
+
+const OPENAI_BASE_URLS = {
+  google: "https://generativelanguage.googleapis.com/v1beta/openai/",
+  openai: "https://api.openai.com/v1/",
+}
+
+const API_KEYS = {
+  google: process.env.GEMINI_API_KEY ?? "",
+  openai: process.env.OPENAI_API_KEY ?? "",
+}
+
+export const FeedSourceSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("llm"),
+    title: z.string(),
+    provider: z.enum(["google", "openai"]),
+    model: z.string(),
+    systemPrompt: z.string(),
+    userPrompt: z.string(),
+  }),
+  z.object({
+    type: z.literal("feed"),
+    url: z.string(),
+    filters: z.array(z.string()).default([]),
+  }),
+])
 
 export type FeedSource = z.infer<typeof FeedSourceSchema>
 
@@ -20,6 +47,11 @@ export const FeedDefSchema = z.object({
 export type FeedDef = z.infer<typeof FeedDefSchema>
 
 type ParserOutput = Parser.Output<Parser.Item>
+
+const GeneratedFeedItemSchema = z.object({
+  title: z.string(),
+  content: z.string(),
+})
 
 /**
  * Aggregates feeds from multiple sources into a single feed.
@@ -38,7 +70,7 @@ export async function aggregateFeeds(
 ): Promise<string> {
   // rate-limit concurrent HTTP requests
   const limiter = new Bottleneck({ maxConcurrent: 10, minTime: 100 })
-  const tasks = def.sources.map((source) => limiter.schedule(fetchFeed, source))
+  const tasks = def.sources.map((source) => limiter.schedule(getFeedFromSource, source))
 
   // fetch all feeds
   const feeds = (await Promise.all(tasks)).filter((d) => d !== null)
@@ -86,7 +118,53 @@ function toXml(id: string, feed: ParserOutput): string {
   return gen.rss2()
 }
 
-async function fetchFeed(source: FeedSource): Promise<ParserOutput | null> {
+async function getFeedFromSource(source: FeedSource): Promise<ParserOutput | null> {
+  if (source.type === "llm") {
+    return getFeedFromLlm(source)
+  } else if (source.type === "feed") {
+    return getFeedFromUrl(source)
+  } else {
+    throw new Error(`Cannot reach here`)
+  }
+}
+
+async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<ParserOutput | null> {
+  const userPrompt = source.userPrompt
+    // [[today]]
+    .replace(/\[\[today\]\]/g, new Date().toISOString())
+
+  const openai = new OpenAI({
+    apiKey: API_KEYS[source.provider],
+    baseURL: OPENAI_BASE_URLS[source.provider],
+  })
+  const res = await openai.beta.chat.completions.parse({
+    model: source.model,
+    messages: [
+      { role: "system", content: source.systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    response_format: zodResponseFormat(GeneratedFeedItemSchema, "generated_feed_item"),
+  })
+
+  const item = res.choices[0]!.message.parsed
+  if (!item) return null
+
+  return {
+    link: "https://github.com/akngs/feed-bundler",
+    feedUrl: "https://github.com/akngs/feed-bundler",
+    title: source.title,
+    items: [
+      {
+        title: item.title,
+        content: md2html(item.content),
+        creator: `${source.provider}/${source.model}`,
+        isoDate: new Date().toISOString(),
+      },
+    ],
+  }
+}
+
+async function getFeedFromUrl(source: FeedSource & { type: "feed" }): Promise<ParserOutput | null> {
   try {
     const parser = new Parser()
     const output = await parser.parseURL(source.url)
