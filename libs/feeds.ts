@@ -1,5 +1,6 @@
 import { md2html } from "./utils.ts"
 import Bottleneck from "bottleneck"
+import dedent from "dedent"
 import dotenv from "dotenv"
 import { Feed } from "feed"
 import OpenAI from "openai"
@@ -130,9 +131,19 @@ async function getFeedFromSource(source: FeedSource): Promise<ParserOutput | nul
 }
 
 async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<ParserOutput | null> {
+  const systemPrompt = dedent`
+    ${source.systemPrompt}
+
+    Output format:
+
+    - title: Concise and descriptive title
+    - content: The article written in markdown
+
+    Metadata:
+
+    - current date and time: ${new Date().toISOString()}
+    `
   const userPrompt = source.userPrompt
-    // [[today]]
-    .replace(/\[\[today\]\]/g, new Date().toISOString())
 
   const openai = new OpenAI({
     apiKey: API_KEYS[source.provider],
@@ -141,7 +152,7 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
   const res = await openai.beta.chat.completions.parse({
     model: source.model,
     messages: [
-      { role: "system", content: source.systemPrompt },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
     temperature: source.temperature,
