@@ -27,6 +27,7 @@ export const FeedSourceSchema = z.discriminatedUnion("type", [
     model: z.string(),
     systemPrompt: z.string(),
     userPrompt: z.string(),
+    temperature: z.number().default(1.0),
   }),
   z.object({
     type: z.literal("feed"),
@@ -143,6 +144,7 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
       { role: "system", content: source.systemPrompt },
       { role: "user", content: userPrompt },
     ],
+    temperature: source.temperature,
     response_format: zodResponseFormat(GeneratedFeedItemSchema, "generated_feed_item"),
   })
 
