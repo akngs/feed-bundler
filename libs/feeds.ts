@@ -3,6 +3,7 @@ import Bottleneck from "bottleneck"
 import dedent from "dedent"
 import dotenv from "dotenv"
 import { Feed } from "feed"
+import { nanoid } from "nanoid"
 import OpenAI from "openai"
 import { zodResponseFormat } from "openai/helpers/zod"
 import Parser from "rss-parser"
@@ -162,6 +163,8 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
   const item = res.choices[0]!.message.parsed
   if (!item) return null
 
+  const date = new Date().toISOString()
+
   return {
     link: "https://github.com/akngs/feed-bundler",
     feedUrl: "https://github.com/akngs/feed-bundler",
@@ -171,7 +174,9 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
         title: item.title,
         content: md2html(item.content),
         creator: `${source.provider}/${source.model}`,
-        isoDate: new Date().toISOString(),
+        guid: nanoid(64),
+        pubDate: date,
+        isoDate: date,
       },
     ],
   }
