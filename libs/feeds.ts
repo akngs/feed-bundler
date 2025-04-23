@@ -164,17 +164,19 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
   if (!item) return null
 
   const date = new Date().toISOString()
+  const guid = nanoid(64)
 
   return {
-    link: "https://github.com/akngs/feed-bundler",
+    link: `https://github.com/akngs/feed-bundler`,
     feedUrl: "https://github.com/akngs/feed-bundler",
     title: source.title,
     items: [
       {
         title: item.title,
+        link: `https://github.com/akngs/feed-bundler?guid=${guid}`,
         content: md2html(item.content),
         creator: `${source.provider}/${source.model}`,
-        guid: nanoid(64),
+        guid,
         pubDate: date,
         isoDate: date,
       },
