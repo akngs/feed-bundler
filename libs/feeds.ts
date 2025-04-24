@@ -1,5 +1,6 @@
 import { md2html } from "./utils.ts"
 import Bottleneck from "bottleneck"
+import { shuffle } from "d3"
 import dedent from "dedent"
 import dotenv from "dotenv"
 import { Feed } from "feed"
@@ -30,6 +31,8 @@ export const FeedSourceSchema = z.discriminatedUnion("type", [
     systemPrompt: z.string(),
     userPrompt: z.string(),
     temperature: z.number().default(1.0),
+    noises: z.array(z.string()).default([]),
+    nNoises: z.number().default(3),
   }),
   z.object({
     type: z.literal("feed"),
@@ -144,7 +147,10 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
 
     - current date and time: ${new Date().toISOString()}
     `
-  const userPrompt = source.userPrompt
+
+  const noises = shuffle(source.noises).slice(0, source.nNoises)
+  const userPrompt = source.userPrompt.replace("[[noises]]", noises.join(", "))
+  console.log(userPrompt)
 
   const openai = new OpenAI({
     apiKey: API_KEYS[source.provider],
