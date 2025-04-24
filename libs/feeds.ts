@@ -150,7 +150,6 @@ async function getFeedFromLlm(source: FeedSource & { type: "llm" }): Promise<Par
 
   const noises = shuffle(source.noises).slice(0, source.nNoises)
   const userPrompt = source.userPrompt.replace("[[noises]]", noises.join(", "))
-  console.log(userPrompt)
 
   const openai = new OpenAI({
     apiKey: API_KEYS[source.provider],
