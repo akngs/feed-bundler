@@ -4,10 +4,710 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Sun, 25 May 2025 12:03:51 GMT</lastBuildDate>
+        <lastBuildDate>Sun, 25 May 2025 18:02:54 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from numpy: v2.3.0rc1 (May 25, 2025)]]></title>
+            <link>https://github.com/numpy/numpy/releases/tag/v2.3.0rc1</link>
+            <guid>https://github.com/numpy/numpy/releases/tag/v2.3.0rc1</guid>
+            <pubDate>Sun, 25 May 2025 15:39:47 GMT</pubDate>
+            <content:encoded><![CDATA[<h1>NumPy 2.3.0 Release Notes</h1>
+<p>The NumPy 2.3.0 release continues the work to improve free threaded<br>
+Python support and annotations together with the usual set of bug fixes.<br>
+It is unusual in the number of expired deprecations and the number of<br>
+code modernizations and style cleanups. The latter may not be visible to<br>
+users, but is important for code maintenance over the long term. Note<br>
+that we have also upgraded from manylinux2014 to manylinux_2_28.</p>
+<p>There are known test failures in the rc1 release involving MyPy and<br>
+PyPy. The cause of both has been determined and fixes will be applied<br>
+before the final release. The current Windows on ARM wheels also lack<br>
+OpenBLAS, but they should suffice for initial downstream testing.<br>
+OpenBLAS will be incorporated in those wheels when it becomes available.</p>
+<p>This release supports Python versions 3.11-3.13, Python 3.14 will be<br>
+supported when it is released.</p>
+<h2>Highlights</h2>
+<ul>
+<li>Interactive examples in the NumPy documentation.</li>
+<li>Building NumPy with OpenMP Parallelization.</li>
+<li>Preliminary support for Windows on ARM.</li>
+<li>Improved support for free threaded Python.</li>
+<li>Improved annotations.</li>
+</ul>
+<h2>New functions</h2>
+<h3>New function <code>numpy.strings.slice</code></h3>
+<p>The new function <code>numpy.strings.slice</code> was added, which implements fast<br>
+native slicing of string arrays. It supports the full slicing API<br>
+including negative slice offsets and steps.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/27789" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/27789/hovercard">gh-27789</a>)</p>
+<h2>Deprecations</h2>
+<ul>
+<li>
+<p>The <code>numpy.typing.mypy_plugin</code> has been deprecated in favor of<br>
+platform-agnostic static type inference. Please remove<br>
+<code>numpy.typing.mypy_plugin</code> from the <code>plugins</code> section of your mypy<br>
+configuration. If this change results in new errors being reported,<br>
+kindly open an issue.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28129" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28129/hovercard">gh-28129</a>)</p>
+</li>
+<li>
+<p>The <code>numpy.typing.NBitBase</code> type has been deprecated and will be<br>
+removed in a future version.</p>
+<p>This type was previously intended to be used as a generic upper<br>
+bound for type-parameters, for example:</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import numpy as np
+import numpy.typing as npt
+
+def f[NT: npt.NBitBase](x: np.complexfloating[NT]) -&gt; np.floating[NT]: ..."><pre><span class="pl-k">import</span> <span class="pl-s1">numpy</span> <span class="pl-k">as</span> <span class="pl-s1">np</span>
+<span class="pl-k">import</span> <span class="pl-s1">numpy</span>.<span class="pl-s1">typing</span> <span class="pl-k">as</span> <span class="pl-s1">npt</span>
+
+<span class="pl-k">def</span> <span class="pl-en">f</span>[<span class="pl-smi">NT</span>: <span class="pl-s1">npt</span>.<span class="pl-c1">NBitBase</span>](<span class="pl-s1">x</span>: <span class="pl-s1">np</span>.<span class="pl-c1">complexfloating</span>[<span class="pl-c1">NT</span>]) <span class="pl-c1">-&gt;</span> <span class="pl-s1">np</span>.<span class="pl-c1">floating</span>[<span class="pl-c1">NT</span>]: ...</pre></div>
+<p>But in NumPy 2.2.0, <code>float64</code> and <code>complex128</code> were changed to<br>
+concrete subtypes, causing static type-checkers to reject<br>
+<code>x: np.float64 = f(np.complex128(42j))</code>.</p>
+<p>So instead, the better approach is to use <code>typing.overload</code>:</p>
+<div class="highlight highlight-source-python notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="import numpy as np
+from typing import overload
+
+@overload
+def f(x: np.complex64) -&gt; np.float32: ...
+@overload
+def f(x: np.complex128) -&gt; np.float64: ...
+@overload
+def f(x: np.clongdouble) -&gt; np.longdouble: ..."><pre><span class="pl-k">import</span> <span class="pl-s1">numpy</span> <span class="pl-k">as</span> <span class="pl-s1">np</span>
+<span class="pl-k">from</span> <span class="pl-s1">typing</span> <span class="pl-k">import</span> <span class="pl-s1">overload</span>
+
+<span class="pl-en">@<span class="pl-s1">overload</span></span>
+<span class="pl-k">def</span> <span class="pl-en">f</span>(<span class="pl-s1">x</span>: <span class="pl-s1">np</span>.<span class="pl-c1">complex64</span>) <span class="pl-c1">-&gt;</span> <span class="pl-s1">np</span>.<span class="pl-c1">float32</span>: ...
+<span class="pl-en">@<span class="pl-s1">overload</span></span>
+<span class="pl-k">def</span> <span class="pl-en">f</span>(<span class="pl-s1">x</span>: <span class="pl-s1">np</span>.<span class="pl-c1">complex128</span>) <span class="pl-c1">-&gt;</span> <span class="pl-s1">np</span>.<span class="pl-c1">float64</span>: ...
+<span class="pl-en">@<span class="pl-s1">overload</span></span>
+<span class="pl-k">def</span> <span class="pl-en">f</span>(<span class="pl-s1">x</span>: <span class="pl-s1">np</span>.<span class="pl-c1">clongdouble</span>) <span class="pl-c1">-&gt;</span> <span class="pl-s1">np</span>.<span class="pl-c1">longdouble</span>: ...</pre></div>
+<p>(<a href="https://github.com/numpy/numpy/pull/28884" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28884/hovercard">gh-28884</a>)</p>
+</li>
+</ul>
+<h2>Expired deprecations</h2>
+<ul>
+<li>
+<p>Remove deprecated macros like <code>NPY_OWNDATA</code> from Cython interfaces<br>
+in favor of <code>NPY_ARRAY_OWNDATA</code> (deprecated since 1.7)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Remove <code>numpy/npy_1_7_deprecated_api.h</code> and C macros like<br>
+<code>NPY_OWNDATA</code> in favor of <code>NPY_ARRAY_OWNDATA</code> (deprecated since 1.7)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Remove alias <code>generate_divbyzero_error</code> to<br>
+<code>npy_set_floatstatus_divbyzero</code> and <code>generate_overflow_error</code> to<br>
+<code>npy_set_floatstatus_overflow</code> (deprecated since 1.10)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Remove <code>np.tostring</code> (deprecated since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Raise on <code>np.conjugate</code> of non-numeric types (deprecated since 1.13)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Raise when using <code>np.bincount(...minlength=None)</code>, use 0 instead<br>
+(deprecated since 1.14)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Passing <code>shape=None</code> to functions with a non-optional shape argument<br>
+errors, use <code>()</code> instead (deprecated since 1.20)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Inexact matches for <code>mode</code> and <code>searchside</code> raise (deprecated since<br>
+1.20)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Setting <code>__array_finalize__ = None</code> errors (deprecated since 1.23)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p><code>np.fromfile</code> and <code>np.fromstring</code> error on bad data, previously they<br>
+would guess (deprecated since 1.18)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p><code>datetime64</code> and <code>timedelta64</code> construction with a tuple no longer<br>
+accepts an <code>event</code> value, either use a two-tuple of (unit, num) or a<br>
+4-tuple of (unit, num, den, 1) (deprecated since 1.14)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>When constructing a <code>dtype</code> from a class with a <code>dtype</code> attribute,<br>
+that attribute must be a dtype-instance rather than a thing that can<br>
+be parsed as a dtype instance (deprecated in 1.19). At some point<br>
+the whole construct of using a dtype attribute will be deprecated<br>
+(see <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2022842316" data-permission-text="Title is private" data-url="https://github.com/numpy/numpy/issues/25306" data-hovercard-type="issue" data-hovercard-url="/numpy/numpy/issues/25306/hovercard" href="https://github.com/numpy/numpy/issues/25306">#25306</a>)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Passing booleans as partition index errors (deprecated since 1.23)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Out-of-bounds indexes error even on empty arrays (deprecated since<br>
+1.20)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p><code>np.tostring</code> has been removed, use <code>tobytes</code> instead (deprecated<br>
+since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Disallow make a non-writeable array writeable for arrays with a base<br>
+that do not own their data (deprecated since 1.17)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p><code>concatenate()</code> with <code>axis=None</code> uses <code>same-kind</code> casting by<br>
+default, not <code>unsafe</code> (deprecated since 1.20)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Unpickling a scalar with object dtype errors (deprecated since 1.20)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>The binary mode of <code>fromstring</code> now errors, use <code>frombuffer</code> instead<br>
+(deprecated since 1.14)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Converting <code>np.inexact</code> or <code>np.floating</code> to a dtype errors<br>
+(deprecated since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Converting <code>np.complex</code>, <code>np.integer</code>, <code>np.signedinteger</code>,<br>
+<code>np.unsignedinteger</code>, <code>np.generic</code> to a dtype errors (deprecated<br>
+since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>The Python built-in <code>round</code> errors for complex scalars. Use<br>
+<code>np.round</code> or <code>scalar.round</code> instead (deprecated since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>'np.bool' scalars can no longer be interpreted as an index<br>
+(deprecated since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Parsing an integer via a float string is no longer supported.<br>
+(deprecated since 1.23) To avoid this error you can</p>
+<ul>
+<li>make sure the original data is stored as integers.</li>
+<li>use the <code>converters=float</code> keyword argument.</li>
+<li>Use <code>np.loadtxt(...).astype(np.int64)</code></li>
+</ul>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>The use of a length 1 tuple for the ufunc <code>signature</code> errors. Use<br>
+<code>dtype</code> or fill the tuple with <code>None</code> (deprecated since 1.19)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Special handling of matrix is in np.outer is removed. Convert to a<br>
+ndarray via <code>matrix.A</code> (deprecated since 1.20)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28254" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28254/hovercard">gh-28254</a>)</p>
+</li>
+<li>
+<p>Removed the <code>np.compat</code> package source code (removed in 2.0)</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28961" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28961/hovercard">gh-28961</a>)</p>
+</li>
+</ul>
+<h2>C API changes</h2>
+<ul>
+<li>
+<p><code>NpyIter_GetTransferFlags</code> is now available to check if the iterator<br>
+needs the Python API or if casts may cause floating point errors<br>
+(FPE). FPEs can for example be set when casting <code>float64(1e300)</code> to<br>
+<code>float32</code> (overflow to infinity) or a NaN to an integer (invalid<br>
+value).</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/27883" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/27883/hovercard">gh-27883</a>)</p>
+</li>
+<li>
+<p><code>NpyIter</code> now has no limit on the number of operands it supports.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28080" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28080/hovercard">gh-28080</a>)</p>
+</li>
+</ul>
+<h3>New <code>NpyIter_GetTransferFlags</code> and <code>NpyIter_IterationNeedsAPI</code> change</h3>
+<p>NumPy now has the new <code>NpyIter_GetTransferFlags</code> function as a more<br>
+precise way checking of iterator/buffering needs. I.e. whether the<br>
+Python API/GIL is required or floating point errors may occur. This<br>
+function is also faster if you already know your needs without<br>
+buffering.</p>
+<p>The <code>NpyIter_IterationNeedsAPI</code> function now performs all the checks<br>
+that were previously performed at setup time. While it was never<br>
+necessary to call it multiple times, doing so will now have a larger<br>
+cost.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/27998" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/27998/hovercard">gh-27998</a>)</p>
+<h2>New Features</h2>
+<ul>
+<li>
+<p>The type parameter of <code>np.dtype</code> now defaults to <code>typing.Any</code>. This<br>
+way, static type-checkers will infer <code>dtype: np.dtype</code> as<br>
+<code>dtype: np.dtype[Any]</code>, without reporting an error.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28669" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28669/hovercard">gh-28669</a>)</p>
+</li>
+<li>
+<p>Static type-checkers now interpret:</p>
+<ul>
+<li><code>_: np.ndarray</code> as <code>_: npt.NDArray[typing.Any]</code>.</li>
+<li><code>_: np.flatiter</code> as <code>_: np.flatiter[np.ndarray]</code>.</li>
+</ul>
+<p>This is because their type parameters now have default values.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28940" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28940/hovercard">gh-28940</a>)</p>
+</li>
+</ul>
+<h3>NumPy now registers its pkg-config paths with the <a href="https://github.com/pypackaging-native/pkgconf-pypi">pkgconf</a> PyPI package</h3>
+<p>The <a href="https://github.com/pypackaging-native/pkgconf-pypi">pkgconf</a> PyPI<br>
+package provides an interface for projects like NumPy to register their<br>
+own paths to be added to the pkg-config search path. This means that<br>
+when using <a href="https://github.com/pypackaging-native/pkgconf-pypi">pkgconf</a><br>
+from PyPI, NumPy will be discoverable without needing for any custom<br>
+environment configuration.</p>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p>This only applies when using the <a href="https://github.com/pypackaging-native/pkgconf-pypi">pkgconf</a> package from <a href="https://pypi.org/" rel="nofollow">PyPI</a>,<br>
+or put another way, this only applies when installing <a href="https://github.com/pypackaging-native/pkgconf-pypi">pkgconf</a> via a<br>
+Python package manager.</p>
+<p>If you are using <code>pkg-config</code> or <code>pkgconf</code> provided by your system,<br>
+or any other source that does not use the <a href="https://github.com/pypackaging-native/pkgconf-pypi">pkgconf-pypi</a><br>
+project, the NumPy pkg-config directory will not be automatically added<br>
+to the search path. In these situations, you might want to use <code>numpy-config</code>.</p>
+</div>
+<p>(<a href="https://github.com/numpy/numpy/pull/28214" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28214/hovercard">gh-28214</a>)</p>
+<h3>Allow <code>out=...</code> in ufuncs to ensure array result</h3>
+<p>NumPy has the sometimes difficult behavior that it currently usually<br>
+returns scalars rather than 0-D arrays (even if the inputs were 0-D<br>
+arrays). This is especially problematic for non-numerical dtypes (e.g.<br>
+<code>object</code>).</p>
+<p>For ufuncs (i.e. most simple math functions) it is now possible to use<br>
+<code>out=...</code> (literally `...`, e.g. <code>out=Ellipsis</code>) which is identical<br>
+in behavior to <code>out</code> not being passed, but will ensure a non-scalar<br>
+return. This spelling is borrowed from <code>arr1d[0, ...]</code> where the <code>...</code><br>
+also ensures a non-scalar return.</p>
+<p>Other functions with an <code>out=</code> kwarg should gain support eventually.<br>
+Downstream libraries that interoperate via <code>__array_ufunc__</code> or<br>
+<code>__array_function__</code> may need to adapt to support this.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28576" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28576/hovercard">gh-28576</a>)</p>
+<h3>Building NumPy with OpenMP Parallelization</h3>
+<p>NumPy now supports OpenMP parallel processing capabilities when built<br>
+with the <code>-Denable_openmp=true</code> Meson build flag. This feature is<br>
+disabled by default. When enabled, <code>np.sort</code> and <code>np.argsort</code> functions<br>
+can utilize OpenMP for parallel thread execution, improving performance<br>
+for these operations.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28619" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28619/hovercard">gh-28619</a>)</p>
+<h3>Interactive examples in the NumPy documentation</h3>
+<p>The NumPy documentation includes a number of examples that can now be<br>
+run interactively in your browser using WebAssembly and Pyodide.</p>
+<p>Please note that the examples are currently experimental in nature and<br>
+may not work as expected for all methods in the public API.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/26745" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/26745/hovercard">gh-26745</a>)</p>
+<h2>Improvements</h2>
+<ul>
+<li>
+<p>Scalar comparisons between non-comparable dtypes such as<br>
+<code>np.array(1) == np.array('s')</code> now return a NumPy bool instead of a<br>
+Python bool.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/27288" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/27288/hovercard">gh-27288</a>)</p>
+</li>
+<li>
+<p><code>np.nditer</code> now has no limit on the number of supported operands<br>
+(C-integer).</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28080" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28080/hovercard">gh-28080</a>)</p>
+</li>
+<li>
+<p>No-copy pickling is now supported for any array that can be<br>
+transposed to a C-contiguous array.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28105" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28105/hovercard">gh-28105</a>)</p>
+</li>
+<li>
+<p>The <code>__repr__</code> for user-defined dtypes now prefers the <code>__name__</code> of<br>
+the custom dtype over a more generic name constructed from its<br>
+<code>kind</code> and <code>itemsize</code>.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28250" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28250/hovercard">gh-28250</a>)</p>
+</li>
+<li>
+<p><code>np.dot</code> now reports floating point exceptions.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28442" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28442/hovercard">gh-28442</a>)</p>
+</li>
+<li>
+<p><code>np.dtypes.StringDType</code> is now a <a href="https://typing.python.org/en/latest/spec/generics.html" rel="nofollow">generic<br>
+type</a> which<br>
+accepts a type argument for <code>na_object</code> that defaults to<br>
+<code>typing.Never</code>. For example, <code>StringDType(na_object=None)</code> returns a<br>
+<code>StringDType[None]</code>, and <code>StringDType()</code> returns a<br>
+<code>StringDType[typing.Never]</code>.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28856" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28856/hovercard">gh-28856</a>)</p>
+</li>
+</ul>
+<h3>Added warnings to <code>np.isclose</code></h3>
+<p>Added warning messages if at least one of atol or rtol are either<br>
+<code>np.nan</code> or <code>np.inf</code> within <code>np.isclose</code>.</p>
+<ul>
+<li>Warnings follow the user's <code>np.seterr</code> settings</li>
+</ul>
+<p>(<a href="https://github.com/numpy/numpy/pull/28205" data-hovercard-type="issue" data-hovercard-url="/numpy/numpy/issues/28205/hovercard">gh-28205</a>)</p>
+<h2>Performance improvements and changes</h2>
+<h3>Performance improvements to <code>np.unique</code></h3>
+<p><code>np.unique</code> now tries to use a hash table to find unique values instead<br>
+of sorting values before finding unique values. This is limited to<br>
+certain dtypes for now, and the function is now faster for those dtypes.<br>
+The function now also exposes a <code>sorted</code> parameter to allow returning<br>
+unique values as they were found, instead of sorting them afterwards.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/26018" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/26018/hovercard">gh-26018</a>)</p>
+<h3>Performance improvements to <code>np.sort</code> and <code>np.argsort</code></h3>
+<p><code>np.sort</code> and <code>np.argsort</code> functions now can leverage OpenMP for<br>
+parallel thread execution, resulting in up to 3.5x speedups on x86<br>
+architectures with AVX2 or AVX-512 instructions. This opt-in feature<br>
+requires NumPy to be built with the -Denable_openmp Meson flag. Users<br>
+can control the number of threads used by setting the OMP_NUM_THREADS<br>
+environment variable.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28619" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28619/hovercard">gh-28619</a>)</p>
+<h3>Performance improvements for <code>np.float16</code> casts</h3>
+<p>Earlier, floating point casts to and from <code>np.float16</code> types were<br>
+emulated in software on all platforms.</p>
+<p>Now, on ARM devices that support Neon float16 intrinsics (such as recent<br>
+Apple Silicon), the native float16 path is used to achieve the best<br>
+performance.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28769" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28769/hovercard">gh-28769</a>)</p>
+<h2>Changes</h2>
+<ul>
+<li>
+<p>The vector norm <code>ord=inf</code> and the matrix norms<br>
+<code>ord={1, 2, inf, 'nuc'}</code> now always returns zero for empty arrays.<br>
+Empty arrays have at least one axis of size zero. This affects<br>
+<code>np.linalg.norm</code>, <code>np.linalg.vector_norm</code>, and<br>
+<code>np.linalg.matrix_norm</code>. Previously, NumPy would raises errors or<br>
+return zero depending on the shape of the array.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28343" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28343/hovercard">gh-28343</a>)</p>
+</li>
+<li>
+<p>A spelling error in the error message returned when converting a<br>
+string to a float with the method <code>np.format_float_positional</code> has<br>
+been fixed.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28569" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28569/hovercard">gh-28569</a>)</p>
+</li>
+<li>
+<p>NumPy's <code>__array_api_version__</code> was upgraded from <code>2023.12</code> to<br>
+<code>2024.12</code>.</p>
+</li>
+<li>
+<p><code>numpy.count_nonzero</code> for <code>axis=None</code> (default) now returns a NumPy<br>
+scalar instead of a Python integer.</p>
+</li>
+<li>
+<p>The parameter <code>axis</code> in <code>numpy.take_along_axis</code> function has now a<br>
+default value of <code>-1</code>.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28615" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28615/hovercard">gh-28615</a>)</p>
+</li>
+<li>
+<p>Printing of <code>np.float16</code> and <code>np.float32</code> scalars and arrays have<br>
+been improved by adjusting the transition to scientific notation<br>
+based on the floating point precision. A new legacy<br>
+<code>np.printoptions</code> mode <code>'2.2'</code> has been added for backwards<br>
+compatibility.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28703" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28703/hovercard">gh-28703</a>)</p>
+</li>
+</ul>
+<h3><code>unique_values</code> may return unsorted data</h3>
+<p>The relatively new function (added in NumPy 2.0) <code>unique_values</code> may now<br>
+return unsorted results. Just as <code>unique_counts</code> and <code>unique_all</code> these<br>
+never guaranteed a sorted result, however, the result was sorted until<br>
+now. In cases where these do return a sorted result, this may change in<br>
+future releases to improve performance.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/26018" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/26018/hovercard">gh-26018</a>)</p>
+<h3>Changes to the main iterator and potential numerical changes</h3>
+<p>The main iterator, used in math functions and via <code>np.nditer</code> from<br>
+Python and <code>NpyIter</code> in C, now behaves differently for some buffered<br>
+iterations. This means that:</p>
+<ul>
+<li>The buffer size used will often be smaller than the maximum buffer<br>
+sized allowed by the <code>buffersize</code> parameter.</li>
+<li>The "growinner" flag is now honored with buffered reductions when<br>
+no operand requires buffering.</li>
+</ul>
+<p>For <code>np.sum()</code> such changes in buffersize may slightly change numerical<br>
+results of floating point operations. Users who use "growinner" for<br>
+custom reductions could notice changes in precision (for example, in<br>
+NumPy we removed it from <code>einsum</code> to avoid most precision changes and<br>
+improve precision for some 64bit floating point inputs).</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/27883" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/27883/hovercard">gh-27883</a>)</p>
+<h3>The minimum supported GCC version is now 9.3.0</h3>
+<p>The minimum supported version was updated from 8.4.0 to 9.3.0, primarily<br>
+in order to reduce the chance of platform-specific bugs in old GCC<br>
+versions from causing issues.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28102" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28102/hovercard">gh-28102</a>)</p>
+<h3>Changes to automatic bin selection in numpy.histogram</h3>
+<p>The automatic bin selection algorithm in <code>numpy.histogram</code> has been<br>
+modified to avoid out-of-memory errors for samples with low variation.<br>
+For full control over the selected bins the user can use set the <code>bin</code><br>
+or <code>range</code> parameters of <code>numpy.histogram</code>.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28426" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28426/hovercard">gh-28426</a>)</p>
+<h3>Build manylinux_2_28 wheels</h3>
+<p>Wheels for linux systems will use the <code>manylinux_2_28</code> tag (instead of<br>
+the <code>manylinux2014</code> tag), which means dropping support for<br>
+redhat7/centos7, amazonlinux2, debian9, ubuntu18.04, and other<br>
+pre-glibc2.28 operating system versions, as per the <a href="https://github.com/mayeut/pep600_compliance?tab=readme-ov-file#pep600-compliance-check">PEP 600 support<br>
+table</a>.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28436" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28436/hovercard">gh-28436</a>)</p>
+<h3>Remove use of -Wl,-ld_classic on macOS</h3>
+<p>Remove use of -Wl,-ld_classic on macOS. This hack is no longer needed by<br>
+Spack, and results in libraries that cannot link to other libraries<br>
+built with ld (new).</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28713" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28713/hovercard">gh-28713</a>)</p>
+<h3>Re-enable overriding functions in the <code>numpy.strings</code></h3>
+<p>Re-enable overriding functions in the <code>numpy.strings</code> module.</p>
+<p>(<a href="https://github.com/numpy/numpy/pull/28741" data-hovercard-type="pull_request" data-hovercard-url="/numpy/numpy/pull/28741/hovercard">gh-28741</a>)</p>
+<h2>Checksums</h2>
+<h3>MD5</h3>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="629f59f0a128a7ff1f3fedac6e2c42da  numpy-2.3.0rc1-cp311-cp311-macosx_10_9_x86_64.whl
+6b69c1f05cb782104bb4063f79bfb804  numpy-2.3.0rc1-cp311-cp311-macosx_11_0_arm64.whl
+0a5c651274fcd4912490edf17052302b  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_arm64.whl
+aac595e422ddf5ab5d87cdce3be66262  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_x86_64.whl
+f7d4f749f9e85a50adfbafd1b9c70fe8  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_aarch64.whl
+ec8a0e794ce8fc7e35f90d83b68cd2d6  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_x86_64.whl
+a8800a3c3fc260b02a36fb9dc8a1a399  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_aarch64.whl
+8e96ee3eb6e07e8efdff7754b9d008b6  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_x86_64.whl
+4157e803760012f28317495eec5b3310  numpy-2.3.0rc1-cp311-cp311-win32.whl
+1afc4f1a7adb81d9f2705a4c10f2d808  numpy-2.3.0rc1-cp311-cp311-win_amd64.whl
+11251ad640d2dd50b2d0a08a1c79e870  numpy-2.3.0rc1-cp311-cp311-win_arm64.whl
+f723f2e6b1ed4430b5a5c0c05501b55c  numpy-2.3.0rc1-cp312-cp312-macosx_10_13_x86_64.whl
+6ca0c0e1c2819a04b6c01559ce2d60dd  numpy-2.3.0rc1-cp312-cp312-macosx_11_0_arm64.whl
+56af103256eac1edcc34382a9c45a5eb  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_arm64.whl
+e3acbafb6da1e75c80361e4f3c791d12  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_x86_64.whl
+278c4727d8b8d05b6202355cf740cfd4  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_aarch64.whl
+3cd5e204141a450301fdcbda83e044f5  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_x86_64.whl
+c4369a338a9900fc43c6fe46e5113505  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_aarch64.whl
+12c5af8ba96f61d1a5d41f15c1d55721  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_x86_64.whl
+81fae7bcfc52b810c75a3c14bc182f12  numpy-2.3.0rc1-cp312-cp312-win32.whl
+1ce23327d02c79b64c16f54d412e32ae  numpy-2.3.0rc1-cp312-cp312-win_amd64.whl
+9e538dfe7f2051f63422d4e1edcd23bd  numpy-2.3.0rc1-cp312-cp312-win_arm64.whl
+ca94a64c4ad19bad2fd5baba19bc8578  numpy-2.3.0rc1-cp313-cp313-macosx_10_13_x86_64.whl
+d964ed57e7b28365a75210e83c396ea5  numpy-2.3.0rc1-cp313-cp313-macosx_11_0_arm64.whl
+03247ffd1c0a63e86382867df6914cd6  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_arm64.whl
+65ace2a8b56475a356357091c704a257  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_x86_64.whl
+e3283698c1124b6e60b8361d4884792f  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_aarch64.whl
+afa8c55affdc96845ee0f904de86e1dc  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_x86_64.whl
+fc296e255a2afb62956642355d1830c2  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_aarch64.whl
+32fd94baff245adcd4e12531ec2812be  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_x86_64.whl
+8114fe3c90fb01856b089b076a3eaf69  numpy-2.3.0rc1-cp313-cp313-win32.whl
+3aae3297bd4d94fd628666da9224b871  numpy-2.3.0rc1-cp313-cp313-win_amd64.whl
+76387f5d0a213f13b1352efc5087ebe2  numpy-2.3.0rc1-cp313-cp313-win_arm64.whl
+cd6d0165be416093c2229319d9578e22  numpy-2.3.0rc1-cp313-cp313t-macosx_10_13_x86_64.whl
+783a19b5db79d0080727dcae4c48ce90  numpy-2.3.0rc1-cp313-cp313t-macosx_11_0_arm64.whl
+af327355774245aebd2bc790982190b9  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_arm64.whl
+fe643d848c382e0c97cb85ce993c7ac9  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_x86_64.whl
+d4facf10a4628a67f076e230caa8cd7b  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_aarch64.whl
+a16b6003b0778caddb708d06a8720c2b  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_x86_64.whl
+27732d00b9124f2866f45602d5c46ef5  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_aarch64.whl
+1c25ee631482975bbeb378d88608b3b5  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_x86_64.whl
+63974df1b36d9486a0a8a4953a53a418  numpy-2.3.0rc1-cp313-cp313t-win32.whl
+1e67187dd5fbc2663a0922e3434e4838  numpy-2.3.0rc1-cp313-cp313t-win_amd64.whl
+8ae83e7618c196dfe4e637c5f81692e5  numpy-2.3.0rc1-cp313-cp313t-win_arm64.whl
+a96f68abaa4aa674e49eec4add0b2c0b  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_10_15_x86_64.whl
+fe679f10ad4c9d3fce0db85c632967a7  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_arm64.whl
+c9f14388eae0b01b5225e0f8f79ba9f6  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_x86_64.whl
+7cea15ab8d47bc2f3f6377c29a74138f  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_aarch64.whl
+46d07cd0f0aacce6d4b5ce949a333abc  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_x86_64.whl
+df12654557fe28806bed04e15d1fe1d7  numpy-2.3.0rc1-pp311-pypy311_pp73-win_amd64.whl
+5677afac6d3d39fe93a96cab654f38e7  numpy-2.3.0rc1.tar.gz"><pre class="notranslate"><code>629f59f0a128a7ff1f3fedac6e2c42da  numpy-2.3.0rc1-cp311-cp311-macosx_10_9_x86_64.whl
+6b69c1f05cb782104bb4063f79bfb804  numpy-2.3.0rc1-cp311-cp311-macosx_11_0_arm64.whl
+0a5c651274fcd4912490edf17052302b  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_arm64.whl
+aac595e422ddf5ab5d87cdce3be66262  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_x86_64.whl
+f7d4f749f9e85a50adfbafd1b9c70fe8  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_aarch64.whl
+ec8a0e794ce8fc7e35f90d83b68cd2d6  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_x86_64.whl
+a8800a3c3fc260b02a36fb9dc8a1a399  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_aarch64.whl
+8e96ee3eb6e07e8efdff7754b9d008b6  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_x86_64.whl
+4157e803760012f28317495eec5b3310  numpy-2.3.0rc1-cp311-cp311-win32.whl
+1afc4f1a7adb81d9f2705a4c10f2d808  numpy-2.3.0rc1-cp311-cp311-win_amd64.whl
+11251ad640d2dd50b2d0a08a1c79e870  numpy-2.3.0rc1-cp311-cp311-win_arm64.whl
+f723f2e6b1ed4430b5a5c0c05501b55c  numpy-2.3.0rc1-cp312-cp312-macosx_10_13_x86_64.whl
+6ca0c0e1c2819a04b6c01559ce2d60dd  numpy-2.3.0rc1-cp312-cp312-macosx_11_0_arm64.whl
+56af103256eac1edcc34382a9c45a5eb  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_arm64.whl
+e3acbafb6da1e75c80361e4f3c791d12  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_x86_64.whl
+278c4727d8b8d05b6202355cf740cfd4  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_aarch64.whl
+3cd5e204141a450301fdcbda83e044f5  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_x86_64.whl
+c4369a338a9900fc43c6fe46e5113505  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_aarch64.whl
+12c5af8ba96f61d1a5d41f15c1d55721  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_x86_64.whl
+81fae7bcfc52b810c75a3c14bc182f12  numpy-2.3.0rc1-cp312-cp312-win32.whl
+1ce23327d02c79b64c16f54d412e32ae  numpy-2.3.0rc1-cp312-cp312-win_amd64.whl
+9e538dfe7f2051f63422d4e1edcd23bd  numpy-2.3.0rc1-cp312-cp312-win_arm64.whl
+ca94a64c4ad19bad2fd5baba19bc8578  numpy-2.3.0rc1-cp313-cp313-macosx_10_13_x86_64.whl
+d964ed57e7b28365a75210e83c396ea5  numpy-2.3.0rc1-cp313-cp313-macosx_11_0_arm64.whl
+03247ffd1c0a63e86382867df6914cd6  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_arm64.whl
+65ace2a8b56475a356357091c704a257  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_x86_64.whl
+e3283698c1124b6e60b8361d4884792f  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_aarch64.whl
+afa8c55affdc96845ee0f904de86e1dc  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_x86_64.whl
+fc296e255a2afb62956642355d1830c2  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_aarch64.whl
+32fd94baff245adcd4e12531ec2812be  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_x86_64.whl
+8114fe3c90fb01856b089b076a3eaf69  numpy-2.3.0rc1-cp313-cp313-win32.whl
+3aae3297bd4d94fd628666da9224b871  numpy-2.3.0rc1-cp313-cp313-win_amd64.whl
+76387f5d0a213f13b1352efc5087ebe2  numpy-2.3.0rc1-cp313-cp313-win_arm64.whl
+cd6d0165be416093c2229319d9578e22  numpy-2.3.0rc1-cp313-cp313t-macosx_10_13_x86_64.whl
+783a19b5db79d0080727dcae4c48ce90  numpy-2.3.0rc1-cp313-cp313t-macosx_11_0_arm64.whl
+af327355774245aebd2bc790982190b9  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_arm64.whl
+fe643d848c382e0c97cb85ce993c7ac9  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_x86_64.whl
+d4facf10a4628a67f076e230caa8cd7b  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_aarch64.whl
+a16b6003b0778caddb708d06a8720c2b  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_x86_64.whl
+27732d00b9124f2866f45602d5c46ef5  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_aarch64.whl
+1c25ee631482975bbeb378d88608b3b5  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_x86_64.whl
+63974df1b36d9486a0a8a4953a53a418  numpy-2.3.0rc1-cp313-cp313t-win32.whl
+1e67187dd5fbc2663a0922e3434e4838  numpy-2.3.0rc1-cp313-cp313t-win_amd64.whl
+8ae83e7618c196dfe4e637c5f81692e5  numpy-2.3.0rc1-cp313-cp313t-win_arm64.whl
+a96f68abaa4aa674e49eec4add0b2c0b  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_10_15_x86_64.whl
+fe679f10ad4c9d3fce0db85c632967a7  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_arm64.whl
+c9f14388eae0b01b5225e0f8f79ba9f6  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_x86_64.whl
+7cea15ab8d47bc2f3f6377c29a74138f  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_aarch64.whl
+46d07cd0f0aacce6d4b5ce949a333abc  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_x86_64.whl
+df12654557fe28806bed04e15d1fe1d7  numpy-2.3.0rc1-pp311-pypy311_pp73-win_amd64.whl
+5677afac6d3d39fe93a96cab654f38e7  numpy-2.3.0rc1.tar.gz
+</code></pre></div>
+<h3>SHA256</h3>
+<div class="snippet-clipboard-content notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="82b035e631187bee40c1d2c1593e40dcad62cfbaf833c5d3e179c1d7bce87e0c  numpy-2.3.0rc1-cp311-cp311-macosx_10_9_x86_64.whl
+2f2f8a82005073929532ed8e09eda78544140996ef283d007945323d27e3ef84  numpy-2.3.0rc1-cp311-cp311-macosx_11_0_arm64.whl
+96af406cf156acb52edfa3b38c1fc8efe0f986bff5f99176657ba09606e78fe7  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_arm64.whl
+30f11867a70c96e6628f9b5da5cb426efe4ebe5e1f02bc8932c79f4dfa0c1e02  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_x86_64.whl
+c54f93b5c0c210e580fd1d114b76b172190bdefcdee3eab865587d4c860067fa  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_aarch64.whl
+6d72740255bcbaa94a66329daffd974e8212eee4b77acc8c3da8dd179adbe7f3  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_x86_64.whl
+44f65efc7f4a62e0624f53cd241761b5a9cdaa302e50dd8f30adc1173e2c1691  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_aarch64.whl
+e9766d1d3b36df82777c7f0a6d248d21e7aceafd40d24b87f9cec6c5916a4908  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_x86_64.whl
+07638479fc90c38168a3dd29a54c750701100dd84622bbaa32783459d2df7c54  numpy-2.3.0rc1-cp311-cp311-win32.whl
+7cc39c12551a3b92f9db5dd0faff021043f4f432167f990424a3c9149314f3a3  numpy-2.3.0rc1-cp311-cp311-win_amd64.whl
+213b2aa630118690e684a2666c58978a45763fbd4034b9b990d827a25df7b6ae  numpy-2.3.0rc1-cp311-cp311-win_arm64.whl
+c9d04e6f6bf7fe48eb25af803de3e2ee5dbaba7786d17764d7bacc242d47d96e  numpy-2.3.0rc1-cp312-cp312-macosx_10_13_x86_64.whl
+8cd953239b23dd0f5363553efb2eab4651c33b3772c7bcfe3bc0e1a84a9149e6  numpy-2.3.0rc1-cp312-cp312-macosx_11_0_arm64.whl
+66bff8b92964eb21593d787e55668d1800d5cfeb0ccf75691cce80c15b155839  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_arm64.whl
+580ce0f8e9e340571a5b0c32b7f3e1489ea018dbc37b22913788be23e8a50559  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_x86_64.whl
+93909bcf08b4aa21a74a687342843eef5479c317add9700a66b0122cc1c9d604  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_aarch64.whl
+9efc27c9b25d4387e6153d01cc93a8ae18a6a37d6598cb4da3876874a3aa1283  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_x86_64.whl
+14e86a57107b03e7b31b4d677ded1af52079f05bde89008b4dfd5a3fd7767769  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_aarch64.whl
+c4ac94252a8dec06d6c55126f83775ec90b0d8ceaed9086d7166175455772155  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_x86_64.whl
+c8047609194df241d20b5d3534319df0f2ef57c7163a9e67ceb8a7ab3d3c7413  numpy-2.3.0rc1-cp312-cp312-win32.whl
+ea64b01b0b9ee53fd1c05dad508e1ee05ca888579687a94044cdea8ef47f8efc  numpy-2.3.0rc1-cp312-cp312-win_amd64.whl
+c0ca78c3c15db1b69b91027c6485291b2ffbdd29dab77bd5d044248569c9ff85  numpy-2.3.0rc1-cp312-cp312-win_arm64.whl
+77fc845f90f74b83881330bd3d15c112bdac5e2947e77adec2be141eb5a71aff  numpy-2.3.0rc1-cp313-cp313-macosx_10_13_x86_64.whl
+fcaf7cfbe003ea5d6e2f470fbb67001dae39dbddc76a608b10623592f4711c78  numpy-2.3.0rc1-cp313-cp313-macosx_11_0_arm64.whl
+167c1b4ad39017d5b0bfae7c5b71ced40025ef26ff8b9fc65e39519533b7c416  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_arm64.whl
+f4d15d5ad63ea6760b0ff49cc88a635b02838488ebabb41bc2524f67d9d5b74e  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_x86_64.whl
+eb5a7a5d1c28881b1c9536038d9ea224051464b0a033d8bd87ec75634e8ee2db  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_aarch64.whl
+022fa032a8dcabef0771db621a77a9203358e41cb651d8903836783e9708248f  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_x86_64.whl
+b6d9d7ad7666f646bbb831a80c668b61a08d4deb00935ef475a1c81ba0b87bdb  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_aarch64.whl
+172965a57a44ccfbfc67746c721128647a4df3aecec3d3b91c67e75c575548cc  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_x86_64.whl
+b056d511fdb33ee7076586fbb831be0a8030e9565f5ea0ceebe649f29e647ac0  numpy-2.3.0rc1-cp313-cp313-win32.whl
+f437b4af30ab36e7fa9fd7856b0482229259fc98aeb5e53a287eda5253e4f1ec  numpy-2.3.0rc1-cp313-cp313-win_amd64.whl
+ffbda03577e4f401f4465345ca98c9dc95e3a23df2ec16854f4aa37ae6c1fb56  numpy-2.3.0rc1-cp313-cp313-win_arm64.whl
+4de6304a0653a76f6418f4c0aa84048953d5891aa8296681d916f95b0a5eddf8  numpy-2.3.0rc1-cp313-cp313t-macosx_10_13_x86_64.whl
+17cb57f5c862904d57a1d1eb2d6e3f0e3a0d7ea738d5281638aef7c45b8c4525  numpy-2.3.0rc1-cp313-cp313t-macosx_11_0_arm64.whl
+96d8e7e0666836202e9cff63cb16d9c49bd31222303f3b70dc9144c3ae191cdd  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_arm64.whl
+e967c553e48c14feb3387248cf089c4f7f8ec66f6800cb184effa2da5494d9e8  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_x86_64.whl
+cb18f1e661c4480e7d40bac0172ab456aececa05aec5855d987d6a1f51d51206  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_aarch64.whl
+eb0876192b685ed3f96049dbd5aa9a1d871b47c553b3d304692bbbe386fa7441  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_x86_64.whl
+de2e8223ef8e65963976de817419314d7e791d403a9d6448174e3f490559ba8d  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_aarch64.whl
+b7c0007ae7dd02acaaf198cf1a6b4da805aaa3857a452403c3de1fed29ab158c  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_x86_64.whl
+875ee6c2865523adb78ebcfbcef186fc99201e9931a49132d97101f57f154ff1  numpy-2.3.0rc1-cp313-cp313t-win32.whl
+b59de7a3beeca46f189c53609db7794ccb83a90fa5841111d5ca77bbe990ed21  numpy-2.3.0rc1-cp313-cp313t-win_amd64.whl
+7f06a256ce74713eae26c19221b305783d4db5f8cad457e82f9a4f8cc55b9632  numpy-2.3.0rc1-cp313-cp313t-win_arm64.whl
+3c8681de7c4fc72f5ab29e5a8343b37fe7bdc465e8cc3c99637ac884e26e41fd  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_10_15_x86_64.whl
+ec2037b6d700b8491a97efcbfa05dec666d8ae7807f374beb9d3320531d42e9b  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_arm64.whl
+ab6e2b743192e7e9ecef7d22a90c394a6fe3313676e55fcc1c566ee0649b35db  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_x86_64.whl
+fccea8370d46dcb20012a1e8e54bc70dc7e2db8bfc3e20b95f8f871bb408744f  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_aarch64.whl
+477064e29dfac734cb53269f5a4916e38e11ef9d42f6c475e9c695e25f78e868  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_x86_64.whl
+95c190db9870e0dc616da2f267a3fc29544a843601251947eadc0e00a0aa8ad6  numpy-2.3.0rc1-pp311-pypy311_pp73-win_amd64.whl
+a28686275bf434b4304408c2711832033e3906c50282eb93fc567b8483922625  numpy-2.3.0rc1.tar.gz"><pre class="notranslate"><code>82b035e631187bee40c1d2c1593e40dcad62cfbaf833c5d3e179c1d7bce87e0c  numpy-2.3.0rc1-cp311-cp311-macosx_10_9_x86_64.whl
+2f2f8a82005073929532ed8e09eda78544140996ef283d007945323d27e3ef84  numpy-2.3.0rc1-cp311-cp311-macosx_11_0_arm64.whl
+96af406cf156acb52edfa3b38c1fc8efe0f986bff5f99176657ba09606e78fe7  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_arm64.whl
+30f11867a70c96e6628f9b5da5cb426efe4ebe5e1f02bc8932c79f4dfa0c1e02  numpy-2.3.0rc1-cp311-cp311-macosx_14_0_x86_64.whl
+c54f93b5c0c210e580fd1d114b76b172190bdefcdee3eab865587d4c860067fa  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_aarch64.whl
+6d72740255bcbaa94a66329daffd974e8212eee4b77acc8c3da8dd179adbe7f3  numpy-2.3.0rc1-cp311-cp311-manylinux_2_28_x86_64.whl
+44f65efc7f4a62e0624f53cd241761b5a9cdaa302e50dd8f30adc1173e2c1691  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_aarch64.whl
+e9766d1d3b36df82777c7f0a6d248d21e7aceafd40d24b87f9cec6c5916a4908  numpy-2.3.0rc1-cp311-cp311-musllinux_1_2_x86_64.whl
+07638479fc90c38168a3dd29a54c750701100dd84622bbaa32783459d2df7c54  numpy-2.3.0rc1-cp311-cp311-win32.whl
+7cc39c12551a3b92f9db5dd0faff021043f4f432167f990424a3c9149314f3a3  numpy-2.3.0rc1-cp311-cp311-win_amd64.whl
+213b2aa630118690e684a2666c58978a45763fbd4034b9b990d827a25df7b6ae  numpy-2.3.0rc1-cp311-cp311-win_arm64.whl
+c9d04e6f6bf7fe48eb25af803de3e2ee5dbaba7786d17764d7bacc242d47d96e  numpy-2.3.0rc1-cp312-cp312-macosx_10_13_x86_64.whl
+8cd953239b23dd0f5363553efb2eab4651c33b3772c7bcfe3bc0e1a84a9149e6  numpy-2.3.0rc1-cp312-cp312-macosx_11_0_arm64.whl
+66bff8b92964eb21593d787e55668d1800d5cfeb0ccf75691cce80c15b155839  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_arm64.whl
+580ce0f8e9e340571a5b0c32b7f3e1489ea018dbc37b22913788be23e8a50559  numpy-2.3.0rc1-cp312-cp312-macosx_14_0_x86_64.whl
+93909bcf08b4aa21a74a687342843eef5479c317add9700a66b0122cc1c9d604  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_aarch64.whl
+9efc27c9b25d4387e6153d01cc93a8ae18a6a37d6598cb4da3876874a3aa1283  numpy-2.3.0rc1-cp312-cp312-manylinux_2_28_x86_64.whl
+14e86a57107b03e7b31b4d677ded1af52079f05bde89008b4dfd5a3fd7767769  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_aarch64.whl
+c4ac94252a8dec06d6c55126f83775ec90b0d8ceaed9086d7166175455772155  numpy-2.3.0rc1-cp312-cp312-musllinux_1_2_x86_64.whl
+c8047609194df241d20b5d3534319df0f2ef57c7163a9e67ceb8a7ab3d3c7413  numpy-2.3.0rc1-cp312-cp312-win32.whl
+ea64b01b0b9ee53fd1c05dad508e1ee05ca888579687a94044cdea8ef47f8efc  numpy-2.3.0rc1-cp312-cp312-win_amd64.whl
+c0ca78c3c15db1b69b91027c6485291b2ffbdd29dab77bd5d044248569c9ff85  numpy-2.3.0rc1-cp312-cp312-win_arm64.whl
+77fc845f90f74b83881330bd3d15c112bdac5e2947e77adec2be141eb5a71aff  numpy-2.3.0rc1-cp313-cp313-macosx_10_13_x86_64.whl
+fcaf7cfbe003ea5d6e2f470fbb67001dae39dbddc76a608b10623592f4711c78  numpy-2.3.0rc1-cp313-cp313-macosx_11_0_arm64.whl
+167c1b4ad39017d5b0bfae7c5b71ced40025ef26ff8b9fc65e39519533b7c416  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_arm64.whl
+f4d15d5ad63ea6760b0ff49cc88a635b02838488ebabb41bc2524f67d9d5b74e  numpy-2.3.0rc1-cp313-cp313-macosx_14_0_x86_64.whl
+eb5a7a5d1c28881b1c9536038d9ea224051464b0a033d8bd87ec75634e8ee2db  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_aarch64.whl
+022fa032a8dcabef0771db621a77a9203358e41cb651d8903836783e9708248f  numpy-2.3.0rc1-cp313-cp313-manylinux_2_28_x86_64.whl
+b6d9d7ad7666f646bbb831a80c668b61a08d4deb00935ef475a1c81ba0b87bdb  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_aarch64.whl
+172965a57a44ccfbfc67746c721128647a4df3aecec3d3b91c67e75c575548cc  numpy-2.3.0rc1-cp313-cp313-musllinux_1_2_x86_64.whl
+b056d511fdb33ee7076586fbb831be0a8030e9565f5ea0ceebe649f29e647ac0  numpy-2.3.0rc1-cp313-cp313-win32.whl
+f437b4af30ab36e7fa9fd7856b0482229259fc98aeb5e53a287eda5253e4f1ec  numpy-2.3.0rc1-cp313-cp313-win_amd64.whl
+ffbda03577e4f401f4465345ca98c9dc95e3a23df2ec16854f4aa37ae6c1fb56  numpy-2.3.0rc1-cp313-cp313-win_arm64.whl
+4de6304a0653a76f6418f4c0aa84048953d5891aa8296681d916f95b0a5eddf8  numpy-2.3.0rc1-cp313-cp313t-macosx_10_13_x86_64.whl
+17cb57f5c862904d57a1d1eb2d6e3f0e3a0d7ea738d5281638aef7c45b8c4525  numpy-2.3.0rc1-cp313-cp313t-macosx_11_0_arm64.whl
+96d8e7e0666836202e9cff63cb16d9c49bd31222303f3b70dc9144c3ae191cdd  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_arm64.whl
+e967c553e48c14feb3387248cf089c4f7f8ec66f6800cb184effa2da5494d9e8  numpy-2.3.0rc1-cp313-cp313t-macosx_14_0_x86_64.whl
+cb18f1e661c4480e7d40bac0172ab456aececa05aec5855d987d6a1f51d51206  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_aarch64.whl
+eb0876192b685ed3f96049dbd5aa9a1d871b47c553b3d304692bbbe386fa7441  numpy-2.3.0rc1-cp313-cp313t-manylinux_2_28_x86_64.whl
+de2e8223ef8e65963976de817419314d7e791d403a9d6448174e3f490559ba8d  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_aarch64.whl
+b7c0007ae7dd02acaaf198cf1a6b4da805aaa3857a452403c3de1fed29ab158c  numpy-2.3.0rc1-cp313-cp313t-musllinux_1_2_x86_64.whl
+875ee6c2865523adb78ebcfbcef186fc99201e9931a49132d97101f57f154ff1  numpy-2.3.0rc1-cp313-cp313t-win32.whl
+b59de7a3beeca46f189c53609db7794ccb83a90fa5841111d5ca77bbe990ed21  numpy-2.3.0rc1-cp313-cp313t-win_amd64.whl
+7f06a256ce74713eae26c19221b305783d4db5f8cad457e82f9a4f8cc55b9632  numpy-2.3.0rc1-cp313-cp313t-win_arm64.whl
+3c8681de7c4fc72f5ab29e5a8343b37fe7bdc465e8cc3c99637ac884e26e41fd  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_10_15_x86_64.whl
+ec2037b6d700b8491a97efcbfa05dec666d8ae7807f374beb9d3320531d42e9b  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_arm64.whl
+ab6e2b743192e7e9ecef7d22a90c394a6fe3313676e55fcc1c566ee0649b35db  numpy-2.3.0rc1-pp311-pypy311_pp73-macosx_14_0_x86_64.whl
+fccea8370d46dcb20012a1e8e54bc70dc7e2db8bfc3e20b95f8f871bb408744f  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_aarch64.whl
+477064e29dfac734cb53269f5a4916e38e11ef9d42f6c475e9c695e25f78e868  numpy-2.3.0rc1-pp311-pypy311_pp73-manylinux_2_28_x86_64.whl
+95c190db9870e0dc616da2f267a3fc29544a843601251947eadc0e00a0aa8ad6  numpy-2.3.0rc1-pp311-pypy311_pp73-win_amd64.whl
+a28686275bf434b4304408c2711832033e3906c50282eb93fc567b8483922625  numpy-2.3.0rc1.tar.gz
+</code></pre></div>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from svelte: svelte@5.33.2]]></title>
+            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.33.2</link>
+            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.33.2</guid>
+            <pubDate>Sun, 25 May 2025 15:10:06 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Patch Changes</h3>
+<ul>
+<li>
+<p>fix: correctly parse escaped unicode characters in css selector (<a href="https://github.com/sveltejs/svelte/pull/15976" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15976/hovercard">#15976</a>)</p>
+</li>
+<li>
+<p>fix: don't mark deriveds as clean if updating during teardown (<a href="https://github.com/sveltejs/svelte/pull/15997" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15997/hovercard">#15997</a>)</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from zed: collab-staging: docs: Refine a few AI pages (#31381)]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/collab-staging</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/collab-staging</guid>
+            <pubDate>Sun, 25 May 2025 14:03:14 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Mostly sharpening the words, simplifying, and removing duplicate<br>
+content.</p>
+<p>Release Notes:</p>
+<ul>
+<li>N/A</li>
+</ul>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from xgboost: 3.0.2 Patch Release]]></title>
             <link>https://github.com/dmlc/xgboost/releases/tag/v3.0.2</link>
@@ -178,6 +878,13 @@ b22450c2353bc78cad36a2f7e13cc3519f69147b14946489125a2200f00519c8  nvim-win64.msi
             <content:encoded><![CDATA[<p>Nightly release, generated on: 2025-05-24 21:26:16 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/fbdce69adc42157ce8babead2cff1eb99ef3dd4b/hovercard" href="https://github.com/kovidgoyal/kitty/commit/fbdce69adc42157ce8babead2cff1eb99ef3dd4b"><tt>fbdce69</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Release notes from zed: nightly]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
+            <pubDate>Sat, 24 May 2025 20:55:15 GMT</pubDate>
+            <content:encoded><![CDATA[<p>language: Improve auto-indentation when using round brackets in Pytho…</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Release notes from automq: nightly]]></title>
             <link>https://github.com/AutoMQ/automq/releases/tag/nightly</link>
             <guid>https://github.com/AutoMQ/automq/releases/tag/nightly</guid>
@@ -190,20 +897,6 @@ b22450c2353bc78cad36a2f7e13cc3519f69147b14946489125a2200f00519c8  nvim-win64.msi
             <guid>https://github.com/haskell/cabal/releases/tag/cabal-head</guid>
             <pubDate>Sat, 24 May 2025 18:37:24 GMT</pubDate>
             <content:encoded><![CDATA[<p>No release body provided.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: nightly]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
-            <pubDate>Sat, 24 May 2025 06:52:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>debugger beta: Fix regression where we sent launch args twice to any …</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: collab-staging]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/collab-staging</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/collab-staging</guid>
-            <pubDate>Sat, 24 May 2025 06:52:36 GMT</pubDate>
-            <content:encoded><![CDATA[<p>debugger beta: Fix regression where we sent launch args twice to any …</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from fastai: v2.8.2]]></title>
@@ -1520,103 +2213,6 @@ arm64: <code>e54d8fe9adc41a0da69bbf5ce8dee6077718261e070d61d93c91677cb336dbdc</c
             <guid>https://github.com/aws/aws-cli/releases/tag/2.27.21</guid>
             <pubDate>Thu, 22 May 2025 18:02:41 GMT</pubDate>
             <content:encoded><![CDATA[<p>Tagging 2.27.21 release.</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jdk: jdk-25+24]]></title>
-            <link>https://github.com/openjdk/jdk/releases/tag/jdk-25%2B24</link>
-            <guid>https://github.com/openjdk/jdk/releases/tag/jdk-25%2B24</guid>
-            <pubDate>Thu, 22 May 2025 16:23:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Added tag jdk-25+24 for changeset <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/openjdk/jdk/commit/b685ea54081fcf54a6567dddb49b63435a6e1ea4/hovercard" href="https://github.com/openjdk/jdk/commit/b685ea54081fcf54a6567dddb49b63435a6e1ea4"><tt>b685ea5</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from svelte: svelte@5.33.0]]></title>
-            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.33.0</link>
-            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.33.0</guid>
-            <pubDate>Thu, 22 May 2025 15:29:04 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Minor Changes</h3>
-<ul>
-<li>
-<p>feat: XHTML compliance (<a href="https://github.com/sveltejs/svelte/pull/15538" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15538/hovercard">#15538</a>)</p>
-</li>
-<li>
-<p>feat: add <code>fragments: 'html' | 'tree'</code> option for wider CSP compliance (<a href="https://github.com/sveltejs/svelte/pull/15538" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15538/hovercard">#15538</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from svelte: svelte@5.32.2]]></title>
-            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.32.2</link>
-            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.32.2</guid>
-            <pubDate>Thu, 22 May 2025 15:21:14 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>
-<p>chore: simplify <code>&lt;pre&gt;</code> cleaning (<a href="https://github.com/sveltejs/svelte/pull/15980" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15980/hovercard">#15980</a>)</p>
-</li>
-<li>
-<p>fix: attach <code>__svelte_meta</code> correctly to elements following a CSS wrapper (<a href="https://github.com/sveltejs/svelte/pull/15982" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15982/hovercard">#15982</a>)</p>
-</li>
-<li>
-<p>fix: import untrack directly from client in <code>svelte/attachments</code> (<a href="https://github.com/sveltejs/svelte/pull/15974" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/15974/hovercard">#15974</a>)</p>
-</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from spring-boot: v3.4.6]]></title>
-            <link>https://github.com/spring-projects/spring-boot/releases/tag/v3.4.6</link>
-            <guid>https://github.com/spring-projects/spring-boot/releases/tag/v3.4.6</guid>
-            <pubDate>Thu, 22 May 2025 12:05:45 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>🐞 Bug Fixes</h2>
-<ul>
-<li>Micrometer "enable" annotations property does not cover observed aspect <a href="https://github.com/spring-projects/spring-boot/issues/45616" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45616/hovercard">#45616</a></li>
-<li>SpringApplication.setEnvironmentPrefix is ignored when reading SPRING_PROFILES_ACTIVE <a href="https://github.com/spring-projects/spring-boot/issues/45548" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45548/hovercard">#45548</a></li>
-<li>IllegalStateException when extracting using layers a module with no code of its own <a href="https://github.com/spring-projects/spring-boot/issues/45448" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45448/hovercard">#45448</a></li>
-<li>Suggested values for spring.jpa.hibernate.ddl-auto are not aligned with Hibernate <a href="https://github.com/spring-projects/spring-boot/issues/45350" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45350/hovercard">#45350</a></li>
-<li>Custom default units declared on a field are ignored when binding properties in a native image <a href="https://github.com/spring-projects/spring-boot/issues/45346" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45346/hovercard">#45346</a></li>
-<li>JerseyWebApplicationInitializer always gets loaded, setting a ServletContext initParameter <a href="https://github.com/spring-projects/spring-boot/issues/45296" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45296/hovercard">#45296</a></li>
-</ul>
-<h2>📔 Documentation</h2>
-<ul>
-<li>Document the java info contribution <a href="https://github.com/spring-projects/spring-boot/issues/45633" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45633/hovercard">#45633</a></li>
-<li>Document the process info contribution <a href="https://github.com/spring-projects/spring-boot/issues/45631" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45631/hovercard">#45631</a></li>
-<li>Document the os info contribution <a href="https://github.com/spring-projects/spring-boot/issues/45629" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45629/hovercard">#45629</a></li>
-<li>Document typical spring.application.group and name use <a href="https://github.com/spring-projects/spring-boot/issues/45627" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45627/hovercard">#45627</a></li>
-<li>Document that bean methods should be static when annotated with <code>@ConfigurationPropertiesBinding</code> <a href="https://github.com/spring-projects/spring-boot/issues/45625" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45625/hovercard">#45625</a></li>
-<li>Document the way that primary Kotlin constructors are used when binding <a href="https://github.com/spring-projects/spring-boot/issues/45552" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45552/hovercard">#45552</a></li>
-<li>Improve "profile" reference documentation with additional admonitions  <a href="https://github.com/spring-projects/spring-boot/issues/45550" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45550/hovercard">#45550</a></li>
-<li>Improve setEnvironmentPrefix(...) reference documentation <a href="https://github.com/spring-projects/spring-boot/issues/45375" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45375/hovercard">#45375</a></li>
-<li>Document all the available Testcontainers integrations <a href="https://github.com/spring-projects/spring-boot/issues/45366" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45366/hovercard">#45366</a></li>
-<li>Document when a spring.config.import value is relative and when it is fixed <a href="https://github.com/spring-projects/spring-boot/issues/45362" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45362/hovercard">#45362</a></li>
-<li>Update link to "Parameter Name Retention" section of Spring Framework's release notes <a href="https://github.com/spring-projects/spring-boot/issues/45298" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45298/hovercard">#45298</a></li>
-</ul>
-<h2>🔨 Dependency Upgrades</h2>
-<ul>
-<li>Upgrade to Hibernate 6.6.15.Final <a href="https://github.com/spring-projects/spring-boot/issues/45537" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45537/hovercard">#45537</a></li>
-<li>Upgrade to HttpClient5 5.4.4 <a href="https://github.com/spring-projects/spring-boot/issues/45455" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45455/hovercard">#45455</a></li>
-<li>Upgrade to Jackson Bom 2.18.4 <a href="https://github.com/spring-projects/spring-boot/issues/45456" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45456/hovercard">#45456</a></li>
-<li>Upgrade to Jetty 12.0.21 <a href="https://github.com/spring-projects/spring-boot/issues/45516" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45516/hovercard">#45516</a></li>
-<li>Upgrade to jOOQ 3.19.23 <a href="https://github.com/spring-projects/spring-boot/issues/45458" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45458/hovercard">#45458</a></li>
-<li>Upgrade to Micrometer 1.14.7 <a href="https://github.com/spring-projects/spring-boot/issues/45412" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45412/hovercard">#45412</a></li>
-<li>Upgrade to Micrometer Tracing 1.4.6 <a href="https://github.com/spring-projects/spring-boot/issues/45413" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45413/hovercard">#45413</a></li>
-<li>Upgrade to Neo4j Java Driver 5.28.5 <a href="https://github.com/spring-projects/spring-boot/issues/45431" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45431/hovercard">#45431</a></li>
-<li>Upgrade to Netty 4.1.121.Final <a href="https://github.com/spring-projects/spring-boot/issues/45459" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45459/hovercard">#45459</a></li>
-<li>Upgrade to R2DBC Proxy 1.1.6.RELEASE <a href="https://github.com/spring-projects/spring-boot/issues/45460" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45460/hovercard">#45460</a></li>
-<li>Upgrade to Reactor Bom 2024.0.6 <a href="https://github.com/spring-projects/spring-boot/issues/45414" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45414/hovercard">#45414</a></li>
-<li>Upgrade to REST Assured 5.5.2 <a href="https://github.com/spring-projects/spring-boot/issues/45570" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45570/hovercard">#45570</a></li>
-<li>Upgrade to Spring Data Bom 2024.1.6 <a href="https://github.com/spring-projects/spring-boot/issues/45415" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45415/hovercard">#45415</a></li>
-<li>Upgrade to Spring Framework 6.2.7 <a href="https://github.com/spring-projects/spring-boot/issues/45417" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45417/hovercard">#45417</a></li>
-<li>Upgrade to Spring Integration 6.4.5 <a href="https://github.com/spring-projects/spring-boot/issues/45419" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45419/hovercard">#45419</a></li>
-<li>Upgrade to Spring Kafka 3.3.6 <a href="https://github.com/spring-projects/spring-boot/issues/45421" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45421/hovercard">#45421</a></li>
-<li>Upgrade to Spring Pulsar 1.2.6 <a href="https://github.com/spring-projects/spring-boot/issues/45423" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45423/hovercard">#45423</a></li>
-<li>Upgrade to Spring Retry 2.0.12 <a href="https://github.com/spring-projects/spring-boot/issues/45425" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45425/hovercard">#45425</a></li>
-<li>Upgrade to Spring Security 6.4.6 <a href="https://github.com/spring-projects/spring-boot/issues/45558" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45558/hovercard">#45558</a></li>
-<li>Upgrade to Spring WS 4.0.14 <a href="https://github.com/spring-projects/spring-boot/issues/45581" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45581/hovercard">#45581</a></li>
-<li>Upgrade to Tomcat 10.1.41 <a href="https://github.com/spring-projects/spring-boot/issues/45517" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45517/hovercard">#45517</a></li>
-<li>Upgrade to XmlUnit2 2.10.1 <a href="https://github.com/spring-projects/spring-boot/issues/45605" data-hovercard-type="issue" data-hovercard-url="/spring-projects/spring-boot/issues/45605/hovercard">#45605</a></li>
-</ul>
-<h2>❤️ Contributors</h2>
-<p>Thank you to all the contributors who worked on this release:</p>
-<p><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ahrytsiuk/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ahrytsiuk">@ahrytsiuk</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/izeye/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/izeye">@izeye</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/ngocnhan-tran1996/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/ngocnhan-tran1996">@ngocnhan-tran1996</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/nosan/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/nosan">@nosan</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/quaff/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/quaff">@quaff</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/thecooldrop/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/thecooldrop">@thecooldrop</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/yybmion/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/yybmion">@yybmion</a></p>]]></content:encoded>
         </item>
     </channel>
 </rss>
