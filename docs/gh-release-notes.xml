@@ -4,10 +4,485 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Wed, 04 Jun 2025 18:03:22 GMT</lastBuildDate>
+        <lastBuildDate>Thu, 05 Jun 2025 00:09:15 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from apollo-client: @apollo/client@4.0.0-alpha.18]]></title>
+            <link>https://github.com/apollographql/apollo-client/releases/tag/%40apollo%2Fclient%404.0.0-alpha.18</link>
+            <guid>https://github.com/apollographql/apollo-client/releases/tag/%40apollo%2Fclient%404.0.0-alpha.18</guid>
+            <pubDate>Thu, 05 Jun 2025 00:04:39 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Minor Changes</h3>
+<ul>
+<li>
+<p><a href="https://github.com/apollographql/apollo-client/pull/12670" data-hovercard-type="pull_request" data-hovercard-url="/apollographql/apollo-client/pull/12670/hovercard">#12670</a> <a href="https://github.com/apollographql/apollo-client/commit/0a880ea4c2360a985fdd2edadb94fcc4b82bad73"><code>0a880ea</code></a> Thanks <a href="https://github.com/phryneas">@phryneas</a>! - Provide a mechanism to override the DataMasking types.</p>
+<p>Up until now, our types <code>Masked</code>, <code>MaskedDocumentNode</code>, <code>FragmentType</code>, <code>MaybeMasked</code> and <code>Unmasked</code> would assume that you are stictly using the type output format of GraphQL Codegen.</p>
+<p>With this change, you can now modify the behaviour of those types if you use a different form of codegen that produces different types for your queries.</p>
+<p>A simple implementation that would override the <code>Masked</code> type to remove all fields starting with <code>_</code> from a type would look like this:</p>
+<div class="highlight highlight-source-ts notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="// your actual implementation of `Masked`
+type CustomMaskedImplementation&lt;TData&gt; = {
+  [K in keyof TData as K extends `_${string}` ? never : K]: TData[K];
+};
+
+import { HKT } from &quot;@apollo/client/utilities&quot;;
+// transform this type into a higher kinded type that can be evaulated at a later time
+interface CustomMaskedType extends HKT {
+  arg1: unknown; // TData
+  return: CustomMaskedImplementation&lt;this[&quot;arg1&quot;]&gt;;
+}
+
+// create an &quot;implementation interface&quot; for the types you want to override
+export interface CustomDataMaskingImplementation {
+  Masked: CustomMaskedType;
+  // other possible keys: `MaskedDocumentNode`, `FragmentType`, `MaybeMasked` and `Unmasked`
+}"><pre><span class="pl-c">// your actual implementation of `Masked`</span>
+<span class="pl-k">type</span> <span class="pl-smi">CustomMaskedImplementation</span><span class="pl-c1">&lt;</span><span class="pl-smi">TData</span><span class="pl-c1">&gt;</span> <span class="pl-c1">=</span> <span class="pl-kos">{</span>
+  <span class="pl-kos">[</span><span class="pl-smi">K</span> <span class="pl-k">in</span> <span class="pl-k">keyof</span> <span class="pl-smi">TData</span> <span class="pl-k">as</span> <span class="pl-smi">K</span> <span class="pl-k">extends</span> `_${<span class="pl-smi">string</span><span class="pl-kos">}</span>` ? <span class="pl-smi">never</span> : <span class="pl-smi">K</span><span class="pl-kos">]</span>: <span class="pl-smi">TData</span><span class="pl-kos">[</span><span class="pl-smi">K</span><span class="pl-kos">]</span><span class="pl-kos">;</span>
+<span class="pl-kos">}</span><span class="pl-kos">;</span>
+
+<span class="pl-k">import</span> <span class="pl-kos">{</span> <span class="pl-c1">HKT</span> <span class="pl-kos">}</span> <span class="pl-k">from</span> <span class="pl-s">"@apollo/client/utilities"</span><span class="pl-kos">;</span>
+<span class="pl-c">// transform this type into a higher kinded type that can be evaulated at a later time</span>
+<span class="pl-k">interface</span> <span class="pl-smi">CustomMaskedType</span> <span class="pl-k">extends</span> <span class="pl-smi">HKT</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">arg1</span>: <span class="pl-smi">unknown</span><span class="pl-kos">;</span> <span class="pl-c">// TData</span>
+  <span class="pl-c1">return</span>: <span class="pl-smi">CustomMaskedImplementation</span><span class="pl-c1">&lt;</span>this<span class="pl-kos">[</span><span class="pl-s">"arg1"</span><span class="pl-kos">]</span><span class="pl-c1">&gt;</span><span class="pl-kos">;</span>
+<span class="pl-kos">}</span>
+
+<span class="pl-c">// create an "implementation interface" for the types you want to override</span>
+<span class="pl-k">export</span> <span class="pl-k">interface</span> <span class="pl-smi">CustomDataMaskingImplementation</span> <span class="pl-kos">{</span>
+  <span class="pl-c1">Masked</span>: <span class="pl-smi">CustomMaskedType</span><span class="pl-kos">;</span>
+  <span class="pl-c">// other possible keys: `MaskedDocumentNode`, `FragmentType`, `MaybeMasked` and `Unmasked`</span>
+<span class="pl-kos">}</span></pre></div>
+<p>then you would use that <code>CustomDataMaskingImplementation</code> interface in your project to extend the <code>DataMasking</code> interface exported by <code>@apollo/client</code> with it's functionality:</p>
+<div class="highlight highlight-source-ts notranslate position-relative overflow-auto" data-snippet-clipboard-copy-content="declare module &quot;@apollo/client&quot; {
+  export interface DataMasking extends CustomDataMaskingImplementation {}
+}"><pre><span class="pl-k">declare</span> module <span class="pl-s">"@apollo/client"</span> <span class="pl-kos">{</span>
+  <span class="pl-k">export</span> <span class="pl-k">interface</span> <span class="pl-smi">DataMasking</span> <span class="pl-k">extends</span> <span class="pl-smi">CustomDataMaskingImplementation</span> <span class="pl-kos">{</span><span class="pl-kos">}</span>
+<span class="pl-kos">}</span></pre></div>
+<p>After that, all internal usage of <code>Masked</code> in Apollo Client as well as all usage in your code base will use the new <code>CustomMaskedType</code> implementation.</p>
+<p>If you don't specify overrides, Apollo Client will still default to the GraphQL Codegen data masking implementation.<br>
+The types for that are also explicitly exported as the <code>GraphQLCodegenDataMasking</code> namespace in <code>@apollo/client/masking</code>.</p>
+</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from next.js: v15.4.0-canary.67]]></title>
+            <link>https://github.com/vercel/next.js/releases/tag/v15.4.0-canary.67</link>
+            <guid>https://github.com/vercel/next.js/releases/tag/v15.4.0-canary.67</guid>
+            <pubDate>Wed, 04 Jun 2025 23:53:50 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>Core Changes</h3>
+<ul>
+<li>[metadata] fix nonce prop for hoist script: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3118806145" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/80174" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/80174/hovercard" href="https://github.com/vercel/next.js/pull/80174">#80174</a></li>
+</ul>
+<h3>Misc Changes</h3>
+<ul>
+<li>Turbopack Build: Fix metadata dynamic force-dynamic: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3118370117" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/80167" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/80167/hovercard" href="https://github.com/vercel/next.js/pull/80167">#80167</a></li>
+<li>[turbopack] Remove turbo_tasks::value attribute from NativeFunction<br>
+: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3118476300" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/80170" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/80170/hovercard" href="https://github.com/vercel/next.js/pull/80170">#80170</a></li>
+<li>Turbopack: add tool to print DB structure: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3117057014" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/80148" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/80148/hovercard" href="https://github.com/vercel/next.js/pull/80148">#80148</a></li>
+</ul>
+<h3>Credits</h3>
+<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/timneutkens/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/timneutkens">@timneutkens</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukesandberg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukesandberg">@lukesandberg</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a> for helping!</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from pyodide: 0.27.7]]></title>
+            <link>https://github.com/pyodide/pyodide/releases/tag/0.27.7</link>
+            <guid>https://github.com/pyodide/pyodide/releases/tag/0.27.7</guid>
+            <pubDate>Wed, 04 Jun 2025 22:29:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>0.27.7</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
+            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
+            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
+            <pubDate>Wed, 04 Jun 2025 21:28:44 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Nightly release, generated on: 2025-06-04 21:28:44 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/a783d4932eb7fd8292276dfbb72d64ef5b2c9245/hovercard" href="https://github.com/kovidgoyal/kitty/commit/a783d4932eb7fd8292276dfbb72d64ef5b2c9245"><tt>a783d49</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from angular: 20.1.0-next.0]]></title>
+            <link>https://github.com/angular/angular/releases/tag/20.1.0-next.0</link>
+            <guid>https://github.com/angular/angular/releases/tag/20.1.0-next.0</guid>
+            <pubDate>Wed, 04 Jun 2025 21:20:41 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>compiler</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/5a76826d266b4ed0ef863221571e4b6b1b16182f"><img src="https://camo.githubusercontent.com/eb3f73a2621735f9b1eec34fc996b28ea6b915af72304eb119d56f809a6e338f/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f356137363832366432362d6669782d677265656e" alt="fix - 5a76826d26" data-canonical-src="https://img.shields.io/badge/5a76826d26-fix-green" style="max-width: 100%;"></a></td>
+<td>only report parser errors on invalid expression (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3105163214" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61793" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61793/hovercard" href="https://github.com/angular/angular/pull/61793">#61793</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/e9fcbb8af12e7b4370d2e03e6004f3f2fe02c981"><img src="https://camo.githubusercontent.com/5925a46880eab35e997db3aa2a72e7755bb40358f153fb2d0097ffe1964d2cae/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f653966636262386166312d6669782d677265656e" alt="fix - e9fcbb8af1" data-canonical-src="https://img.shields.io/badge/e9fcbb8af1-fix-green" style="max-width: 100%;"></a></td>
+<td>remove TypeScript from linker (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3083921115" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61618" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61618/hovercard" href="https://github.com/angular/angular/pull/61618">#61618</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>compiler-cli</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/e62fb359d6da8e0458b18f24e6bff60602f93fc6"><img src="https://camo.githubusercontent.com/2e208f8bac84fc5d33daa753432c346167c3d1c697841d30d27f0f5fa1306682/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f653632666233353964362d666561742d626c7565" alt="feat - e62fb359d6" data-canonical-src="https://img.shields.io/badge/e62fb359d6-feat-blue" style="max-width: 100%;"></a></td>
+<td>add experimental support for fast type declaration emission (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3063094517" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61334" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61334/hovercard" href="https://github.com/angular/angular/pull/61334">#61334</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/0cf1001715d2f528c61735108d12e29047907d98"><img src="https://camo.githubusercontent.com/5e15aa84ccdb90b62a82ec4d484ed03b86c9ed8dcb6e2e3f0a53c0b25058f1b7/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f306366313030313731352d666561742d626c7565" alt="feat - 0cf1001715" data-canonical-src="https://img.shields.io/badge/0cf1001715-feat-blue" style="max-width: 100%;"></a></td>
+<td>support host directives with direct external references in fast type declaration emission (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3073888194" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61469" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61469/hovercard" href="https://github.com/angular/angular/pull/61469">#61469</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/77fa204ad16fef561c009fcef0ab1fb92a37f986"><img src="https://camo.githubusercontent.com/f487a9f457620c38d58894ade4094548a6b7491852fceaf3db7a279871d7364e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f373766613230346164312d6669782d677265656e" alt="fix - 77fa204ad1" data-canonical-src="https://img.shields.io/badge/77fa204ad1-fix-green" style="max-width: 100%;"></a></td>
+<td>rename flag for enabling fast type declaration emission (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3064437547" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61353" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61353/hovercard" href="https://github.com/angular/angular/pull/61353">#61353</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/c439d6938de60cb132f7ae4d305efa5b3d853e36"><img src="https://camo.githubusercontent.com/b180cee76dd7f6e41a5cb6dc3fb200aa6b1d231dfee86a4e7306ef8d983d8f03/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f633433396436393338642d6669782d677265656e" alt="fix - c439d6938d" data-canonical-src="https://img.shields.io/badge/c439d6938d-fix-green" style="max-width: 100%;"></a></td>
+<td>symbol builder duplicating host directives (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3052114749" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61240" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61240/hovercard" href="https://github.com/angular/angular/pull/61240">#61240</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/3e1baa5a9565f4930507cdf338e6f9ea7e8702a3"><img src="https://camo.githubusercontent.com/c84d7f2c7c307517d45369e468a4053786b47969572e7fcbf4d158a7a12f63f5/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f336531626161356139352d6669782d677265656e" alt="fix - 3e1baa5a95" data-canonical-src="https://img.shields.io/badge/3e1baa5a95-fix-green" style="max-width: 100%;"></a></td>
+<td>typo in NG2026 message (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3062270447" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61325" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61325/hovercard" href="https://github.com/angular/angular/pull/61325">#61325</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>core</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/8163a8995e36bbce74e3d852613c19e56027cc24"><img src="https://camo.githubusercontent.com/2cef77782ce9a2bef09035c0bb15e1ded7b60610aa4589936fcc8dd75c5676b6/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f383136336138393935652d666561742d626c7565" alt="feat - 8163a8995e" data-canonical-src="https://img.shields.io/badge/8163a8995e-feat-blue" style="max-width: 100%;"></a></td>
+<td>Add <code>destroyed</code> property on <code>DestroyRef</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3114919415" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61849" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61849/hovercard" href="https://github.com/angular/angular/pull/61849">#61849</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/4356e8545666f13033bb2c4b7fa018d0b97e6f01"><img src="https://camo.githubusercontent.com/9469d152dd20233c2d42db40ea6e92f0d8917f2d1e1d399e47392f8f2bc70936/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f343335366538353435362d6669782d677265656e" alt="fix - 4356e85456" data-canonical-src="https://img.shields.io/badge/4356e85456-fix-green" style="max-width: 100%;"></a></td>
+<td>fakeAsync should not depend on module import order (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3067030590" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61375" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61375/hovercard" href="https://github.com/angular/angular/pull/61375">#61375</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/583b9a7be56310f247dcf83dd1ce297b9c6be682"><img src="https://camo.githubusercontent.com/82a103bbb3cb2d6652a38e5698e1a5298c2ee0b3dfeb961a85246cc03ec30f81/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f353833623961376265352d6669782d677265656e" alt="fix - 583b9a7be5" data-canonical-src="https://img.shields.io/badge/583b9a7be5-fix-green" style="max-width: 100%;"></a></td>
+<td>missing useExisting providers throwing for optional calls (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3042041323" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61137" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61137/hovercard" href="https://github.com/angular/angular/pull/61137">#61137</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/8f65223bd83ee5cdbff6a3c8e99f85d1c69f5375"><img src="https://camo.githubusercontent.com/c3de21420256defb26bf663ba68432543ae9211ccbb14bd2e3b159b4c973f57b/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f386636353232336264382d6669782d677265656e" alt="fix - 8f65223bd8" data-canonical-src="https://img.shields.io/badge/8f65223bd8-fix-green" style="max-width: 100%;"></a></td>
+<td>update min Node.js support to 20.19, 22.12, and 24.0 (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3076520681" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61499" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61499/hovercard" href="https://github.com/angular/angular/pull/61499">#61499</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/b785256b9e7f83c9f05fb1afd561f0af49a42e9d"><img src="https://camo.githubusercontent.com/4b88ca55eb7806964fd6e48c2b8f9f74109b8fa21a5013261ecdbb9abc1dd1d4/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f623738353235366239652d706572662d6f72616e6765" alt="perf - b785256b9e" data-canonical-src="https://img.shields.io/badge/b785256b9e-perf-orange" style="max-width: 100%;"></a></td>
+<td>avoid intermediate arrays in definition (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3070491953" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61445" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61445/hovercard" href="https://github.com/angular/angular/pull/61445">#61445</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>forms</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/610bebfce98d879677244b2ef08b24886891ca76"><img src="https://camo.githubusercontent.com/1daf0abf8c5bbe3023db01973d7e1248fff922de01a36bd6f68c7bafcd6bd6f4/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f363130626562666365392d6669782d677265656e" alt="fix - 610bebfce9" data-canonical-src="https://img.shields.io/badge/610bebfce9-fix-green" style="max-width: 100%;"></a></td>
+<td>Allow ControlState as reset arguments for <code>FormGroup</code>/<code>FormRecord</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2303241945" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/55860" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/55860/hovercard" href="https://github.com/angular/angular/pull/55860">#55860</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>language-service</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/cf55d1bdd4201ed99dd876138c50a497b611acb7"><img src="https://camo.githubusercontent.com/d843d3087b507928a6140429c680e5b677bb04c8ea23a188e2510152cb7c4c28/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f636635356431626464342d666561742d626c7565" alt="feat - cf55d1bdd4" data-canonical-src="https://img.shields.io/badge/cf55d1bdd4-feat-blue" style="max-width: 100%;"></a></td>
+<td>Support importing the external module's export about the angular metadata. (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3039502955" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61122" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61122/hovercard" href="https://github.com/angular/angular/pull/61122">#61122</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>service-worker</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/c67dbda8ff76410e0bb7e4b1719125f3197227dd"><img src="https://camo.githubusercontent.com/7b59052f0fb9d031d545c30448e9253b8e9b09b005d9ebfc32a80de420502a0d/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f633637646264613866662d666561742d626c7565" alt="feat - c67dbda8ff" data-canonical-src="https://img.shields.io/badge/c67dbda8ff-feat-blue" style="max-width: 100%;"></a></td>
+<td>support notification closes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3069959577" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61442" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61442/hovercard" href="https://github.com/angular/angular/pull/61442">#61442</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/6e1df5479967c2c8b0fadf75e9a9f8c33a342245"><img src="https://camo.githubusercontent.com/1f244121e0c6a1eb37549d23a6940f577de895343d0af0a4320d48a801bcc47e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f366531646635343739392d666561742d626c7565" alt="feat - 6e1df54799" data-canonical-src="https://img.shields.io/badge/6e1df54799-feat-blue" style="max-width: 100%;"></a></td>
+<td>support push subscription changes (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3115555446" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61856" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61856/hovercard" href="https://github.com/angular/angular/pull/61856">#61856</a>)</td>
+</tr>
+</tbody>
+</table>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from automq: nightly]]></title>
+            <link>https://github.com/AutoMQ/automq/releases/tag/nightly</link>
+            <guid>https://github.com/AutoMQ/automq/releases/tag/nightly</guid>
+            <pubDate>Wed, 04 Jun 2025 20:05:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Automated nightly release, will be updated every day at 20:00 UTC</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from angular: 20.0.1]]></title>
+            <link>https://github.com/angular/angular/releases/tag/20.0.1</link>
+            <guid>https://github.com/angular/angular/releases/tag/20.0.1</guid>
+            <pubDate>Wed, 04 Jun 2025 19:19:02 GMT</pubDate>
+            <content:encoded><![CDATA[<h3>compiler</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/66a0ec6510aa7f2afc675440bd782750100f84d5"><img src="https://camo.githubusercontent.com/2b288163e7353322f185429d021a48e033489144f61296ce1bf19d3e13b933e4/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f363661306563363531302d6669782d677265656e" alt="fix - 66a0ec6510" data-canonical-src="https://img.shields.io/badge/66a0ec6510-fix-green" style="max-width: 100%;"></a></td>
+<td>move defer trigger assertions out of parser (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3099825733" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61747" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61747/hovercard" href="https://github.com/angular/angular/pull/61747">#61747</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/8ecb1ba0275636d4ca697cd648d8c4c3a6eb27df"><img src="https://camo.githubusercontent.com/fce436952a1867f1d444cb2adb6307f9145960cd9b5b5faa451ea3132fc01b98/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f386563623162613032372d6669782d677265656e" alt="fix - 8ecb1ba027" data-canonical-src="https://img.shields.io/badge/8ecb1ba027-fix-green" style="max-width: 100%;"></a></td>
+<td>recover invalid parenthesized expressions (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3109064159" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61815" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61815/hovercard" href="https://github.com/angular/angular/pull/61815">#61815</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>core</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/8c60cbfd1c4fe161936ea9f3b8c126083f2eae5e"><img src="https://camo.githubusercontent.com/7a6cc8b167bf622662d2d999d53e94dd9a06aecb941507cf076068d5be22110e/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f386336306362666431632d6669782d677265656e" alt="fix - 8c60cbfd1c" data-canonical-src="https://img.shields.io/badge/8c60cbfd1c-fix-green" style="max-width: 100%;"></a></td>
+<td><code>takeUntilDestroyed</code> completes immediately if DestroyRef already destroyed (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3114783943" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61847" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61847/hovercard" href="https://github.com/angular/angular/pull/61847">#61847</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/b1d960d082c6d0e52d45d0f1ef24102c16696fa5"><img src="https://camo.githubusercontent.com/f56da02e06d292d65b3b8b44c9ac5fd3501a6872ab7630ca42b453fb9cc7b21b/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f623164393630643038322d6669782d677265656e" alt="fix - b1d960d082" data-canonical-src="https://img.shields.io/badge/b1d960d082-fix-green" style="max-width: 100%;"></a></td>
+<td>produce an error when incremental hydration is expected, but not configured (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3099275069" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61741" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61741/hovercard" href="https://github.com/angular/angular/pull/61741">#61741</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/b4ed62ddf60729fc4e6cfa529a9c7a455ff956d5"><img src="https://camo.githubusercontent.com/fd359b9bc385c15733fa2d7ab6e63af35858cdd9d2c09a325e23c9ec158328c0/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f623465643632646466362d6669782d677265656e" alt="fix - b4ed62ddf6" data-canonical-src="https://img.shields.io/badge/b4ed62ddf6-fix-green" style="max-width: 100%;"></a></td>
+<td>properly handle the case where getSignalGraph is called on a componentless NodeInjector (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2977151683" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/60772" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/60772/hovercard" href="https://github.com/angular/angular/pull/60772">#60772</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/ddd22bea4813b572bfdff15d4bc9c24589bef1bb"><img src="https://camo.githubusercontent.com/c38e06666fa99f8c238e3119c066bbf35a037417ad2a26e1c94ba93a1986cb71/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f646464323262656134382d6669782d677265656e" alt="fix - ddd22bea48" data-canonical-src="https://img.shields.io/badge/ddd22bea48-fix-green" style="max-width: 100%;"></a></td>
+<td>unregister <code>onDestroy</code> in <code>ResourceImpl</code> when <code>destroy()</code> is called (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3118159876" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61870" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61870/hovercard" href="https://github.com/angular/angular/pull/61870">#61870</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/5c31e7e28d519df35b52397161e9d0cedc570304"><img src="https://camo.githubusercontent.com/eeaed91fdebdaab7f0f84b44af9b5847e050d4dfe724cc08d000c6b2a9702ec7/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f356333316537653238642d6669782d677265656e" alt="fix - 5c31e7e28d" data-canonical-src="https://img.shields.io/badge/5c31e7e28d-fix-green" style="max-width: 100%;"></a></td>
+<td>unregister <code>onDestroy</code> when observable errors in <code>toSignal</code> (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3081479793" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61596" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61596/hovercard" href="https://github.com/angular/angular/pull/61596">#61596</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>migrations</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/e9820a6d48629df004043adc5fd6d29e37e43731"><img src="https://camo.githubusercontent.com/f253dc7277116161b391135899b0219116adecdb0c429e09d890a1d58abde890/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f653938323061366434382d6669782d677265656e" alt="fix - e9820a6d48" data-canonical-src="https://img.shields.io/badge/e9820a6d48-fix-green" style="max-width: 100%;"></a></td>
+<td>avoid trailing whitespaces in unused imports migration (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3093071827" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61698" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61698/hovercard" href="https://github.com/angular/angular/pull/61698">#61698</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3>service-worker</h3>
+<table>
+<thead>
+<tr>
+<th>Commit</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/b93fa22f2509578342343cc0dcf8225863def793"><img src="https://camo.githubusercontent.com/c04f4047ce86c349899a20bcd2ff56fd33b86198b1d861cb274d1aacbf703c36/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f623933666132326632352d6669782d677265656e" alt="fix - b93fa22f25" data-canonical-src="https://img.shields.io/badge/b93fa22f25-fix-green" style="max-width: 100%;"></a></td>
+<td>prevent duplicate fetches during concurrent update checks (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3069992963" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/61443" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/61443/hovercard" href="https://github.com/angular/angular/pull/61443">#61443</a>)</td>
+</tr>
+<tr>
+<td><a href="https://github.com/angular/angular/commit/9743bd1317b7fb397bc1e799a0f9a117ee5d6698"><img src="https://camo.githubusercontent.com/f98578b0220b3d0081f35b0e34e1f02571470e4a7e5c9f7740a39c3d67938918/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f393734336264313331372d6669782d677265656e" alt="fix - 9743bd1317" data-canonical-src="https://img.shields.io/badge/9743bd1317-fix-green" style="max-width: 100%;"></a></td>
+<td>update service worker to handle seeking better for videos (<a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2864789693" data-permission-text="Title is private" data-url="https://github.com/angular/angular/issues/60029" data-hovercard-type="pull_request" data-hovercard-url="/angular/angular/pull/60029/hovercard" href="https://github.com/angular/angular/pull/60029">#60029</a>)</td>
+</tr>
+</tbody>
+</table>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from zed: v0.190.0-pre]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/v0.190.0-pre</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/v0.190.0-pre</guid>
+            <pubDate>Wed, 04 Jun 2025 18:36:34 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Today's release includes Vim mode support in the agent panel, as well as many other agent additions, automatic Python virtual environment configuration, better project panel dragging, a Cursor keymap, more Vim commands, and many bug fixes, as we are in <a href="https://zed.dev/faq#quality-week" rel="nofollow">Quality Week</a> right now!</p>
+<h2>Enhancements</h2>
+<ul>
+<li>Added highlighting to entries being dragged in the Project Panel, indicating which items are being moved. (<a href="https://github.com/zed-industries/zed/pull/32044" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32044/hovercard">#32044</a>)</li>
+<li>Added copy-drag cursor when pressing <code>alt</code> or <code>shift</code> to copy the file in Project Panel. (<a href="https://github.com/zed-industries/zed/pull/32040" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32040/hovercard">#32040</a>)</li>
+<li>Added option to create new file in project search panel. (<a href="https://github.com/zed-industries/zed/pull/31567" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31567/hovercard">#31567</a>; thanks <a href="https://github.com/xyzqm">xyzqm</a>)</li>
+<li>Added <code>close_on_file_delete</code> setting (off by default) to allow closing open files after they have been deleted on disk. (<a href="https://github.com/zed-industries/zed/pull/31920" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31920/hovercard">#31920</a>)</li>
+<li>Added subword navigation and selection to Sublime keymap. (<a href="https://github.com/zed-industries/zed/pull/30268" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30268/hovercard">#30268</a>; thanks <a href="https://github.com/fernandocarletti">fernandocarletti</a>)</li>
+<li>Added MacOS titlebar double-click action. (<a href="https://github.com/zed-industries/zed/pull/30468" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30468/hovercard">#30468</a>; thanks <a href="https://github.com/chungweileong94">chungweileong94</a>)</li>
+<li>Added <code>View Release Notes</code> to <code>Help</code> menu. (<a href="https://github.com/zed-industries/zed/pull/31704" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31704/hovercard">#31704</a>; thanks <a href="https://github.com/simonpham">simonpham</a>)</li>
+<li>Added Cursor compatibility keymap. (<a href="https://github.com/zed-industries/zed/pull/31702" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31702/hovercard">#31702</a>)</li>
+<li>Added <code>ZED_RELATIVE_DIR</code> (path to current file's directory relative to worktree root) task variable. (<a href="https://github.com/zed-industries/zed/pull/31657" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31657/hovercard">#31657</a>; thanks <a href="https://github.com/d5ng4i">d5ng4i</a>)</li>
+<li>Added version information, in a tooltip, when hovering on the activity indicator for both the download and install status. (<a href="https://github.com/zed-industries/zed/pull/31568" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31568/hovercard">#31568</a>)</li>
+<li>Snippet insertions now preserve leading whitespace instead of using language-specific auto-indentation. (<a href="https://github.com/zed-industries/zed/pull/31933" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31933/hovercard">#31933</a>)</li>
+<li>Improved project panel to show a highlight on the containing folder which would be the target of the drop operation. (<a href="https://github.com/zed-industries/zed/pull/31976" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31976/hovercard">#31976</a>)</li>
+<li>Improved Zed inheriting environment variables from user shells. (<a href="https://github.com/zed-industries/zed/pull/31799" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31799/hovercard">#31799</a>; thanks <a href="https://github.com/haruleekim">haruleekim</a>)</li>
+<li>Improved Zed prompts for file path selection. (<a href="https://github.com/zed-industries/zed/pull/32014" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32014/hovercard">#32014</a>)</li>
+<li>Improved displaying of project search matches or diagnostics when the excerpts are adjacent. (<a href="https://github.com/zed-industries/zed/pull/31708" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31708/hovercard">#31708</a>; thanks <a href="https://github.com/Rogue-striker">Rogue-striker</a>)</li>
+<li>Improved the keyboard navigability of the file finder filtering options. (<a href="https://github.com/zed-industries/zed/pull/31777" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31777/hovercard">#31777</a>)</li>
+<li>Improved persistence when selecting themes and icon themes. (<a href="https://github.com/zed-industries/zed/pull/29560" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/29560/hovercard">#29560</a>; thanks <a href="https://github.com/hoodie">hoodie</a>)</li>
+<li>Ensured that cut project panel entries are cut-pasted only on the first use, and copy-pasted on all subsequent pastes. (<a href="https://github.com/zed-industries/zed/pull/31931" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31931/hovercard">#31931</a>; thanks <a href="https://github.com/MrSubidubi">MrSubidubi</a>)</li>
+<li>Allowed opening 1 more item if <code>n</code> tabs are pinned, where <code>n</code> equals the <code>max_tabs</code> count. (<a href="https://github.com/zed-industries/zed/pull/31871" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31871/hovercard">#31871</a>)</li>
+<li>Disabled the <code>Close Clean</code> tab context menu action when all items are "dirty." (<a href="https://github.com/zed-industries/zed/pull/31859" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31859/hovercard">#31859</a>)</li>
+<li>Changed the highlighting of the current file to represent the current saved state, when the tab bar is turned off. (<a href="https://github.com/zed-industries/zed/pull/30507" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30507/hovercard">#30507</a>; thanks <a href="https://github.com/ViveK-PothinA">ViveK-PothinA</a>)</li>
+</ul>
+<h3>AI</h3>
+<ul>
+<li>Agent: Added vim-mode support in the agent panel's editor. (<a href="https://github.com/zed-industries/zed/pull/31915" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31915/hovercard">#31915</a>)</li>
+<li>Agent: Added ability to reject and accept all changes from the agent panel. (<a href="https://github.com/zed-industries/zed/pull/31971" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31971/hovercard">#31971</a>)</li>
+<li>Agent: Added support for <code>AGENT.md</code> and <code>AGENTS.md</code> as rules file names. (<a href="https://github.com/zed-industries/zed/pull/31998" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31998/hovercard">#31998</a>)</li>
+<li>Agent: Added display of full terminal output. (<a href="https://github.com/zed-industries/zed/pull/31922" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31922/hovercard">#31922</a>)</li>
+<li>Agent: Added ability to collapse terminal output. (<a href="https://github.com/zed-industries/zed/pull/31922" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31922/hovercard">#31922</a>)</li>
+<li>Agent: Added support for OpenRouter as a language model provider. (<a href="https://github.com/zed-industries/zed/pull/29496" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/29496/hovercard">#29496</a>; thanks <a href="https://github.com/imumesh18">imumesh18</a>)</li>
+<li>Agent: Added support for getting notified (via toast and/or sound) when reaching the consecutive tool call limit. (<a href="https://github.com/zed-industries/zed/pull/31894" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31894/hovercard">#31894</a>)</li>
+<li>Agent: Added <code>thinking</code> mode for custom Google models with configurable token budget. (<a href="https://github.com/zed-industries/zed/pull/31251" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31251/hovercard">#31251</a>; thanks <a href="https://github.com/90aca">90aca</a>)</li>
+<li>Agent: Added image support for Ollama vision models. (<a href="https://github.com/zed-industries/zed/pull/31883" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31883/hovercard">#31883</a>; thanks <a href="https://github.com/imumesh18">imumesh18</a>)</li>
+<li>Agent: Added thinking support when using Ollama models. (<a href="https://github.com/zed-industries/zed/pull/31665" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31665/hovercard">#31665</a>; thanks <a href="https://github.com/imumesh18">imumesh18</a>)</li>
+<li>Agent: Added a keybinding to toggle Burn Mode on and off. (<a href="https://github.com/zed-industries/zed/pull/31630" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31630/hovercard">#31630</a>)</li>
+<li>Agent: Improved sound notification behavior by making it play only if Zed is in the background. (<a href="https://github.com/zed-industries/zed/pull/31975" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31975/hovercard">#31975</a>)</li>
+<li>Agent: Improved previous message editing UX by returning focus to the main panel's text area after dismissing it. (<a href="https://github.com/zed-industries/zed/pull/31611" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31611/hovercard">#31611</a>, <a href="https://github.com/zed-industries/zed/pull/31614" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31614/hovercard">#31614</a>)</li>
+<li>Agent: Migrated thread storage to SQLite with compression. (<a href="https://github.com/zed-industries/zed/pull/31741" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31741/hovercard">#31741</a>)</li>
+<li>Ollama: Changed models to be sorted by name. (<a href="https://github.com/zed-industries/zed/pull/31620" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31620/hovercard">#31620</a>; thanks <a href="https://github.com/little-dude">little-dude</a>)</li>
+<li>Ollama: Updated default model context to 4096 (matching upstream). (<a href="https://github.com/zed-industries/zed/pull/31682" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31682/hovercard">#31682</a>; thanks <a href="https://github.com/tidely">tidely</a>)</li>
+<li>AWS Bedrock: Added ability to pick between Thinking and Non-Thinking models. (<a href="https://github.com/zed-industries/zed/pull/31600" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31600/hovercard">#31600</a>; thanks <a href="https://github.com/5herlocked">5herlocked</a>)</li>
+<li>AWS Bedrock: Added support for Meta Llama 4 Scout and Maverick models. (<a href="https://github.com/zed-industries/zed/pull/30659" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30659/hovercard">#30659</a>; thanks <a href="https://github.com/5herlocked">5herlocked</a>)</li>
+<li>AWS Bedrock: Updated all models available through Cross Region inference. (<a href="https://github.com/zed-industries/zed/pull/30659" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30659/hovercard">#30659</a>; thanks <a href="https://github.com/5herlocked">5herlocked</a>)</li>
+<li>Edit Prediction: Handled <code>~</code> in paths in <code>disabled_globs</code> setting. (<a href="https://github.com/zed-industries/zed/pull/31235" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31235/hovercard">#31235</a>; thanks <a href="https://github.com/clauses3">clauses3</a>)</li>
+</ul>
+<h3>Debugger (beta)</h3>
+<p>Sign up for the <a href="https://zed.dev/debugger" rel="nofollow">debugger waitlist</a>!</p>
+<ul>
+<li>Fixed issues with launching Python debug adapter downloaded by Zed. You might need to clear the old install of Debugpy from <code>$HOME/.local/share/zed/debug_adapters/Debugpy</code> (Linux) or <code>$HOME/Library/Application Support/Zed/debug_adapters/Debugpy</code> (Mac). (<a href="https://github.com/zed-industries/zed/pull/32034" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32034/hovercard">#32034</a>)</li>
+</ul>
+<h3>Git</h3>
+<ul>
+<li>Extended the support for configuring custom git hosting providers to cover project settings in addition to global settings. (<a href="https://github.com/zed-industries/zed/pull/31929" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31929/hovercard">#31929</a>)</li>
+</ul>
+<h3>Languages</h3>
+<ul>
+<li>Added support for filtering language server completions instead of re-querying. (<a href="https://github.com/zed-industries/zed/pull/31872" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31872/hovercard">#31872</a>)</li>
+<li>Python toolchain selector now uses path to the closest pyproject.toml as a basis for picking a toolchain. All files under the same pyproject.toml (in filesystem hierarchy) will share a single virtual environment. It is possible to have multiple Python virtual environments selected for disjoint parts of the same project. (<a href="https://github.com/zed-industries/zed/pull/31893" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31893/hovercard">#31893</a>)</li>
+<li>Added more docstring highlights for Python. (<a href="https://github.com/zed-industries/zed/pull/31628" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31628/hovercard">#31628</a>; thanks <a href="https://github.com/MrSubidubi">MrSubidubi</a>)</li>
+<li>Improved Python development experience with automatic virtual environment configuration. (<a href="https://github.com/zed-industries/zed/pull/31934" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31934/hovercard">#31934</a>; thanks <a href="https://github.com/pachecoio">pachecoio</a>)</li>
+<li>Improved TypeScript shebang detection. (<a href="https://github.com/zed-industries/zed/pull/31437" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31437/hovercard">#31437</a>; thanks <a href="https://github.com/imumesh18">imumesh18</a>)</li>
+<li>Ruby: Added <code>sorbet</code> and <code>steep</code> to the list of available language servers. (<a href="https://github.com/zed-industries/zed/pull/32008" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32008/hovercard">#32008</a>)</li>
+<li>LaTeX: Added default <code>latexindent</code> formatter settings without relying on <code>texlab</code>, as well as allowing <code>prettier</code> to be chosen for formatting. (<a href="https://github.com/zed-industries/zed/pull/28727" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/28727/hovercard">#28727</a>; thanks <a href="https://github.com/lnay">lnay</a>)</li>
+</ul>
+<h3>Vim</h3>
+<ul>
+<li>Added text selection for <code>vim::PushFindForward</code> and <code>vim::PushFindBackward</code> keybinds in helix mode. (<a href="https://github.com/zed-industries/zed/pull/31547" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31547/hovercard">#31547</a>; thanks <a href="https://github.com/thebasilisk">thebasilisk</a>)</li>
+<li>Added <code>ArgumentRequired</code> action for vim commands that require arguments. (<a href="https://github.com/zed-industries/zed/pull/31140" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31140/hovercard">#31140</a>; thanks <a href="https://github.com/AidanV">AidanV</a>)</li>
+<li>Added <code>:e[dit] {file}</code> command to open files within the current project. (<a href="https://github.com/zed-industries/zed/pull/31227" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31227/hovercard">#31227</a>; thanks <a href="https://github.com/AidanV">AidanV</a>)</li>
+<li>Implemented <code>:delm[arks] {marks}</code> specified <a href="https://vimhelp.org/motion.txt.html#%3Adelmarks" rel="nofollow">here</a>. (<a href="https://github.com/zed-industries/zed/pull/31140" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31140/hovercard">#31140</a>; thanks <a href="https://github.com/AidanV">AidanV</a>)</li>
+</ul>
+<h2>Bug Fixes</h2>
+<ul>
+<li>Agent: Fixed incorrect file edits when edit locations are ambiguous. (<a href="https://github.com/zed-industries/zed/pull/32056" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32056/hovercard">#32056</a>)</li>
+<li>Agent: Fixed inability to use Claude 4 Thinking models with Bedrock. (<a href="https://github.com/zed-industries/zed/pull/31599" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31599/hovercard">#31599</a>; thanks <a href="https://github.com/5herlocked">5herlocked</a>)</li>
+<li>Agent: Fixed a panic that could sometimes occur when the agent panel was too narrow and contained context included via <code>@</code>. (<a href="https://github.com/zed-industries/zed/pull/31960" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31960/hovercard">#31960</a>)</li>
+<li>Agent: Fixed a panic when re-editing old messages. (<a href="https://github.com/zed-industries/zed/pull/32017" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32017/hovercard">#32017</a>)</li>
+<li>Agent: Fixed bug with double-counting tokens in Gemini. (<a href="https://github.com/zed-industries/zed/pull/31885" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31885/hovercard">#31885</a>)</li>
+<li>Agent: Fixed an issue where copying and pasting an assistant response in text threads would result in duplicate text. (<a href="https://github.com/zed-industries/zed/pull/31882" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31882/hovercard">#31882</a>)</li>
+<li>Agent: Fixed GitHub Copilot chat provider error when sending follow-up messages in threads containing images. (<a href="https://github.com/zed-industries/zed/pull/31760" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31760/hovercard">#31760</a>; thanks <a href="https://github.com/spmurrayzzz">spmurrayzzz</a>)</li>
+<li>Agent: Fixed a bug where the panel navigation menu wouldn't open with the keybinding on text threads. (<a href="https://github.com/zed-industries/zed/pull/31709" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31709/hovercard">#31709</a>)</li>
+<li>Agent: Fixed a bug where the "go back" button wouldn't go back to the Text Thread after visiting another view from it. (<a href="https://github.com/zed-industries/zed/pull/31706" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31706/hovercard">#31706</a>)</li>
+<li>Agent: Fixed an issue where rejecting agent changes could result in data loss in agent-created files. (<a href="https://github.com/zed-industries/zed/pull/31617" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31617/hovercard">#31617</a>)</li>
+<li>AWS Bedrock: Fixed cross-region inference for all regions. (<a href="https://github.com/zed-industries/zed/pull/30659" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30659/hovercard">#30659</a>; thanks <a href="https://github.com/5herlocked">5herlocked</a>)</li>
+<li>Vim: Fixed duplicate prefixes when repeating completions via <code>.</code> (<a href="https://github.com/zed-industries/zed/pull/31818" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31818/hovercard">#31818</a>; thanks <a href="https://github.com/zeux">zeux</a>)</li>
+<li>Vim: Fixed pasting in vim's visual line mode when cursor is on a newline character. (<a href="https://github.com/zed-industries/zed/pull/30791" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30791/hovercard">#30791</a>; thanks <a href="https://github.com/dinocosta">dinocosta</a>)</li>
+<li>Git: Fixed an issue that prevented <code>git::Restore</code> keybindings from working in editors for buffers that had previously been modified by the agent. (<a href="https://github.com/zed-industries/zed/pull/31930" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31930/hovercard">#31930</a>)</li>
+<li>Fixed certain external worktrees' files sometimes not registered with language servers. (<a href="https://github.com/zed-industries/zed/pull/32057" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32057/hovercard">#32057</a>)</li>
+<li>Fixed completions menu closing on typing after being requested while <code>show_completions_on_input: false</code>. (<a href="https://github.com/zed-industries/zed/pull/32015" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32015/hovercard">#32015</a>)</li>
+<li>Fixed Python virtual environment detection when no <code>pyrightconfig.json</code> is present. (<a href="https://github.com/zed-industries/zed/pull/31934" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31934/hovercard">#31934</a>; thanks <a href="https://github.com/pachecoio">pachecoio</a>)</li>
+<li>Pyright now correctly resolves imports from packages installed in virtual environments (<code>.venv</code>, <code>venv</code>, etc.). (<a href="https://github.com/zed-industries/zed/pull/31934" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31934/hovercard">#31934</a>; thanks <a href="https://github.com/pachecoio">pachecoio</a>)</li>
+<li>Python projects with virtual environments no longer show false <code>reportMissingImports</code> errors. (<a href="https://github.com/zed-industries/zed/pull/31934" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31934/hovercard">#31934</a>; thanks <a href="https://github.com/pachecoio">pachecoio</a>)</li>
+<li>Fixed Python tasks always running with a toolchain selected for the root of a workspace. (<a href="https://github.com/zed-industries/zed/pull/31150" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31150/hovercard">#31150</a>; thanks <a href="https://github.com/pachecoio">pachecoio</a>)</li>
+<li>Fixed channel notes not re-connecting when a connection to Zed servers is restored. (<a href="https://github.com/zed-industries/zed/pull/31950" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31950/hovercard">#31950</a>)</li>
+<li>Fixed wrong line number being shown in the status bar when in multi-buffer. (<a href="https://github.com/zed-industries/zed/pull/31947" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31947/hovercard">#31947</a>)</li>
+<li>Fixed terminal pinned tab state not persisting across restarts. (<a href="https://github.com/zed-industries/zed/pull/31921" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31921/hovercard">#31921</a>)</li>
+<li>Fixed unnecessary delay when typing a multi-stroke binding that doesn't match any non-null bindings. (<a href="https://github.com/zed-industries/zed/pull/30260" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30260/hovercard">#30260</a>; thanks <a href="https://github.com/joe-p">joe-p</a>)</li>
+<li>Fixed an edge case where indent guides would be rendered incorrectly if lines consisted of entirely whitespace. (<a href="https://github.com/zed-industries/zed/pull/31916" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31916/hovercard">#31916</a>)</li>
+<li>Fixed the issue where keybinding wouldn't work in a pane after focusing it from dock using the <code>ActivatePaneInDirection</code> action in certain cases. (<a href="https://github.com/zed-industries/zed/pull/31905" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31905/hovercard">#31905</a>)</li>
+<li>Fixed terminal inline assistant clipping when cursor is at bottom of terminal. (<a href="https://github.com/zed-industries/zed/pull/31807" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31807/hovercard">#31807</a>; thanks <a href="https://github.com/alisinabh">alisinabh</a>)</li>
+<li>Fixed the issue where the columnar selection (<code>opt+shift</code>) incorrectly used the cursor to start the selection instead of the mouse position. (<a href="https://github.com/zed-industries/zed/pull/31888" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31888/hovercard">#31888</a>)</li>
+<li>Fixed an issue where autocompleting optional chaining methods in TypeScript, such as <code>x.tostr</code>, would result in <code>x?.toString()tostr</code> instead of <code>x?.toString()</code>. (<a href="https://github.com/zed-industries/zed/pull/31878" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31878/hovercard">#31878</a>)</li>
+<li>Fixed a bug where pinned tabs were closed when running <code>Close Others</code> from the tab context menu. (<a href="https://github.com/zed-industries/zed/pull/31783" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31783/hovercard">#31783</a>)</li>
+<li>Fixed a bug where pinned tabs would eventually be closed out when exceeding the <code>max_tabs</code> count. (<a href="https://github.com/zed-industries/zed/pull/31871" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31871/hovercard">#31871</a>)</li>
+<li>Fixed a bug where pinning a tab, when already at the <code>max_tabs</code> limit, could cause other tabs to be incorrectly closed. (<a href="https://github.com/zed-industries/zed/pull/31871" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31871/hovercard">#31871</a>)</li>
+<li>Fixed a bug where inactive tabs would be activated when pinning or unpinning. (<a href="https://github.com/zed-industries/zed/pull/32026" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32026/hovercard">#32026</a>)</li>
+<li>Fixed sluggish cursor motions in Terminal when Vi Mode is enabled. (<a href="https://github.com/zed-industries/zed/pull/31824" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31824/hovercard">#31824</a>; thanks <a href="https://github.com/hron">hron</a>)</li>
+<li>Fixed issue where some applications won't receive the clipboard contents from Zed. (<a href="https://github.com/zed-industries/zed/pull/30251" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/30251/hovercard">#30251</a>; thanks <a href="https://github.com/aldofunes">aldofunes</a>)</li>
+<li>Fixed in-app release notes having an incorrect title. (<a href="https://github.com/zed-industries/zed/pull/31703" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31703/hovercard">#31703</a>; thanks <a href="https://github.com/simonpham">simonpham</a>)</li>
+<li>Fixed an issue where migration banner wouldn't go away after clicking "Backup and Migrate". (<a href="https://github.com/zed-industries/zed/pull/31723" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31723/hovercard">#31723</a>)</li>
+<li>Fixed issue where task history wasn't being cleared after task file updates. (<a href="https://github.com/zed-industries/zed/pull/31720" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31720/hovercard">#31720</a>)</li>
+<li>Fixed issue navigating SSH config servers in Remote Projects with keyboard. (<a href="https://github.com/zed-industries/zed/pull/31650" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31650/hovercard">#31650</a>)</li>
+<li>Fixed issue preventing remote projects modal from regaining focus after a successful SSH server connection. (<a href="https://github.com/zed-industries/zed/pull/31651" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31651/hovercard">#31651</a>)</li>
+<li>Fixed the issue where the terminal focused when the mouse hovered over it after selecting text in the editor. (<a href="https://github.com/zed-industries/zed/pull/31639" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31639/hovercard">#31639</a>)</li>
+<li>Fixed a crash that could occur when editing YAML files. (<a href="https://github.com/zed-industries/zed/pull/32090" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32090/hovercard">#32090</a>)</li>
+<li>Fixed a crash that could occur when editing bash files. (<a href="https://github.com/zed-industries/zed/pull/32091" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/32091/hovercard">#32091</a>)</li>
+<li>Explicitly disallowed running Zed with root privileges. (<a href="https://github.com/zed-industries/zed/pull/31331" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31331/hovercard">#31331</a>; thanks <a href="https://github.com/valsoray-dev">valsoray-dev</a>)</li>
+</ul>
+<h2>Breaking Changes and Notices</h2>
+<ul>
+<li>Deprecated support for <code>active_pane_modifiers</code>.<code>magnification</code> setting as it caused many visual defects. (<a href="https://github.com/zed-industries/zed/pull/31981" data-hovercard-type="pull_request" data-hovercard-url="/zed-industries/zed/pull/31981/hovercard">#31981</a>)</li>
+</ul>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 1.40.29]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/1.40.29</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/1.40.29</guid>
+            <pubDate>Wed, 04 Jun 2025 18:05:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 1.40.29 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from aws-cli: 2.27.29]]></title>
+            <link>https://github.com/aws/aws-cli/releases/tag/2.27.29</link>
+            <guid>https://github.com/aws/aws-cli/releases/tag/2.27.29</guid>
+            <pubDate>Wed, 04 Jun 2025 18:05:06 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Tagging 2.27.29 release.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from flutter: 3.32.2]]></title>
+            <link>https://github.com/flutter/flutter/releases/tag/3.32.2</link>
+            <guid>https://github.com/flutter/flutter/releases/tag/3.32.2</guid>
+            <pubDate>Wed, 04 Jun 2025 18:02:51 GMT</pubDate>
+            <content:encoded><![CDATA[<p>Re-update <code>engine.version</code> for 3.32.2 stable hotfix release to the la…</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from zed: nightly: Automatically keep edits if they are included in a commit (#32093)]]></title>
             <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
@@ -88,17 +563,6 @@ commit, and you’re done.</li>
 </ul>
 <h3>Credits</h3>
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/eps1lon/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/eps1lon">@eps1lon</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/icyJoseph/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/icyJoseph">@icyJoseph</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/kdy1/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/kdy1">@kdy1</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/huozhi/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/huozhi">@huozhi</a>, <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/agadzik/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/agadzik">@agadzik</a>, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from zed: v0.190.0-pre: Bump tree-sitter-bash to 0.25 (#32091)]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/v0.190.0-pre</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/v0.190.0-pre</guid>
-            <pubDate>Wed, 04 Jun 2025 17:23:22 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Closes <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2812434316" data-permission-text="Title is private" data-url="https://github.com/zed-industries/zed/issues/23703" data-hovercard-type="issue" data-hovercard-url="/zed-industries/zed/issues/23703/hovercard" href="https://github.com/zed-industries/zed/issues/23703">#23703</a></p>
-<p>Release Notes:</p>
-<ul>
-<li>Fixed a crash that could occur when editing bash files</li>
-</ul>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from react-native: latest]]></title>
@@ -1031,7 +1495,7 @@ If you run into this issue, try <code>BUNDLE_BUILD__CHARLOCK_HOLMES="--with-cxxf
             <pubDate>Wed, 04 Jun 2025 05:59:07 GMT</pubDate>
             <content:encoded><![CDATA[<p><a href="https://curl.se/ch/8.14.1.html" rel="nofollow">changelog</a><br>
 <a href="https://daniel.haxx.se/blog/2025/06/04/curl-8-14-1/" rel="nofollow">release blog</a></p>
-<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/177011/451216748-75a506e0-d54a-4693-a27d-d03867486dfa.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwNjA0ODQsIm5iZiI6MTc0OTA2MDE4NCwicGF0aCI6Ii8xNzcwMTEvNDUxMjE2NzQ4LTc1YTUwNmUwLWQ1NGEtNDY5My1hMjdkLWQwMzg2NzQ4NmRmYS5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwNjA0JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDYwNFQxODAzMDRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0zNGExZDlkYjkyMjA0MDRmNjdhNzNlOGIzMDQwYTZhN2Y5MDU3YjdmN2I1MTc3YzU5YTNlZTAyMWVlZjJjMTNjJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.JhQYp__Chrw7crqsQRGlW63Wa8cXuk-2TpcAqmN0CtU"><img src="https://private-user-images.githubusercontent.com/177011/451216748-75a506e0-d54a-4693-a27d-d03867486dfa.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwNjA0ODQsIm5iZiI6MTc0OTA2MDE4NCwicGF0aCI6Ii8xNzcwMTEvNDUxMjE2NzQ4LTc1YTUwNmUwLWQ1NGEtNDY5My1hMjdkLWQwMzg2NzQ4NmRmYS5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwNjA0JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDYwNFQxODAzMDRaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT0zNGExZDlkYjkyMjA0MDRmNjdhNzNlOGIzMDQwYTZhN2Y5MDU3YjdmN2I1MTc3YzU5YTNlZTAyMWVlZjJjMTNjJlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.JhQYp__Chrw7crqsQRGlW63Wa8cXuk-2TpcAqmN0CtU" alt="curl-8 14 1" content-type-secured-asset="image/jpeg" style="max-width: 100%;"></a></p>]]></content:encoded>
+<p><a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/177011/451216748-75a506e0-d54a-4693-a27d-d03867486dfa.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwODI0MzcsIm5iZiI6MTc0OTA4MjEzNywicGF0aCI6Ii8xNzcwMTEvNDUxMjE2NzQ4LTc1YTUwNmUwLWQ1NGEtNDY5My1hMjdkLWQwMzg2NzQ4NmRmYS5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwNjA1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDYwNVQwMDA4NTdaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05OTNjMjRmYTBlM2NmM2U1ZmEzOGMxZDIxYjk3YTRkOTIyMzQ0ZjZkMDc1ZmMxMTZhNjlmOTEyOTk2ZDBjNDU2JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.-fr9ZqaG2b0ZRxvXnIITKHZTQM9113-0IRwHGH5zBV0"><img src="https://private-user-images.githubusercontent.com/177011/451216748-75a506e0-d54a-4693-a27d-d03867486dfa.jpg?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwODI0MzcsIm5iZiI6MTc0OTA4MjEzNywicGF0aCI6Ii8xNzcwMTEvNDUxMjE2NzQ4LTc1YTUwNmUwLWQ1NGEtNDY5My1hMjdkLWQwMzg2NzQ4NmRmYS5qcGc_WC1BbXotQWxnb3JpdGhtPUFXUzQtSE1BQy1TSEEyNTYmWC1BbXotQ3JlZGVudGlhbD1BS0lBVkNPRFlMU0E1M1BRSzRaQSUyRjIwMjUwNjA1JTJGdXMtZWFzdC0xJTJGczMlMkZhd3M0X3JlcXVlc3QmWC1BbXotRGF0ZT0yMDI1MDYwNVQwMDA4NTdaJlgtQW16LUV4cGlyZXM9MzAwJlgtQW16LVNpZ25hdHVyZT05OTNjMjRmYTBlM2NmM2U1ZmEzOGMxZDIxYjk3YTRkOTIyMzQ0ZjZkMDc1ZmMxMTZhNjlmOTEyOTk2ZDBjNDU2JlgtQW16LVNpZ25lZEhlYWRlcnM9aG9zdCJ9.-fr9ZqaG2b0ZRxvXnIITKHZTQM9113-0IRwHGH5zBV0" alt="curl-8 14 1" content-type-secured-asset="image/jpeg" style="max-width: 100%;"></a></p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
@@ -1262,13 +1726,6 @@ Co-authored-by: Mikayla <a href="mailto:mikayla@zed.dev">mikayla@zed.dev</a></p>
 </ul>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from kitty: Nightly builds]]></title>
-            <link>https://github.com/kovidgoyal/kitty/releases/tag/nightly</link>
-            <guid>https://github.com/kovidgoyal/kitty/releases/tag/nightly</guid>
-            <pubDate>Tue, 03 Jun 2025 21:25:49 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Nightly release, generated on: 2025-06-03 21:25:48 UTC from commit: <a class="commit-link" data-hovercard-type="commit" data-hovercard-url="https://github.com/kovidgoyal/kitty/commit/a783d4932eb7fd8292276dfbb72d64ef5b2c9245/hovercard" href="https://github.com/kovidgoyal/kitty/commit/a783d4932eb7fd8292276dfbb72d64ef5b2c9245"><tt>a783d49</tt></a>. For how to install nightly builds, see: <a href="https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation" rel="nofollow">https://sw.kovidgoyal.net/kitty/binary/#customizing-the-installation</a></p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from code-server: v4.100.3]]></title>
             <link>https://github.com/coder/code-server/releases/tag/v4.100.3</link>
             <guid>https://github.com/coder/code-server/releases/tag/v4.100.3</guid>
@@ -1278,13 +1735,6 @@ Co-authored-by: Mikayla <a href="mailto:mikayla@zed.dev">mikayla@zed.dev</a></p>
 <ul>
 <li>Update to Code 1.100.3.</li>
 </ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from automq: nightly]]></title>
-            <link>https://github.com/AutoMQ/automq/releases/tag/nightly</link>
-            <guid>https://github.com/AutoMQ/automq/releases/tag/nightly</guid>
-            <pubDate>Tue, 03 Jun 2025 20:06:16 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Automated nightly release, will be updated every day at 20:00 UTC</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Release notes from pixijs: v8.10.0]]></title>
@@ -1329,7 +1779,7 @@ Co-authored-by: Mikayla <a href="mailto:mikayla@zed.dev">mikayla@zed.dev</a></p>
         <span class="pl-c1">trim</span>: <span class="pl-c1">true</span><span class="pl-kos">,</span> <span class="pl-c">// New API</span>
     <span class="pl-kos">}</span><span class="pl-kos">,</span>
 <span class="pl-kos">}</span><span class="pl-kos">)</span><span class="pl-kos">;</span> </pre></div>
-<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/24736175/450990119-b9e46968-4fb0-4b85-8cc7-92e865b088a6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwNjA0OTUsIm5iZiI6MTc0OTA2MDE5NSwicGF0aCI6Ii8yNDczNjE3NS80NTA5OTAxMTktYjllNDY5NjgtNGZiMC00Yjg1LThjYzctOTJlODY1YjA4OGE2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDQlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA0VDE4MDMxNVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTM4ZjkxZTI4NzIzZGM3Zjg3M2IyY2UwNDg5YTVmNGFmODk2NmY0NTBiNTJjYzIzZDYzN2Y2MmY0ZTE4Y2Q4M2EmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.bhfE0NFdVxLfj9iW7MZz5uafpDl8xRfJykYMpJQ-Tuk"><img src="https://private-user-images.githubusercontent.com/24736175/450990119-b9e46968-4fb0-4b85-8cc7-92e865b088a6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwNjA0OTUsIm5iZiI6MTc0OTA2MDE5NSwicGF0aCI6Ii8yNDczNjE3NS80NTA5OTAxMTktYjllNDY5NjgtNGZiMC00Yjg1LThjYzctOTJlODY1YjA4OGE2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDQlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA0VDE4MDMxNVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTM4ZjkxZTI4NzIzZGM3Zjg3M2IyY2UwNDg5YTVmNGFmODk2NmY0NTBiNTJjYzIzZDYzN2Y2MmY0ZTE4Y2Q4M2EmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.bhfE0NFdVxLfj9iW7MZz5uafpDl8xRfJykYMpJQ-Tuk" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></li>
+<a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/24736175/450990119-b9e46968-4fb0-4b85-8cc7-92e865b088a6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwODI0NDgsIm5iZiI6MTc0OTA4MjE0OCwicGF0aCI6Ii8yNDczNjE3NS80NTA5OTAxMTktYjllNDY5NjgtNGZiMC00Yjg1LThjYzctOTJlODY1YjA4OGE2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDUlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA1VDAwMDkwOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJlNjI2MzczODMzMDBkMzFmMGY0YTNjOGJkYzdlNjU3OWYyYjEzMjlkZmVjMTY1OWJiOTgwNGJkMjJiZDcyM2MmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.0a8uCfnedtxEBCg4Mz0gIV7-ghaDWXUTzbzELBeU_JA"><img src="https://private-user-images.githubusercontent.com/24736175/450990119-b9e46968-4fb0-4b85-8cc7-92e865b088a6.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NDkwODI0NDgsIm5iZiI6MTc0OTA4MjE0OCwicGF0aCI6Ii8yNDczNjE3NS80NTA5OTAxMTktYjllNDY5NjgtNGZiMC00Yjg1LThjYzctOTJlODY1YjA4OGE2LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA2MDUlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwNjA1VDAwMDkwOFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTJlNjI2MzczODMzMDBkMzFmMGY0YTNjOGJkYzdlNjU3OWYyYjEzMjlkZmVjMTY1OWJiOTgwNGJkMjJiZDcyM2MmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.0a8uCfnedtxEBCg4Mz0gIV7-ghaDWXUTzbzELBeU_JA" alt="image" content-type-secured-asset="image/png" style="max-width: 100%;"></a></li>
 <li>feat: textStyle filters by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GoodBoyDigital/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GoodBoyDigital">@GoodBoyDigital</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2854036922" data-permission-text="Title is private" data-url="https://github.com/pixijs/pixijs/issues/11282" data-hovercard-type="pull_request" data-hovercard-url="/pixijs/pixijs/pull/11282/hovercard" href="https://github.com/pixijs/pixijs/pull/11282">#11282</a>
 <ul>
 <li>Filters can now be baked into a Text on creation. When setting filters this way, the filter is actually baked into the texture at creation time, rather than having to be calculated at run time, eliminating the runtime cost.</li>
@@ -3130,139 +3580,6 @@ candidate to a full release.</li>
             <content:encoded><![CDATA[<h3>Patch Changes</h3>
 <ul>
 <li>fix: avoid recursion error in <code>EachBlock</code> visitor (<a href="https://github.com/sveltejs/svelte/pull/16058" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/16058/hovercard">#16058</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from next.js: v15.4.0-canary.61]]></title>
-            <link>https://github.com/vercel/next.js/releases/tag/v15.4.0-canary.61</link>
-            <guid>https://github.com/vercel/next.js/releases/tag/v15.4.0-canary.61</guid>
-            <pubDate>Sun, 01 Jun 2025 23:38:44 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Misc Changes</h3>
-<ul>
-<li>[turbopack] Create a macro rcstr! for constructing RcStr from string literals.: <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3095493225" data-permission-text="Title is private" data-url="https://github.com/vercel/next.js/issues/79759" data-hovercard-type="pull_request" data-hovercard-url="/vercel/next.js/pull/79759/hovercard" href="https://github.com/vercel/next.js/pull/79759">#79759</a></li>
-</ul>
-<h3>Credits</h3>
-<p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/lukesandberg/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/lukesandberg">@lukesandberg</a> for helping!</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from void: Beta]]></title>
-            <link>https://github.com/voideditor/void/releases/tag/beta</link>
-            <guid>https://github.com/voideditor/void/releases/tag/beta</guid>
-            <pubDate>Sun, 01 Jun 2025 23:21:24 GMT</pubDate>
-            <content:encoded><![CDATA[<p>Note: We have a new releases page (containing Void's binaries) which we'll be updating more often than the page below. See  here! <a href="https://github.com/voideditor/binaries/releases">https://github.com/voideditor/binaries/releases</a></p>
-<hr>
-<p>Void's beta release is now ready for download!</p>
-<h3>Links.</h3>
-<ul>
-<li><a href="https://voideditor.com/download-beta" rel="nofollow">Official Download Link</a>.</li>
-<li><a href="https://voideditor.com/changelog" rel="nofollow">Changelog</a>.</li>
-<li><a href="https://github.com/voideditor/binaries/releases">All Binaries</a>.</li>
-</ul>
-<p>This version of Void comes with checkpoints, Agent mode for all OSS models (like GPT 4.1 and R1), auto-updates, SSH and WSL support, and lots of improvements!</p>
-<ul>
-<li>A special thanks to this release's contributors. Thanks especially to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bjoaquinc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bjoaquinc">@bjoaquinc</a> for helping with SSH and WSL, and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jcommaret/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jcommaret">@jcommaret</a> for helping with the Mistral implementation. Additional shoutout to the many users in our Discord channel - your feedback and thoughts have been great!</li>
-<li>We host weekly contributing meetings in our <a href="https://discord.gg/RSNjgaugJs" rel="nofollow">Discord channel</a> on Thursdays. If you're interested in hearing about our roadmap or contributing, we'd love for you to stop by!</li>
-</ul>
-<h2>What's Changed</h2>
-<ul>
-<li>Minor changes mar by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2951325345" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/342" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/342/hovercard" href="https://github.com/voideditor/void/pull/342">#342</a></li>
-<li>Vscodium patches by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2951334363" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/343" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/343/hovercard" href="https://github.com/voideditor/void/pull/343">#343</a></li>
-<li>More vscodium patches by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2951446180" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/344" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/344/hovercard" href="https://github.com/voideditor/void/pull/344">#344</a></li>
-<li>tslib by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2951537482" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/345" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/345/hovercard" href="https://github.com/voideditor/void/pull/345">#345</a></li>
-<li>fix vscodium patches by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2954606166" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/349" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/349/hovercard" href="https://github.com/voideditor/void/pull/349">#349</a></li>
-<li>xpm by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2954698678" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/350" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/350/hovercard" href="https://github.com/voideditor/void/pull/350">#350</a></li>
-<li>new code.ico by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2954708371" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/351" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/351/hovercard" href="https://github.com/voideditor/void/pull/351">#351</a></li>
-<li>dummy commit by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2955460193" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/353" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/353/hovercard" href="https://github.com/voideditor/void/pull/353">#353</a></li>
-<li>enable auto updates by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2957574445" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/354" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/354/hovercard" href="https://github.com/voideditor/void/pull/354">#354</a></li>
-<li>test update to 1.0.3 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2957816373" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/355" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/355/hovercard" href="https://github.com/voideditor/void/pull/355">#355</a></li>
-<li>revert to 1.0.2 for testing by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2957841456" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/356" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/356/hovercard" href="https://github.com/voideditor/void/pull/356">#356</a></li>
-<li>bump to 1.0.3 to test auto-updates by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2957863453" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/357" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/357/hovercard" href="https://github.com/voideditor/void/pull/357">#357</a></li>
-<li>version -&gt; voidVersion by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2957927272" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/358" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/358/hovercard" href="https://github.com/voideditor/void/pull/358">#358</a></li>
-<li>Minor changes mar by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2958654217" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/361" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/361/hovercard" href="https://github.com/voideditor/void/pull/361">#361</a></li>
-<li>1.0.4 test by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2958666466" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/362" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/362/hovercard" href="https://github.com/voideditor/void/pull/362">#362</a></li>
-<li>Fixed the open-remote-ssh extension to point at binaries repo by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bjoaquinc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bjoaquinc">@bjoaquinc</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2958505361" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/360" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/360/hovercard" href="https://github.com/voideditor/void/pull/360">#360</a></li>
-<li>Fixed default url in package.json since this is used by app by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bjoaquinc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bjoaquinc">@bjoaquinc</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2958919532" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/363" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/363/hovercard" href="https://github.com/voideditor/void/pull/363">#363</a></li>
-<li>Minor changes mar by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2959394696" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/365" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/365/hovercard" href="https://github.com/voideditor/void/pull/365">#365</a></li>
-<li>Updated version argument to get voidVersion by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bjoaquinc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bjoaquinc">@bjoaquinc</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2959144625" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/364" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/364/hovercard" href="https://github.com/voideditor/void/pull/364">#364</a></li>
-<li>Update CONTRIBUTING.md by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GhostDog98/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GhostDog98">@GhostDog98</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2975306142" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/375" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/375/hovercard" href="https://github.com/voideditor/void/pull/375">#375</a></li>
-<li>Add checkpoints by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2975702318" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/378" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/378/hovercard" href="https://github.com/voideditor/void/pull/378">#378</a></li>
-<li>Update CONTRIBUTING.md by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GhostDog98/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GhostDog98">@GhostDog98</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2975384031" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/376" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/376/hovercard" href="https://github.com/voideditor/void/pull/376">#376</a></li>
-<li>Added more models for agents from openRouter by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Dylan-86/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Dylan-86">@Dylan-86</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2948013599" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/337" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/337/hovercard" href="https://github.com/voideditor/void/pull/337">#337</a></li>
-<li>Merge changes from vscode disabling mangling by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GhostDog98/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GhostDog98">@GhostDog98</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2975296961" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/374" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/374/hovercard" href="https://github.com/voideditor/void/pull/374">#374</a></li>
-<li>Added open-remote-wsl to /extensions by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/bjoaquinc/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/bjoaquinc">@bjoaquinc</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2967338554" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/371" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/371/hovercard" href="https://github.com/voideditor/void/pull/371">#371</a></li>
-<li>Revert "Merge changes from vscode disabling mangling" by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2982956203" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/382" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/382/hovercard" href="https://github.com/voideditor/void/pull/382">#382</a></li>
-<li>Increased Support for Agent Mode (Ollama, vLLM, etc) by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2981772060" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/381" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/381/hovercard" href="https://github.com/voideditor/void/pull/381">#381</a></li>
-<li>Status bar for all changed files by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2976459966" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/379" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/379/hovercard" href="https://github.com/voideditor/void/pull/379">#379</a></li>
-<li>Model selection by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2984132597" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/384" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/384/hovercard" href="https://github.com/voideditor/void/pull/384">#384</a></li>
-<li>logs by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2984136443" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/385" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/385/hovercard" href="https://github.com/voideditor/void/pull/385">#385</a></li>
-<li>HOW_TO_CONTRIBUTE by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2984241970" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/386" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/386/hovercard" href="https://github.com/voideditor/void/pull/386">#386</a></li>
-<li>Dummy service update by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2984439912" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/387" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/387/hovercard" href="https://github.com/voideditor/void/pull/387">#387</a></li>
-<li>Misc 1.0.3 canary improvements - tool call fix, tooltips, lint error passing by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2988264798" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/389" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/389/hovercard" href="https://github.com/voideditor/void/pull/389">#389</a></li>
-<li>Prepare for 1.0.3 release by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2989756805" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/391" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/391/hovercard" href="https://github.com/voideditor/void/pull/391">#391</a></li>
-<li>Terminal prompt by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2989769464" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/392" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/392/hovercard" href="https://github.com/voideditor/void/pull/392">#392</a></li>
-<li>Quasar + misc fixes before 1.0.3 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2990720099" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/393" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/393/hovercard" href="https://github.com/voideditor/void/pull/393">#393</a></li>
-<li>Merge remote-tracking branch 'origin/main' into model-selection by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2990720933" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/394" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/394/hovercard" href="https://github.com/voideditor/void/pull/394">#394</a></li>
-<li>minor fixes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2990956482" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/395" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/395/hovercard" href="https://github.com/voideditor/void/pull/395">#395</a></li>
-<li>Misc by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2992295199" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/397" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/397/hovercard" href="https://github.com/voideditor/void/pull/397">#397</a></li>
-<li>[Provider]Mistral -😻- Mistral working : [OpenAICompatibleModel Chat + tools +  sendMistralFIM] by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/jcommaret/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/jcommaret">@jcommaret</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2917955118" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/321" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/321/hovercard" href="https://github.com/voideditor/void/pull/321">#321</a></li>
-<li>GPT 4.1 + fixes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2994056310" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/398" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/398/hovercard" href="https://github.com/voideditor/void/pull/398">#398</a></li>
-<li>1.2.0 by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2994152358" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/399" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/399/hovercard" href="https://github.com/voideditor/void/pull/399">#399</a></li>
-<li>GPT 4.1 and Claude 3.7 Thinking with Tools by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2995284202" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/400" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/400/hovercard" href="https://github.com/voideditor/void/pull/400">#400</a></li>
-<li>Model selection by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2995800703" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/401" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/401/hovercard" href="https://github.com/voideditor/void/pull/401">#401</a></li>
-<li>1.2.1 updates by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2997981471" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/404" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/404/hovercard" href="https://github.com/voideditor/void/pull/404">#404</a></li>
-<li>Onboarding, SSH by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2999138489" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/406" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/406/hovercard" href="https://github.com/voideditor/void/pull/406">#406</a></li>
-<li>Fix AppImage creation bug by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Dylan-86/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Dylan-86">@Dylan-86</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2995942983" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/403" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/403/hovercard" href="https://github.com/voideditor/void/pull/403">#403</a></li>
-<li>o3, o4-mini by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3000315852" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/407" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/407/hovercard" href="https://github.com/voideditor/void/pull/407">#407</a></li>
-<li>o3 fallback by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/andrewpareles/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/andrewpareles">@andrewpareles</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3000329493" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/408" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/408/hovercard" href="https://github.com/voideditor/void/pull/408">#408</a></li>
-</ul>
-<h2>New Contributors</h2>
-<ul>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/GhostDog98/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/GhostDog98">@GhostDog98</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2975306142" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/375" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/375/hovercard" href="https://github.com/voideditor/void/pull/375">#375</a></li>
-<li><a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/Dylan-86/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/Dylan-86">@Dylan-86</a> made their first contribution in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="2948013599" data-permission-text="Title is private" data-url="https://github.com/voideditor/void/issues/337" data-hovercard-type="pull_request" data-hovercard-url="/voideditor/void/pull/337/hovercard" href="https://github.com/voideditor/void/pull/337">#337</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/voideditor/void/compare/v1.0.2...v1.2.4"><tt>v1.0.2...v1.2.4</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from atlas: v1.8.0-rc.35]]></title>
-            <link>https://github.com/Netflix/atlas/releases/tag/v1.8.0-rc.35</link>
-            <guid>https://github.com/Netflix/atlas/releases/tag/v1.8.0-rc.35</guid>
-            <pubDate>Sun, 01 Jun 2025 23:14:32 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>What's Changed</h2>
-<ul>
-<li>core: update sed exprs to support tag vars by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3083942797" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1775" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1775/hovercard" href="https://github.com/Netflix/atlas/pull/1775">#1775</a></li>
-<li>webapi: have fetch honor response step by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3087539688" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1776" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1776/hovercard" href="https://github.com/Netflix/atlas/pull/1776">#1776</a></li>
-<li>lwcapi: update expression cache behavior by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3097305105" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1777" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1777/hovercard" href="https://github.com/Netflix/atlas/pull/1777">#1777</a></li>
-<li>lwcapi: add option to ignore publish step by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3098573493" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1778" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1778/hovercard" href="https://github.com/Netflix/atlas/pull/1778">#1778</a></li>
-<li>core: allow offset to be applied across style by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3100560652" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1779" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1779/hovercard" href="https://github.com/Netflix/atlas/pull/1779">#1779</a></li>
-<li>core: allow math aggr across style by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3100721799" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1780" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1780/hovercard" href="https://github.com/Netflix/atlas/pull/1780">#1780</a></li>
-<li>lwcapi: use dist summary for subscription sizes by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3101269378" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1781" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1781/hovercard" href="https://github.com/Netflix/atlas/pull/1781">#1781</a></li>
-<li>lwcapi: update query change flag after batch by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3101427098" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1782" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1782/hovercard" href="https://github.com/Netflix/atlas/pull/1782">#1782</a></li>
-<li>lwcapi: reduce overhead for updating query index by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3101697010" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1783" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1783/hovercard" href="https://github.com/Netflix/atlas/pull/1783">#1783</a></li>
-<li>lwcapi: remove unused HostSource class by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3103075501" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1784" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1784/hovercard" href="https://github.com/Netflix/atlas/pull/1784">#1784</a></li>
-<li>eval: choose allowed steps based on block size by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3107823289" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1785" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1785/hovercard" href="https://github.com/Netflix/atlas/pull/1785">#1785</a></li>
-<li>update dependencies by <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/brharrington/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/brharrington">@brharrington</a> in <a class="issue-link js-issue-link" data-error-text="Failed to load title" data-id="3107937138" data-permission-text="Title is private" data-url="https://github.com/Netflix/atlas/issues/1786" data-hovercard-type="pull_request" data-hovercard-url="/Netflix/atlas/pull/1786/hovercard" href="https://github.com/Netflix/atlas/pull/1786">#1786</a></li>
-</ul>
-<p><strong>Full Changelog</strong>: <a class="commit-link" href="https://github.com/Netflix/atlas/compare/v1.8.0-rc.34...v1.8.0-rc.35"><tt>v1.8.0-rc.34...v1.8.0-rc.35</tt></a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from storybook: v9.0.4]]></title>
-            <link>https://github.com/storybookjs/storybook/releases/tag/v9.0.4</link>
-            <guid>https://github.com/storybookjs/storybook/releases/tag/v9.0.4</guid>
-            <pubDate>Sun, 01 Jun 2025 21:01:57 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>9.0.4</h2>
-<ul>
-<li>Addon Vitest: Fix path comparison on Windows - <a href="https://github.com/storybookjs/storybook/pull/31630" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/31630/hovercard">#31630</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-<li>Addon Vitest: Fix path comparison on Windows - <a href="https://github.com/storybookjs/storybook/pull/31634" data-hovercard-type="pull_request" data-hovercard-url="/storybookjs/storybook/pull/31634/hovercard">#31634</a>, thanks <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/valentinpalkovic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/valentinpalkovic">@valentinpalkovic</a>!</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from svelte: svelte@5.33.12]]></title>
-            <link>https://github.com/sveltejs/svelte/releases/tag/svelte%405.33.12</link>
-            <guid>https://github.com/sveltejs/svelte/releases/tag/svelte%405.33.12</guid>
-            <pubDate>Sun, 01 Jun 2025 20:52:37 GMT</pubDate>
-            <content:encoded><![CDATA[<h3>Patch Changes</h3>
-<ul>
-<li>fix: correctly transform reassignments to class fields in SSR mode (<a href="https://github.com/sveltejs/svelte/pull/16051" data-hovercard-type="pull_request" data-hovercard-url="/sveltejs/svelte/pull/16051/hovercard">#16051</a>)</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
