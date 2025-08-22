@@ -4,10 +4,54 @@
         <title>GitHub Release Notes</title>
         <link>https://akngs.github.io/feed-bundler/gh-release-notes</link>
         <description>GitHub Release Notes</description>
-        <lastBuildDate>Fri, 22 Aug 2025 06:03:33 GMT</lastBuildDate>
+        <lastBuildDate>Fri, 22 Aug 2025 12:03:51 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <copyright>N/A</copyright>
+        <item>
+            <title><![CDATA[Release notes from cabal: cabal-head]]></title>
+            <link>https://github.com/haskell/cabal/releases/tag/cabal-head</link>
+            <guid>https://github.com/haskell/cabal/releases/tag/cabal-head</guid>
+            <pubDate>Fri, 22 Aug 2025 10:14:10 GMT</pubDate>
+            <content:encoded><![CDATA[<p>No release body provided.</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Release notes from zed: nightly: acp: Fix panic with edit file tool (#36732)]]></title>
+            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
+            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
+            <pubDate>Fri, 22 Aug 2025 07:48:47 GMT</pubDate>
+            <content:encoded><![CDATA[<p>We had a frequent panic when the agent was using our edit file tool. The<br>
+root cause was that we were constructing a <code>BufferDiff</code> with<br>
+<code>BufferDiff::new</code>, then calling <code>set_base_text</code>, but not waiting for<br>
+that asynchronous operation to finish. This means there was a window of<br>
+time where the diff's base text was set to the initial value of<br>
+<code>""</code>--that's not a problem in itself, but it was possible for us to call<br>
+<code>PendingDiff::update</code> during that window, which calls<br>
+<code>BufferDiff::update_diff</code>, which calls<br>
+<code>BufferDiffSnapshot::new_with_base_buffer</code>, which takes two arguments<br>
+<code>base_text</code> and <code>base_text_snapshot</code> that are supposed to represent the<br>
+same text. We were getting the first of those arguments from the<br>
+<code>base_text</code> field of <code>PendingDiff</code>, which is set immediately to the<br>
+target base text without waiting for <code>BufferDiff::set_base_text</code> to run<br>
+to completion; and the second from the <code>BufferDiff</code> itself, which still<br>
+has the empty base text during that window.</p>
+<p>As a result of that mismatch, we could end up adding <code>DeletedHunk</code> diff<br>
+transforms to the multibuffer for the diff card even though the<br>
+multibuffer's base text was empty, ultimately leading to a panic very<br>
+far away in rendering code.</p>
+<p>I've fixed this by adding a new <code>BufferDiff</code> constructor for the case<br>
+where the buffer contents and the base text are (initially) the same,<br>
+like for the diff cards, and so we don't need an async diff calculation.<br>
+I also added a debug assertion to catch the basic issue here earlier,<br>
+when <code>BufferDiffSnapshot::new_with_base_buffer</code> is called with two base<br>
+texts that don't match.</p>
+<p>Release Notes:</p>
+<ul>
+<li>N/A</li>
+</ul>
+<hr>
+<p>Co-authored-by: Conrad <a href="mailto:conrad@zed.dev">conrad@zed.dev</a></p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Release notes from neovim: Nvim development (prerelease) build]]></title>
             <link>https://github.com/neovim/neovim/releases/tag/nightly</link>
@@ -154,17 +198,17 @@ LuaJIT 2.1.1753364724
 <h3>Use different models for different tasks</h3>
 <p>You can now configure separate models for chat, code editing, and autocomplete in an improved UI (<a href="https://github.com/marimo-team/marimo/pull/6018" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/6018/hovercard">#6018</a>, <a href="https://github.com/marimo-team/marimo/pull/6011" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/6011/hovercard">#6011</a>). Models use provider prefixes like <code>ollama/qwen-coder</code> or <code>azure/gpt-4o</code>.</p>
 <p align="center">
-  <a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/24403730/480712423-7def2b30-baf3-46d2-b3d9-292c976cdb14.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NDI5MDMsIm5iZiI6MTc1NTg0MjYwMywicGF0aCI6Ii8yNDQwMzczMC80ODA3MTI0MjMtN2RlZjJiMzAtYmFmMy00NmQyLWIzZDktMjkyYzk3NmNkYjE0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA4MjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwODIyVDA2MDMyM1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTZiMmY1NTYzZDI5ZTEwMGJkODkzZjgwY2MxOGFlMTU4NWUxZmQxN2NiNGU2OGQ5ZDg4NTE2NDU4NTZiMDE4OTkmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.tuWsT8C16n1L_E10qGCmpHq97aUlSXWHc361b9LB-ds"><img width="600" src="https://private-user-images.githubusercontent.com/24403730/480712423-7def2b30-baf3-46d2-b3d9-292c976cdb14.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NDI5MDMsIm5iZiI6MTc1NTg0MjYwMywicGF0aCI6Ii8yNDQwMzczMC80ODA3MTI0MjMtN2RlZjJiMzAtYmFmMy00NmQyLWIzZDktMjkyYzk3NmNkYjE0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA4MjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwODIyVDA2MDMyM1omWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTZiMmY1NTYzZDI5ZTEwMGJkODkzZjgwY2MxOGFlMTU4NWUxZmQxN2NiNGU2OGQ5ZDg4NTE2NDU4NTZiMDE4OTkmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.tuWsT8C16n1L_E10qGCmpHq97aUlSXWHc361b9LB-ds" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/24403730/480712423-7def2b30-baf3-46d2-b3d9-292c976cdb14.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NjQ1MjAsIm5iZiI6MTc1NTg2NDIyMCwicGF0aCI6Ii8yNDQwMzczMC80ODA3MTI0MjMtN2RlZjJiMzAtYmFmMy00NmQyLWIzZDktMjkyYzk3NmNkYjE0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA4MjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwODIyVDEyMDM0MFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWZkMTg2NmE0MTA2NDVkZTg4MTUyYzE2ODZjZGZiOTZjNjkyYTBiZTFiZWZhMjA5NGFlNGY3ZmNkZjJiZTg3YjEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.q4JkZ2w064eoMHdQvlBSOILcZOxIvmSWEXPga2Wdr-I"><img width="600" src="https://private-user-images.githubusercontent.com/24403730/480712423-7def2b30-baf3-46d2-b3d9-292c976cdb14.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NjQ1MjAsIm5iZiI6MTc1NTg2NDIyMCwicGF0aCI6Ii8yNDQwMzczMC80ODA3MTI0MjMtN2RlZjJiMzAtYmFmMy00NmQyLWIzZDktMjkyYzk3NmNkYjE0LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTA4MjIlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUwODIyVDEyMDM0MFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPWZkMTg2NmE0MTA2NDVkZTg4MTUyYzE2ODZjZGZiOTZjNjkyYTBiZTFiZWZhMjA5NGFlNGY3ZmNkZjJiZTg3YjEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.q4JkZ2w064eoMHdQvlBSOILcZOxIvmSWEXPga2Wdr-I" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
 </p>
 <h3>Keyboard shortcuts for AI suggestions</h3>
 <p>Accept AI suggestions with <code>Tab</code>, reject with <code>Escape</code> (<a href="https://github.com/marimo-team/marimo/pull/6094" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/6094/hovercard">#6094</a>).</p>
 <p align="center">
-  <a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/2753772/480269269-b649b32c-6009-407c-9fa1-998c071d12d8.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NDI5MDMsIm5iZiI6MTc1NTg0MjYwMywicGF0aCI6Ii8yNzUzNzcyLzQ4MDI2OTI2OS1iNjQ5YjMyYy02MDA5LTQwN2MtOWZhMS05OThjMDcxZDEyZDgucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMDYwMzIzWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZjZhZWNmMzEyM2M1NDExYWMxMDM0ZTVjNGQ2YmYyNzk0MjNjZjdlY2ZhMTBhNzUyOTk5NzAwNmU5N2ZjODMxZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.zoOVd4fUjme8VtQbhR80QIl6diGDVauhSGBznke7sas"><img width="400" src="https://private-user-images.githubusercontent.com/2753772/480269269-b649b32c-6009-407c-9fa1-998c071d12d8.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NDI5MDMsIm5iZiI6MTc1NTg0MjYwMywicGF0aCI6Ii8yNzUzNzcyLzQ4MDI2OTI2OS1iNjQ5YjMyYy02MDA5LTQwN2MtOWZhMS05OThjMDcxZDEyZDgucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMDYwMzIzWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZjZhZWNmMzEyM2M1NDExYWMxMDM0ZTVjNGQ2YmYyNzk0MjNjZjdlY2ZhMTBhNzUyOTk5NzAwNmU5N2ZjODMxZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.zoOVd4fUjme8VtQbhR80QIl6diGDVauhSGBznke7sas" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/2753772/480269269-b649b32c-6009-407c-9fa1-998c071d12d8.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NjQ1MjAsIm5iZiI6MTc1NTg2NDIyMCwicGF0aCI6Ii8yNzUzNzcyLzQ4MDI2OTI2OS1iNjQ5YjMyYy02MDA5LTQwN2MtOWZhMS05OThjMDcxZDEyZDgucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMTIwMzQwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZmJmODM5M2Q2MmQyYjNhNWEzZDNmMDJhNDhmNDJiNmZhYmQxZWJmZWNmNDhmMWMwYWZiNzI2M2IwMjI4N2I0YiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.cB4J6ng3xaxYqgFqIv6XbbWkwZ-32GdNhPRSd13Jabw"><img width="400" src="https://private-user-images.githubusercontent.com/2753772/480269269-b649b32c-6009-407c-9fa1-998c071d12d8.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NjQ1MjAsIm5iZiI6MTc1NTg2NDIyMCwicGF0aCI6Ii8yNzUzNzcyLzQ4MDI2OTI2OS1iNjQ5YjMyYy02MDA5LTQwN2MtOWZhMS05OThjMDcxZDEyZDgucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMTIwMzQwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9ZmJmODM5M2Q2MmQyYjNhNWEzZDNmMDJhNDhmNDJiNmZhYmQxZWJmZWNmNDhmMWMwYWZiNzI2M2IwMjI4N2I0YiZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.cB4J6ng3xaxYqgFqIv6XbbWkwZ-32GdNhPRSd13Jabw" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
 </p>
 <h3>Tables in AI chat</h3>
 <p>The chat sidebar now renders markdown tables (<a href="https://github.com/marimo-team/marimo/pull/6006" data-hovercard-type="pull_request" data-hovercard-url="/marimo-team/marimo/pull/6006/hovercard">#6006</a>).</p>
 <p align="center">
-  <a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/2753772/476787926-8a49f19d-3c3f-4477-9251-2817de7863db.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NDI5MDMsIm5iZiI6MTc1NTg0MjYwMywicGF0aCI6Ii8yNzUzNzcyLzQ3Njc4NzkyNi04YTQ5ZjE5ZC0zYzNmLTQ0NzctOTI1MS0yODE3ZGU3ODYzZGIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMDYwMzIzWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NzQwNjY0ODc5MDcyMWQwYTNjMGU0NDIxYWM3MTVlMTk3OGFiN2MxODE3NzhmNGJmNjkwYjJjYmQ0ODQyNDU4ZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.5HiMqWBMu4lRUQtLscUa1ViiQu_KhAaO_7X_p59OVC8"><img width="500" src="https://private-user-images.githubusercontent.com/2753772/476787926-8a49f19d-3c3f-4477-9251-2817de7863db.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NDI5MDMsIm5iZiI6MTc1NTg0MjYwMywicGF0aCI6Ii8yNzUzNzcyLzQ3Njc4NzkyNi04YTQ5ZjE5ZC0zYzNmLTQ0NzctOTI1MS0yODE3ZGU3ODYzZGIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMDYwMzIzWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NzQwNjY0ODc5MDcyMWQwYTNjMGU0NDIxYWM3MTVlMTk3OGFiN2MxODE3NzhmNGJmNjkwYjJjYmQ0ODQyNDU4ZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.5HiMqWBMu4lRUQtLscUa1ViiQu_KhAaO_7X_p59OVC8" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
+  <a target="_blank" rel="noopener noreferrer" href="https://private-user-images.githubusercontent.com/2753772/476787926-8a49f19d-3c3f-4477-9251-2817de7863db.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NjQ1MjAsIm5iZiI6MTc1NTg2NDIyMCwicGF0aCI6Ii8yNzUzNzcyLzQ3Njc4NzkyNi04YTQ5ZjE5ZC0zYzNmLTQ0NzctOTI1MS0yODE3ZGU3ODYzZGIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMTIwMzQwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9Y2Y5NTQ3NjI4NWQzZTc4Y2RiYmM2YjUxNDg3MzkzM2E2ZGZkNTAxYmEwMTUyY2M4ZTI5YWFjYzhkMTA4MTcyMyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.vaUTTMxM_Zqnb-CipLOtUGJAhUKTgUd8BRkq_prnYfo"><img width="500" src="https://private-user-images.githubusercontent.com/2753772/476787926-8a49f19d-3c3f-4477-9251-2817de7863db.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NTU4NjQ1MjAsIm5iZiI6MTc1NTg2NDIyMCwicGF0aCI6Ii8yNzUzNzcyLzQ3Njc4NzkyNi04YTQ5ZjE5ZC0zYzNmLTQ0NzctOTI1MS0yODE3ZGU3ODYzZGIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI1MDgyMiUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNTA4MjJUMTIwMzQwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9Y2Y5NTQ3NjI4NWQzZTc4Y2RiYmM2YjUxNDg3MzkzM2E2ZGZkNTAxYmEwMTUyY2M4ZTI5YWFjYzhkMTA4MTcyMyZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.vaUTTMxM_Zqnb-CipLOtUGJAhUKTgUd8BRkq_prnYfo" content-type-secured-asset="image/png" style="max-width: 100%;"></a>
 </p>
 <h2>🚨 Breaking changes</h2>
 <ul>
@@ -3173,13 +3217,6 @@ Co-authored-by: Marshall Bowers <a href="mailto:git@maxdeviant.com">git@maxdevia
 <p>Huge thanks to <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/sokra/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/sokra">@sokra</a> and <a class="user-mention notranslate" data-hovercard-type="user" data-hovercard-url="/users/mischnic/hovercard" data-octo-click="hovercard-link-click" data-octo-dimensions="link_type:self" href="https://github.com/mischnic">@mischnic</a> for helping!</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Release notes from zed: nightly]]></title>
-            <link>https://github.com/zed-industries/zed/releases/tag/nightly</link>
-            <guid>https://github.com/zed-industries/zed/releases/tag/nightly</guid>
-            <pubDate>Thu, 21 Aug 2025 14:57:46 GMT</pubDate>
-            <content:encoded><![CDATA[<p>acp: Use <code>ResourceLink</code> for agents that don't support embedded contex…</p>]]></content:encoded>
-        </item>
-        <item>
             <title><![CDATA[Release notes from laravel: v12.3.1]]></title>
             <link>https://github.com/laravel/laravel/releases/tag/v12.3.1</link>
             <guid>https://github.com/laravel/laravel/releases/tag/v12.3.1</guid>
@@ -5435,304 +5472,6 @@ const [snapshot, store] = useCountStore();"><pre><span class="pl-k">const</span>
 <span class="pl-c">// Usage (no selector)</span>
 <span class="pl-k">const</span> <span class="pl-kos">[</span><span class="pl-s1">snapshot</span><span class="pl-kos">,</span> <span class="pl-s1">store</span><span class="pl-kos">]</span> <span class="pl-c1">=</span> <span class="pl-en">useCountStore</span><span class="pl-kos">(</span><span class="pl-kos">)</span><span class="pl-kos">;</span></pre></div>
 </li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: v0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/v0.7.0a4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/v0.7.0a4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:19:53 GMT</pubDate>
-            <content:encoded><![CDATA[<h2>0.7.0a4</h2>
-<p>(<a href="https://github.com/jupyterlite/jupyterlite/compare/@jupyterlite/application-extension@0.7.0-alpha.3...59fad82cb2e5cb7a2454bc37b1e939e0b0b02348">Full Changelog</a>)</p>
-<h3>Enhancements made</h3>
-<ul>
-<li>Update to JupyterLab 4.5.0a3 and Notebook 7.5.0a2 <a href="https://github.com/jupyterlite/jupyterlite/pull/1710" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/1710/hovercard">#1710</a> (<a href="https://github.com/krassowski">@krassowski</a>)</li>
-<li>Show images from local storage in Markdown (<code>base64</code>-encoded) <a href="https://github.com/jupyterlite/jupyterlite/pull/1707" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/1707/hovercard">#1707</a> (<a href="https://github.com/krassowski">@krassowski</a>)</li>
-</ul>
-<h3>Maintenance and upkeep improvements</h3>
-<ul>
-<li>Update to <code>jupyterlite-pyodide-kernel==0.7.0a1</code> <a href="https://github.com/jupyterlite/jupyterlite/pull/1694" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/1694/hovercard">#1694</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
-</ul>
-<h3>Documentation improvements</h3>
-<ul>
-<li>Fix workspaces docs <a href="https://github.com/jupyterlite/jupyterlite/pull/1711" data-hovercard-type="pull_request" data-hovercard-url="/jupyterlite/jupyterlite/pull/1711/hovercard">#1711</a> (<a href="https://github.com/jtpio">@jtpio</a>)</li>
-</ul>
-<h3>Contributors to this release</h3>
-<p>(<a href="https://github.com/jupyterlite/jupyterlite/graphs/contributors?from=2025-08-13&amp;to=2025-08-19&amp;type=c">GitHub contributors page for this release</a>)</p>
-<p><a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Abollwyvl+updated%3A2025-08-13..2025-08-19&amp;type=Issues">@bollwyvl</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Agithub-actions+updated%3A2025-08-13..2025-08-19&amp;type=Issues">@github-actions</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Ajtpio+updated%3A2025-08-13..2025-08-19&amp;type=Issues">@jtpio</a> | <a href="https://github.com/search?q=repo%3Ajupyterlite%2Fjupyterlite+involves%3Akrassowski+updated%3A2025-08-13..2025-08-19&amp;type=Issues">@krassowski</a></p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/ui-components@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fui-components%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/types@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Ftypes%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/settings@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsettings%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/session@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fsession%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/services-extension@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fservices-extension%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fservices-extension%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/server@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fserver%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/repl-extension@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Frepl-extension%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/notebook-application-extension@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Fnotebook-application-extension%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from jupyterlite: @jupyterlite/localforage@0.7.0-alpha.4: Publish 0.7.0a4]]></title>
-            <link>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Flocalforage%400.7.0-alpha.4</link>
-            <guid>https://github.com/jupyterlite/jupyterlite/releases/tag/%40jupyterlite%2Flocalforage%400.7.0-alpha.4</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:14 GMT</pubDate>
-            <content:encoded><![CDATA[<p>SHA256 hashes:</p>
-<p>SHA256SUMS: 4f6876c86f2d8688026d1a4897d5ce78d2880a07d205508852f8ecb34dec1a5f</p>
-<p>jupyterlite-0.7.0a4-py3-none-any.whl: 110c57ef2419f1a4340efcc7b27504cfa3346421b9ed3c1c98d235371ec49532</p>
-<p>jupyterlite-0.7.0a4.tar.gz: 02621c99347652aa45c18db741edab217530553d31e32014aa4a4ed454d93f94</p>
-<p>jupyterlite-application-0.7.0-alpha.4.tgz: ad0ce8400b60bb9f2a9edfe28edd1ac2790a895b71d7d274472bff0ea33a2f0f</p>
-<p>jupyterlite-application-extension-0.7.0-alpha.4.tgz: e5a0309b15c2fac6fec405682ecf5fe7be6343d548a9140a436ef6682f20a3aa</p>
-<p>jupyterlite-apputils-0.7.0-alpha.4.tgz: 7de73a75f984bdda39588945ff4dd48d71503651b26fdec751d7e3212be9fd54</p>
-<p>jupyterlite-apputils-extension-0.7.0-alpha.4.tgz: 31cbeca6bb792d1ea9c1b211e553a55131061081f5cc57b31a09a235b8a6713b</p>
-<p>jupyterlite-contents-0.7.0-alpha.4.tgz: 4fc92e1558f91dccf96a78fcaa42680270ad6017464709e3332e2548549d1cbf</p>
-<p>jupyterlite-iframe-extension-0.7.0-alpha.4.tgz: b915c97a5a5129f6e1f0d76eb0d76fdc365eecca841f46da75afc66093514d3a</p>
-<p>jupyterlite-kernel-0.7.0-alpha.4.tgz: f4f57feee5ab46502a39f7b258a15f7df41b4c6a9084d04708a160f5e533cd0c</p>
-<p>jupyterlite-localforage-0.7.0-alpha.4.tgz: 9767250a8425d29ab90774bf011093ea9d143e06d0be1746a2b663529f923e2e</p>
-<p>jupyterlite-notebook-application-extension-0.7.0-alpha.4.tgz: 885803c7d15d89ea9935187c70f71e1f1064a17f9554f7a5f02c17ba75a7bf82</p>
-<p>jupyterlite-repl-extension-0.7.0-alpha.4.tgz: 35f7ec8bc33a670f0b4c58c61d1afae1f411c08351fb759f86aacb470b4acad0</p>
-<p>jupyterlite-server-0.7.0-alpha.4.tgz: 889af2b209ce52b58fc6c0c884adcdfcdfc61413da2fdcecb5cd7eddb7cb8176</p>
-<p>jupyterlite-services-extension-0.7.0-alpha.4.tgz: 65e7cd95e115f17ae8d806bc4a9f37fddaed2079b834fc375ea17a4f1ef1230c</p>
-<p>jupyterlite-session-0.7.0-alpha.4.tgz: e7831049fff531c0a2d8dcd72fffc9fe7c887c683b4f61e8fb5e8351d97919bb</p>
-<p>jupyterlite-settings-0.7.0-alpha.4.tgz: c15521be000fde568a304d597290c4eb221cf7d5776debe54fa54d51d2645b36</p>
-<p>jupyterlite-types-0.7.0-alpha.4.tgz: 650df01726f029855343647f9e7aa04faee15544d0e07a6932326e66ace70787</p>
-<p>jupyterlite-ui-components-0.7.0-alpha.4.tgz: 770ce57e29102118ba2b1679a8915c3501620bf3cc09b6119366de61d2da809f</p>
-<p>jupyterlite_core-0.7.0a4-py3-none-any.whl: 576265b35a6b458490a35f0bdcc50a8111de473f354e2db136112998b6433bb4</p>
-<p>jupyterlite_core-0.7.0a4.tar.gz: c8a04d2b2a7f7920512332dd3f41061085a4c65b1a804abd65cf3bfc41588531</p>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swagger-editor: v5.0.0-alpha.113]]></title>
-            <link>https://github.com/swagger-api/swagger-editor/releases/tag/v5.0.0-alpha.113</link>
-            <guid>https://github.com/swagger-api/swagger-editor/releases/tag/v5.0.0-alpha.113</guid>
-            <pubDate>Tue, 19 Aug 2025 10:18:04 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/swagger-api/swagger-editor/compare/v5.0.0-alpha.112...v5.0.0-alpha.113">5.0.0-alpha.113</a> (2025-08-19)</h1>
-<h3>Bug Fixes</h3>
-<ul>
-<li><strong>deps:</strong> bump tmp &amp; form-data dependencies (<a href="https://github.com/swagger-api/swagger-editor/issues/5562" data-hovercard-type="pull_request" data-hovercard-url="/swagger-api/swagger-editor/pull/5562/hovercard">#5562</a>) (<a href="https://github.com/swagger-api/swagger-editor/commit/d561a17fe0a8c9ebbff1b01be04902c99e6ddda9">d561a17</a>)</li>
-</ul>]]></content:encoded>
-        </item>
-        <item>
-            <title><![CDATA[Release notes from swagger-editor: v5.0.0-alpha.112]]></title>
-            <link>https://github.com/swagger-api/swagger-editor/releases/tag/v5.0.0-alpha.112</link>
-            <guid>https://github.com/swagger-api/swagger-editor/releases/tag/v5.0.0-alpha.112</guid>
-            <pubDate>Tue, 19 Aug 2025 09:19:12 GMT</pubDate>
-            <content:encoded><![CDATA[<h1><a href="https://github.com/swagger-api/swagger-editor/compare/v5.0.0-alpha.111...v5.0.0-alpha.112">5.0.0-alpha.112</a> (2025-08-19)</h1>
-<h3>Features</h3>
-<ul>
-<li><strong>deps:</strong> update ApiDOM to v1.0.0-beta.46 (<a href="https://github.com/swagger-api/swagger-editor/commit/56b6460481dbfd7a6a505bf3a30192bd01f16b02">56b6460</a>)</li>
 </ul>]]></content:encoded>
         </item>
     </channel>
